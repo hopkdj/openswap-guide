@@ -1,6 +1,6 @@
 ---
 title: "Immich vs PhotoPrism 2026 — Best Self-Hosted Photo Management Compared"
-date: 2026-04-12
+date: 2026-04-11
 tags: ["comparison", "self-hosted", "photo-management", "privacy", "google-photos-alternative"]
 draft: false
 description: "Immich vs PhotoPrism in 2026: detailed comparison of features, Docker deployment, AI capabilities, mobile support, and performance. Find the best self-hosted Google Photos alternative."
