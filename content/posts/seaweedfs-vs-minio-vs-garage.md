@@ -1,6 +1,6 @@
 ---
 title: "Best Self-Hosted Object Storage 2026: SeaweedFS vs MinIO vs Garage (Docker Setup)"
-date: 2026-04-12
+date: 2026-04-11
 tags: ["comparison", "storage", "self-hosted", "docker", "s3", "guide"]
 draft: false
 description: "Compare the top self-hosted S3-compatible object storage solutions: SeaweedFS, MinIO, and Garage. Docker compose setups, performance benchmarks, and deployment guides for homelabs and production."
