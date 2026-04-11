@@ -1,6 +1,6 @@
 ---
 title: "Plausible Analytics vs Umami: Best Open Source Google Analytics Alternative in 2026"
-date: 2026-04-12
+date: 2026-04-11
 tags: ["comparison", "self-hosted", "analytics", "privacy"]
 draft: false
 description: "In-depth comparison of Plausible Analytics and Umami — two leading open source, privacy-first web analytics platforms. Includes Docker Compose deployment guides, performance benchmarks, and feature breakdown."
