@@ -11,7 +11,7 @@
       <h1 class="featured-title">{{ $featured.Title }}</h1>
       <p class="featured-excerpt">{{ $featured.Params.excerpt | default $featured.Summary }}</p>
       <div class="featured-meta">
-        <span class="author">{{ $featured.Params.author | default "Hermes Team" }}</span>
+        <span class="author">{{ $featured.Params.author | default "OpenSwap Team" }}</span>
         <span>·</span>
         <span>{{ $featured.Date.Format "January 2, 2006" }}</span>
         <span>·</span>
@@ -20,20 +20,29 @@
     </div>
     <div class="featured-visual">
       <div class="featured-visual-pattern"></div>
-      <div class="featured-visual-text">AI</div>
+      <div class="featured-visual-text">OS</div>
     </div>
   </a>
 </section>
 {{ end }}
 
+{{/* Collect unique tags */}}
+{{ $allTags := slice }}
+{{ range $posts }}
+  {{ range .Params.tags }}
+    {{ $allTags = $allTags | append . }}
+  {{ end }}
+{{ end }}
+{{ $uniqueTags := $allTags | uniq | first 6 }}
+
 {{/* Section header with tabs and view toggle */}}
 <div class="section-header">
   <h2 class="section-title">Latest Posts</h2>
   <div class="section-controls">
-    {{ $categories := slice "All" "AI Research" "Dev Tools" "Tutorials" "Opinion" }}
     <div class="tabs">
-      {{ range $categories }}
-      <button class="tab{{ if eq . "All" }} active{{ end }}" onclick="filterPosts('{{ . | lower | replaceRE " " "-" }}', this)">{{ . }}</button>
+      <button class="tab active" onclick="filterPosts('all', this)">All</button>
+      {{ range $uniqueTags }}
+      <button class="tab" onclick="filterPosts('{{ . | urlize }}', this)">{{ . | title }}</button>
       {{ end }}
     </div>
     <div class="view-toggle">
@@ -52,21 +61,30 @@
   {{/* Grid View */}}
   <div class="posts-grid active" id="postsGrid">
     {{ range after 1 $posts }}
-    {{ $catSlug := .Params.category | default "uncategorized" | lower | replaceRE " " "-" }}
+    {{ $tagClasses := slice "tag-purple" "tag-green" "tag-blue" "tag-orange" }}
+    {{ $firstTag := "general" }}
     {{ $tagClass := "tag-purple" }}
-    {{ if or (eq .Params.category "Dev Tools") (eq .Params.category "dev-tools") }}{{ $tagClass = "tag-green" }}{{ end }}
-    {{ if or (eq .Params.category "Tutorials") (eq .Params.category "tutorials") }}{{ $tagClass = "tag-blue" }}{{ end }}
-    {{ if or (eq .Params.category "Opinion") (eq .Params.category "opinion") }}{{ $tagClass = "tag-orange" }}{{ end }}
-    <a href="{{ .RelPermalink }}" class="post-card" data-category="{{ $catSlug }}">
+    {{ if .Params.tags }}
+      {{ $firstTag = index .Params.tags 0 }}
+      {{ if eq $firstTag "comparison" }}{{ $tagClass = "tag-purple" }}{{ end }}
+      {{ if or (eq $firstTag "guide") (eq $firstTag "tutorial") }}{{ $tagClass = "tag-green" }}{{ end }}
+      {{ if or (eq $firstTag "ai") (eq $firstTag "self-hosted") }}{{ $tagClass = "tag-blue" }}{{ end }}
+      {{ if or (eq $firstTag "privacy") (eq $firstTag "tools") }}{{ $tagClass = "tag-orange" }}{{ end }}
+    {{ end }}
+    {{ $tagSlugs := slice }}
+    {{ range .Params.tags }}
+      {{ $tagSlugs = $tagSlugs | append (. | urlize) }}
+    {{ end }}
+    <a href="{{ .RelPermalink }}" class="post-card" data-tags="{{ delimit $tagSlugs " " }}">
       <div class="post-tags">
-        <span class="tag {{ $tagClass }}">{{ .Params.category | default "General" }}</span>
+        <span class="tag {{ $tagClass }}">{{ $firstTag | title }}</span>
       </div>
       <h3 class="post-title">{{ .Title }}</h3>
       <p class="post-excerpt">{{ .Params.excerpt | default .Summary }}</p>
       <div class="post-footer">
         <div class="post-author">
-          <div class="author-avatar">{{ substr (.Params.author | default "H") 0 1 | upper }}</div>
-          <span class="author-name">{{ .Params.author | default "Hermes Team" }}</span>
+          <div class="author-avatar">{{ substr (.Params.author | default "O") 0 1 | upper }}</div>
+          <span class="author-name">{{ .Params.author | default "OpenSwap Team" }}</span>
         </div>
         <span class="post-date">{{ .Date.Format "Jan 2" }}</span>
       </div>
@@ -77,14 +95,21 @@
   {{/* List View */}}
   <div class="posts-list" id="postsList">
     {{ range after 1 $posts }}
-    {{ $catSlug := .Params.category | default "uncategorized" | lower | replaceRE " " "-" }}
-    <a href="{{ .RelPermalink }}" class="list-item" data-category="{{ $catSlug }}">
+    {{ $tagSlugs := slice }}
+    {{ range .Params.tags }}
+      {{ $tagSlugs = $tagSlugs | append (. | urlize) }}
+    {{ end }}
+    <a href="{{ .RelPermalink }}" class="list-item" data-tags="{{ delimit $tagSlugs " " }}">
       <span class="list-date">{{ .Date.Format "2006-01-02" }}</span>
       <div class="list-content">
         <span class="list-title">{{ .Title }}</span>
-        <div class="list-tags"><span class="list-tag">{{ .Params.category | default "General" }}</span></div>
+        <div class="list-tags">
+          {{ range first 2 .Params.tags }}
+          <span class="list-tag">{{ . }}</span>
+          {{ end }}
+        </div>
       </div>
-      <span class="list-author">{{ .Params.author | default "Hermes Team" }}</span>
+      <span class="list-author">{{ .Params.author | default "OpenSwap Team" }}</span>
     </a>
     {{ end }}
   </div>
@@ -94,11 +119,12 @@
 
 {{ define "scripts" }}
 <script>
-function filterPosts(category, btn) {
+function filterPosts(tag, btn) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
   document.querySelectorAll('.post-card, .list-item').forEach(el => {
-    if (category === 'all' || el.dataset.category === category) {
+    const tags = el.dataset.tags || '';
+    if (tag === 'all' || tags.includes(tag)) {
       el.style.display = '';
     } else {
       el.style.display = 'none';
