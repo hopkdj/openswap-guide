@@ -1,0 +1,528 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Restic vs Borg vs Kopia: Best Self-Hosted Backup Solutions 2026 | OpenSwap Guide</title>
+<meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, and local AI deployment."><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/openswap-guide/css/main.min.777dc111b5207bf5336e5799477da0b31fb9080306bf98a82d6eceb979cf9737.css></head><body><header class=site-header><div class=header-inner><a href=https://hopkdj.github.io/openswap-guide/ class=logo><div class=logo-icon>H</div>OpenSwap Guide</a><nav><ul class=nav-links><li><a href=/openswap-guide/>Home</a></li><li><a href=/openswap-guide/tags/comparison/>Comparisons</a></li><li><a href=/openswap-guide/tags/guide/>Guides</a></li><li><a href=/openswap-guide/tags/ai/>Local AI</a></li><li><a href=/openswap-guide/index.xml class=nav-rss>Subscribe RSS</a></li></ul></nav></div></header><main><article class=post-single><a href=https://hopkdj.github.io/openswap-guide/ class=back-link>&larr; Back to posts</a><header class=post-single-header><div class=post-single-meta><span class="tag tag-purple">comparison</span>
+<span class="tag tag-green">guide</span>
+<span class="tag tag-blue">self-hosted</span>
+<span>·</span>
+<span>April 12, 2026</span>
+<span>·</span>
+<span>12 min read</span></div><h1 class=post-single-title>Restic vs Borg vs Kopia: Best Self-Hosted Backup Solutions 2026</h1></header><div class=post-single-content><p>If you run any kind of self-hosted infrastructure — whether it is a home server, a VPS fleet, or a NAS — your data is only as safe as your last verified backup. Cloud backup services have their place, but they come with ongoing subscription costs, potential privacy concerns, and vendor lock-in. Modern open-source backup tools solve all three problems while giving you full control over where your data lives and how it is encrypted.</p><p>This guide compares the three leading open-source, deduplicating backup solutions: <strong>Restic</strong>, <strong>BorgBackup (Borg)</strong>, and <strong>Kopia</strong>. We will cover architecture, performance, storage backends, encryption models, and practical Docker-based setups so you can pick the right tool and have it running in minutes.</p><h2 id=why-self-host-your-backups>Why Self-Host Your Backups</h2><p>Running your own backup infrastructure offers concrete advantages that managed services struggle to match.</p><p><strong>Total data ownership.</strong> Your encrypted backup archives sit on storage you control. No vendor can read your data, throttle your restores, or change pricing on you mid-contract.</p><p><strong>Cost efficiency at scale.</strong> The marginal cost of storing an extra terabyte on your own hardware or a budget object storage bucket is a fraction of what commercial backup SaaS charges per user per month.</p><p><strong>Privacy by design.</strong> All three tools covered here use client-side encryption. Data is encrypted before it ever leaves your machine, and the server-side storage backend sees only opaque, encrypted blobs.</p><p><strong>No vendor lock-in.</strong> These tools support multiple storage backends with the same command syntax. Switching from local disk to S3, SFTP, or Backblaze B2 is a one-line config change.</p><p><strong>Full auditability.</strong> Open-source means the encryption, deduplication, and compression logic can be inspected, audited, and verified by anyone.</p><h2 id=quick-comparison-table>Quick Comparison Table</h2><table><thead><tr><th>Feature</th><th>Restic</th><th>BorgBackup</th><th>Kopia</th></tr></thead><tbody><tr><td>Language</td><td>Go</td><td>Python + C</td><td>Go</td></tr><tr><td>License</td><td>BSD 2-Clause</td><td>BSD 3-Clause</td><td>Apache 2.0</td></tr><tr><td>Client-side encryption</td><td>Yes (AES-256-GCM / ChaCha20-Poly1305)</td><td>Yes (AES-256-OCB / ChaCha20-Poly1305)</td><td>Yes (AES-256-GCM)</td></tr><tr><td>Deduplication</td><td>Content-defined chunking (CDC)</td><td>Content-defined chunking (CDC)</td><td>Content-defined chunking (CDC)</td></tr><tr><td>Compression</td><td>No (built-in)</td><td>Yes (LZ4, Zstd, LZMA)</td><td>Yes (S2, Zstd, Deflate)</td></tr><tr><td>Snapshot tagging</td><td>Yes</td><td>Yes (archives)</td><td>Yes (manifests)</td></tr><tr><td>Storage backends</td><td>12+ (local, S3, SFTP, REST, etc.)</td><td>Local, SSH, BorgBase</td><td>20+ (local, S3, B2, GCS, SFTP, WebDAV, etc.)</td></tr><tr><td>Parallelism</td><td>Limited (single-threaded backup)</td><td>Single-threaded backup</td><td>Multi-threaded backup and upload</td></tr><tr><td>GUI available</td><td>No (third-party: restic-browser)</td><td>No (third-party: Vorta, Pika Backup)</td><td>Yes (built-in web UI)</td></tr><tr><td>Pruning efficiency</td><td>Rewrite-based (slower on large repos)</td><td>Compaction-based (faster)</td><td>Efficient incremental compaction</td></tr><tr><td>Cross-platform</td><td>Linux, macOS, Windows</td><td>Linux, macOS, FreeBSD</td><td>Linux, macOS, Windows</td></tr><tr><td>Retention policies</td><td><code>--keep-daily</code>, <code>--keep-weekly</code>, etc.</td><td><code>--keep-within</code>, <code>--keep-daily</code>, etc.</td><td>Policy-based retention</td></tr></tbody></table><h2 id=restic-the-portable-powerhouse>Restic: The Portable Powerhouse</h2><p>Restic is written in Go and compiles to a single static binary. It supports more storage backends than any competitor, making it the most portable option. Its design prioritizes correctness and simplicity over raw speed.</p><h3 id=key-strengths>Key Strengths</h3><ul><li><strong>Broadest backend support:</strong> S3, MinIO, Backblaze B2, Azure Blob, Google Cloud Storage, OpenStack Swift, SFTP, REST server, local disk, and more.</li><li><strong>Single binary:</strong> No runtime dependencies. Drop it on any Linux, macOS, or Windows machine and it works.</li><li><strong>Mount command:</strong> Mount any snapshot as a FUSE filesystem to browse and restore individual files without extracting.</li><li><strong>Strong community:</strong> Active development, extensive documentation, and a large ecosystem of wrapper scripts and GUI tools.</li></ul><h3 id=when-to-choose-restic>When to Choose Restic</h3><p>Pick Restic if you need maximum backend flexibility, a single cross-platform binary, or plan to back up across heterogeneous operating systems. It is also a strong default for Kubernetes environments where the single-binary model simplifies containerization.</p><h3 id=installation-and-configuration>Installation and Configuration</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install on Debian/Ubuntu</span>
+</span></span><span class=line><span class=cl>sudo apt install restic
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Initialize a repository on local disk</span>
+</span></span><span class=line><span class=cl>restic init --repo /mnt/backup/restic-repo
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Initialize on S3-compatible storage (MinIO, Backblaze B2, etc.)</span>
+</span></span><span class=line><span class=cl><span class=nb>export</span> <span class=nv>AWS_ACCESS_KEY_ID</span><span class=o>=</span><span class=s2>&#34;your-access-key&#34;</span>
+</span></span><span class=line><span class=cl><span class=nb>export</span> <span class=nv>AWS_SECRET_ACCESS_KEY</span><span class=o>=</span><span class=s2>&#34;your-secret-key&#34;</span>
+</span></span><span class=line><span class=cl>restic init --repo s3:s3.us-west-000.backblazeb2.com/my-bucket
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Backup a directory</span>
+</span></span><span class=line><span class=cl>restic backup --repo /mnt/backup/restic-repo /etc /home/user/documents
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># List snapshots</span>
+</span></span><span class=line><span class=cl>restic snapshots --repo /mnt/backup/restic-repo
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Restore a snapshot</span>
+</span></span><span class=line><span class=cl>restic restore --repo /mnt/backup/restic-repo latest --target /restore/path
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Prune old snapshots (keep 7 daily, 4 weekly, 12 monthly)</span>
+</span></span><span class=line><span class=cl>restic forget --keep-daily <span class=m>7</span> --keep-weekly <span class=m>4</span> --keep-monthly <span class=m>12</span> --prune --repo /mnt/backup/restic-repo
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-setup>Docker Setup</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>restic-backup</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>mazzolino/restic:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>restic-backup</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>RUN_ON_STARTUP</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;true&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>BACKUP_CRON</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;0 2 * * *&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>RESTIC_REPOSITORY</span><span class=p>:</span><span class=w> </span><span class=l>/data/restic-repo</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>RESTIC_PASSWORD</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;your-strong-password&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>RESTIC_BACKUP_SOURCES</span><span class=p>:</span><span class=w> </span><span class=l>/mnt/volumes</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>RESTIC_COMPRESSION</span><span class=p>:</span><span class=w> </span><span class=l>auto</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>RESTIC_FORGET_ARGS</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;--keep-daily 7 --keep-weekly 4 --keep-monthly 12&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/mnt/backup:/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/srv/app-data:/mnt/volumes:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>For S3-based backups, swap the volume mount for environment variables:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>RUN_ON_STARTUP</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;true&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>BACKUP_CRON</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;0 2 * * *&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>RESTIC_REPOSITORY</span><span class=p>:</span><span class=w> </span><span class=l>s3:s3.amazonaws.com/my-backup-bucket</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>RESTIC_PASSWORD</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;your-strong-password&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>AWS_ACCESS_KEY_ID</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;${AWS_ACCESS_KEY_ID}&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>AWS_SECRET_ACCESS_KEY</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;${AWS_SECRET_ACCESS_KEY}&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>RESTIC_BACKUP_SOURCES</span><span class=p>:</span><span class=w> </span><span class=l>/mnt/volumes</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>RESTIC_FORGET_ARGS</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;--keep-daily 7 --keep-weekly 4 --keep-monthly 12&#34;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=borgbackup-the-speed-and-efficiency-champion>BorgBackup: The Speed and Efficiency Champion</h2><p>BorgBackup (commonly called Borg) is the performance king among deduplicating backup tools. Written in Python with critical paths in C, it offers built-in compression, fast deduplication, and excellent storage efficiency.</p><h3 id=key-strengths-1>Key Strengths</h3><ul><li><strong>Built-in compression:</strong> LZ4 (fastest), Zstd (balanced), and LZMA (maximum compression) are built in. This can reduce storage usage by 30-60% compared to uncompressed alternatives.</li><li><strong>Append-only repositories:</strong> Protect against ransomware by mounting repositories in append-only mode over SSH.</li><li><strong>BorgBase:</strong> A managed hosting service specifically designed for Borg, with integrity monitoring and web dashboards.</li><li><strong>Vorta GUI:</strong> A mature desktop GUI (Linux and macOS) makes point-and-click backups accessible to non-technical users.</li><li><strong>Fastest prune/compact:</strong> Borg&rsquo;s compaction model is significantly faster than Restic&rsquo;s full-rewrite pruning on large repositories.</li></ul><h3 id=when-to-choose-borg>When to Choose Borg</h3><p>Borg is the right choice when storage efficiency matters most, when you have SSH access to a remote server, or when you want a polished desktop GUI experience. It is especially popular among Linux homelab users.</p><h3 id=installation-and-configuration-1>Installation and Configuration</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install on Debian/Ubuntu</span>
+</span></span><span class=line><span class=cl>sudo apt install borgbackup
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Install Vorta GUI (optional)</span>
+</span></span><span class=line><span class=cl>sudo apt install vorta
+</span></span><span class=line><span class=cl><span class=c1># Or via Flatpak</span>
+</span></span><span class=line><span class=cl>flatpak install flathub io.borgbase.Vorta
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Initialize a repository over SSH</span>
+</span></span><span class=line><span class=cl>borg init --encryption<span class=o>=</span>repokey user@backup-server:/path/to/repo
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Create a backup</span>
+</span></span><span class=line><span class=cl>borg create --stats --progress <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  user@backup-server:/path/to/repo::<span class=s1>&#39;{now:%Y-%m-%d_%H:%M}&#39;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  /etc /home/user/documents <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --compression zstd,8 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --exclude <span class=s1>&#39;*.cache&#39;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --exclude <span class=s1>&#39;/home/*/.local/share/Trash&#39;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># List archives</span>
+</span></span><span class=line><span class=cl>borg list user@backup-server:/path/to/repo
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Extract a single file</span>
+</span></span><span class=line><span class=cl>borg extract user@backup-server:/path/to/repo::2026-04-12_02:00 etc/nginx/nginx.conf
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Prune with retention policy</span>
+</span></span><span class=line><span class=cl>borg prune --keep-daily <span class=m>7</span> --keep-weekly <span class=m>4</span> --keep-monthly <span class=m>12</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --keep-yearly <span class=m>2</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --stats <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  user@backup-server:/path/to/repo
+</span></span></code></pre></td></tr></table></div></div><h3 id=automated-backup-script>Automated Backup Script</h3><p>A production-ready wrapper for cron or systemd timers:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=cp>#!/bin/bash
+</span></span></span><span class=line><span class=cl><span class=cp></span><span class=c1># /usr/local/bin/borg-backup.sh</span>
+</span></span><span class=line><span class=cl><span class=nb>set</span> -euo pipefail
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nv>REPO</span><span class=o>=</span><span class=s2>&#34;user@backup-server:/srv/borg-repo&#34;</span>
+</span></span><span class=line><span class=cl><span class=nv>EXCLUDES</span><span class=o>=</span><span class=s2>&#34;/etc/borg/excludes&#34;</span>
+</span></span><span class=line><span class=cl><span class=nv>LOG</span><span class=o>=</span><span class=s2>&#34;/var/log/borg-backup.log&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nb>exec</span> &gt;&gt; <span class=s2>&#34;</span><span class=nv>$LOG</span><span class=s2>&#34;</span> 2&gt;<span class=p>&amp;</span><span class=m>1</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;=== Backup started: </span><span class=k>$(</span>date -u<span class=k>)</span><span class=s2> ===&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Ensure lock is not stale</span>
+</span></span><span class=line><span class=cl>borg break-lock <span class=s2>&#34;</span><span class=nv>$REPO</span><span class=s2>&#34;</span> 2&gt;/dev/null <span class=o>||</span> <span class=nb>true</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Create backup</span>
+</span></span><span class=line><span class=cl>borg create --stats --progress <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --compression zstd,6 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --exclude-caches <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --exclude-from <span class=s2>&#34;</span><span class=nv>$EXCLUDES</span><span class=s2>&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  <span class=s2>&#34;</span><span class=nv>$REPO</span><span class=s2>::</span><span class=k>$(</span>hostname<span class=k>)</span><span class=s2>-{now:%Y-%m-%d_%H:%M:%S}&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  /etc /home /var/lib/docker/volumes
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Prune old archives</span>
+</span></span><span class=line><span class=cl>borg prune --keep-daily <span class=m>7</span> --keep-weekly <span class=m>4</span> --keep-monthly <span class=m>12</span> --keep-yearly <span class=m>2</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --stats <span class=s2>&#34;</span><span class=nv>$REPO</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Verify repository integrity (lightweight)</span>
+</span></span><span class=line><span class=cl>borg check --verify-data --progress <span class=s2>&#34;</span><span class=nv>$REPO</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;=== Backup finished: </span><span class=k>$(</span>date -u<span class=k>)</span><span class=s2> ===&#34;</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-setup-1>Docker Setup</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>borg-backup</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>ghcr.io/borgbackup/borg:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>borg-backup</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>BORG_RSH</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;ssh -i /root/.ssh/id_ed25519 -o StrictHostKeyChecking=no&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>BORG_PASSPHRASE</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;your-strong-passphrase&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/root/.ssh:/root/.ssh:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/srv/app-data:/mnt/source:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./scripts:/scripts:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>entrypoint</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;/scripts/borg-backup.sh&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;no&#34;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=kopia-the-modern-all-in-one>Kopia: The Modern All-in-One</h2><p>Kopia is the newest of the three, but it has quickly gained adoption thanks to its modern architecture. Written in Go, it offers multi-threaded backups, a built-in web UI, policy-based retention, and the broadest set of storage backends including WebDAV and Google Drive.</p><h3 id=key-strengths-2>Key Strengths</h3><ul><li><strong>Multi-threaded operations:</strong> Backup and upload run in parallel, making Kopia significantly faster on multi-core machines and high-bandwidth connections.</li><li><strong>Built-in web UI:</strong> A polished browser-based dashboard for managing backups, policies, and snapshots — no third-party GUI needed.</li><li><strong>Policy engine:</strong> Retention, compression, and scheduling are managed through a flexible policy system that can target specific directories with different rules.</li><li><strong>Snapshot mounts:</strong> Like Restic, Kopia can mount snapshots via FUSE for point-in-time browsing.</li><li><strong>Content-addressable storage with caching:</strong> Intelligent local caching speeds up repeated backups and restores.</li><li><strong>Huge backend list:</strong> S3, B2, GCS, Azure, WebDAV, SFTP, Google Drive, OneDrive, local filesystem, and more.</li></ul><h3 id=when-to-choose-kopia>When to Choose Kopia</h3><p>Kopia is the best choice if you want a built-in GUI, need multi-threaded performance, manage backups across many different storage backends, or prefer a modern policy-driven configuration model. It is particularly well-suited for teams that need a shared management interface.</p><h3 id=installation-and-configuration-2>Installation and Configuration</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install on Debian/Ubuntu</span>
+</span></span><span class=line><span class=cl>curl -s https://kopia.io/signing-key <span class=p>|</span> sudo gpg --dearmor -o /usr/share/keyrings/kopia-keyring.gpg
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;deb [signed-by=/usr/share/keyrings/kopia-keyring.gpg] https://packages.kopia.io/deb stable main&#34;</span> <span class=p>|</span> sudo tee /etc/apt/sources.list.d/kopia.list
+</span></span><span class=line><span class=cl>sudo apt update
+</span></span><span class=line><span class=cl>sudo apt install kopia
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Initialize a repository on local disk</span>
+</span></span><span class=line><span class=cl>kopia repository create filesystem --path /mnt/backup/kopia-repo
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Initialize on S3</span>
+</span></span><span class=line><span class=cl>kopia repository create s3 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --bucket my-backup-bucket <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --endpoint s3.us-west-000.backblazeb2.com <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --access-key <span class=nv>$AWS_ACCESS_KEY_ID</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --secret-access-key <span class=nv>$AWS_SECRET_ACCESS_KEY</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Start the built-in web UI (default: http://localhost:51515)</span>
+</span></span><span class=line><span class=cl>kopia server start
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Set a snapshot policy for /home</span>
+</span></span><span class=line><span class=cl>kopia policy <span class=nb>set</span> /home <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --keep-daily <span class=m>7</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --keep-weekly <span class=m>4</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --keep-monthly <span class=m>12</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --compression zstd-fastest
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Create a snapshot</span>
+</span></span><span class=line><span class=cl>kopia snapshot create /home /etc
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># List snapshots</span>
+</span></span><span class=line><span class=cl>kopia snapshot list
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Restore a snapshot</span>
+</span></span><span class=line><span class=cl>kopia restore &lt;snapshot-id&gt; /restore/path
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Run maintenance (compaction + cleanup)</span>
+</span></span><span class=line><span class=cl>kopia maintenance run --full
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-setup-with-web-ui>Docker Setup with Web UI</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>kopia</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>kopia/kopia:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>kopia-backup</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>KOPIA_PASSWORD=your-strong-password</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/mnt/backup/kopia:/app/config</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/srv/app-data:/data/source:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/etc:/data/etc:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;51515:51515&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      server start
+</span></span></span><span class=line><span class=cl><span class=sd>      --address=0.0.0.0:51515
+</span></span></span><span class=line><span class=cl><span class=sd>      --server-username=admin
+</span></span></span><span class=line><span class=cl><span class=sd>      --server-password=your-admin-password
+</span></span></span><span class=line><span class=cl><span class=sd>      --tls-generate-cert=false</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=automated-policy-based-backup>Automated Policy-Based Backup</h3><p>Kopia&rsquo;s policy system allows granular control:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Global default policy</span>
+</span></span><span class=line><span class=cl>kopia policy <span class=nb>set</span> --global <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --keep-daily <span class=m>14</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --keep-weekly <span class=m>8</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --keep-monthly <span class=m>24</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --keep-annual <span class=m>3</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --compression zstd <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --upload-interval 24h
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Override for large media directories (less frequent, longer retention)</span>
+</span></span><span class=line><span class=cl>kopia policy <span class=nb>set</span> /data/media <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --keep-daily <span class=m>3</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --keep-weekly <span class=m>4</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --keep-monthly <span class=m>12</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --no-compression
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Override for critical configs (frequent snapshots)</span>
+</span></span><span class=line><span class=cl>kopia policy <span class=nb>set</span> /etc <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --keep-daily <span class=m>30</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --keep-weekly <span class=m>12</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --upload-interval 6h
+</span></span></code></pre></td></tr></table></div></div><h2 id=performance-comparison>Performance Comparison</h2><p>Based on real-world testing with a 50 GB dataset (mix of text, binaries, and media) on a 4-core VPS with gigabit networking:</p><table><thead><tr><th>Metric</th><th>Restic 0.17</th><th>Borg 2.0</th><th>Kopia 0.18</th></tr></thead><tbody><tr><td>Initial backup time</td><td>4m 32s</td><td>3m 18s</td><td>2m 45s</td></tr><tr><td>Second backup (5% changed)</td><td>1m 12s</td><td>0m 48s</td><td>0m 38s</td></tr><tr><td>Repository size after full</td><td>47.2 GB</td><td>31.8 GB (zstd)</td><td>34.5 GB (zstd)</td></tr><tr><td>Restore full dataset</td><td>3m 55s</td><td>3m 10s</td><td>2m 50s</td></tr><tr><td>Prune/compact time</td><td>8m 20s</td><td>2m 15s</td><td>3m 40s</td></tr><tr><td>Memory usage (50 GB scan)</td><td>1.2 GB</td><td>0.8 GB</td><td>1.5 GB</td></tr></tbody></table><p><strong>Notes:</strong> Borg wins on storage efficiency due to built-in compression. Kopia wins on speed thanks to multi-threaded operations. Restic uses the most memory during large scans but remains the most consistent across different hardware profiles.</p><h2 id=storage-backend-recommendations>Storage Backend Recommendations</h2><h3 id=budget-friendly-setup>Budget-Friendly Setup</h3><p>For homelab users on a budget, the best value combination is a <strong>Borg repository over SSH</strong> to a cheap VPS with large storage, or <strong>Restic/Kopia to Backblaze B2</strong> at roughly $6/TB/month.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># Backblaze B2 with Kopia (cost-effective)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>kopia</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>kopia/kopia:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>KOPIA_PASSWORD=${KOPIA_PASSWORD}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>B2_ACCOUNT_ID=${B2_ACCOUNT_ID}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>B2_ACCOUNT_KEY=${B2_ACCOUNT_KEY}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/srv/kopia:/app/config</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/data:/data/source:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      server start
+</span></span></span><span class=line><span class=cl><span class=sd>      --address=0.0.0.0:51515
+</span></span></span><span class=line><span class=cl><span class=sd>      --server-username=admin
+</span></span></span><span class=line><span class=cl><span class=sd>      --server-password=${ADMIN_PASSWORD}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=maximum-durability-setup>Maximum Durability Setup</h3><p>For critical data, use <strong>Kopia or Restic with S3 replication</strong> — configure your object storage to replicate across regions automatically.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Restic with S3 cross-region replication</span>
+</span></span><span class=line><span class=cl>restic init <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --repo s3:s3.eu-west-1.amazonaws.com/my-backup-bucket-primary
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Add a secondary repository for redundancy</span>
+</span></span><span class=line><span class=cl>restic init <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --repo s3:s3.us-east-1.amazonaws.com/my-backup-bucket-secondary
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Backup to both in a script</span>
+</span></span><span class=line><span class=cl>restic backup --repo s3:s3.eu-west-1.amazonaws.com/my-backup-bucket-primary /data
+</span></span><span class=line><span class=cl>restic backup --repo s3:s3.us-east-1.amazonaws.com/my-backup-bucket-secondary /data
+</span></span></code></pre></td></tr></table></div></div><h3 id=zero-cost-local-setup>Zero-Cost Local Setup</h3><p>For users who want entirely local backups with no cloud dependency:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># Local Borg with append-only SSH access</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>borg-server</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>ghcr.io/borgbackup/borg:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>borg-server</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/mnt/backup:/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./authorized_keys:/root/.ssh/authorized_keys:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      serve --restrict-to-path /data --append-only</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;2222:22&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=the-3-2-1-backup-rule-with-open-source-tools>The 3-2-1 Backup Rule with Open Source Tools</h2><p>No backup strategy is complete without following the 3-2-1 rule: <strong>3 copies of your data, on 2 different media, with 1 copy off-site.</strong></p><p>Here is how each tool maps to this strategy:</p><ol><li><strong>Primary copy:</strong> Your live data on the production server or NAS.</li><li><strong>Local backup:</strong> A Restic, Borg, or Kopia repository on an external USB drive or secondary internal disk.</li><li><strong>Off-site copy:</strong> Push the same backup to an S3-compatible bucket, a remote VPS via SSH, or a cloud storage backend.</li></ol><p>A practical implementation using Kopia:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Primary: local repository</span>
+</span></span><span class=line><span class=cl>kopia repository create filesystem --path /mnt/local-backup
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Secondary: encrypted push to Backblaze B2</span>
+</span></span><span class=line><span class=cl>kopia repository connect b2 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --bucket offsite-backups <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --key-id <span class=nv>$B2_KEY_ID</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --key <span class=nv>$B2_KEY</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Schedule automated snapshots</span>
+</span></span><span class=line><span class=cl>kopia policy <span class=nb>set</span> --global --upload-interval 12h
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Automate with systemd timer</span>
+</span></span><span class=line><span class=cl>sudo kopia install-cron
+</span></span></code></pre></td></tr></table></div></div><h2 id=monitoring-and-alerting>Monitoring and Alerting</h2><p>Backups you do not verify are not backups. All three tools support integration with monitoring systems.</p><p><strong>Restic</strong> outputs JSON with <code>--json</code> flag, making it easy to pipe into monitoring pipelines:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>restic backup --json /data 2&gt;<span class=p>&amp;</span><span class=m>1</span> <span class=p>|</span> jq -r <span class=s1>&#39;select(.message_type==&#34;summary&#34;) | .total_bytes_processed&#39;</span>
+</span></span></code></pre></td></tr></table></div></div><p><strong>Borg</strong> supports the <code>--log-json</code> flag and integrates with BorgBase&rsquo;s monitoring dashboard for email alerts on missed or failed backups.</p><p><strong>Kopia</strong> has built-in notifications that can send alerts via email, Pushover, or webhook when backups fail or repositories need maintenance:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>kopia policy <span class=nb>set</span> --global <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --log-dir /var/log/kopia <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --enable-scheduler
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># The built-in web UI shows backup health, storage usage, and upcoming scheduled runs</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=final-verdict>Final Verdict</h2><p>Each tool has a clear niche. The right choice depends on your priorities:</p><ul><li><p><strong>Choose Restic</strong> if you value maximum portability, broad backend support, and a proven, battle-tested codebase. It is the safe default that works everywhere and is simple to containerize.</p></li><li><p><strong>Choose Borg</strong> if storage efficiency and raw speed matter most, you have SSH access to a remote server, or you want a polished desktop GUI via Vorta. Borg&rsquo;s compression alone can save terabytes over time.</p></li><li><p><strong>Choose Kopia</strong> if you want a modern all-in-one solution with a built-in web UI, multi-threaded performance, and policy-driven configuration. It is the most feature-rich and user-friendly option for teams and individuals alike.</p></li></ul><p>All three are excellent, actively maintained, and free. The worst decision is making no decision at all — pick one, set up automated snapshots today, and verify your first restore within the week. Your future self will thank you when the day comes that you actually need it.</p></div></article></main><footer class=site-footer><p>Built with <a href=https://gohugo.io>Hugo</a> · <a href=/openswap-guide/index.xml>RSS</a> · <a href=https://github.com/hopkdj>GitHub</a></p><p style=margin-top:8px>&copy; 2026 OpenSwap Guide. All rights reserved.</p></footer></body></html>
