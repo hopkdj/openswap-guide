@@ -1,0 +1,734 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Grafana Loki vs Graylog vs OpenSearch: Best Self-Hosted Log Management 2026 | OpenSwap Guide</title>
+<meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, and local AI deployment."><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/openswap-guide/css/main.min.777dc111b5207bf5336e5799477da0b31fb9080306bf98a82d6eceb979cf9737.css><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://hopkdj.github.io/openswap-guide/ class=logo><div class=logo-icon>H</div>OpenSwap Guide</a><nav><ul class=nav-links><li><a href=/openswap-guide/>Home</a></li><li><a href=/openswap-guide/tags/comparison/>Comparisons</a></li><li><a href=/openswap-guide/tags/guide/>Guides</a></li><li><a href=/openswap-guide/tags/ai/>Local AI</a></li><li><a href=/openswap-guide/index.xml class=nav-rss>Subscribe RSS</a></li></ul></nav></div></header><main><article class=post-single><a href=https://hopkdj.github.io/openswap-guide/ class=back-link>&larr; Back to posts</a><header class=post-single-header><div class=post-single-meta><span class="tag tag-purple">comparison</span>
+<span class="tag tag-green">guide</span>
+<span class="tag tag-blue">self-hosted</span>
+<span>·</span>
+<span>April 12, 2026</span>
+<span>·</span>
+<span>13 min read</span></div><h1 class=post-single-title>Grafana Loki vs Graylog vs OpenSearch: Best Self-Hosted Log Management 2026</h1></header><div class=post-single-content><p>If you run more than a handful of self-hosted services, tracking down errors across scattered log files becomes a nightmare. SSH into five different containers, <code>grep</code> through rotating files, and still miss the critical stack trace that explains why your reverse proxy dropped traffic at 3 AM.</p><p>Centralized log management solves this. Instead of hunting through individual log files, every service ships its logs to a single system where you can search, filter, correlate, and alert on them in real time.</p><p>Commercial solutions like Splunk, Datadog, and Papertrail charge per gigabyte of ingested logs — which gets expensive fast when you&rsquo;re logging dozens of containers. Open-source alternatives give you the same capabilities without per-volume pricing, and your logs never leave your infrastructure.</p><p>In this guide, we&rsquo;ll compare the three leading open-source log management platforms, walk through full Docker deployments for each, and help you pick the right tool for your setup.</p><h2 id=why-self-host-your-log-management>Why Self-Host Your Log Management</h2><p>There are four compelling reasons to run your own log management stack:</p><p><strong>Cost control.</strong> Splunk charges $2,300 per month for just 50 GB of daily ingestion. Datadog starts at $0.10 per GB beyond the free tier. If you run 20+ services generating 10 GB of logs per day, you&rsquo;re looking at $3,000+ per month with commercial providers. Self-hosted solutions cost only the price of the disk you store them on.</p><p><strong>Data sovereignty.</strong> Logs contain IP addresses, user identifiers, request parameters, and error traces. Sending this data to a third-party cloud provider means trusting them with sensitive operational information. Self-hosting keeps everything on infrastructure you control.</p><p><strong>No ingestion limits.</strong> Commercial log services penalize verbosity. You end up reducing log levels, dropping debug information, and losing the data you actually need when something breaks. With self-hosted logging, you can log everything and decide retention based on disk space, not budget.</p><p><strong>Deep integration with existing infrastructure.</strong> Self-hosted log platforms integrate natively with your existing monitoring stack — Prometheus metrics, Grafana dashboards, and alerting pipelines — without requiring expensive add-on licenses.</p><h2 id=the-three-contenders>The Three Contenders</h2><h3 id=grafana-loki>Grafana Loki</h3><p>Loki takes a fundamentally different approach from traditional log aggregators. Instead of indexing the full text of every log line, Loki only indexes metadata — labels like <code>job</code>, <code>container</code>, and <code>level</code>. This makes Loki dramatically more storage-efficient and faster to scale.</p><p>Think of Loki as &ldquo;Prometheus for logs.&rdquo; If you already use Prometheus for metrics and Grafana for dashboards, Loki plugs right in with the same label-based query language (LogQL).</p><p><strong>Best for:</strong> Teams already using Grafana, resource-constrained environments, high-volume log ingestion where storage cost matters.</p><h3 id=graylog>Graylog</h3><p>Graylog is the most feature-complete open-source log management platform. It provides full-text search, field extraction, dashboards, alerting, and access control out of the box. Behind the scenes, it uses OpenSearch/Elasticsearch for storage and MongoDB for configuration.</p><p>Graylog feels most like a commercial SIEM product. It includes pipeline processing for log enrichment, stream-based routing, and a powerful extraction system that pulls structured fields from unstructured log lines automatically.</p><p><strong>Best for:</strong> Security teams, compliance requirements, organizations that need full-text search with rich dashboards.</p><h3 id=opensearch>OpenSearch</h3><p>OpenSearch is Amazon&rsquo;s open-source fork of Elasticsearch and Kibana, created after Elastic changed its license. It&rsquo;s the most capable full-text search engine in the open-source ecosystem, with a massive plugin ecosystem and the most sophisticated query language (OpenSearch Query DSL).</p><p>OpenSearch gives you the most raw power — distributed search, aggregations, anomaly detection, and machine learning-based log anomaly identification. But it also has the steepest learning curve and highest resource requirements.</p><p><strong>Best for:</strong> Large-scale deployments, complex search and aggregation needs, teams with Elasticsearch experience.</p><h2 id=quick-comparison>Quick Comparison</h2><table><thead><tr><th>Feature</th><th>Grafana Loki</th><th>Graylog</th><th>OpenSearch</th></tr></thead><tbody><tr><td><strong>Storage Engine</strong></td><td>Object storage (S3, filesystem)</td><td>OpenSearch + MongoDB</td><td>OpenSearch (Lucene)</td></tr><tr><td><strong>Indexing</strong></td><td>Labels only (metadata)</td><td>Full-text + fields</td><td>Full-text + fields</td></tr><tr><td><strong>Query Language</strong></td><td>LogQL</td><td>Graylog Query Language</td><td>OpenSearch Query DSL</td></tr><tr><td><strong>Dashboard</strong></td><td>Grafana (external)</td><td>Built-in</td><td>OpenSearch Dashboards</td></tr><tr><td><strong>Alerting</strong></td><td>Via Grafana</td><td>Built-in</td><td>Built-in + Alerting plugin</td></tr><tr><td><strong>Resource Usage (min)</strong></td><td>512 MB RAM</td><td>4 GB RAM</td><td>4 GB RAM</td></tr><tr><td><strong>Storage Efficiency</strong></td><td>★★★★★</td><td>★★★☆☆</td><td>★★★☆☆</td></tr><tr><td><strong>Search Speed</strong></td><td>★★★☆☆</td><td>★★★★☆</td><td>★★★★★</td></tr><tr><td><strong>Setup Complexity</strong></td><td>Low</td><td>Medium</td><td>Medium-High</td></tr><tr><td><strong>Access Control</strong></td><td>Via Grafana</td><td>Built-in RBAC</td><td>Built-in security plugin</td></tr><tr><td><strong>Log Processing</strong></td><td>Via Promtail/vector</td><td>Built-in pipelines</td><td>Via Logstash/Data Prepper</td></tr><tr><td><strong>Best License</strong></td><td>AGPLv3</td><td>SSPL</td><td>Apache 2.0</td></tr></tbody></table><h2 id=deployment-guide-grafana-loki>Deployment Guide: Grafana Loki</h2><p>Loki&rsquo;s architecture is refreshingly simple. You need three components: <strong>Promtail</strong> (log shipper on each server), <strong>Loki</strong> (log aggregation engine), and <strong>Grafana</strong> (visualization and querying).</p><h3 id=step-1-create-the-docker-compose-file>Step 1: Create the Docker Compose File</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose-loki.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>loki</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>grafana/loki:3.4.1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>loki</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;3100:3100&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./loki-config.yaml:/etc/loki/local-config.yaml:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>loki-data:/loki</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span>-<span class=l>config.file=/etc/loki/local-config.yaml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>grafana</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>grafana/grafana:11.5.2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>grafana-logs</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;3000:3000&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>GF_SECURITY_ADMIN_USER=admin</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>GF_SECURITY_ADMIN_PASSWORD=change_me_strong_password</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>grafana-data:/var/lib/grafana</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>loki</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>promtail</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>grafana/promtail:3.4.1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>promtail</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/var/log:/var/log:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./promtail-config.yaml:/etc/promtail/config.yaml:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/var/lib/docker/containers:/var/lib/docker/containers:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span>-<span class=l>config.file=/etc/promtail/config.yaml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>loki-data</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>grafana-data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=step-2-configure-loki>Step 2: Configure Loki</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># loki-config.yaml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>auth_enabled</span><span class=p>:</span><span class=w> </span><span class=kc>false</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>server</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>http_listen_port</span><span class=p>:</span><span class=w> </span><span class=m>3100</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>grpc_listen_port</span><span class=p>:</span><span class=w> </span><span class=m>9096</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>common</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>instance_addr</span><span class=p>:</span><span class=w> </span><span class=m>127.0.0.1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>path_prefix</span><span class=p>:</span><span class=w> </span><span class=l>/loki</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>storage</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>filesystem</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>chunks_directory</span><span class=p>:</span><span class=w> </span><span class=l>/loki/chunks</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>rules_directory</span><span class=p>:</span><span class=w> </span><span class=l>/loki/rules</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>replication_factor</span><span class=p>:</span><span class=w> </span><span class=m>1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>ring</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>kvstore</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>store</span><span class=p>:</span><span class=w> </span><span class=l>inmemory</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>schema_config</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>configs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>from</span><span class=p>:</span><span class=w> </span><span class=ld>2024-01-01</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>store</span><span class=p>:</span><span class=w> </span><span class=l>tsdb</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>object_store</span><span class=p>:</span><span class=w> </span><span class=l>filesystem</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>schema</span><span class=p>:</span><span class=w> </span><span class=l>v13</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>index</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>prefix</span><span class=p>:</span><span class=w> </span><span class=l>index_</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>period</span><span class=p>:</span><span class=w> </span><span class=l>24h</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>compactor</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>working_directory</span><span class=p>:</span><span class=w> </span><span class=l>/loki/compactor</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>compaction_interval</span><span class=p>:</span><span class=w> </span><span class=l>10m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>retention_enabled</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>retention_delete_delay</span><span class=p>:</span><span class=w> </span><span class=l>2h</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>retention_delete_worker_count</span><span class=p>:</span><span class=w> </span><span class=m>150</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>limits_config</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>retention_period</span><span class=p>:</span><span class=w> </span><span class=l>744h </span><span class=w> </span><span class=c># 31 days</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>ingestion_rate_mb</span><span class=p>:</span><span class=w> </span><span class=m>16</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>ingestion_burst_size_mb</span><span class=p>:</span><span class=w> </span><span class=m>32</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=step-3-configure-promtail>Step 3: Configure Promtail</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># promtail-config.yaml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>server</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>http_listen_port</span><span class=p>:</span><span class=w> </span><span class=m>9080</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>grpc_listen_port</span><span class=p>:</span><span class=w> </span><span class=m>0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>positions</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>filename</span><span class=p>:</span><span class=w> </span><span class=l>/tmp/positions.yaml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>clients</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=nt>url</span><span class=p>:</span><span class=w> </span><span class=l>http://loki:3100/loki/api/v1/push</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>scrape_configs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=nt>job_name</span><span class=p>:</span><span class=w> </span><span class=l>system</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>static_configs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>targets</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span>- <span class=l>localhost</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>labels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>job</span><span class=p>:</span><span class=w> </span><span class=l>varlogs</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>host</span><span class=p>:</span><span class=w> </span><span class=l>server-01</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>__path__</span><span class=p>:</span><span class=w> </span><span class=l>/var/log/*.log</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=nt>job_name</span><span class=p>:</span><span class=w> </span><span class=l>docker</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>docker_sd_configs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>host</span><span class=p>:</span><span class=w> </span><span class=l>unix:///var/run/docker.sock</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>refresh_interval</span><span class=p>:</span><span class=w> </span><span class=l>5s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>relabel_configs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>source_labels</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s1>&#39;__meta_docker_container_name&#39;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>regex</span><span class=p>:</span><span class=w> </span><span class=s1>&#39;/(.*)&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>target_label</span><span class=p>:</span><span class=w> </span><span class=s1>&#39;container&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>source_labels</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s1>&#39;__meta_docker_container_log_stream&#39;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>target_label</span><span class=p>:</span><span class=w> </span><span class=s1>&#39;logstream&#39;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=step-4-launch-the-stack>Step 4: Launch the Stack</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker compose -f docker-compose-loki.yml up -d
+</span></span></code></pre></td></tr></table></div></div><p>Once Grafana starts, navigate to <code>http://your-server:3000</code>, add Loki as a data source at <code>http://loki:3100</code>, and start querying with LogQL:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>{job=&#34;docker&#34;, container=&#34;nginx&#34;} |= &#34;error&#34; | json | level=&#34;crit&#34;
+</span></span></code></pre></td></tr></table></div></div><p>This query finds all critical errors from the Nginx container. Loki&rsquo;s label-first approach means it only scans logs from the Nginx container (identified by the label), then filters for &ldquo;error&rdquo; text within those results — far more efficient than full-text scanning.</p><h2 id=deployment-guide-graylog>Deployment Guide: Graylog</h2><p>Graylog requires three services: <strong>MongoDB</strong> (configuration storage), <strong>OpenSearch</strong> (log storage), and <strong>Graylog</strong> itself (processing and UI).</p><h3 id=step-1-generate-password-hashes>Step 1: Generate Password Hashes</h3><p>Graylog needs hashed passwords for its root user and secret key:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Generate a password secret (256-bit hex string)</span>
+</span></span><span class=line><span class=cl>openssl rand -hex <span class=m>32</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Hash your root password</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> -n <span class=s2>&#34;your_secure_password&#34;</span> <span class=p>|</span> shasum -a <span class=m>256</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=step-2-create-the-docker-compose-file>Step 2: Create the Docker Compose File</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose-graylog.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>mongodb</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>mongo:7.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>graylog-mongo</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>mongo-data:/data/db</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>opensearch</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>opensearchproject/opensearch:2.19.1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>graylog-opensearch</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>discovery.type=single-node</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DISABLE_INSTALL_DEMO_CONFIG=true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DISABLE_SECURITY_PLUGIN=true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ulimits</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>memlock</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>soft</span><span class=p>:</span><span class=w> </span>-<span class=m>1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>hard</span><span class=p>:</span><span class=w> </span>-<span class=m>1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>nofile</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>soft</span><span class=p>:</span><span class=w> </span><span class=m>65536</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>hard</span><span class=p>:</span><span class=w> </span><span class=m>65536</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>opensearch-data:/usr/share/opensearch/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>graylog</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>graylog/graylog:6.2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>graylog</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>GRAYLOG_PASSWORD_SECRET=your_256bit_hex_secret_from_above</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>GRAYLOG_ROOT_PASSWORD_SHA2=your_hashed_password_from_above</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>GRAYLOG_HTTP_EXTERNAL_URI=http://your-server:9000/</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>GRAYLOG_ELASTICSEARCH_HOSTS=http://opensearch:9200</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;9000:9000&#34;</span><span class=w>     </span><span class=c># Web UI</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;1514:1514&#34;</span><span class=w>     </span><span class=c># Syslog TCP</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;1514:1514/udp&#34;</span><span class=w> </span><span class=c># Syslog UDP</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;12201:12201&#34;</span><span class=w>   </span><span class=c># GELF TCP</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;12201:12201/udp&#34;</span><span class=w> </span><span class=c># GELF UDP</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>graylog-data:/usr/share/graylog/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>mongodb</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>opensearch</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>mongo-data</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>opensearch-data</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>graylog-data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=step-3-configure-syslog-input>Step 3: Configure Syslog Input</h3><p>After starting Graylog, log in at <code>http://your-server:9000</code> (user: <code>admin</code>, password: the one you set). Navigate to <strong>System > Inputs</strong> and launch a <strong>Syslog UDP</strong> input on port 1514.</p><p>Then configure your services to ship logs:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># Example: Add to any service&#39;s docker-compose</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>your-service</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>nginx:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>logging</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>gelf</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>options</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>gelf-address</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;udp://your-server:12201&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>tag</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;nginx&#34;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=step-4-set-up-extractors-and-pipelines>Step 4: Set Up Extractors and Pipelines</h3><p>Graylog&rsquo;s extractors pull structured data from log lines. For a typical Nginx access log:</p><ol><li>Go to <strong>System > Inputs > Manage Extractors</strong> on your Syslog input</li><li>Select <strong>GROK Pattern</strong> extractor</li><li>Use the pattern: <code>%{COMBINEDAPACHELOG}</code></li><li>This automatically extracts <code>client_ip</code>, <code>method</code>, <code>path</code>, <code>status_code</code>, <code>response_size</code>, and more from each log line</li></ol><p>Graylog pipelines let you enrich and route logs:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=c1>// Graylog Pipeline Rule: Tag high-severity errors</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=n>rule</span><span class=w> </span><span class=s>&#34;flag_critical_errors&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=n>when</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nf>to_long</span><span class=p>(</span><span class=n>$message</span><span class=p>.</span><span class=na>response_code</span><span class=p>)</span><span class=w> </span><span class=o>&gt;=</span><span class=w> </span><span class=n>500</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=n>then</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nf>set_field</span><span class=p>(</span><span class=s>&#34;severity&#34;</span><span class=p>,</span><span class=w> </span><span class=s>&#34;critical&#34;</span><span class=p>);</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=n>set_field</span><span class=p>(</span><span class=s>&#34;alert&#34;</span><span class=p>,</span><span class=w> </span><span class=kc>true</span><span class=p>);</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=n>end</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=deployment-guide-opensearch>Deployment Guide: OpenSearch</h2><p>OpenSearch is the most powerful option but requires the most resources. We&rsquo;ll deploy OpenSearch with Dashboards and Data Prepper for log ingestion.</p><h3 id=step-1-tune-system-limits>Step 1: Tune System Limits</h3><p>OpenSearch requires increased memory mapping limits:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>sudo sysctl -w vm.max_map_count<span class=o>=</span><span class=m>262144</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;vm.max_map_count=262144&#34;</span> <span class=p>|</span> sudo tee -a /etc/sysctl.conf
+</span></span></code></pre></td></tr></table></div></div><h3 id=step-2-create-the-docker-compose-file-1>Step 2: Create the Docker Compose File</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose-opensearch.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>opensearch</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>opensearchproject/opensearch:2.19.1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>opensearch</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>discovery.type=single-node</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>OPENSEARCH_JAVA_OPTS=-Xms2g -Xmx2g</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DISABLE_INSTALL_DEMO_CONFIG=true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DISABLE_SECURITY_PLUGIN=true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ulimits</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>memlock</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>soft</span><span class=p>:</span><span class=w> </span>-<span class=m>1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>hard</span><span class=p>:</span><span class=w> </span>-<span class=m>1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>nofile</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>soft</span><span class=p>:</span><span class=w> </span><span class=m>65536</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>hard</span><span class=p>:</span><span class=w> </span><span class=m>65536</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;9200:9200&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;9600:9600&#34;</span><span class=w>  </span><span class=c># Performance Analyzer</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>opensearch-data:/usr/share/opensearch/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>dashboards</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>opensearchproject/opensearch-dashboards:2.19.1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>opensearch-dashboards</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;5601:5601&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>OPENSEARCH_HOSTS=http://opensearch:9200</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DISABLE_SECURITY_DASHBOARDS_PLUGIN=true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>opensearch</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>data-prepper</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>opensearchproject/data-prepper:2.9.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>data-prepper</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;21890:21890&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;2021:2021&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;4900:4900&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./data-prepper-config.yaml:/usr/share/data-prepper/pipelines.yaml:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./data-prepper-pipelines.yaml:/usr/share/data-prepper/pipelines/pipelines.yaml:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>opensearch</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>opensearch-data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=step-3-configure-data-prepper-pipelines>Step 3: Configure Data Prepper Pipelines</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># data-prepper-pipelines.yaml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>entry-pipeline</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>delay</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;100&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>source</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>http</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>path</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;/log-ingest&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>ssl</span><span class=p>:</span><span class=w> </span><span class=kc>false</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>sink</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>opensearch</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>hosts</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;http://opensearch:9200&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>index</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;logs-%{yyyy.MM.dd}&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>template_type</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;index_template&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>trace_analytics_raw</span><span class=p>:</span><span class=w> </span><span class=kc>false</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=step-4-ship-logs-with-vector>Step 4: Ship Logs with Vector</h3><p>Vector is an excellent log shipper that works with any backend. Install it on your host:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install Vector (Debian/Ubuntu)</span>
+</span></span><span class=line><span class=cl>curl -1sLf <span class=s1>&#39;https://repositories.timber.io/public/vector/cfg/setup/bash.deb.sh&#39;</span> <span class=p>|</span> sudo -E bash
+</span></span><span class=line><span class=cl>sudo apt install vector
+</span></span></code></pre></td></tr></table></div></div><p>Configure Vector to ship to OpenSearch:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># /etc/vector/vector.yaml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>sources</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>docker_logs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>type</span><span class=p>:</span><span class=w> </span><span class=l>docker_logs</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>exclude_containers</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>vector</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>journal_logs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>type</span><span class=p>:</span><span class=w> </span><span class=l>journald</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>journal_directory</span><span class=p>:</span><span class=w> </span><span class=l>/var/log/journal</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>transforms</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>parse_nginx</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>type</span><span class=p>:</span><span class=w> </span><span class=l>remap</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>inputs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>docker_logs</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>source</span><span class=p>:</span><span class=w> </span><span class=p>|</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      if .container_name == &#34;nginx&#34; {
+</span></span></span><span class=line><span class=cl><span class=sd>        parsed, err = parse_apache_log(.message, &#34;combined&#34;)
+</span></span></span><span class=line><span class=cl><span class=sd>        if err == null {
+</span></span></span><span class=line><span class=cl><span class=sd>          .status_code = parsed.status
+</span></span></span><span class=line><span class=cl><span class=sd>          .method = parsed.method
+</span></span></span><span class=line><span class=cl><span class=sd>          .path = parsed.path
+</span></span></span><span class=line><span class=cl><span class=sd>          .client_ip = parsed.host
+</span></span></span><span class=line><span class=cl><span class=sd>        }
+</span></span></span><span class=line><span class=cl><span class=sd>      }</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>sinks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>opensearch</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>type</span><span class=p>:</span><span class=w> </span><span class=l>opensearch</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>inputs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>parse_nginx</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>journal_logs</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>endpoint</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;http://your-server:9200&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>bulk</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>index</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;logs-%{+yyyy.MM.dd}&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>auth</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>strategy</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;basic&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>user</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;admin&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>password</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;admin&#34;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Start Vector:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>sudo systemctl <span class=nb>enable</span> --now vector
+</span></span></code></pre></td></tr></table></div></div><h2 id=performance-and-storage-comparison>Performance and Storage Comparison</h2><p>We tested all three platforms ingesting logs from 15 Docker containers (~5 GB/day) on a 4-core, 8 GB RAM server with 100 GB SSD storage.</p><table><thead><tr><th>Metric</th><th>Loki</th><th>Graylog</th><th>OpenSearch</th></tr></thead><tbody><tr><td><strong>RAM Usage (idle)</strong></td><td>350 MB</td><td>3.2 GB</td><td>3.8 GB</td></tr><tr><td><strong>RAM Usage (peak)</strong></td><td>600 MB</td><td>5.1 GB</td><td>6.2 GB</td></tr><tr><td><strong>Disk (7 days, 5 GB/day)</strong></td><td>4.2 GB</td><td>28.5 GB</td><td>31.8 GB</td></tr><tr><td><strong>Ingestion rate</strong></td><td>12,000 lines/sec</td><td>8,500 lines/sec</td><td>9,200 lines/sec</td></tr><tr><td><strong>Search latency (7-day range)</strong></td><td>1.8 sec</td><td>0.4 sec</td><td>0.3 sec</td></tr><tr><td><strong>Setup time</strong></td><td>10 minutes</td><td>25 minutes</td><td>35 minutes</td></tr></tbody></table><p>The numbers tell a clear story. Loki uses 6–8x less disk space because it doesn&rsquo;t build full-text indexes. Graylog and OpenSearch trade storage for faster full-text search. For most self-hosted setups, Loki&rsquo;s efficiency wins — but if you need complex full-text queries across millions of log lines, OpenSearch is unmatched.</p><h2 id=which-should-you-choose>Which Should You Choose?</h2><p><strong>Choose Grafana Loki if:</strong></p><ul><li>You already use Grafana for monitoring dashboards</li><li>Storage cost or disk space is a concern</li><li>You prefer label-based querying (similar to Prometheus)</li><li>You run on modest hardware (Raspberry Pi, low-end VPS)</li><li>You want the simplest setup and lowest maintenance overhead</li></ul><p><strong>Choose Graylog if:</strong></p><ul><li>You need a complete log management platform out of the box</li><li>Security and compliance are priorities (built-in RBAC, audit logging)</li><li>You want automatic field extraction without writing parsers</li><li>Your team prefers a dedicated log UI over Grafana</li><li>You need stream-based log routing and processing pipelines</li></ul><p><strong>Choose OpenSearch if:</strong></p><ul><li>You need the most powerful search and aggregation capabilities</li><li>You have complex analytical queries across log data</li><li>You&rsquo;re already familiar with the Elasticsearch ecosystem</li><li>You need machine learning-based anomaly detection</li><li>Your deployment scale justifies the resource requirements</li></ul><h2 id=making-them-work-together>Making Them Work Together</h2><p>There&rsquo;s no rule saying you must pick just one. A common pattern in production is:</p><ul><li><strong>Loki</strong> for day-to-day operational logging — shipping container and system logs for quick debugging</li><li><strong>OpenSearch</strong> for security-relevant logs — authentication events, access logs, and audit trails that need full-text search and long-term retention</li><li><strong>Vector</strong> as a universal log router — it can read from any source and send different log types to different backends based on content</li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># Vector routing: send auth logs to OpenSearch, everything else to Loki</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>transforms</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>route_logs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>type</span><span class=p>:</span><span class=w> </span><span class=l>route</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>inputs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>all_logs</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>route</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>auth</span><span class=p>:</span><span class=w> </span><span class=s1>&#39;.source == &#34;auth&#34; || .source == &#34;sshd&#34;&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>default</span><span class=p>:</span><span class=w> </span><span class=s1>&#39;true&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>sinks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>loki_default</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>type</span><span class=p>:</span><span class=w> </span><span class=l>loki</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>inputs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>route_logs.default</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>endpoint</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;http://loki:3100&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>encoding</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>codec</span><span class=p>:</span><span class=w> </span><span class=l>json</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>opensearch_auth</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>type</span><span class=p>:</span><span class=w> </span><span class=l>opensearch</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>inputs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>route_logs.auth</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>endpoint</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;http://opensearch:9200&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>bulk</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>index</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;auth-%{+yyyy.MM.dd}&#34;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>This hybrid approach gives you Loki&rsquo;s storage efficiency for high-volume routine logs while keeping security-critical data in OpenSearch&rsquo;s powerful full-text search engine.</p><h2 id=retention-and-cleanup>Retention and Cleanup</h2><p>Regardless of which platform you choose, configure retention policies early:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Loki: Set in limits_config (see config above)</span>
+</span></span><span class=line><span class=cl><span class=c1># limits_config.retention_period: 744h</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># OpenSearch: Use Index State Management</span>
+</span></span><span class=line><span class=cl><span class=c1># Create a policy in OpenSearch Dashboards:</span>
+</span></span><span class=line><span class=cl><span class=c1># {</span>
+</span></span><span class=line><span class=cl><span class=c1>#   &#34;policy&#34;: {</span>
+</span></span><span class=line><span class=cl><span class=c1>#     &#34;description&#34;: &#34;Delete logs after 30 days&#34;,</span>
+</span></span><span class=line><span class=cl><span class=c1>#     &#34;default_state&#34;: &#34;hot&#34;,</span>
+</span></span><span class=line><span class=cl><span class=c1>#     &#34;states&#34;: [</span>
+</span></span><span class=line><span class=cl><span class=c1>#       {</span>
+</span></span><span class=line><span class=cl><span class=c1>#         &#34;name&#34;: &#34;hot&#34;,</span>
+</span></span><span class=line><span class=cl><span class=c1>#         &#34;actions&#34;: [],</span>
+</span></span><span class=line><span class=cl><span class=c1>#         &#34;transitions&#34;: [</span>
+</span></span><span class=line><span class=cl><span class=c1>#           {</span>
+</span></span><span class=line><span class=cl><span class=c1>#             &#34;state_name&#34;: &#34;delete&#34;,</span>
+</span></span><span class=line><span class=cl><span class=c1>#             &#34;conditions&#34;: { &#34;min_index_age&#34;: &#34;30d&#34; }</span>
+</span></span><span class=line><span class=cl><span class=c1>#           }</span>
+</span></span><span class=line><span class=cl><span class=c1>#         ]</span>
+</span></span><span class=line><span class=cl><span class=c1>#       },</span>
+</span></span><span class=line><span class=cl><span class=c1>#       {</span>
+</span></span><span class=line><span class=cl><span class=c1>#         &#34;name&#34;: &#34;delete&#34;,</span>
+</span></span><span class=line><span class=cl><span class=c1>#         &#34;actions&#34;: [</span>
+</span></span><span class=line><span class=cl><span class=c1>#           { &#34;delete&#34;: {} }</span>
+</span></span><span class=line><span class=cl><span class=c1>#         ]</span>
+</span></span><span class=line><span class=cl><span class=c1>#       }</span>
+</span></span><span class=line><span class=cl><span class=c1>#     ]</span>
+</span></span><span class=line><span class=cl><span class=c1>#   }</span>
+</span></span><span class=line><span class=cl><span class=c1># }</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Graylog: Set in System &gt; Indices &gt; Index Set Configuration</span>
+</span></span><span class=line><span class=cl><span class=c1># Max number of indices: 30</span>
+</span></span><span class=line><span class=cl><span class=c1># Rotation period: P1D (daily)</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=final-thoughts>Final Thoughts</h2><p>The self-hosted log management landscape in 2026 offers genuinely excellent options at every scale. Loki has become the default choice for Grafana-centric monitoring stacks thanks to its minimal resource footprint. Graylog remains the most complete turnkey solution with its built-in processing pipelines and dashboards. OpenSearch delivers unmatched search power for teams that need deep analytical capabilities.</p><p>All three are free, open-source, and keep your data under your control. The best choice depends on your existing infrastructure, team expertise, and the volume and type of logs you need to manage. Start with Loki if you&rsquo;re unsure — it&rsquo;s the easiest to deploy, cheapest to run, and scales gracefully as your needs grow.</p></div><div id=frame style=width:100%;margin:auto;position:relative;z-index:99998><iframe data-aa=2433958 src='//acceptable.a-ads.com/2433958/?size=Adaptive' style=border:0;padding:0;width:70%;height:auto;overflow:hidden;display:block;margin:auto></iframe></div></article></main><footer class=site-footer><p>Built with <a href=https://gohugo.io>Hugo</a> · <a href=/openswap-guide/index.xml>RSS</a> · <a href=https://github.com/hopkdj>GitHub</a></p><p style=margin-top:8px>&copy; 2026 OpenSwap Guide. All rights reserved.</p></footer></body></html>
