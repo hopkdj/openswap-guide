@@ -1,0 +1,370 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Complete Guide to Self-Hosted Jitsi Meet 2026 | OpenSwap Guide</title>
+<meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, and local AI deployment."><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/openswap-guide/css/main.min.777dc111b5207bf5336e5799477da0b31fb9080306bf98a82d6eceb979cf9737.css></head><body><header class=site-header><div class=header-inner><a href=https://hopkdj.github.io/openswap-guide/ class=logo><div class=logo-icon>H</div>OpenSwap Guide</a><nav><ul class=nav-links><li><a href=/openswap-guide/>Home</a></li><li><a href=/openswap-guide/tags/comparison/>Comparisons</a></li><li><a href=/openswap-guide/tags/guide/>Guides</a></li><li><a href=/openswap-guide/tags/ai/>Local AI</a></li><li><a href=/openswap-guide/index.xml class=nav-rss>Subscribe RSS</a></li></ul></nav></div></header><main><article class=post-single><a href=https://hopkdj.github.io/openswap-guide/ class=back-link>&larr; Back to posts</a><header class=post-single-header><div class=post-single-meta><span class="tag tag-purple">comparison</span>
+<span class="tag tag-green">guide</span>
+<span class="tag tag-blue">self-hosted</span>
+<span>·</span>
+<span>April 12, 2026</span>
+<span>·</span>
+<span>9 min read</span></div><h1 class=post-single-title>Complete Guide to Self-Hosted Jitsi Meet 2026</h1></header><div class=post-single-content><p>Video conferencing has become an essential part of modern communication. Yet most people still rely on proprietary platforms that collect meeting metadata, track participant behavior, and impose artificial limits on call duration and participant counts. Self-hosting your own video conferencing infrastructure puts you back in control.</p><p><a href=https://jitsi.org/>Jitsi Meet</a> is the leading open-source video conferencing platform. It supports unlimited meeting duration, end-to-end encryption, and scales from a home lab to enterprise deployments. This guide walks you through deploying, securing, and scaling Jitsi Meet on your own hardware in 2026.</p><h2 id=why-self-host-your-video-conferencing>Why Self-Host Your Video Conferencing</h2><p>The case for self-hosting video calls is stronger than ever:</p><ul><li><strong>Privacy</strong>: Meeting metadata — who called whom, when, and for how long — stays on your server. No third-party analytics or telemetry.</li><li><strong>No artificial limits</strong>: Free tiers of commercial services cap meetings at 40–60 minutes or limit participants. Self-hosted Jitsi has no such restrictions.</li><li><strong>Full customization</strong>: Brand the interface, integrate with your existing authentication (LDAP, OAuth, SAML), and enable or disable features as needed.</li><li><strong>Compliance</strong>: For organizations subject to GDPR, HIPAA, or other regulations, keeping call data on-premises simplifies audit trails and data retention policies.</li><li><strong>Cost at scale</strong>: Commercial video conferencing platforms charge per-host per month. A single self-hosted server can handle dozens of concurrent meetings for the cost of a few monthly subscriptions.</li></ul><h2 id=architecture-overview>Architecture Overview</h2><p>Before deploying, it helps to understand what makes up a Jitsi installation. The platform is not a single application but a collection of coordinated services:</p><table><thead><tr><th>Component</th><th>Purpose</th></tr></thead><tbody><tr><td><strong>Jitsi Meet (Web UI)</strong></td><td>React-based web interface, served via nginx</td></tr><tr><td><strong>Jitsi Videobridge (JVB)</strong></td><td>SFU (Selective Forwarding Unit) — routes video streams between participants</td></tr><tr><td><strong>Jicofo</strong></td><td>Focus component — manages conference rooms, allocates bridges, handles SIP gateway</td></tr><tr><td><strong>Prosody</strong></td><td>XMPP server — the messaging backbone connecting all components</td></tr><tr><td><strong>Jigasi</strong></td><td>SIP gateway — bridges Jitsi meetings with traditional phone networks</td></tr><tr><td><strong>Jibri</strong></td><td>Recording and streaming service — captures meetings to file or streams to YouTube</td></tr></tbody></table><p>The official Jitsi Docker compose setup packages these components together, making deployment straightforward. For small to medium deployments (up to ~50 concurrent participants), a single server is sufficient. Larger deployments require horizontal scaling with multiple JVB instances.</p><h2 id=quick-start-deploy-jitsi-meet-with-docker>Quick Start: Deploy Jitsi Meet with Docker</h2><p>The fastest way to get a working Jitsi Meet instance is using the official Docker Compose repository. This method handles all inter-service networking and configuration automatically.</p><h3 id=prerequisites>Prerequisites</h3><ul><li>A server with at least <strong>4 vCPUs, 8 GB RAM, and 50 GB storage</strong></li><li>A public domain name pointing to your server&rsquo;s IP</li><li>Docker and Docker Compose installed</li><li>Ports <strong>80, 443, 10000/UDP, and 4443/TCP</strong> open</li></ul><h3 id=step-1-clone-the-repository>Step 1: Clone the Repository</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>git clone https://github.com/jitsi/docker-jitsi-meet.git
+</span></span><span class=line><span class=cl><span class=nb>cd</span> docker-jitsi-meet
+</span></span></code></pre></td></tr></table></div></div><h3 id=step-2-configure-the-environment>Step 2: Configure the Environment</h3><p>Copy the example environment file and generate secure secrets:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>cp env.example .env
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Generate all required secrets in one command</span>
+</span></span><span class=line><span class=cl>./gen-passwords.sh
+</span></span></code></pre></td></tr></table></div></div><p>The <code>gen-passwords.sh</code> script creates random passwords for Jicofo, JVB, Prosody authentication, and Jibri. Never skip this step — using default or empty passwords exposes your deployment to abuse.</p><p>Edit the <code>.env</code> file to set your domain and enable key features:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Domain configuration</span>
+</span></span><span class=line><span class=cl><span class=nv>PUBLIC_URL</span><span class=o>=</span><span class=s2>&#34;meet.yourdomain.com&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Enable authentication to control who can create rooms</span>
+</span></span><span class=line><span class=cl><span class=nv>ENABLE_AUTH</span><span class=o>=</span><span class=m>1</span>
+</span></span><span class=line><span class=cl><span class=nv>AUTH_TYPE</span><span class=o>=</span>internal
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Enable recording (requires Jibri)</span>
+</span></span><span class=line><span class=cl><span class=c1># ENABLE_RECORDING=1</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Enable transcription (experimental)</span>
+</span></span><span class=line><span class=cl><span class=c1># ENABLE_TRANSCRIPTIONS=1</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Enable guest access so anyone can join created rooms</span>
+</span></span><span class=line><span class=cl><span class=nv>ENABLE_GUESTS</span><span class=o>=</span><span class=m>1</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Set your timezone</span>
+</span></span><span class=line><span class=cl><span class=nv>TZ</span><span class=o>=</span>UTC
+</span></span></code></pre></td></tr></table></div></div><h3 id=step-3-create-required-directories>Step 3: Create Required Directories</h3><p>Jitsi Docker requires persistent directories for configuration and recordings:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>mkdir -p ~/.jitsi-meet-cfg/<span class=o>{</span>web,transcripts,prosody/config,prosody/prosody-plugins-custom,jicofo,jvb,jigasi,jibri,log<span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=step-4-launch-the-stack>Step 4: Launch the Stack</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker compose up -d
+</span></span></code></pre></td></tr></table></div></div><p>The first pull will take a few minutes. Once running, verify the containers:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker compose ps
+</span></span></code></pre></td></tr></table></div></div><p>You should see <code>web</code>, <code>jicofo</code>, <code>jvb</code>, and <code>prosody</code> all in a <code>running</code> state.</p><h3 id=step-5-configure-dns-and-https>Step 5: Configure DNS and HTTPS</h3><p>Point your domain&rsquo;s A record to your server&rsquo;s public IP. Then, in the <code>.env</code> file, set:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=nv>ENABLE_LETSENCRYPT</span><span class=o>=</span><span class=m>1</span>
+</span></span><span class=line><span class=cl><span class=nv>LETSENCRYPT_DOMAIN</span><span class=o>=</span>meet.yourdomain.com
+</span></span><span class=line><span class=cl><span class=nv>LETSENCRYPT_EMAIL</span><span class=o>=</span>admin@yourdomain.com
+</span></span></code></pre></td></tr></table></div></div><p>Restart the stack to apply:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker compose down <span class=o>&amp;&amp;</span> docker compose up -d
+</span></span></code></pre></td></tr></table></div></div><p>The nginx container will automatically obtain and renew a Let&rsquo;s Encrypt certificate.</p><h2 id=authentication-and-access-control>Authentication and Access Control</h2><p>A bare Jitsi installation allows anyone to create meetings. For a production deployment, you need authentication.</p><h3 id=internal-authentication-built-in>Internal Authentication (Built-in)</h3><p>The simplest approach uses Prosody&rsquo;s internal user database:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># In .env file</span>
+</span></span><span class=line><span class=cl><span class=nv>ENABLE_AUTH</span><span class=o>=</span><span class=m>1</span>
+</span></span><span class=line><span class=cl><span class=nv>AUTH_TYPE</span><span class=o>=</span>internal
+</span></span><span class=line><span class=cl><span class=nv>ENABLE_GUESTS</span><span class=o>=</span><span class=m>1</span>
+</span></span></code></pre></td></tr></table></div></div><p>Create user accounts via the Prosody container:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker compose <span class=nb>exec</span> prosody prosodyctl --config /config/prosody.cfg.lua register youruser meet.jitsi yourpassword
+</span></span></code></pre></td></tr></table></div></div><p>With <code>ENABLE_GUESTS=1</code>, authenticated users can create rooms, while unauthenticated guests can join them. This is the recommended setup for most teams.</p><h3 id=ldap-authentication>LDAP Authentication</h3><p>For organizations with existing directory infrastructure, Jitsi supports LDAP:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=nv>ENABLE_AUTH</span><span class=o>=</span><span class=m>1</span>
+</span></span><span class=line><span class=cl><span class=nv>AUTH_TYPE</span><span class=o>=</span>ldap
+</span></span><span class=line><span class=cl><span class=nv>LDAP_URL</span><span class=o>=</span>ldap://ldap.yourdomain.com:389
+</span></span><span class=line><span class=cl><span class=nv>LDAP_BASE</span><span class=o>=</span><span class=nv>DC</span><span class=o>=</span>example,DC<span class=o>=</span>com
+</span></span><span class=line><span class=cl><span class=nv>LDAP_BINDDN</span><span class=o>=</span><span class=nv>CN</span><span class=o>=</span>admin,DC<span class=o>=</span>example,DC<span class=o>=</span>com
+</span></span><span class=line><span class=cl><span class=nv>LDAP_BINDPW</span><span class=o>=</span>adminpassword
+</span></span><span class=line><span class=cl><span class=nv>LDAP_FILTER</span><span class=o>=(</span><span class=nv>memberOf</span><span class=o>=</span><span class=nv>CN</span><span class=o>=</span>jitsi-users,OU<span class=o>=</span>Groups,DC<span class=o>=</span>example,DC<span class=o>=</span>com<span class=o>)</span>
+</span></span><span class=line><span class=cl><span class=nv>LDAP_AUTH_METHOD</span><span class=o>=</span><span class=nb>bind</span>
+</span></span><span class=line><span class=cl><span class=nv>LDAP_VERSION</span><span class=o>=</span><span class=m>3</span>
+</span></span><span class=line><span class=cl><span class=nv>LDAP_USE_TLS</span><span class=o>=</span><span class=m>1</span>
+</span></span><span class=line><span class=cl><span class=nv>LDAP_START_TLS</span><span class=o>=</span><span class=m>1</span>
+</span></span><span class=line><span class=cl><span class=nv>LDAP_TLS_CIPHERS</span><span class=o>=</span>SECURE256
+</span></span><span class=line><span class=cl><span class=nv>LDAP_TLS_CHECK_PEER</span><span class=o>=</span><span class=m>1</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=jwttoken-authentication>JWT/Token Authentication</h3><p>For programmatic access and integration with existing identity providers:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=nv>ENABLE_AUTH</span><span class=o>=</span><span class=m>1</span>
+</span></span><span class=line><span class=cl><span class=nv>AUTH_TYPE</span><span class=o>=</span>jwt
+</span></span><span class=line><span class=cl><span class=nv>JWT_APP_ID</span><span class=o>=</span>your-app-id
+</span></span><span class=line><span class=cl><span class=nv>JWT_APP_SECRET</span><span class=o>=</span>your-app-secret
+</span></span><span class=line><span class=cl><span class=nv>JWT_ACCEPTED_ISSUERS</span><span class=o>=</span>your-app-id
+</span></span><span class=line><span class=cl><span class=nv>JWT_ACCEPTED_AUDIENCES</span><span class=o>=</span>your-app-id
+</span></span><span class=line><span class=cl><span class=nv>JWT_TOKEN_AUTH_MODULE</span><span class=o>=</span>token_verification
+</span></span></code></pre></td></tr></table></div></div><h2 id=security-hardening>Security Hardening</h2><p>A self-hosted service is only as secure as its configuration. Apply these hardening measures:</p><h3 id=1-enable-room-passwords>1. Enable Room Passwords</h3><p>Require a password for every meeting by editing the Prosody configuration:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-lua data-lang=lua><span class=line><span class=cl><span class=c1>-- In ~/.jitsi-meet-cfg/prosody/config/conf.d/jitsi-meet.cfg.lua</span>
+</span></span><span class=line><span class=cl><span class=n>Component</span> <span class=s2>&#34;conference.meet.jitsi&#34;</span> <span class=s2>&#34;muc&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=n>modules_enabled</span> <span class=o>=</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;muc_password_required&#34;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=n>muc_room_locking</span> <span class=o>=</span> <span class=kc>true</span>
+</span></span><span class=line><span class=cl>    <span class=n>muc_room_default_public_jids</span> <span class=o>=</span> <span class=kc>true</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=2-configure-firewall-rules>2. Configure Firewall Rules</h3><p>Only expose the ports Jitsi actually needs:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>ufw allow 80/tcp    <span class=c1># HTTP (for Let&#39;s Encrypt)</span>
+</span></span><span class=line><span class=cl>ufw allow 443/tcp   <span class=c1># HTTPS (web interface)</span>
+</span></span><span class=line><span class=cl>ufw allow 10000/udp <span class=c1># JVB media traffic</span>
+</span></span><span class=line><span class=cl>ufw allow 4443/tcp  <span class=c1># JVB fallback (TCP)</span>
+</span></span><span class=line><span class=cl>ufw <span class=nb>enable</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=3-set-up-fail2ban>3. Set Up Fail2Ban</h3><p>Protect against brute-force attacks on the authentication system:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install fail2ban on the host</span>
+</span></span><span class=line><span class=cl>apt install fail2ban -y
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Create jail for Jitsi Prosody</span>
+</span></span><span class=line><span class=cl>cat &gt; /etc/fail2ban/jail.local <span class=s>&lt;&lt; &#39;EOF&#39;
+</span></span></span><span class=line><span class=cl><span class=s>[jitsi-prosody]
+</span></span></span><span class=line><span class=cl><span class=s>enabled = true
+</span></span></span><span class=line><span class=cl><span class=s>filter = jitsi-prosody
+</span></span></span><span class=line><span class=cl><span class=s>logpath = /var/log/jitsi/prosody.log
+</span></span></span><span class=line><span class=cl><span class=s>maxretry = 5
+</span></span></span><span class=line><span class=cl><span class=s>bantime = 3600
+</span></span></span><span class=line><span class=cl><span class=s>findtime = 600
+</span></span></span><span class=line><span class=cl><span class=s>EOF</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=4-disable-unused-features>4. Disable Unused Features</h3><p>Minimize your attack surface by disabling services you don&rsquo;t need:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># In .env, ensure these are NOT set:</span>
+</span></span><span class=line><span class=cl><span class=c1># ENABLE_TRANSCRIPTIONS=1   # Requires external API</span>
+</span></span><span class=line><span class=cl><span class=c1># ENABLE_RECORDING=1         # Requires Jibri, additional resources</span>
+</span></span><span class=line><span class=cl><span class=c1># ENABLE_XMPP_WEBSOCKET=0    # Disable if not needed</span>
+</span></span><span class=line><span class=cl><span class=c1># ENABLE_SCTP=0              # Disable data channels if unused</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=5-secure-the-host-os>5. Secure the Host OS</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Keep the system updated</span>
+</span></span><span class=line><span class=cl>apt update <span class=o>&amp;&amp;</span> apt upgrade -y
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Install unattended upgrades</span>
+</span></span><span class=line><span class=cl>apt install unattended-upgrades -y
+</span></span><span class=line><span class=cl>dpkg-reconfigure -plow unattended-upgrades
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Disable root SSH login</span>
+</span></span><span class=line><span class=cl>sed -i <span class=s1>&#39;s/^#\?PermitRootLogin.*/PermitRootLogin no/&#39;</span> /etc/ssh/sshd_config
+</span></span><span class=line><span class=cl>systemctl restart sshd
+</span></span></code></pre></td></tr></table></div></div><h2 id=scaling-beyond-a-single-server>Scaling Beyond a Single Server</h2><p>The default Docker setup works well for ~30–50 concurrent participants. Beyond that, you need horizontal scaling.</p><h3 id=multiple-videobridges>Multiple Videobridges</h3><p>The Videobridge (JVB) is the component that benefits most from horizontal scaling. You can run multiple JVB instances behind a single Jicofo:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose.override.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>jvb2</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>&lt;&lt;</span><span class=p>:</span><span class=w> </span><span class=cp>*jvb</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>JVB_PORT=10001</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>JVB_TCP_PORT=4444</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>JVB_WS_SERVER_ID=jvb2.meet.jitsi</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>JVB_WS_DOMAIN=meet.jitsi</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s1>&#39;10001:10001/udp&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s1>&#39;4444:4444/tcp&#39;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Jicofo automatically load-balances conferences across available bridges.</p><h3 id=using-an-external-turn-server>Using an External TURN Server</h3><p>For participants behind strict NATs, a TURN server relays media traffic. Coturn is the standard choice:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install coturn</span>
+</span></span><span class=line><span class=cl>apt install coturn -y
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Configure in /etc/turnserver.conf</span>
+</span></span><span class=line><span class=cl>listening-port<span class=o>=</span><span class=m>3478</span>
+</span></span><span class=line><span class=cl>tls-listening-port<span class=o>=</span><span class=m>5349</span>
+</span></span><span class=line><span class=cl>external-ip<span class=o>=</span>YOUR_PUBLIC_IP
+</span></span><span class=line><span class=cl><span class=nv>realm</span><span class=o>=</span>meet.yourdomain.com
+</span></span><span class=line><span class=cl>server-name<span class=o>=</span>meet.yourdomain.com
+</span></span><span class=line><span class=cl>lt-cred-mech
+</span></span><span class=line><span class=cl><span class=nv>user</span><span class=o>=</span>jitsi:your-turn-secret
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Start the service</span>
+</span></span><span class=line><span class=cl>systemctl <span class=nb>enable</span> coturn
+</span></span><span class=line><span class=cl>systemctl start coturn
+</span></span></code></pre></td></tr></table></div></div><p>Then add to your Jitsi <code>.env</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=nv>ENABLE_TURNS</span><span class=o>=</span><span class=m>1</span>
+</span></span><span class=line><span class=cl><span class=nv>TURNS_HOST</span><span class=o>=</span>meet.yourdomain.com
+</span></span><span class=line><span class=cl><span class=nv>TURNS_PORT</span><span class=o>=</span><span class=m>5349</span>
+</span></span><span class=line><span class=cl><span class=nv>TURN_CREDENTIALS</span><span class=o>=</span>jitsi:your-turn-secret
+</span></span></code></pre></td></tr></table></div></div><h2 id=monitoring-and-maintenance>Monitoring and Maintenance</h2><h3 id=health-checks>Health Checks</h3><p>Monitor your deployment with built-in Jitsi health endpoints:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Check JVB health</span>
+</span></span><span class=line><span class=cl>curl http://localhost:8080/about/health
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Check Jicofo health</span>
+</span></span><span class=line><span class=cl>curl http://localhost:8888/about/health
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Check web interface</span>
+</span></span><span class=line><span class=cl>curl -o /dev/null -s -w <span class=s2>&#34;%{http_code}&#34;</span> https://meet.yourdomain.com
+</span></span></code></pre></td></tr></table></div></div><h3 id=automated-backups>Automated Backups</h3><p>Back up your configuration and user data regularly:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=cp>#!/bin/bash
+</span></span></span><span class=line><span class=cl><span class=cp></span><span class=c1># backup-jitsi.sh</span>
+</span></span><span class=line><span class=cl><span class=nv>BACKUP_DIR</span><span class=o>=</span><span class=s2>&#34;/opt/backups/jitsi/</span><span class=k>$(</span>date +%Y%m%d<span class=k>)</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl>mkdir -p <span class=s2>&#34;</span><span class=nv>$BACKUP_DIR</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Backup configuration</span>
+</span></span><span class=line><span class=cl>cp -r ~/.jitsi-meet-cfg/prosody/config <span class=s2>&#34;</span><span class=nv>$BACKUP_DIR</span><span class=s2>/prosody-config&#34;</span>
+</span></span><span class=line><span class=cl>cp -r ~/.jitsi-meet-cfg/jicofo <span class=s2>&#34;</span><span class=nv>$BACKUP_DIR</span><span class=s2>/jicofo&#34;</span>
+</span></span><span class=line><span class=cl>cp .env <span class=s2>&#34;</span><span class=nv>$BACKUP_DIR</span><span class=s2>/env-backup&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Backup user accounts (Prosody internal auth)</span>
+</span></span><span class=line><span class=cl>docker compose <span class=nb>exec</span> prosody prosodyctl dump-users &gt;&gt; <span class=s2>&#34;</span><span class=nv>$BACKUP_DIR</span><span class=s2>/users.txt&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Compress</span>
+</span></span><span class=line><span class=cl>tar czf <span class=s2>&#34;</span><span class=nv>$BACKUP_DIR</span><span class=s2>.tar.gz&#34;</span> -C /opt/backups/jitsi <span class=s2>&#34;</span><span class=k>$(</span>date +%Y%m%d<span class=k>)</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl>rm -rf <span class=s2>&#34;</span><span class=nv>$BACKUP_DIR</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Keep last 30 days</span>
+</span></span><span class=line><span class=cl>find /opt/backups/jitsi -name <span class=s2>&#34;*.tar.gz&#34;</span> -mtime +30 -delete
+</span></span></code></pre></td></tr></table></div></div><p>Add this to cron for daily backups:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=m>0</span> <span class=m>2</span> * * * /opt/scripts/backup-jitsi.sh
+</span></span></code></pre></td></tr></table></div></div><h3 id=updating-jitsi>Updating Jitsi</h3><p>The Docker compose approach makes updates straightforward:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=nb>cd</span> docker-jitsi-meet
+</span></span><span class=line><span class=cl>git pull
+</span></span><span class=line><span class=cl>docker compose pull
+</span></span><span class=line><span class=cl>docker compose up -d
+</span></span></code></pre></td></tr></table></div></div><p>Always check the <a href=https://github.com/jitsi/docker-jitsi-meet/releases>release notes</a> before updating, as breaking changes occasionally require manual migration steps.</p><h2 id=jitsi-meet-vs-alternatives>Jitsi Meet vs. Alternatives</h2><p>While Jitsi is the most mature option, several other self-hosted video conferencing solutions exist:</p><table><thead><tr><th>Feature</th><th>Jitsi Meet</th><th>BigBlueButton</th><th>LiveKit</th></tr></thead><tbody><tr><td><strong>License</strong></td><td>Apache 2.0</td><td>LGPL 3.0</td><td>AGPL 3.0</td></tr><tr><td><strong>Protocol</strong></td><td>WebRTC (SFU)</td><td>WebRTC (SFU)</td><td>WebRTC (SFU)</td></tr><tr><td><strong>Setup Complexity</strong></td><td>Moderate</td><td>High</td><td>Moderate</td></tr><tr><td><strong>Max Participants</strong></td><td>100+ (with scaling)</td><td>250+</td><td>1000+</td></tr><tr><td><strong>Recording</strong></td><td>Via Jibri</td><td>Built-in</td><td>Via Egress</td></tr><tr><td><strong>Whiteboard</strong></td><td>Via Etherpad</td><td>Built-in</td><td>Via LiveKit Agents</td></tr><tr><td><strong>Screen Sharing</strong></td><td>Yes</td><td>Yes</td><td>Yes</td></tr><tr><td><strong>Mobile Apps</strong></td><td>Official iOS/Android</td><td>Official iOS/Android</td><td>SDK available</td></tr><tr><td><strong>API/SDK</strong></td><td>IFrame API</td><td>API + GraphQL</td><td>Go, JS, Swift, Kotlin SDKs</td></tr><tr><td><strong>Best For</strong></td><td>Quick meetings, general use</td><td>Education, webinars</td><td>Developer-heavy apps</td></tr></tbody></table><p><strong>Choose Jitsi Meet</strong> if you need a drop-in replacement for Zoom/Google Meet that&rsquo;s quick to deploy and works well for general-purpose meetings.</p><p><strong>Choose BigBlueButton</strong> if your primary use case is education — it includes built-in polling, breakout rooms, whiteboard, and shared notes.</p><p><strong>Choose LiveKit</strong> if you&rsquo;re building a custom application and need SDK-level control over the WebRTC stack.</p><h2 id=troubleshooting-common-issues>Troubleshooting Common Issues</h2><h3 id=participants-cant-see-hear-each-other>Participants Can&rsquo;t See/ Hear Each Other</h3><p>This is almost always a network/firewall issue. Port 10000/UDP must be open:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Verify UDP port is reachable</span>
+</span></span><span class=line><span class=cl>nc -vuz your.server.ip <span class=m>10000</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Check JVB is listening</span>
+</span></span><span class=line><span class=cl>ss -ulnp <span class=p>|</span> grep <span class=m>10000</span>
+</span></span></code></pre></td></tr></table></div></div><p>If UDP is blocked by the network, enable TCP fallback:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># In .env</span>
+</span></span><span class=line><span class=cl><span class=nv>ENABLE_TCP_HARVESTER</span><span class=o>=</span><span class=m>1</span>
+</span></span><span class=line><span class=cl><span class=nv>JVB_TCP_HARVESTER_PORT</span><span class=o>=</span><span class=m>4443</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=high-cpu-usage>High CPU Usage</h3><p>Video encoding is CPU-intensive. If your server struggles:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Limit video quality in .env</span>
+</span></span><span class=line><span class=cl><span class=nv>DEPLOYMENTINFO_ENVIRONMENT</span><span class=o>=</span>production
+</span></span><span class=line><span class=cl><span class=nv>VIDEOQUALITY_PREFERRED_CODEC</span><span class=o>=</span>VP8
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Set max resolution</span>
+</span></span><span class=line><span class=cl><span class=nv>VIDEOQUALITY_ENFORCE_PREFERRED_CODEC</span><span class=o>=</span><span class=nb>true</span>
+</span></span></code></pre></td></tr></table></div></div><p>Consider upgrading to a server with more vCPUs or enabling hardware encoding if your CPU supports it.</p><h3 id=recording-fails-with-jibri>Recording Fails with Jibri</h3><p>Jibri requires Chrome and a virtual display. Common fixes:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Check Jibri logs</span>
+</span></span><span class=line><span class=cl>docker compose logs jibri
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Verify Chrome is installed in the container</span>
+</span></span><span class=line><span class=cl>docker compose <span class=nb>exec</span> jibri google-chrome --version
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Ensure the /dev/shm size is sufficient (add to docker-compose.yml)</span>
+</span></span><span class=line><span class=cl><span class=c1># shm_size: &#39;2gb&#39;</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=final-thoughts>Final Thoughts</h2><p>Self-hosting Jitsi Meet in 2026 is more practical than ever. The Docker compose setup handles the complexity of coordinating multiple services, and a modest VPS can comfortably handle small team meetings. The key advantages — no meeting time limits, full data ownership, and deep customization — make it a compelling alternative to commercial platforms.</p><p>For most users, the standard Docker deployment with internal authentication, Let&rsquo;s Encrypt TLS, and a properly configured firewall provides everything needed for secure, private video conferencing. Start small, monitor your resource usage, and scale horizontally as your participant count grows.</p><p>Your communications infrastructure is worth owning. With a few Docker commands and a domain name, you can run a professional-grade video conferencing platform that answers to no one but you.</p></div><div id=frame style=width:100%;margin:auto;position:relative;z-index:99998><iframe data-aa=2433958 src='//acceptable.a-ads.com/2433958/?size=Adaptive' style=border:0;padding:0;width:70%;height:auto;overflow:hidden;display:block;margin:auto></iframe></div></article></main><footer class=site-footer><p>Built with <a href=https://gohugo.io>Hugo</a> · <a href=/openswap-guide/index.xml>RSS</a> · <a href=https://github.com/hopkdj>GitHub</a></p><p style=margin-top:8px>&copy; 2026 OpenSwap Guide. All rights reserved.</p></footer></body></html>
