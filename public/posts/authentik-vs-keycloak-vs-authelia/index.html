@@ -1,0 +1,648 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted Identity & SSO 2026: Authentik vs Keycloak vs Authelia | OpenSwap Guide</title>
+<meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, and local AI deployment."><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/openswap-guide/css/main.min.777dc111b5207bf5336e5799477da0b31fb9080306bf98a82d6eceb979cf9737.css><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://hopkdj.github.io/openswap-guide/ class=logo><div class=logo-icon>H</div>OpenSwap Guide</a><nav><ul class=nav-links><li><a href=/openswap-guide/>Home</a></li><li><a href=/openswap-guide/tags/comparison/>Comparisons</a></li><li><a href=/openswap-guide/tags/guide/>Guides</a></li><li><a href=/openswap-guide/tags/ai/>Local AI</a></li><li><a href=/openswap-guide/index.xml class=nav-rss>Subscribe RSS</a></li></ul></nav></div></header><main><article class=post-single><a href=https://hopkdj.github.io/openswap-guide/ class=back-link>&larr; Back to posts</a><header class=post-single-header><div class=post-single-meta><span class="tag tag-purple">comparison</span>
+<span class="tag tag-green">guide</span>
+<span class="tag tag-blue">self-hosted</span>
+<span>·</span>
+<span>April 12, 2026</span>
+<span>·</span>
+<span>17 min read</span></div><h1 class=post-single-title>Self-Hosted Identity & SSO 2026: Authentik vs Keycloak vs Authelia</h1></header><div class=post-single-content><h2 id=why-self-host-your-identity-provider>Why Self-Host Your Identity Provider?</h2><p>Identity is the new perimeter. Every application, API, and service in your infrastructure needs to know who is calling it and what they are allowed to do. Relying on third-party identity providers — Google, Microsoft Entra ID, Okta — means handing over the master key to your digital ecosystem. You depend on their uptime, their pricing changes, their data retention policies, and their increasingly aggressive telemetry collection.</p><p>Self-hosting an identity provider puts authentication and authorization entirely under your control. Your user data never leaves your servers. You define the password policies, the session lifetimes, the multi-factor requirements, and the audit trail. For homelab users, it means a single sign-on experience across dozens of services without relying on external accounts. For organizations, it means compliance with data residency laws, elimination of per-user SaaS fees, and the ability to integrate with internal directories and HR systems.</p><p>The self-hosted identity landscape in 2026 is dominated by three projects, each with a distinct philosophy: <strong>Authentik</strong>, <strong>Keycloak</strong>, and <strong>Authelia</strong>. They range from lightweight reverse-proxy-based auth to full-featured enterprise identity platforms. This guide compares all three across architecture, protocols, deployment complexity, and usability — and provides production-ready Docker configurations so you can deploy the right solution for your stack.</p><hr><h2 id=the-contenders-at-a-glance>The Contenders at a Glance</h2><table><thead><tr><th>Feature</th><th>Authentik</th><th>Keycloak</th><th>Authelia</th></tr></thead><tbody><tr><td><strong>Language / Stack</strong></td><td>Python (Django) + Go workers</td><td>Java (Quarkus)</td><td>Go</td></tr><tr><td><strong>Database</strong></td><td>PostgreSQL</td><td>PostgreSQL, MySQL/MariaDB, MSSQL</td><td>SQLite, MySQL, PostgreSQL</td></tr><tr><td><strong>License</strong></td><td>Mozilla Public License 2.0</td><td>Apache 2.0</td><td>Apache 2.0</td></tr><tr><td><strong>Protocols</strong></td><td>OIDC, OAuth2, SAML2, LDAP, SCIM</td><td>OIDC, OAuth2, SAML2, LDAP, Kerberos</td><td>OIDC, OAuth2 (limited), headers-based</td></tr><tr><td><strong>Multi-Factor Auth</strong></td><td>TOTP, WebAuthn, Duo, static TOTP, SMS</td><td>TOTP, WebAuthn, OTP, SMS, email</td><td>TOTP, WebAuthn, Duo, mobile push</td></tr><tr><td><strong>Social / External Login</strong></td><td>Google, Microsoft, Apple, Discord, GitHub, GitLab, OIDC, SAML</td><td>Google, GitHub, Facebook, Twitter, LinkedIn, OIDC, SAML, LDAP</td><td>Limited — mainly internal auth</td></tr><tr><td><strong>User Self-Service</strong></td><td>Full portal (password reset, device management)</td><td>Full account console</td><td>Minimal — no self-service portal</td></tr><tr><td><strong>Admin UI</strong></td><td>Modern single-page app</td><td>Keycloak Admin Console (recently redesigned)</td><td>YAML configuration + minimal web UI</td></tr><tr><td><strong>High Availability</strong></td><td>Multi-instance with shared PostgreSQL</td><td>Multi-node cluster mode</td><td>Single instance (designed for simplicity)</td></tr><tr><td><strong>Resource Footprint</strong></td><td>~500 MB RAM (minimal)</td><td>~1–2 GB RAM (minimal)</td><td>~50–100 MB RAM</td></tr><tr><td><strong>Best For</strong></td><td>Homelab to mid-size org (500+ users)</td><td>Enterprise, large organizations, compliance</td><td>Lightweight homelab, reverse-proxy auth</td></tr></tbody></table><hr><h2 id=authentik-the-modern-all-rounder>Authentik: The Modern All-Rounder</h2><p>Authentik has become the go-to identity provider for homelab enthusiasts and small-to-medium organizations since its initial release. It balances enterprise-grade protocol support with a modern, intuitive interface that does not require a degree in identity management to operate.</p><h3 id=key-strengths>Key Strengths</h3><p><strong>Protocol coverage.</strong> Authentik supports OIDC, OAuth2, SAML2, LDAP, and SCIM out of the box. This means it integrates with virtually any application — from Nextcloud and Gitea to Grafana and Kubernetes. The SAML2 support is particularly useful for legacy enterprise applications that do not support modern OIDC flows.</p><p><strong>Flexible authentication flows.</strong> Authentik uses a visual flow designer that lets you chain authentication stages together. You can require MFA only for external networks, skip it for trusted IP ranges, or inject additional verification steps based on user risk scores. This stage-based architecture is more granular than what Keycloak offers through its native configuration.</p><p><strong>Built-in proxy provider.</strong> For applications that lack native OIDC or SAML support, Authentik can act as a forward authentication proxy. It injects user identity into HTTP headers (<code>X-Authentik-Username</code>, <code>X-Authentik-Groups</code>) that the backend application reads. This bridges the gap between modern identity protocols and legacy apps without requiring a separate reverse proxy.</p><p><strong>SCIM provisioning.</strong> Authentik supports SCIM 2.0 for automated user provisioning and de-provisioning. When integrated with an external HR system or directory, user accounts are created, updated, and disabled automatically — critical for organizations with frequent onboarding and offboarding cycles.</p><h3 id=docker-deployment>Docker Deployment</h3><p>Authentik consists of three components: a PostgreSQL database, the core server, and a worker process that handles background tasks (email delivery, cleanup, event processing).</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span><span class=lnt>62
+</span><span class=lnt>63
+</span><span class=lnt>64
+</span><span class=lnt>65
+</span><span class=lnt>66
+</span><span class=lnt>67
+</span><span class=lnt>68
+</span><span class=lnt>69
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose.yml for Authentik</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>postgresql</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>docker.io/library/postgres:17-alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_USER</span><span class=p>:</span><span class=w> </span><span class=l>authentik</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_PASSWORD</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;change-me-to-a-secure-password&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_DB</span><span class=p>:</span><span class=w> </span><span class=l>authentik</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>authentik-db:/var/lib/postgresql/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>healthcheck</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>test</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;CMD-SHELL&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;pg_isready -U authentik&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>interval</span><span class=p>:</span><span class=w> </span><span class=l>10s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>timeout</span><span class=p>:</span><span class=w> </span><span class=l>5s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>retries</span><span class=p>:</span><span class=w> </span><span class=m>5</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>redis</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>docker.io/library/redis:7-alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>authentik-redis:/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>server</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>ghcr.io/goauthentik/server:2025.4.2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=l>server</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>AUTHENTIK_REDIS__HOST</span><span class=p>:</span><span class=w> </span><span class=l>redis</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>AUTHENTIK_POSTGRESQL__HOST</span><span class=p>:</span><span class=w> </span><span class=l>postgresql</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>AUTHENTIK_POSTGRESQL__USER</span><span class=p>:</span><span class=w> </span><span class=l>authentik</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>AUTHENTIK_POSTGRESQL__PASSWORD</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;change-me-to-a-secure-password&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>AUTHENTIK_POSTGRESQL__NAME</span><span class=p>:</span><span class=w> </span><span class=l>authentik</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>AUTHENTIK_SECRET_KEY</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;generate-a-50-char-random-string-here&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./media:/media</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./custom-templates:/templates</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;9000:9000&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>postgresql</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>redis</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>worker</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>ghcr.io/goauthentik/server:2025.4.2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=l>worker</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>AUTHENTIK_REDIS__HOST</span><span class=p>:</span><span class=w> </span><span class=l>redis</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>AUTHENTIK_POSTGRESQL__HOST</span><span class=p>:</span><span class=w> </span><span class=l>postgresql</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>AUTHENTIK_POSTGRESQL__USER</span><span class=p>:</span><span class=w> </span><span class=l>authentik</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>AUTHENTIK_POSTGRESQL__PASSWORD</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;change-me-to-a-secure-password&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>AUTHENTIK_POSTGRESQL__NAME</span><span class=p>:</span><span class=w> </span><span class=l>authentik</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>AUTHENTIK_SECRET_KEY</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;generate-a-50-char-random-string-here&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>user</span><span class=p>:</span><span class=w> </span><span class=l>root</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/var/run/docker.sock:/var/run/docker.sock</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./media:/media</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./certs:/certs</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./custom-templates:/templates</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>postgresql</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>redis</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>authentik-db</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>local</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>authentik-redis</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>local</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Generate a secure secret key before deploying:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>openssl rand -base64 <span class=m>60</span>
+</span></span></code></pre></td></tr></table></div></div><p>After starting the stack with <code>docker compose up -d</code>, visit <code>http://your-server:9000/if/flow/initial-setup/</code> to complete the initial configuration wizard. The setup creates your admin account and configures the default authentication flow.</p><h3 id=configuring-an-oidc-application>Configuring an OIDC Application</h3><p>Once Authentik is running, adding an application is straightforward:</p><ol><li>Navigate to <strong>Applications → Providers</strong> and create an <strong>OAuth2/OpenID Provider</strong>.</li><li>Set the <strong>Authorization flow</strong> to <code>default-provider-authorization-implicit-consent</code> (for interactive apps) or <code>implicit-consent</code> (for headless/automated flows).</li><li>Configure <strong>Redirect URIs/Origins</strong> — these must exactly match your application&rsquo;s callback URL.</li><li>Navigate to <strong>Applications → Applications</strong> and create a new application, linking it to the provider you just created.</li><li>The provider generates a <strong>Client ID</strong> and <strong>Client Secret</strong> that you paste into your application&rsquo;s configuration.</li></ol><p>For a Grafana integration, the Grafana configuration looks like this:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=k>[auth.generic_oauth]</span>
+</span></span><span class=line><span class=cl><span class=na>enabled</span> <span class=o>=</span> <span class=s>true</span>
+</span></span><span class=line><span class=cl><span class=na>name</span> <span class=o>=</span> <span class=s>Authentik</span>
+</span></span><span class=line><span class=cl><span class=na>client_id</span> <span class=o>=</span> <span class=s>your-client-id</span>
+</span></span><span class=line><span class=cl><span class=na>client_secret</span> <span class=o>=</span> <span class=s>your-client-secret</span>
+</span></span><span class=line><span class=cl><span class=na>scopes</span> <span class=o>=</span> <span class=s>openid profile email</span>
+</span></span><span class=line><span class=cl><span class=na>auth_url</span> <span class=o>=</span> <span class=s>https://auth.yourdomain.com/application/o/authorize/</span>
+</span></span><span class=line><span class=cl><span class=na>token_url</span> <span class=o>=</span> <span class=s>https://auth.yourdomain.com/application/o/token/</span>
+</span></span><span class=line><span class=cl><span class=na>api_url</span> <span class=o>=</span> <span class=s>https://auth.yourdomain.com/application/o/userinfo/</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=when-authentik-shines>When Authentik Shines</h3><p>Authentik is the best choice when you need broad protocol support with a modern interface and reasonable resource requirements. It handles the full lifecycle — user registration, authentication, authorization, provisioning, and audit logging — without requiring additional components. The flow designer gives you flexibility that neither Keycloak nor Authelia can match for conditional authentication logic.</p><p>Its primary limitation is that it is still evolving rapidly. While the core functionality is stable, some advanced enterprise features (fine-grained SCIM attribute mapping, complex SAML attribute transformations) may require workarounds or custom stages.</p><hr><h2 id=keycloak-the-enterprise-standard>Keycloak: The Enterprise Standard</h2><p>Keycloak (now maintained by Red Hat under the upstream project) is the most feature-complete open-source identity provider available. It has been the foundation of enterprise identity infrastructure for over a decade and remains the reference implementation for many OIDC and SAML features.</p><h3 id=key-strengths-1>Key Strengths</h3><p><strong>Unmatched protocol depth.</strong> Keycloak supports OIDC, OAuth2, SAML 2.0, LDAP, and Kerberos. Its SAML implementation is the most thoroughly tested in the open-source ecosystem, making it the natural choice for organizations with legacy enterprise applications that require SAML assertions with specific attribute formats, name ID policies, or encryption requirements.</p><p><strong>User federation.</strong> Keycloak can synchronize users from external LDAP directories (Active Directory, OpenLDAP), Kerberos realms, and custom user storage SPIs. This means you can gradually migrate from an existing identity infrastructure without requiring users to create new accounts. The LDAP sync can run on a schedule or in real-time, and Keycloak supports both read-through and write-through modes.</p><p><strong>Fine-grained authorization.</strong> Keycloak&rsquo;s Authorization Services implement UMA 2.0 (User-Managed Access), allowing resource owners to define fine-grained permissions on individual resources. This goes well beyond simple role-based access control — you can define policies based on user attributes, time of day, IP address, and even custom JavaScript expressions.</p><p><strong>Built-in account management.</strong> Users get a self-service portal where they can manage their profile, configure MFA devices, view active sessions, review login history, and grant or revoke application consents. This reduces the administrative burden on IT teams.</p><p><strong>Admin REST API.</strong> Every operation available in the admin console is also accessible via a comprehensive REST API. This enables automation, infrastructure-as-code management, and integration with external provisioning systems.</p><h3 id=docker-deployment-1>Docker Deployment</h3><p>Keycloak runs on the Quarkus framework and requires a relational database. The minimal production deployment:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose.yml for Keycloak</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>postgresql</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>docker.io/library/postgres:17-alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_USER</span><span class=p>:</span><span class=w> </span><span class=l>keycloak</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_PASSWORD</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;change-me-to-a-secure-password&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_DB</span><span class=p>:</span><span class=w> </span><span class=l>keycloak</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>keycloak-db:/var/lib/postgresql/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>healthcheck</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>test</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;CMD-SHELL&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;pg_isready -U keycloak&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>interval</span><span class=p>:</span><span class=w> </span><span class=l>10s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>timeout</span><span class=p>:</span><span class=w> </span><span class=l>5s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>retries</span><span class=p>:</span><span class=w> </span><span class=m>5</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>keycloak</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>quay.io/keycloak/keycloak:26.2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=l>start</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>KC_DB</span><span class=p>:</span><span class=w> </span><span class=l>postgres</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>KC_DB_URL</span><span class=p>:</span><span class=w> </span><span class=l>jdbc:postgresql://postgresql:5432/keycloak</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>KC_DB_USERNAME</span><span class=p>:</span><span class=w> </span><span class=l>keycloak</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>KC_DB_PASSWORD</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;change-me-to-a-secure-password&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>KC_HOSTNAME</span><span class=p>:</span><span class=w> </span><span class=l>auth.yourdomain.com</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>KC_HOSTNAME_STRICT</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;true&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>KC_PROXY</span><span class=p>:</span><span class=w> </span><span class=l>edge</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>KEYCLOAK_ADMIN</span><span class=p>:</span><span class=w> </span><span class=l>admin</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>KEYCLOAK_ADMIN_PASSWORD</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;change-me-to-a-secure-admin-password&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>KC_FEATURES</span><span class=p>:</span><span class=w> </span><span class=l>token-exchange,impersonation</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8080:8080&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>keycloak-themes:/opt/keycloak/providers</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>postgresql</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>condition</span><span class=p>:</span><span class=w> </span><span class=l>service_healthy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>keycloak-db</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>local</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>keycloak-themes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>local</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>For production, you should run Keycloak behind a reverse proxy with TLS termination. The <code>KC_PROXY: edge</code> setting tells Keycloak to trust the <code>X-Forwarded-*</code> headers from your proxy.</p><p>Initialize the admin user and start the server:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker compose up -d
+</span></span><span class=line><span class=cl><span class=c1># Keycloak starts on http://localhost:8080</span>
+</span></span><span class=line><span class=cl><span class=c1># Admin console: http://localhost:8080/admin</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=importing-a-realm-via-cli>Importing a Realm via CLI</h3><p>Managing Keycloak through the UI is fine for exploration, but production deployments should use infrastructure-as-code. Keycloak supports realm imports:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Export your current realm for backup</span>
+</span></span><span class=line><span class=cl>docker <span class=nb>exec</span> keycloak-container <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  /opt/keycloak/bin/kc.sh <span class=nb>export</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --dir /opt/keycloak/data/import <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --realm your-realm
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Import a realm from a JSON file</span>
+</span></span><span class=line><span class=cl>docker compose <span class=nb>exec</span> keycloak <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  /opt/keycloak/bin/kc.sh import <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --file /opt/keycloak/data/import/your-realm-realm.json
+</span></span></code></pre></td></tr></table></div></div><p>A minimal realm import file defines clients, roles, users, and identity providers in a single JSON structure. This enables version-controlled identity configuration and reproducible deployments.</p><h3 id=integrating-with-an-application>Integrating with an Application</h3><p>For a typical OIDC integration with a self-hosted application:</p><ol><li>Log into the admin console at <code>http://localhost:8080/admin</code>.</li><li>Create a new <strong>Realm</strong> (or use <code>master</code> for simple setups).</li><li>Navigate to <strong>Clients → Create client</strong> and select <strong>OpenID Connect</strong>.</li><li>Configure <strong>Valid redirect URIs</strong> with your application&rsquo;s callback URL.</li><li>Set <strong>Client authentication</strong> to <strong>On</strong> to enable client secrets.</li><li>Copy the <strong>Client ID</strong> and <strong>Client secret</strong> from the <strong>Credentials</strong> tab.</li><li>In your application&rsquo;s configuration, set the OIDC issuer to <code>https://auth.yourdomain.com/realms/your-realm</code>.</li></ol><h3 id=when-keycloak-shines>When Keycloak Shines</h3><p>Keycloak is the right choice when you need enterprise-grade identity infrastructure: complex user federation with Active Directory, fine-grained authorization policies, comprehensive audit logging, or SAML integrations with legacy systems. It is also the best option when your organization already has Java expertise and can invest in the operational complexity.</p><p>The tradeoff is resource consumption and learning curve. Keycloak&rsquo;s Java runtime requires significant memory (1–2 GB minimum), startup times are measured in tens of seconds, and the configuration surface is enormous. For a homelab with a handful of applications, Keycloak is overkill.</p><hr><h2 id=authelia-lightweight-reverse-proxy-authentication>Authelia: Lightweight Reverse-Proxy Authentication</h2><p>Authelia takes a fundamentally different approach. Rather than being a full identity provider, Authelia is a lightweight authentication server designed to sit behind a reverse proxy (Traefik, Nginx, Caddy, or HAProxy). It verifies user identity and passes the result to the backend via HTTP headers — a pattern known as <strong>forward authentication</strong> or <strong>auth request</strong>.</p><h3 id=key-strengths-2>Key Strengths</h3><p><strong>Minimal resource footprint.</strong> Written in Go, Authelia uses 50–100 MB of RAM and starts in under a second. It is designed to run on resource-constrained hardware — Raspberry Pi, low-end VPS instances, or alongside dozens of other containers on a single machine.</p><p><strong>Simple configuration model.</strong> Authelia is configured through a single YAML file. There is no database schema to manage, no admin console to learn, and no realm hierarchy to understand. You define users, access control rules, and authentication methods in one declarative file.</p><p><strong>Strong focus on security defaults.</strong> Authelia enforces secure-by-default configurations: password hashing with Argon2, mandatory HTTPS for all endpoints, rate limiting on authentication attempts, and automatic lockout after repeated failures. It also supports one-time passwords (TOTP) and hardware security keys (WebAuthn/FIDO2) out of the box.</p><p><strong>Pairing with reverse proxies.</strong> Authelia is designed to work with Traefik ForwardAuth, Nginx <code>auth_request</code>, Caddy <code>forward_auth</code>, or HAProxy <code>http-request auth-request</code>. This means you protect any HTTP-based application — even ones with no authentication support at all — by placing them behind the proxy. The proxy delegates authentication to Authelia, which returns allow/deny decisions.</p><h3 id=docker-deployment-2>Docker Deployment</h3><p>Authelia pairs naturally with Traefik. Here is a complete stack:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose.yml for Authelia + Traefik</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>traefik</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>docker.io/library/traefik:v3.3</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;--providers.docker=true&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;--providers.docker.exposedbydefault=false&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;--entrypoints.web.address=:80&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;--entrypoints.websecure.address=:443&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;--entrypoints.web.http.redirections.entryPoint.to=websecure&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;--entrypoints.web.http.redirections.entryPoint.scheme=https&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;--certificatesresolvers.letsencrypt.acme.httpchallenge=true&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;--certificatesresolvers.letsencrypt.email=you@yourdomain.com&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;--certificatesresolvers.letsencrypt.storage=/letsencrypt/acme.json&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;80:80&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;443:443&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;/var/run/docker.sock:/var/run/docker.sock:ro&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>traefik-certs:/letsencrypt</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>authelia</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>docker.io/authelia/authelia:4.38</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./authelia-config:/config</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>AUTHELIA_IDENTITY_PROVIDERS_OIDC_HMAC_SECRET=your-hmac-secret-at-least-32-chars</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>AUTHELIA_IDENTITY_PROVIDERS_OIDC_ISSUER_PRIVATE_KEY_FILE=/config/oidc-key.pem</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>AUTHELIA_SESSION_SECRET=your-session-secret-at-least-32-chars</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>AUTHELIA_STORAGE_ENCRYPTION_KEY=your-storage-encryption-key-at-least-20-chars</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>labels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;traefik.enable=true&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;traefik.http.routers.authelia.rule=Host(`auth.yourdomain.com`)&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;traefik.http.routers.authelia.entrypoints=websecure&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;traefik.http.routers.authelia.tls.certresolver=letsencrypt&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;traefik.http.routers.authelia.tls=true&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;traefik.http.services.authelia.loadbalancer.server.port=9091&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>traefik</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># Example protected application</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>nextcloud</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>docker.io/library/nextcloud:30-apache</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>labels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;traefik.enable=true&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;traefik.http.routers.nextcloud.rule=Host(`cloud.yourdomain.com`)&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;traefik.http.routers.nextcloud.entrypoints=websecure&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;traefik.http.routers.nextcloud.tls.certresolver=letsencrypt&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;traefik.http.routers.nextcloud.middlewares=authelia@docker&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>traefik</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>traefik-certs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>local</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>The Authelia configuration file (<code>configuration.yml</code>):</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span><span class=lnt>62
+</span><span class=lnt>63
+</span><span class=lnt>64
+</span><span class=lnt>65
+</span><span class=lnt>66
+</span><span class=lnt>67
+</span><span class=lnt>68
+</span><span class=lnt>69
+</span><span class=lnt>70
+</span><span class=lnt>71
+</span><span class=lnt>72
+</span><span class=lnt>73
+</span><span class=lnt>74
+</span><span class=lnt>75
+</span><span class=lnt>76
+</span><span class=lnt>77
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># /config/configuration.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>server</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>host</span><span class=p>:</span><span class=w> </span><span class=m>0.0.0.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>port</span><span class=p>:</span><span class=w> </span><span class=m>9091</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>log</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>level</span><span class=p>:</span><span class=w> </span><span class=l>info</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>totp</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>issuer</span><span class=p>:</span><span class=w> </span><span class=l>yourdomain.com</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>period</span><span class=p>:</span><span class=w> </span><span class=m>30</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>skew</span><span class=p>:</span><span class=w> </span><span class=m>1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>authentication_backend</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>refresh_interval</span><span class=p>:</span><span class=w> </span><span class=l>5m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>file</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>path</span><span class=p>:</span><span class=w> </span><span class=l>/config/users_database.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>password</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>algorithm</span><span class=p>:</span><span class=w> </span><span class=l>argon2id</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>iterations</span><span class=p>:</span><span class=w> </span><span class=m>1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>memory</span><span class=p>:</span><span class=w> </span><span class=m>65536</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>parallelism</span><span class=p>:</span><span class=w> </span><span class=m>4</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>key_length</span><span class=p>:</span><span class=w> </span><span class=m>32</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>salt_length</span><span class=p>:</span><span class=w> </span><span class=m>16</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>session</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>authelia_session</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>secret</span><span class=p>:</span><span class=w> </span><span class=l>your-session-secret</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>expiration</span><span class=p>:</span><span class=w> </span><span class=m>3600</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>inactivity</span><span class=p>:</span><span class=w> </span><span class=m>300</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>same_site</span><span class=p>:</span><span class=w> </span><span class=l>lax</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>storage</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>encryption_key</span><span class=p>:</span><span class=w> </span><span class=l>your-storage-encryption-key</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>local</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>path</span><span class=p>:</span><span class=w> </span><span class=l>/config/db.sqlite3</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>notifier</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>filesystem</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>filename</span><span class=p>:</span><span class=w> </span><span class=l>/config/notification.txt</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>access_control</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>default_policy</span><span class=p>:</span><span class=w> </span><span class=l>deny</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>rules</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>domain</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;cloud.yourdomain.com&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>policy</span><span class=p>:</span><span class=w> </span><span class=l>two_factor</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>subject</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=s2>&#34;group:admins&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=s2>&#34;group:users&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>domain</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;monitoring.yourdomain.com&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>policy</span><span class=p>:</span><span class=w> </span><span class=l>one_factor</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>subject</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;group:readonly&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>identity_providers</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>oidc</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>hmac_secret</span><span class=p>:</span><span class=w> </span><span class=l>your-hmac-secret</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>issuer_private_key</span><span class=p>:</span><span class=w> </span><span class=p>|</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      -----BEGIN PRIVATE KEY-----
+</span></span></span><span class=line><span class=cl><span class=sd>      # Generate with: openssl genpkey -algorithm RSA -out oidc-key.pem -pkeyopt rsa_keygen_bits:4096
+</span></span></span><span class=line><span class=cl><span class=sd>      -----END PRIVATE KEY-----</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>access_token_lifespan</span><span class=p>:</span><span class=w> </span><span class=l>1h</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>authorize_code_lifespan</span><span class=p>:</span><span class=w> </span><span class=l>1m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>id_token_lifespan</span><span class=p>:</span><span class=w> </span><span class=l>1h</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>refresh_token_lifespan</span><span class=p>:</span><span class=w> </span><span class=l>90m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>clients</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>client_id</span><span class=p>:</span><span class=w> </span><span class=l>grafana</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>client_name</span><span class=p>:</span><span class=w> </span><span class=l>Grafana</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>client_secret</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;$pbkdf2-sha256$...&#34;</span><span class=w>  </span><span class=c># Hashed with argon2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>public</span><span class=p>:</span><span class=w> </span><span class=kc>false</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>authorization_policy</span><span class=p>:</span><span class=w> </span><span class=l>two_factor</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>redirect_uris</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span>- <span class=s2>&#34;https://monitoring.yourdomain.com/login/generic_oauth&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>scopes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span>- <span class=l>openid</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span>- <span class=l>profile</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span>- <span class=l>email</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>userinfo_signing_algorithm</span><span class=p>:</span><span class=w> </span><span class=l>none</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>The users database file (<code>users_database.yml</code>):</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># /config/users_database.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>users</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>admin</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>displayname</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;Admin User&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>password</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;$argon2id$v=19$m=65536,t=1,p=4$...&#34;</span><span class=w>  </span><span class=c># Generate with `authelia crypto hash generate`</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>email</span><span class=p>:</span><span class=w> </span><span class=l>admin@yourdomain.com</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>groups</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>admins</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>user1</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>displayname</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;Regular User&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>password</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;$argon2id$v=19$m=65536,t=1,p=4$...&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>email</span><span class=p>:</span><span class=w> </span><span class=l>user1@yourdomain.com</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>groups</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>users</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>readonly</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Generate password hashes using the Authelia CLI:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker run --rm authelia/authelia:4.38 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  authelia crypto <span class=nb>hash</span> generate <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --algorithm argon2 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --password <span class=s2>&#34;your-secure-password&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=when-authelia-shines>When Authelia Shines</h3><p>Authelia is the right choice for homelab users who want lightweight, header-based authentication across a fleet of services without the overhead of a full identity provider. Its YAML-based configuration is version-controllable, reproducible, and easy to audit. The integration with Traefik is seamless — you add a single label to any Docker service and it is automatically protected.</p><p>The limitations are significant for larger deployments: no user self-service portal, no SCIM provisioning, limited social login support, no built-in user federation with LDAP or Active Directory (though a LDAP backend is available, it is read-only for authentication, not full synchronization), and no fine-grained authorization model beyond group-based access control rules.</p><hr><h2 id=head-to-head-comparison>Head-to-Head Comparison</h2><h3 id=deployment-complexity>Deployment Complexity</h3><table><thead><tr><th>Aspect</th><th>Authentik</th><th>Keycloak</th><th>Authelia</th></tr></thead><tbody><tr><td>Components</td><td>3 (server, worker, PostgreSQL, Redis)</td><td>2 (Keycloak, PostgreSQL)</td><td>1 (Authelia, optional DB)</td></tr><tr><td>Initial setup time</td><td>10–15 minutes</td><td>5–10 minutes</td><td>15–30 minutes (config writing)</td></tr><tr><td>Configuration method</td><td>Web UI + API</td><td>Web UI + CLI + API</td><td>YAML files</td></tr><tr><td>Learning curve</td><td>Moderate</td><td>Steep</td><td>Low</td></tr><tr><td>Version upgrades</td><td>Straightforward (<code>docker pull</code> + restart)</td><td>May require database migrations</td><td>Drop-in replacement</td></tr></tbody></table><h3 id=protocol-support>Protocol Support</h3><table><thead><tr><th>Protocol</th><th>Authentik</th><th>Keycloak</th><th>Authelia</th></tr></thead><tbody><tr><td>OpenID Connect</td><td>✅ Full</td><td>✅ Full</td><td>✅ Full</td></tr><tr><td>OAuth2</td><td>✅ Full</td><td>✅ Full</td><td>✅ Partial</td></tr><tr><td>SAML 2.0</td><td>✅ Full</td><td>✅ Full</td><td>❌ No</td></tr><tr><td>LDAP (auth)</td><td>✅ Read/Write</td><td>✅ Read/Write</td><td>✅ Read-only</td></tr><tr><td>LDAP (sync)</td><td>✅ SCIM</td><td>✅ Full sync</td><td>❌ No</td></tr><tr><td>Kerberos</td><td>❌ No</td><td>✅ Full</td><td>❌ No</td></tr><tr><td>SCIM 2.0</td><td>✅ Full</td><td>❌ No</td><td>❌ No</td></tr></tbody></table><h3 id=multi-factor-authentication>Multi-Factor Authentication</h3><table><thead><tr><th>Method</th><th>Authentik</th><th>Keycloak</th><th>Authelia</th></tr></thead><tbody><tr><td>TOTP</td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td>WebAuthn / FIDO2</td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td>Duo Push</td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td>SMS</td><td>✅ (via stages)</td><td>✅</td><td>❌ No</td></tr><tr><td>Email OTP</td><td>✅</td><td>✅</td><td>❌ No</td></tr><tr><td>Push notifications</td><td>✅ (Authentik mobile)</td><td>❌ No</td><td>✅ (via Pushover)</td></tr><tr><td>Conditional MFA</td><td>✅ (flow-based)</td><td>⚠️ Limited</td><td>⚠️ Per-rule</td></tr></tbody></table><h3 id=scalability>Scalability</h3><table><thead><tr><th>Metric</th><th>Authentik</th><th>Keycloak</th><th>Authelia</th></tr></thead><tbody><tr><td>Max comfortable users</td><td>~500–2,000</td><td>~50,000+</td><td>~50–200</td></tr><tr><td>Horizontal scaling</td><td>Multi-server + shared DB</td><td>Clustered nodes</td><td>Single instance</td></tr><tr><td>Session storage</td><td>Redis (shared)</td><td>Infinispan (distributed)</td><td>Local memory / Redis</td></tr><tr><td>Database load</td><td>Moderate</td><td>High (Java ORM)</td><td>Low</td></tr></tbody></table><hr><h2 id=decision-framework>Decision Framework</h2><p>Choose based on your actual requirements, not feature checklists:</p><p><strong>Choose Authentik if:</strong></p><ul><li>You want a modern, intuitive interface with broad protocol support</li><li>You need SAML integration without the complexity of Keycloak</li><li>You run a homelab or small-to-medium organization (under 2,000 users)</li><li>You want SCIM provisioning for automated user lifecycle management</li><li>You value the visual flow designer for conditional authentication logic</li></ul><p><strong>Choose Keycloak if:</strong></p><ul><li>You need enterprise-grade identity infrastructure at scale</li><li>You have complex user federation requirements (Active Directory, Kerberos)</li><li>You need fine-grained authorization (UMA 2.0, resource-level permissions)</li><li>Your organization has Java operational expertise</li><li>You need SAML with specific attribute mapping and encryption requirements</li><li>You require comprehensive audit logging and compliance reporting</li></ul><p><strong>Choose Authelia if:</strong></p><ul><li>You want the simplest possible setup for a homelab</li><li>Resource constraints are a primary concern (Raspberry Pi, low-end VPS)</li><li>You are already using Traefik, Nginx, or Caddy as a reverse proxy</li><li>You prefer YAML-based, version-controlled configuration</li><li>You only need basic authentication (passwords + TOTP + WebAuthn)</li><li>You do not need user self-service, social login, or complex provisioning</li></ul><hr><h2 id=securing-your-identity-provider>Securing Your Identity Provider</h2><p>Regardless of which solution you choose, follow these hardening steps:</p><p><strong>1. Always use TLS.</strong> Never expose an identity provider over plain HTTP. Use Let&rsquo;s Encrypt with automatic renewal via your reverse proxy. Configure <code>Strict-Transport-Security</code> headers with a minimum <code>max-age</code> of 31,536,000 seconds (one year).</p><p><strong>2. Enable MFA for all administrative accounts.</strong> The identity provider is the master key to your entire infrastructure. Compromise it, and every downstream application is compromised. Require WebAuthn hardware keys for admin accounts — they are resistant to phishing attacks that defeat TOTP.</p><p><strong>3. Restrict access by IP where possible.</strong> If your identity provider is only accessed from your home network or office, configure firewall rules to block external access. For remote access, require a VPN connection before reaching the identity provider.</p><p><strong>4. Back up your database and configuration regularly.</strong> For Authentik, back up the PostgreSQL database and the secret key. For Keycloak, export your realms regularly. For Authelia, version-control your YAML configuration files. Store backups encrypted and offsite.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Backup script for Authentik</span>
+</span></span><span class=line><span class=cl>docker compose <span class=nb>exec</span> postgresql pg_dump -U authentik authentik <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  <span class=p>|</span> gzip &gt; /backups/authentik-db-<span class=k>$(</span>date +%Y%m%d<span class=k>)</span>.sql.gz
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Backup script for Keycloak</span>
+</span></span><span class=line><span class=cl>docker compose <span class=nb>exec</span> keycloak <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  /opt/keycloak/bin/kc.sh <span class=nb>export</span> --dir /tmp/export --realm your-realm
+</span></span><span class=line><span class=cl>docker cp keycloak:/tmp/export /backups/keycloak-export-<span class=k>$(</span>date +%Y%m%d<span class=k>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Authelia — just commit your config to git</span>
+</span></span><span class=line><span class=cl><span class=nb>cd</span> /path/to/authelia-config <span class=o>&amp;&amp;</span> git add -A <span class=o>&amp;&amp;</span> git commit -m <span class=s2>&#34;Config backup </span><span class=k>$(</span>date +%Y%m%d<span class=k>)</span><span class=s2>&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><p><strong>5. Monitor authentication failures.</strong> Set up alerting for repeated login failures — they indicate brute-force attacks or credential stuffing attempts. All three solutions expose metrics endpoints that integrate with Prometheus and Grafana.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># Prometheus scrape config for Authentik</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span>- <span class=nt>job_name</span><span class=p>:</span><span class=w> </span><span class=l>authentik</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>static_configs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>targets</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;authentik:9300&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>metrics_path</span><span class=p>:</span><span class=w> </span><span class=l>/metrics</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c># Prometheus scrape config for Keycloak</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span>- <span class=nt>job_name</span><span class=p>:</span><span class=w> </span><span class=l>keycloak</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>static_configs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>targets</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;keycloak:8080&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>metrics_path</span><span class=p>:</span><span class=w> </span><span class=l>/metrics</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c># Prometheus scrape config for Authelia</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span>- <span class=nt>job_name</span><span class=p>:</span><span class=w> </span><span class=l>authelia</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>static_configs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>targets</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;authelia:9091&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>metrics_path</span><span class=p>:</span><span class=w> </span><span class=l>/metrics</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><hr><h2 id=conclusion>Conclusion</h2><p>The self-hosted identity landscape in 2026 offers three distinct paths, and none of them is universally superior. Authentik delivers the best balance of features and usability for most homelab and small-organization deployments. Keycloak remains the enterprise reference implementation for organizations that need deep protocol support, complex user federation, and fine-grained authorization at scale. Authelia is the lightweight champion for users who want simple, header-based authentication with minimal resource consumption.</p><p>The right choice depends on your scale, your protocol requirements, your operational expertise, and your resource constraints. What all three share is the fundamental advantage of self-hosting: your identity data stays on your infrastructure, under your control, with no third-party telemetry, no per-user pricing, and no vendor lock-in.</p><p>Start with the Docker configurations above, deploy to a test environment, and integrate one application at a time. Within a few hours, you will have a working SSO experience across your entire self-hosted stack — and the peace of mind that comes with owning your identity infrastructure.</p></div><div id=frame style=width:100%;margin:auto;position:relative;z-index:99998><iframe data-aa=2433958 src='//acceptable.a-ads.com/2433958/?size=Adaptive' style=border:0;padding:0;width:70%;height:auto;overflow:hidden;display:block;margin:auto></iframe></div></article></main><footer class=site-footer><p>Built with <a href=https://gohugo.io>Hugo</a> · <a href=/openswap-guide/index.xml>RSS</a> · <a href=https://github.com/hopkdj>GitHub</a></p><p style=margin-top:8px>&copy; 2026 OpenSwap Guide. All rights reserved.</p></footer></body></html>
