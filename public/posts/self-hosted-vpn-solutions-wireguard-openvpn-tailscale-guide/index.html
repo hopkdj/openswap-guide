@@ -1,0 +1,690 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted VPN Solutions: WireGuard vs OpenVPN vs Tailscale Alternative 2026 | OpenSwap Guide</title>
+<meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, and local AI deployment."><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/openswap-guide/css/main.min.777dc111b5207bf5336e5799477da0b31fb9080306bf98a82d6eceb979cf9737.css><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://hopkdj.github.io/openswap-guide/ class=logo><div class=logo-icon>H</div>OpenSwap Guide</a><nav><ul class=nav-links><li><a href=/openswap-guide/>Home</a></li><li><a href=/openswap-guide/tags/comparison/>Comparisons</a></li><li><a href=/openswap-guide/tags/guide/>Guides</a></li><li><a href=/openswap-guide/tags/ai/>Local AI</a></li><li><a href=/openswap-guide/index.xml class=nav-rss>Subscribe RSS</a></li></ul></nav></div></header><main><article class=post-single><a href=https://hopkdj.github.io/openswap-guide/ class=back-link>&larr; Back to posts</a><header class=post-single-header><div class=post-single-meta><span class="tag tag-purple">comparison</span>
+<span class="tag tag-green">guide</span>
+<span class="tag tag-blue">self-hosted</span>
+<span>·</span>
+<span>April 12, 2026</span>
+<span>·</span>
+<span>12 min read</span></div><h1 class=post-single-title>Self-Hosted VPN Solutions: WireGuard vs OpenVPN vs Tailscale Alternative 2026</h1></header><div class=post-single-content><p>Virtual Private Networks remain the backbone of secure remote access, site-to-site connectivity, and privacy-preserving network architectures. In 2026, the landscape has shifted significantly — WireGuard has matured into the default choice for new deployments, while open-source alternatives to proprietary mesh networks have finally reached production readiness. This guide covers the three most relevant self-hosted VPN solutions you can run today, with complete setup instructions for each.</p><h2 id=why-self-host-your-vpn-infrastructure>Why Self-Host Your VPN Infrastructure</h2><p>Running your own VPN server puts you in full control of your network traffic. Commercial VPN services require you to trust a third party with your connection metadata, and hosted mesh network providers can change their pricing models, throttle connections, or shut down at any time. By self-hosting, you gain:</p><ul><li><strong>Zero knowledge architecture</strong> — no third party sees your traffic patterns, connected IPs, or bandwidth usage</li><li><strong>No subscription fees</strong> — run unlimited peers on your own hardware for the cost of electricity</li><li><strong>Full auditability</strong> — every line of configuration is under your control</li><li><strong>Custom network topologies</strong> — create exactly the routing, access control, and exit-node setup you need</li><li><strong>Data sovereignty</strong> — keep all connection logs on infrastructure you own, in the jurisdiction you choose</li></ul><p>Whether you&rsquo;re connecting remote workers to an office network, linking home labs across different locations, or building a private mesh for IoT devices, self-hosted VPN infrastructure gives you the foundation without the ongoing costs or trust dependencies.</p><h2 id=wireguard-the-modern-standard>WireGuard: The Modern Standard</h2><p>WireGuard has replaced OpenVPN as the default VPN protocol for most new deployments. It operates as a kernel module on Linux (and uses userspace implementations on other platforms), delivers exceptional throughput, and uses state-of-the-art cryptography including ChaCha20 for encryption, Poly1305 for authentication, and Curve25519 for key exchange.</p><p>The protocol itself is simple — roughly 4,000 lines of code compared to OpenVPN&rsquo;s 100,000+. This simplicity makes it easier to audit, reduces the attack surface, and results in faster connection establishment.</p><h3 id=installing-wireguard-on-linux>Installing WireGuard on Linux</h3><p>On most modern distributions, WireGuard is included in the kernel (5.6+) and userspace tools are available from your package manager:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Debian/Ubuntu</span>
+</span></span><span class=line><span class=cl>sudo apt update
+</span></span><span class=line><span class=cl>sudo apt install wireguard-tools
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># RHEL/Fedora</span>
+</span></span><span class=line><span class=cl>sudo dnf install wireguard-tools
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Arch Linux</span>
+</span></span><span class=line><span class=cl>sudo pacman -S wireguard-tools
+</span></span></code></pre></td></tr></table></div></div><p>Generate server keypair and configure the interface:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Generate server keys</span>
+</span></span><span class=line><span class=cl>wg genkey <span class=p>|</span> tee /etc/wireguard/server-private.key <span class=p>|</span> wg pubkey &gt; /etc/wireguard/server-public.key
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Set proper permissions</span>
+</span></span><span class=line><span class=cl>chmod <span class=m>600</span> /etc/wireguard/server-private.key
+</span></span></code></pre></td></tr></table></div></div><p>Create the server configuration at <code>/etc/wireguard/wg0.conf</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=k>[Interface]</span>
+</span></span><span class=line><span class=cl><span class=na>Address</span> <span class=o>=</span> <span class=s>10.200.200.1/24</span>
+</span></span><span class=line><span class=cl><span class=na>ListenPort</span> <span class=o>=</span> <span class=s>51820</span>
+</span></span><span class=line><span class=cl><span class=na>PrivateKey</span> <span class=o>=</span> <span class=s>&lt;contents-of-server-private.key&gt;</span>
+</span></span><span class=line><span class=cl><span class=na>PostUp</span> <span class=o>=</span> <span class=s>iptables -A FORWARD -i %i -j ACCEPT; iptables -A FORWARD -o %i -j ACCEPT; iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE</span>
+</span></span><span class=line><span class=cl><span class=na>PostDown</span> <span class=o>=</span> <span class=s>iptables -D FORWARD -i %i -j ACCEPT; iptables -D FORWARD -o %i -j ACCEPT; iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE</span>
+</span></span><span class=line><span class=cl><span class=na>DNS</span> <span class=o>=</span> <span class=s>10.200.200.1</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Peer 1 - Remote workstation</span>
+</span></span><span class=line><span class=cl><span class=k>[Peer]</span>
+</span></span><span class=line><span class=cl><span class=na>PublicKey</span> <span class=o>=</span> <span class=s>&lt;client1-public-key&gt;</span>
+</span></span><span class=line><span class=cl><span class=na>AllowedIPs</span> <span class=o>=</span> <span class=s>10.200.200.2/32</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Peer 2 - Home server</span>
+</span></span><span class=line><span class=cl><span class=k>[Peer]</span>
+</span></span><span class=line><span class=cl><span class=na>PublicKey</span> <span class=o>=</span> <span class=s>&lt;client2-public-key&gt;</span>
+</span></span><span class=line><span class=cl><span class=na>AllowedIPs</span> <span class=o>=</span> <span class=s>10.200.200.3/32</span>
+</span></span></code></pre></td></tr></table></div></div><p>Start and enable the service:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>sudo systemctl <span class=nb>enable</span> --now wg-quick@wg0
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Verify it&#39;s running</span>
+</span></span><span class=line><span class=cl>sudo wg show
+</span></span></code></pre></td></tr></table></div></div><h3 id=deploying-wireguard-with-docker>Deploying WireGuard with Docker</h3><p>For containerized environments or quick testing, use the <code>linuxserver/wireguard</code> image:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>wireguard</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>linuxserver/wireguard:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>wireguard</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>cap_add</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>NET_ADMIN</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>SYS_MODULE</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PUID=1000</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PGID=1000</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>TZ=UTC</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>SERVERURL=vpn.example.com</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>SERVERPORT=51820</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PEERS=3</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PEERDNS=auto</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>INTERNAL_SUBNET=10.200.200.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./config:/config</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/lib/modules:/lib/modules</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=m>51820</span><span class=p>:</span><span class=m>51820</span><span class=l>/udp</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>sysctls</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>net.ipv4.conf.all.src_valid_mark=1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>net.ipv4.ip_forward=1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>After the container starts, peer configurations with QR codes are generated in <code>./config/peer*</code>. Scan the QR codes with the WireGuard mobile app or copy the config files to desktop clients.</p><h3 id=enabling-ip-forwarding>Enabling IP Forwarding</h3><p>For clients to reach the internet through your WireGuard server, enable IP forwarding:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Enable at runtime</span>
+</span></span><span class=line><span class=cl>sudo sysctl -w net.ipv4.ip_forward<span class=o>=</span><span class=m>1</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Make persistent</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;net.ipv4.ip_forward=1&#34;</span> <span class=p>|</span> sudo tee -a /etc/sysctl.d/99-wireguard.conf
+</span></span><span class=line><span class=cl>sudo sysctl -p /etc/sysctl.d/99-wireguard.conf
+</span></span></code></pre></td></tr></table></div></div><h3 id=key-management-at-scale>Key Management at Scale</h3><p>WireGuard&rsquo;s flat configuration model works well for a handful of peers but becomes tedious beyond ~20 connections. Each new peer requires editing the server config and restarting the interface. For larger deployments, consider using a management layer like <strong>wg-easy</strong> (web UI) or <strong>WireGuard-UI</strong> (API-driven management):</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># wg-easy - simple web UI for WireGuard</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>wg-easy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>ghcr.io/wg-easy/wg-easy:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>wg-easy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>WG_HOST=vpn.example.com</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PASSWORD_HASH=$$2b$$12$$YourBcryptHashHere</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>WG_DEFAULT_ADDRESS=10.200.200.x</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>WG_DEFAULT_DNS=10.200.200.1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./wireguard-data:/etc/wireguard</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=m>51820</span><span class=p>:</span><span class=m>51820</span><span class=l>/udp</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=m>51821</span><span class=p>:</span><span class=m>51821</span><span class=l>/tcp</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>cap_add</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>NET_ADMIN</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>SYS_MODULE</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>sysctls</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>net.ipv4.ip_forward=1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>net.ipv4.conf.all.src_valid_mark=1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=openvpn-the-battle-tested-veteran>OpenVPN: The Battle-Tested Veteran</h2><p>OpenVPN has been the gold standard for VPN deployments since 2001. It operates in userspace, supports both UDP and TCP, and works through virtually any NAT or firewall configuration. While WireGuard outperforms it in raw speed, OpenVPN remains relevant for its maturity, extensive documentation, PKI-based authentication, and ability to run over TCP port 443 — making it nearly impossible to block.</p><h3 id=installing-openvpn-with-easy-rsa>Installing OpenVPN with Easy-RSA</h3><p>The easiest way to deploy OpenVPN is using the <code>openvpn-install</code> script, but for full control, set it up manually with Easy-RSA for certificate management:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install OpenVPN and Easy-RSA</span>
+</span></span><span class=line><span class=cl>sudo apt install openvpn easy-rsa
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Set up the PKI</span>
+</span></span><span class=line><span class=cl>make-cadir ~/openvpn-ca
+</span></span><span class=line><span class=cl><span class=nb>cd</span> ~/openvpn-ca
+</span></span><span class=line><span class=cl><span class=nb>source</span> vars
+</span></span><span class=line><span class=cl>./clean-all
+</span></span><span class=line><span class=cl>./build-ca
+</span></span><span class=line><span class=cl>./build-key-server server
+</span></span><span class=line><span class=cl>./build-dh
+</span></span><span class=line><span class=cl>openvpn --genkey --secret keys/ta.key
+</span></span></code></pre></td></tr></table></div></div><p>Create the server configuration at <code>/etc/openvpn/server/server.conf</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>port 1194
+</span></span><span class=line><span class=cl>proto udp
+</span></span><span class=line><span class=cl>dev tun
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>ca ca.crt
+</span></span><span class=line><span class=cl>cert server.crt
+</span></span><span class=line><span class=cl>key server.key
+</span></span><span class=line><span class=cl>dh dh.pem
+</span></span><span class=line><span class=cl>tls-auth ta.key 0
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>server 10.8.0.0 255.255.255.0
+</span></span><span class=line><span class=cl>push &#34;redirect-gateway def1 bypass-dhcp&#34;
+</span></span><span class=line><span class=cl>push &#34;dhcp-option DNS 10.8.0.1&#34;
+</span></span><span class=line><span class=cl>push &#34;dhcp-option DNS 1.1.1.1&#34;
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>keepalive 10 120
+</span></span><span class=line><span class=cl>cipher AES-256-GCM
+</span></span><span class=line><span class=cl>auth SHA256
+</span></span><span class=line><span class=cl>user nobody
+</span></span><span class=line><span class=cl>group nogroup
+</span></span><span class=line><span class=cl>persist-key
+</span></span><span class=line><span class=cl>persist-tun
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>verb 3
+</span></span><span class=line><span class=cl>explicit-exit-notify 1
+</span></span></code></pre></td></tr></table></div></div><p>Start the server:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>sudo systemctl <span class=nb>enable</span> --now openvpn-server@server
+</span></span></code></pre></td></tr></table></div></div><p>Generate client certificates and distribute the <code>.ovpn</code> configuration files:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=nb>cd</span> ~/openvpn-ca
+</span></span><span class=line><span class=cl><span class=nb>source</span> vars
+</span></span><span class=line><span class=cl>./build-key client1
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Generate .ovpn profile</span>
+</span></span><span class=line><span class=cl>cat &gt; client1.ovpn <span class=s>&lt;&lt; &#39;EOF&#39;
+</span></span></span><span class=line><span class=cl><span class=s>client
+</span></span></span><span class=line><span class=cl><span class=s>dev tun
+</span></span></span><span class=line><span class=cl><span class=s>proto udp
+</span></span></span><span class=line><span class=cl><span class=s>remote vpn.example.com 1194
+</span></span></span><span class=line><span class=cl><span class=s>resolv-retry infinite
+</span></span></span><span class=line><span class=cl><span class=s>nobind
+</span></span></span><span class=line><span class=cl><span class=s>user nobody
+</span></span></span><span class=line><span class=cl><span class=s>group nogroup
+</span></span></span><span class=line><span class=cl><span class=s>persist-key
+</span></span></span><span class=line><span class=cl><span class=s>persist-tun
+</span></span></span><span class=line><span class=cl><span class=s>remote-cert-tls server
+</span></span></span><span class=line><span class=cl><span class=s>cipher AES-256-GCM
+</span></span></span><span class=line><span class=cl><span class=s>auth SHA256
+</span></span></span><span class=line><span class=cl><span class=s>verb 3
+</span></span></span><span class=line><span class=cl><span class=s>
+</span></span></span><span class=line><span class=cl><span class=s>&lt;ca&gt;
+</span></span></span><span class=line><span class=cl><span class=s>$(cat ca.crt)
+</span></span></span><span class=line><span class=cl><span class=s>&lt;/ca&gt;
+</span></span></span><span class=line><span class=cl><span class=s>&lt;cert&gt;
+</span></span></span><span class=line><span class=cl><span class=s>$(cat client1.crt)
+</span></span></span><span class=line><span class=cl><span class=s>&lt;/cert&gt;
+</span></span></span><span class=line><span class=cl><span class=s>&lt;key&gt;
+</span></span></span><span class=line><span class=cl><span class=s>$(cat client1.key)
+</span></span></span><span class=line><span class=cl><span class=s>&lt;/key&gt;
+</span></span></span><span class=line><span class=cl><span class=s>&lt;tls-auth&gt;
+</span></span></span><span class=line><span class=cl><span class=s>$(cat ta.key)
+</span></span></span><span class=line><span class=cl><span class=s>&lt;/tls-auth&gt;
+</span></span></span><span class=line><span class=cl><span class=s>EOF</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=openvpn-via-docker-compose>OpenVPN via Docker Compose</h3><p>The <code>kylemanna/openvpn</code> image provides a streamlined containerized deployment:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>openvpn</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>kylemanna/openvpn:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>openvpn</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>cap_add</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>NET_ADMIN</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=m>1194</span><span class=p>:</span><span class=m>1194</span><span class=l>/udp</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./openvpn-data:/etc/openvpn</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Initialize and manage certificates with the container&rsquo;s helper scripts:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Initialize the configuration (run once)</span>
+</span></span><span class=line><span class=cl>docker compose run --rm openvpn ovpn_genconfig -u udp://vpn.example.com
+</span></span><span class=line><span class=cl>docker compose run --rm openvpn ovpn_initpki
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Add a client</span>
+</span></span><span class=line><span class=cl>docker compose run --rm openvpn easyrsa build-client-full client1 nopass
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Export client config</span>
+</span></span><span class=line><span class=cl>docker compose run --rm openvpn ovpn_getclient client1 &gt; client1.ovpn
+</span></span></code></pre></td></tr></table></div></div><h3 id=when-openvpn-still-makes-sense>When OpenVPN Still Makes Sense</h3><p>OpenVPN&rsquo;s TCP mode remains valuable in environments with aggressive deep packet inspection or where UDP is throttled. Running OpenVPN over TCP port 443 makes VPN traffic indistinguishable from regular HTTPS, which is useful for bypassing restrictive corporate or national firewalls. It also supports username/password authentication via PAM, LDAP, or RADIUS without additional tooling — something WireGuard does not provide natively.</p><h2 id=headscale-open-source-tailscale-alternative>Headscale: Open-Source Tailscale Alternative</h2><p>Tailscale revolutionized mesh networking by combining WireGuard&rsquo;s performance with automatic NAT traversal, a central coordination server, and built-in DNS. However, the hosted Tailscale service requires account registration, imposes device limits on free tiers, and sends connection metadata through their infrastructure.</p><p><strong>Headscale</strong> is the official open-source, self-hosted implementation of the Tailscale coordination server (control plane). It gives you the full Tailscale experience — WireGuard mesh, automatic hole punching, DERP relay fallback, and ACL policies — without any external dependencies.</p><h3 id=deploying-headscale>Deploying Headscale</h3><p>Create a directory for Headscale configuration and data:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>mkdir -p /opt/headscale
+</span></span><span class=line><span class=cl><span class=nb>cd</span> /opt/headscale
+</span></span></code></pre></td></tr></table></div></div><p>Generate the configuration file:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>headscale config generate --output config.yaml
+</span></span></code></pre></td></tr></table></div></div><p>Edit <code>config.yaml</code> with your settings:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>server_url</span><span class=p>:</span><span class=w> </span><span class=l>https://headscale.example.com</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>listen_addr</span><span class=p>:</span><span class=w> </span><span class=m>0.0.0.0</span><span class=p>:</span><span class=m>8080</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metrics_listen_addr</span><span class=p>:</span><span class=w> </span><span class=m>0.0.0.0</span><span class=p>:</span><span class=m>9090</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>grpc_listen_addr</span><span class=p>:</span><span class=w> </span><span class=m>127.0.0.1</span><span class=p>:</span><span class=m>50444</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>grpc_allow_insecure</span><span class=p>:</span><span class=w> </span><span class=kc>false</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c># Use SQLite for simplicity, or PostgreSQL for production</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>db_type</span><span class=p>:</span><span class=w> </span><span class=l>sqlite3</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>db_path</span><span class=p>:</span><span class=w> </span><span class=l>/var/lib/headscale/db.sqlite</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c># DERP configuration for relay fallback</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>derp</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>server</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>enabled</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>region_id</span><span class=p>:</span><span class=w> </span><span class=m>999</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>region_code</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;self&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>region_name</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;Self-Hosted DERP&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>stun_listen_addr</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;0.0.0.0:3478&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c># DNS settings</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>dns_config</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>override_local_dns</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>nameservers</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=m>10.200.200.1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>domains</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=l>headscale.example.com</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>magic_dns</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c># Pre-auth keys for automated node enrollment</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>prefixes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>v6</span><span class=p>:</span><span class=w> </span><span class=l>fd7a:115c:a1e0::/48</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>v4</span><span class=p>:</span><span class=w> </span><span class=m>100.64.0.0</span><span class=l>/10</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=running-headscale-with-docker-compose>Running Headscale with Docker Compose</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>headscale</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>headscale/headscale:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>headscale</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./config:/etc/headscale</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./data:/var/lib/headscale</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=m>8080</span><span class=p>:</span><span class=m>8080</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=m>9090</span><span class=p>:</span><span class=m>9090</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=l>headscale serve</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>TZ=UTC</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># Optional: nginx reverse proxy with TLS</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>nginx</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>nginx:alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>headscale-nginx</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./nginx.conf:/etc/nginx/nginx.conf:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./certs:/etc/nginx/certs:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=m>443</span><span class=p>:</span><span class=m>443</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>headscale</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Nginx configuration for the reverse proxy (<code>nginx.conf</code>):</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-nginx data-lang=nginx><span class=line><span class=cl><span class=k>events</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=kn>worker_connections</span> <span class=mi>1024</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>http</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=kn>server</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=kn>listen</span> <span class=mi>443</span> <span class=s>ssl</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>server_name</span> <span class=s>headscale.example.com</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=kn>ssl_certificate</span> <span class=s>/etc/nginx/certs/headscale.crt</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>ssl_certificate_key</span> <span class=s>/etc/nginx/certs/headscale.key</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=kn>location</span> <span class=s>/</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>            <span class=kn>proxy_pass</span> <span class=s>http://headscale:8080</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>            <span class=kn>proxy_set_header</span> <span class=s>Host</span> <span class=nv>$host</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>            <span class=kn>proxy_set_header</span> <span class=s>X-Real-IP</span> <span class=nv>$remote_addr</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>            <span class=kn>proxy_set_header</span> <span class=s>X-Forwarded-For</span> <span class=nv>$proxy_add_x_forwarded_for</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>            <span class=kn>proxy_set_header</span> <span class=s>X-Forwarded-Proto</span> <span class=nv>$scheme</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=kn>location</span> <span class=s>/metrics</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>            <span class=kn>proxy_pass</span> <span class=s>http://headscale:9090</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=generating-pre-auth-keys-and-connecting-clients>Generating Pre-Auth Keys and Connecting Clients</h3><p>Headscale uses pre-authentication keys to allow nodes to join your network without manual approval:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Create a namespace (equivalent to a Tailscale &#34;tailnet&#34;)</span>
+</span></span><span class=line><span class=cl>headscale namespaces create homelab
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Generate a pre-auth key</span>
+</span></span><span class=line><span class=cl>headscale preauthkeys create --namespace homelab --reusable --expiration 90d
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># List all nodes</span>
+</span></span><span class=line><span class=cl>headscale nodes list
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># List routes advertised by nodes</span>
+</span></span><span class=line><span class=cl>headscale routes list
+</span></span></code></pre></td></tr></table></div></div><p>Connect a client using the Tailscale CLI (no modifications needed — the official Tailscale client works with Headscale):</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># On the client machine</span>
+</span></span><span class=line><span class=cl>tailscale up --login-server https://headscale.example.com
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Or with a pre-auth key (no interactive login)</span>
+</span></span><span class=line><span class=cl>tailscale up --login-server https://headscale.example.com <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --authkey hsxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+</span></span></code></pre></td></tr></table></div></div><h3 id=setting-up-acl-policies>Setting Up ACL Policies</h3><p>Headscale supports Tailscale-compatible ACL policies defined in a HuJSON configuration file:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=line><span class=cl><span class=c1>// /etc/headscale/acl.hujson
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;groups&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;group:admins&#34;</span><span class=p>:</span> <span class=p>[</span><span class=s2>&#34;user:admin&#34;</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;group:servers&#34;</span><span class=p>:</span> <span class=p>[</span><span class=s2>&#34;user:server1&#34;</span><span class=p>,</span> <span class=s2>&#34;user:server2&#34;</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;group:workstations&#34;</span><span class=p>:</span> <span class=p>[</span><span class=s2>&#34;user:laptop1&#34;</span><span class=p>,</span> <span class=s2>&#34;user:laptop2&#34;</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>  <span class=p>},</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;hosts&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;management-network&#34;</span><span class=p>:</span> <span class=s2>&#34;10.200.200.0/24&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=p>},</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;acls&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>    <span class=c1>// Admins can access everything
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;action&#34;</span><span class=p>:</span> <span class=s2>&#34;accept&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;src&#34;</span><span class=p>:</span> <span class=p>[</span><span class=s2>&#34;group:admins&#34;</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;dst&#34;</span><span class=p>:</span> <span class=p>[</span><span class=s2>&#34;*:*&#34;</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>    <span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=c1>// Servers can only receive SSH and HTTPS from workstations
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;action&#34;</span><span class=p>:</span> <span class=s2>&#34;accept&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;src&#34;</span><span class=p>:</span> <span class=p>[</span><span class=s2>&#34;group:workstations&#34;</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;dst&#34;</span><span class=p>:</span> <span class=p>[</span><span class=s2>&#34;group:servers:22&#34;</span><span class=p>,</span> <span class=s2>&#34;group:servers:443&#34;</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>    <span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=c1>// Workstations can only talk to the management network
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;action&#34;</span><span class=p>:</span> <span class=s2>&#34;accept&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;src&#34;</span><span class=p>:</span> <span class=p>[</span><span class=s2>&#34;group:workstations&#34;</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;dst&#34;</span><span class=p>:</span> <span class=p>[</span><span class=s2>&#34;management-network:*&#34;</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>    <span class=p>},</span>
+</span></span><span class=line><span class=cl>  <span class=p>],</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;tagOwners&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;tag:monitoring&#34;</span><span class=p>:</span> <span class=p>[</span><span class=s2>&#34;group:admins&#34;</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>  <span class=p>},</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>Reference the ACL file in your <code>config.yaml</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>acl_policy_path</span><span class=p>:</span><span class=w> </span><span class=l>/etc/headscale/acl.hujson</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=headscale-web-ui>Headscale Web UI</h3><p>The official Headscale installation does not include a web interface, but the community-maintained <strong>Headscale Admin UI</strong> (<code>headscale-webui</code>) provides a browser-based management dashboard:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=w>  </span><span class=nt>headscale-webui</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>ghcr.io/ifargle/headscale-webui:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>headscale-webui</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>TZ=UTC</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>COLOR=blue</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>HS_SERVER=https://headscale.example.com</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>KEY=your-api-key-here</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DOMAIN_NAME=headscale-webui.example.com</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>LOG_LEVEL=info</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=m>9999</span><span class=p>:</span><span class=m>5000</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=feature-comparison>Feature Comparison</h2><table><thead><tr><th>Feature</th><th>WireGuard (standalone)</th><th>OpenVPN</th><th>Headscale</th></tr></thead><tbody><tr><td><strong>Protocol</strong></td><td>Custom UDP (kernel)</td><td>SSL/TLS over UDP or TCP</td><td>WireGuard (userspace)</td></tr><tr><td><strong>Performance</strong></td><td>Excellent (near wire-speed)</td><td>Good (userspace overhead)</td><td>Excellent (WireGuard backend)</td></tr><tr><td><strong>NAT Traversal</strong></td><td>Manual port forwarding</td><td>Manual or TLS-based</td><td>Automatic (STUN/hole punching)</td></tr><tr><td><strong>Mesh Topology</strong></td><td>Star only (hub-and-spoke)</td><td>Star only</td><td>Full mesh (peer-to-peer)</td></tr><tr><td><strong>Max Peers</strong></td><td>~20-30 per config</td><td>Hundreds</td><td>Unlimited</td></tr><tr><td><strong>Configuration</strong></td><td>Manual per-peer files</td><td>PKI certificates + client configs</td><td>Centralized (API + CLI)</td></tr><tr><td><strong>Authentication</strong></td><td>Static public keys</td><td>Certificates, user/pass, LDAP</td><td>OAuth, OIDC, pre-auth keys</td></tr><tr><td><strong>Access Control</strong></td><td>None (all-or-nothing)</td><td>Firewall rules</td><td>Fine-grained ACL policies</td></tr><tr><td><strong>DNS</strong></td><td>Push DNS to clients</td><td>Push DNS to clients</td><td>MagicDNS (per-peer DNS)</td></tr><tr><td><strong>Exit Nodes</strong></td><td>Manual routing config</td><td><code>redirect-gateway</code></td><td>First-class exit node support</td></tr><tr><td><strong>TCP Fallback</strong></td><td>No</td><td>Yes (port 443 stealth mode)</td><td>Via DERP relay servers</td></tr><tr><td><strong>Setup Complexity</strong></td><td>Low</td><td>Medium</td><td>Medium-High</td></tr><tr><td><strong>Best For</strong></td><td>Simple site-to-site, &lt;20 peers</td><td>Enterprise, firewall traversal</td><td>Large mesh networks, dynamic peers</td></tr><tr><td><strong>License</strong></td><td>GPL v2</td><td>GPL v2</td><td>BSD 3-Clause</td></tr><tr><td><strong>Lines of Code</strong></td><td>~4,000</td><td>~100,000+</td><td>~30,000 (Go)</td></tr></tbody></table><h2 id=choosing-the-right-solution>Choosing the Right Solution</h2><p><strong>Pick WireGuard standalone</strong> if you need a straightforward point-to-point or star topology VPN with minimal overhead. A home lab connecting a remote server, a VPS, and a couple of laptops works perfectly with plain WireGuard. The configuration is transparent, the performance is unbeatable, and the attack surface is tiny.</p><p><strong>Pick OpenVPN</strong> if you need TCP-based connectivity, username/password authentication, LDAP integration, or you&rsquo;re operating in an environment where UDP is unreliable or actively blocked. OpenVPN&rsquo;s maturity means it&rsquo;s supported by virtually every router, firewall, and network appliance on the market. It remains the safest choice for enterprise deployments that require detailed audit logging and certificate revocation.</p><p><strong>Pick Headscale</strong> if you&rsquo;re managing more than a handful of nodes, need dynamic peer discovery without manual configuration, want fine-grained access control between nodes, or want the Tailscale experience without depending on an external service. Headscale shines in environments where nodes join and leave frequently — laptop users, ephemeral containers, or IoT deployments — because the central coordination server handles all the complexity of peer discovery, key distribution, and NAT traversal automatically.</p><p>For most homelab operators in 2026, the practical answer is to run <strong>both WireGuard and Headscale</strong>: use standalone WireGuard for simple, static connections (like a permanent link to a VPS) and Headscale for everything else that benefits from automatic mesh networking and dynamic access control.</p></div><div id=frame style=width:100%;margin:auto;position:relative;z-index:99998><iframe data-aa=2433958 src='//acceptable.a-ads.com/2433958/?size=Adaptive' style=border:0;padding:0;width:70%;height:auto;overflow:hidden;display:block;margin:auto></iframe></div></article></main><footer class=site-footer><p>Built with <a href=https://gohugo.io>Hugo</a> · <a href=/openswap-guide/index.xml>RSS</a> · <a href=https://github.com/hopkdj>GitHub</a></p><p style=margin-top:8px>&copy; 2026 OpenSwap Guide. All rights reserved.</p></footer></body></html>
