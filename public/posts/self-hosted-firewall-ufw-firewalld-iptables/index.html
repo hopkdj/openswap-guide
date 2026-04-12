@@ -1,0 +1,672 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>UFW vs Firewalld vs iptables: Best Linux Firewall for Self-Hosted Servers 2026 | OpenSwap Guide</title>
+<meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, and local AI deployment."><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/openswap-guide/css/main.min.777dc111b5207bf5336e5799477da0b31fb9080306bf98a82d6eceb979cf9737.css><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://hopkdj.github.io/openswap-guide/ class=logo><div class=logo-icon>H</div>OpenSwap Guide</a><nav><ul class=nav-links><li><a href=/openswap-guide/>Home</a></li><li><a href=/openswap-guide/tags/comparison/>Comparisons</a></li><li><a href=/openswap-guide/tags/guide/>Guides</a></li><li><a href=/openswap-guide/tags/ai/>Local AI</a></li><li><a href=/openswap-guide/index.xml class=nav-rss>Subscribe RSS</a></li></ul></nav></div></header><main><article class=post-single><a href=https://hopkdj.github.io/openswap-guide/ class=back-link>&larr; Back to posts</a><header class=post-single-header><div class=post-single-meta><span class="tag tag-purple">comparison</span>
+<span class="tag tag-green">guide</span>
+<span class="tag tag-blue">self-hosted</span>
+<span>·</span>
+<span>April 12, 2026</span>
+<span>·</span>
+<span>13 min read</span></div><h1 class=post-single-title>UFW vs Firewalld vs iptables: Best Linux Firewall for Self-Hosted Servers 2026</h1></header><div class=post-single-content><h2 id=why-a-proper-firewall-is-non-negotiable-for-self-hosted-servers>Why a Proper Firewall Is Non-Negotiable for Self-Hosted Servers</h2><p>Every self-hosted server is exposed to the internet — and the internet is noisy. Within minutes of connecting a fresh VPS, you&rsquo;ll see SSH brute-force attempts, port scans, and automated exploit probes in your logs. A properly configured firewall is your first and most critical line of defense.</p><p>Linux offers three mainstream firewall management tools: <strong>UFW</strong> (Uncomplicated Firewall), <strong>Firewalld</strong>, and raw <strong>iptables</strong> (now transitioning to <strong>nftables</strong>). Each has a different philosophy, feature set, and learning curve. If you&rsquo;re running services like Jellyfin, Nextcloud, Gitea, or a mail server, choosing the right firewall tool and configuring it correctly is essential.</p><p>This guide compares all three, covers Docker networking implications, and gives you ready-to-use configuration recipes so you can lock down your server in minutes.</p><h2 id=quick-comparison-table>Quick Comparison Table</h2><table><thead><tr><th>Feature</th><th>UFW</th><th>Firewalld</th><th>iptables / nftables</th></tr></thead><tbody><tr><td><strong>Complexity</strong></td><td>Very Low</td><td>Low-Medium</td><td>High</td></tr><tr><td><strong>Default On</strong></td><td>Ubuntu/Debian</td><td>RHEL/Fedora/SUSE</td><td>Arch, Alpine</td></tr><tr><td><strong>Syntax Style</strong></td><td>Simple English-like</td><td>Zone-based</td><td>Rule-based</td></tr><tr><td><strong>Docker Support</strong></td><td>⚠️ Manual override needed</td><td>⚠️ Manual override needed</td><td>⚠️ Manual override needed</td></tr><tr><td><strong>Rich Rules</strong></td><td>Limited</td><td>Yes (source, port, protocol, interface)</td><td>Unlimited</td></tr><tr><td><strong>Runtime Changes</strong></td><td>Yes</td><td>Yes (runtime + permanent)</td><td>Yes</td></tr><tr><td><strong>Logging</strong></td><td>Basic</td><td>Rich logging</td><td>Full packet logging</td></tr><tr><td><strong>IPv6 Support</strong></td><td>✅ Yes</td><td>✅ Yes</td><td>✅ Yes</td></tr><tr><td><strong>GUI Frontend</strong></td><td>Gufw</td><td>firewall-config</td><td>None (use fwbuilder)</td></tr><tr><td><strong>Configuration File</strong></td><td><code>/etc/ufw/</code></td><td>XML zones in <code>/etc/firewalld/</code></td><td><code>/etc/iptables/</code> or nftables.conf</td></tr><tr><td><strong>Best For</strong></td><td>Beginners, single-server</td><td>Multi-interface servers, desktops</td><td>Advanced users, custom topologies</td></tr></tbody></table><h2 id=understanding-the-firewall-stack>Understanding the Firewall Stack</h2><p>Before diving into tools, it helps to understand how Linux packet filtering works:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>Application Layer
+</span></span><span class=line><span class=cl>        ↓
+</span></span><span class=line><span class=cl>    Sockets / Ports
+</span></span><span class=line><span class=cl>        ↓
+</span></span><span class=line><span class=cl>  Netfilter (Kernel)
+</span></span><span class=line><span class=cl>        ↓
+</span></span><span class=line><span class=cl>  iptables (legacy)  ← OR →  nftables (modern)
+</span></span><span class=line><span class=cl>        ↓
+</span></span><span class=line><span class=cl>    Packet Decision (ACCEPT / DROP / REJECT)
+</span></span></code></pre></td></tr></table></div></div><p><strong>iptables</strong> and <strong>nftables</strong> are the actual kernel-level packet filtering frameworks. UFW and Firewalld are <em>frontends</em> — they generate iptables/nftables rules behind the scenes. Since kernel 5.14+, nftables is the default backend on most distributions, even when you use the <code>iptables</code> command.</p><h2 id=1-ufw--uncomplicated-firewall-the-beginners-choice>1. UFW — Uncomplicated Firewall (The Beginner&rsquo;s Choice)</h2><p><strong>Best for</strong>: Ubuntu/Debian users, single-server setups, anyone who wants &ldquo;it just works&rdquo;</p><p>UFW lives up to its name. It abstracts iptables into human-readable commands. A new self-hoster can get a secure baseline in under 2 minutes.</p><h3 id=default-policy--deny-everything-inbound>Default Policy — Deny Everything Inbound</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Reset to defaults</span>
+</span></span><span class=line><span class=cl>sudo ufw --force reset
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Default policies: deny all incoming, allow all outgoing</span>
+</span></span><span class=line><span class=cl>sudo ufw default deny incoming
+</span></span><span class=line><span class=cl>sudo ufw default allow outgoing
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Allow SSH (change port if you use a non-standard one)</span>
+</span></span><span class=line><span class=cl>sudo ufw allow 22/tcp comment <span class=s1>&#39;SSH&#39;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Enable the firewall</span>
+</span></span><span class=line><span class=cl>sudo ufw --force <span class=nb>enable</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=common-self-hosted-service-rules>Common Self-Hosted Service Rules</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Web server</span>
+</span></span><span class=line><span class=cl>sudo ufw allow 80/tcp comment <span class=s1>&#39;HTTP&#39;</span>
+</span></span><span class=line><span class=cl>sudo ufw allow 443/tcp comment <span class=s1>&#39;HTTPS&#39;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Reverse proxy (if you run Caddy or Traefik)</span>
+</span></span><span class=line><span class=cl>sudo ufw allow 80,443/tcp comment <span class=s1>&#39;Web traffic&#39;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># DNS (if running Pi-hole or AdGuard Home)</span>
+</span></span><span class=line><span class=cl>sudo ufw allow 53/tcp comment <span class=s1>&#39;DNS TCP&#39;</span>
+</span></span><span class=line><span class=cl>sudo ufw allow 53/udp comment <span class=s1>&#39;DNS UDP&#39;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Mail server ports</span>
+</span></span><span class=line><span class=cl>sudo ufw allow 25/tcp comment <span class=s1>&#39;SMTP&#39;</span>
+</span></span><span class=line><span class=cl>sudo ufw allow 587/tcp comment <span class=s1>&#39;Submission&#39;</span>
+</span></span><span class=line><span class=cl>sudo ufw allow 993/tcp comment <span class=s1>&#39;IMAPS&#39;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Database (restricted to local network)</span>
+</span></span><span class=line><span class=cl>sudo ufw allow from 192.168.1.0/24 to any port <span class=m>5432</span> comment <span class=s1>&#39;PostgreSQL LAN&#39;</span>
+</span></span><span class=line><span class=cl>sudo ufw allow from 192.168.1.0/24 to any port <span class=m>3306</span> comment <span class=s1>&#39;MySQL LAN&#39;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># WireGuard VPN</span>
+</span></span><span class=line><span class=cl>sudo ufw allow 51820/udp comment <span class=s1>&#39;WireGuard&#39;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Grafana dashboard (restricted)</span>
+</span></span><span class=line><span class=cl>sudo ufw allow from 192.168.1.0/24 to any port <span class=m>3000</span> comment <span class=s1>&#39;Grafana LAN&#39;</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=checking-status-and-managing-rules>Checking Status and Managing Rules</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># View active rules with numbers</span>
+</span></span><span class=line><span class=cl>sudo ufw status numbered
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Detailed status with logging</span>
+</span></span><span class=line><span class=cl>sudo ufw status verbose
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Delete a rule by number</span>
+</span></span><span class=line><span class=cl>sudo ufw delete <span class=m>3</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Disable temporarily (for troubleshooting)</span>
+</span></span><span class=line><span class=cl>sudo ufw disable
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># View the raw iptables rules UFW generated</span>
+</span></span><span class=line><span class=cl>sudo iptables -L -n -v <span class=p>|</span> head -40
+</span></span></code></pre></td></tr></table></div></div><h3 id=the-docker-problem-with-ufw>The Docker Problem with UFW</h3><p>Docker manipulates iptables directly, which bypasses UFW. A port exposed via <code>docker run -p 8080:80</code> will be reachable from the internet even if UFW blocks port 8080.</p><p><strong>Fix 1: Disable Docker&rsquo;s iptables manipulation</strong> (breaks container-to-container networking):</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=line><span class=cl><span class=c1>// /etc/docker/daemon.json
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;iptables&#34;</span><span class=p>:</span> <span class=kc>false</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>Then restart Docker: <code>sudo systemctl restart docker</code></p><p><strong>Fix 2: Use UFW&rsquo;s Docker integration plugin:</strong></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install the ufw-docker plugin</span>
+</span></span><span class=line><span class=cl>sudo wget -O /usr/local/bin/ufw-docker <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  https://raw.githubusercontent.com/chaifeng/ufw-docker/master/ufw-docker
+</span></span><span class=line><span class=cl>sudo chmod +x /usr/local/bin/ufw-docker
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Add Docker rules to UFW&#39;s after.rules</span>
+</span></span><span class=line><span class=cl>sudo ufw-docker install
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Restart UFW</span>
+</span></span><span class=line><span class=cl>sudo ufw reload
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Now use ufw-docker to manage rules</span>
+</span></span><span class=line><span class=cl>sudo ufw-docker allow jellyfin
+</span></span><span class=line><span class=cl>sudo ufw-docker allow nextcloud <span class=m>443</span>
+</span></span></code></pre></td></tr></table></div></div><p><strong>Fix 3 (recommended): Publish to localhost only and use a reverse proxy:</strong></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose.yml — bind to 127.0.0.1 only</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>jellyfin</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;127.0.0.1:8096:8096&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>nextcloud</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;127.0.0.1:8080:80&#34;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=2-firewalld--zone-based-firewalling-the-enterprise-choice>2. Firewalld — Zone-Based Firewalling (The Enterprise Choice)</h2><p><strong>Best for</strong>: RHEL/Fedora/AlmaLinux users, servers with multiple network interfaces, desktops</p><p>Firewalld uses a <em>zone</em> model. Each network interface is assigned to a zone, and each zone has its own ruleset. This is powerful for servers that sit on multiple networks (e.g., a public-facing interface and a private LAN).</p><h3 id=built-in-zones>Built-in Zones</h3><table><thead><tr><th>Zone</th><th>Default Behavior</th><th>Use Case</th></tr></thead><tbody><tr><td><code>drop</code></td><td>Drop all incoming, allow outgoing</td><td>Maximum security, no responses</td></tr><tr><td><code>block</code></td><td>Reject all incoming</td><td>Similar to drop, but sends ICMP reject</td></tr><tr><td><code>public</code></td><td>Selected connections only</td><td>Untrusted networks, default for most servers</td></tr><tr><td><code>external</code></td><td>Selected connections + masquerading</td><td>NAT gateways, routers</td></tr><tr><td><code>dmz</code></td><td>Limited access to internal</td><td>DMZ servers</td></tr><tr><td><code>work</code></td><td>Trust most machines</td><td>Office networks</td></tr><tr><td><code>home</code></td><td>Trust most machines</td><td>Home networks</td></tr><tr><td><code>internal</code></td><td>Trust all machines</td><td>Internal-only networks</td></tr><tr><td><code>trusted</code></td><td>Allow all</td><td>Management networks</td></tr></tbody></table><h3 id=basic-setup-for-a-self-hosted-server>Basic Setup for a Self-Hosted Server</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Start and enable firewalld</span>
+</span></span><span class=line><span class=cl>sudo systemctl <span class=nb>enable</span> --now firewalld
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Check the active zone (usually &#39;public&#39;)</span>
+</span></span><span class=line><span class=cl>firewall-cmd --get-active-zones
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Set default zone</span>
+</span></span><span class=line><span class=cl>sudo firewall-cmd --set-default-zone<span class=o>=</span>public
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Verify</span>
+</span></span><span class=line><span class=cl>firewall-cmd --get-default-zone
+</span></span></code></pre></td></tr></table></div></div><h3 id=adding-services-and-ports>Adding Services and Ports</h3><p>Firewalld has pre-defined service definitions (XML files in <code>/usr/lib/firewalld/services/</code>):</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># List all available service definitions</span>
+</span></span><span class=line><span class=cl>firewall-cmd --get-services
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Add common services (--permanent makes it survive reboots)</span>
+</span></span><span class=line><span class=cl>sudo firewall-cmd --permanent --add-service<span class=o>=</span>ssh
+</span></span><span class=line><span class=cl>sudo firewall-cmd --permanent --add-service<span class=o>=</span>http
+</span></span><span class=line><span class=cl>sudo firewall-cmd --permanent --add-service<span class=o>=</span>https
+</span></span><span class=line><span class=cl>sudo firewall-cmd --permanent --add-service<span class=o>=</span>dns
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Add custom ports</span>
+</span></span><span class=line><span class=cl>sudo firewall-cmd --permanent --add-port<span class=o>=</span>8096/tcp  <span class=c1># Jellyfin</span>
+</span></span><span class=line><span class=cl>sudo firewall-cmd --permanent --add-port<span class=o>=</span>3000/tcp  <span class=c1># Grafana</span>
+</span></span><span class=line><span class=cl>sudo firewall-cmd --permanent --add-port<span class=o>=</span>51820/udp <span class=c1># WireGuard</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Reload to apply permanent rules</span>
+</span></span><span class=line><span class=cl>sudo firewall-cmd --reload
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Verify active rules</span>
+</span></span><span class=line><span class=cl>sudo firewall-cmd --list-all
+</span></span></code></pre></td></tr></table></div></div><h3 id=rich-rules--granular-access-control>Rich Rules — Granular Access Control</h3><p>Rich rules let you specify source IPs, logging, and complex conditions:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Allow PostgreSQL only from the local subnet with logging</span>
+</span></span><span class=line><span class=cl>sudo firewall-cmd --permanent --add-rich-rule<span class=o>=</span><span class=s1>&#39;
+</span></span></span><span class=line><span class=cl><span class=s1>  rule family=&#34;ipv4&#34;
+</span></span></span><span class=line><span class=cl><span class=s1>  source address=&#34;192.168.1.0/24&#34;
+</span></span></span><span class=line><span class=cl><span class=s1>  port protocol=&#34;tcp&#34; port=&#34;5432&#34;
+</span></span></span><span class=line><span class=cl><span class=s1>  log prefix=&#34;PostgreSQL access: &#34; level=&#34;info&#34;
+</span></span></span><span class=line><span class=cl><span class=s1>  accept&#39;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Allow SSH only from your management IP</span>
+</span></span><span class=line><span class=cl>sudo firewall-cmd --permanent --add-rich-rule<span class=o>=</span><span class=s1>&#39;
+</span></span></span><span class=line><span class=cl><span class=s1>  rule family=&#34;ipv4&#34;
+</span></span></span><span class=line><span class=cl><span class=s1>  source address=&#34;203.0.113.50/32&#34;
+</span></span></span><span class=line><span class=cl><span class=s1>  port protocol=&#34;tcp&#34; port=&#34;22&#34;
+</span></span></span><span class=line><span class=cl><span class=s1>  accept&#39;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Rate-limit SSH to prevent brute force</span>
+</span></span><span class=line><span class=cl>sudo firewall-cmd --permanent --add-rich-rule<span class=o>=</span><span class=s1>&#39;
+</span></span></span><span class=line><span class=cl><span class=s1>  rule family=&#34;ipv4&#34;
+</span></span></span><span class=line><span class=cl><span class=s1>  source address=&#34;0.0.0.0/0&#34;
+</span></span></span><span class=line><span class=cl><span class=s1>  port protocol=&#34;tcp&#34; port=&#34;22&#34;
+</span></span></span><span class=line><span class=cl><span class=s1>  log prefix=&#34;SSH brute force: &#34; level=&#34;notice&#34;
+</span></span></span><span class=line><span class=cl><span class=s1>  accept limit value=&#34;3/m&#34;&#39;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>sudo firewall-cmd --reload
+</span></span></code></pre></td></tr></table></div></div><h3 id=multiple-zones-for-multi-interface-servers>Multiple Zones for Multi-Interface Servers</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Assign interfaces to zones</span>
+</span></span><span class=line><span class=cl>sudo firewall-cmd --permanent --zone<span class=o>=</span>internal --change-interface<span class=o>=</span>eth1
+</span></span><span class=line><span class=cl>sudo firewall-cmd --permanent --zone<span class=o>=</span>public --change-interface<span class=o>=</span>eth0
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Add services to the internal zone (trust your LAN)</span>
+</span></span><span class=line><span class=cl>sudo firewall-cmd --permanent --zone<span class=o>=</span>internal --add-service<span class=o>=</span>ssh
+</span></span><span class=line><span class=cl>sudo firewall-cmd --permanent --zone<span class=o>=</span>internal --add-service<span class=o>=</span>dns
+</span></span><span class=line><span class=cl>sudo firewall-cmd --permanent --zone<span class=o>=</span>internal --add-service<span class=o>=</span>dhcp
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Masquerading on the external zone (NAT for LAN)</span>
+</span></span><span class=line><span class=cl>sudo firewall-cmd --permanent --zone<span class=o>=</span>external --add-masquerade
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>sudo firewall-cmd --reload
+</span></span></code></pre></td></tr></table></div></div><h3 id=firewalld-and-docker>Firewalld and Docker</h3><p>Like UFW, Firewalld&rsquo;s rules can be bypassed by Docker&rsquo;s direct iptables manipulation. The same three fixes apply:</p><ol><li>Set <code>"iptables": false</code> in <code>daemon.json</code></li><li>Publish containers to <code>127.0.0.1</code> only</li><li>Use <code>--network=host</code> with explicit firewall rules</li></ol><h2 id=3-iptables--nftables--the-power-users-toolkit>3. iptables / nftables — The Power User&rsquo;s Toolkit</h2><p><strong>Best for</strong>: Advanced users, custom topologies, learning how Linux networking actually works</p><p>While UFW and Firewalld are convenient, they abstract away the underlying mechanics. Understanding iptables (or its successor, nftables) gives you complete control over packet filtering, NAT, port forwarding, and traffic shaping.</p><h3 id=iptables-chain-basics>iptables Chain Basics</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>INPUT chain   → Packets destined for this server
+</span></span><span class=line><span class=cl>FORWARD chain → Packets routed through this server
+</span></span><span class=line><span class=cl>OUTPUT chain  → Packets originating from this server
+</span></span><span class=line><span class=cl>PREROUTING    → Before routing decision (NAT)
+</span></span><span class=line><span class=cl>POSTROUTING   → After routing decision (NAT, masquerading)
+</span></span></code></pre></td></tr></table></div></div><h3 id=a-production-ready-iptables-ruleset>A Production-Ready iptables Ruleset</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=cp>#!/bin/bash
+</span></span></span><span class=line><span class=cl><span class=cp></span><span class=c1># /etc/iptables/rules.sh</span>
+</span></span><span class=line><span class=cl><span class=c1># A hardened iptables ruleset for self-hosted servers</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Flush existing rules</span>
+</span></span><span class=line><span class=cl>iptables -F
+</span></span><span class=line><span class=cl>iptables -X
+</span></span><span class=line><span class=cl>iptables -t nat -F
+</span></span><span class=line><span class=cl>iptables -t nat -X
+</span></span><span class=line><span class=cl>iptables -t mangle -F
+</span></span><span class=line><span class=cl>iptables -t mangle -X
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Default policies — DROP everything, then explicitly allow</span>
+</span></span><span class=line><span class=cl>iptables -P INPUT DROP
+</span></span><span class=line><span class=cl>iptables -P FORWARD DROP
+</span></span><span class=line><span class=cl>iptables -P OUTPUT ACCEPT
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Allow loopback (localhost)</span>
+</span></span><span class=line><span class=cl>iptables -A INPUT -i lo -j ACCEPT
+</span></span><span class=line><span class=cl>iptables -A OUTPUT -o lo -j ACCEPT
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Allow established and related connections (stateful)</span>
+</span></span><span class=line><span class=cl>iptables -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Drop invalid packets</span>
+</span></span><span class=line><span class=cl>iptables -A INPUT -m conntrack --ctstate INVALID -j DROP
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Anti-spoofing: drop packets claiming to be from localhost on external interface</span>
+</span></span><span class=line><span class=cl>iptables -A INPUT ! -i lo -s 127.0.0.0/8 -j DROP
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Allow ICMP (ping) with rate limiting</span>
+</span></span><span class=line><span class=cl>iptables -A INPUT -p icmp --icmp-type echo-request -m limit --limit 1/s --limit-burst <span class=m>4</span> -j ACCEPT
+</span></span><span class=line><span class=cl>iptables -A INPUT -p icmp --icmp-type echo-reply -j ACCEPT
+</span></span><span class=line><span class=cl>iptables -A INPUT -p icmp --icmp-type destination-unreachable -j ACCEPT
+</span></span><span class=line><span class=cl>iptables -A INPUT -p icmp --icmp-type time-exceeded -j ACCEPT
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># SSH — allow from anywhere (or restrict to your IP)</span>
+</span></span><span class=line><span class=cl>iptables -A INPUT -p tcp --dport <span class=m>22</span> -m conntrack --ctstate NEW -m recent --set --name SSH
+</span></span><span class=line><span class=cl>iptables -A INPUT -p tcp --dport <span class=m>22</span> -m conntrack --ctstate NEW -m recent --update --seconds <span class=m>60</span> --hitcount <span class=m>4</span> --name SSH -j DROP
+</span></span><span class=line><span class=cl>iptables -A INPUT -p tcp --dport <span class=m>22</span> -m conntrack --ctstate NEW -j ACCEPT
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># HTTP / HTTPS</span>
+</span></span><span class=line><span class=cl>iptables -A INPUT -p tcp --dport <span class=m>80</span> -j ACCEPT
+</span></span><span class=line><span class=cl>iptables -A INPUT -p tcp --dport <span class=m>443</span> -j ACCEPT
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Custom services — add as needed</span>
+</span></span><span class=line><span class=cl>iptables -A INPUT -p tcp --dport <span class=m>8096</span> -j ACCEPT   <span class=c1># Jellyfin</span>
+</span></span><span class=line><span class=cl>iptables -A INPUT -p udp --dport <span class=m>51820</span> -j ACCEPT  <span class=c1># WireGuard</span>
+</span></span><span class=line><span class=cl>iptables -A INPUT -p tcp --dport <span class=m>53</span> -j ACCEPT     <span class=c1># DNS</span>
+</span></span><span class=line><span class=cl>iptables -A INPUT -p udp --dport <span class=m>53</span> -j ACCEPT     <span class=c1># DNS</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Log dropped packets (for debugging)</span>
+</span></span><span class=line><span class=cl>iptables -A INPUT -j LOG --log-prefix <span class=s2>&#34;IPTABLES-DROP: &#34;</span> --log-level <span class=m>4</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Final drop (explicit, though default policy already does this)</span>
+</span></span><span class=line><span class=cl>iptables -A INPUT -j DROP
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;iptables rules applied successfully&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=making-iptables-persistent>Making iptables Persistent</h3><p>On Debian/Ubuntu:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install persistence package</span>
+</span></span><span class=line><span class=cl>sudo apt install iptables-persistent
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Save current rules</span>
+</span></span><span class=line><span class=cl>sudo netfilter-persistent save
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Rules stored in:</span>
+</span></span><span class=line><span class=cl><span class=c1># /etc/iptables/rules.v4   (IPv4)</span>
+</span></span><span class=line><span class=cl><span class=c1># /etc/iptables/rules.v6   (IPv6)</span>
+</span></span></code></pre></td></tr></table></div></div><p>On RHEL/Fedora:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>sudo iptables-save &gt; /etc/sysconfig/iptables
+</span></span><span class=line><span class=cl>sudo systemctl <span class=nb>enable</span> iptables
+</span></span></code></pre></td></tr></table></div></div><h3 id=introduction-to-nftables--the-modern-replacement>Introduction to nftables — The Modern Replacement</h3><p>nftables replaces iptables with a cleaner syntax, better performance, and unified IPv4/IPv6 handling. It&rsquo;s the default on newer distributions.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=cp>#!/sbin/nft -f
+</span></span></span><span class=line><span class=cl><span class=cp></span><span class=c1># /etc/nftables.conf</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>flush ruleset
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>table inet filter <span class=o>{</span>
+</span></span><span class=line><span class=cl>    chain input <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=nb>type</span> filter hook input priority 0<span class=p>;</span> policy drop<span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=c1># Allow loopback</span>
+</span></span><span class=line><span class=cl>        iif lo accept
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=c1># Allow established connections</span>
+</span></span><span class=line><span class=cl>        ct state established,related accept
+</span></span><span class=line><span class=cl>        ct state invalid drop
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=c1># Allow ICMPv4 and ICMPv6</span>
+</span></span><span class=line><span class=cl>        ip protocol icmp accept
+</span></span><span class=line><span class=cl>        ip6 nexthdr icmpv6 accept
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=c1># SSH with rate limiting</span>
+</span></span><span class=line><span class=cl>        tcp dport <span class=m>22</span> ct state new limit rate 3/minute accept
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=c1># Web services</span>
+</span></span><span class=line><span class=cl>        tcp dport <span class=o>{</span> 80, <span class=m>443</span> <span class=o>}</span> accept
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=c1># Custom self-hosted services</span>
+</span></span><span class=line><span class=cl>        tcp dport <span class=m>8096</span> accept        <span class=c1># Jellyfin</span>
+</span></span><span class=line><span class=cl>        udp dport <span class=m>51820</span> accept       <span class=c1># WireGuard</span>
+</span></span><span class=line><span class=cl>        tcp dport <span class=o>{</span> 53, <span class=m>853</span> <span class=o>}</span> accept <span class=c1># DNS + DoT</span>
+</span></span><span class=line><span class=cl>        udp dport <span class=o>{</span> 53, <span class=m>853</span> <span class=o>}</span> accept
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=c1># Log and drop everything else</span>
+</span></span><span class=line><span class=cl>        log prefix <span class=s2>&#34;NFTABLES-DROP: &#34;</span> drop
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    chain forward <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=nb>type</span> filter hook forward priority 0<span class=p>;</span> policy drop<span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    chain output <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=nb>type</span> filter hook output priority 0<span class=p>;</span> policy accept<span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>Enable nftables:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>sudo systemctl <span class=nb>enable</span> --now nftables
+</span></span><span class=line><span class=cl>sudo nft list ruleset  <span class=c1># verify</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=docker-networking-and-firewalls--the-complete-picture>Docker Networking and Firewalls — The Complete Picture</h2><p>This is the single most common misconfiguration in self-hosted setups. Here&rsquo;s a definitive approach:</p><h3 id=strategy-1-localhost-binding-recommended>Strategy 1: Localhost Binding (Recommended)</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>nextcloud</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>nextcloud:apache</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;127.0.0.1:8080:80&#34;</span><span class=w>  </span><span class=c># Only accessible via reverse proxy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>jellyfin</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>jellyfin/jellyfin</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;127.0.0.1:8096:8096&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>gitea</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>gitea/gitea:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;127.0.0.1:3000:3000&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;127.0.0.1:222:22&#34;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Then your firewall only needs to allow ports 80 and 443 (your reverse proxy).</p><h3 id=strategy-2-docker-user-defined-networks>Strategy 2: Docker User-Defined Networks</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>frontend</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>bridge</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>backend</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>bridge</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>internal</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>  </span><span class=c># No external access</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>reverse-proxy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>frontend</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>nextcloud</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>frontend</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>backend</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>postgres</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>backend </span><span class=w> </span><span class=c># Only reachable from nextcloud</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w> </span><span class=p>[]</span><span class=w>    </span><span class=c># No host port mapping at all</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>The <code>internal: true</code> flag prevents the backend network from reaching the internet — an extra layer of isolation for databases and internal services.</p><h3 id=strategy-3-port-knocking-for-ssh>Strategy 3: Port Knocking for SSH</h3><p>For an additional security layer, hide SSH behind port knocking:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install knockd</span>
+</span></span><span class=line><span class=cl>sudo apt install knockd
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Configure /etc/knockd.conf</span>
+</span></span><span class=line><span class=cl><span class=o>[</span>options<span class=o>]</span>
+</span></span><span class=line><span class=cl>    UseSyslog
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=o>[</span>openSSH<span class=o>]</span>
+</span></span><span class=line><span class=cl>    <span class=nv>sequence</span>    <span class=o>=</span> 7000,8000,9000
+</span></span><span class=line><span class=cl>    <span class=nv>seq_timeout</span> <span class=o>=</span> <span class=m>5</span>
+</span></span><span class=line><span class=cl>    <span class=nb>command</span>     <span class=o>=</span> /sbin/iptables -A INPUT -s %IP% -p tcp --dport <span class=m>22</span> -j ACCEPT
+</span></span><span class=line><span class=cl>    <span class=nv>tcpflags</span>    <span class=o>=</span> syn
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=o>[</span>closeSSH<span class=o>]</span>
+</span></span><span class=line><span class=cl>    <span class=nv>sequence</span>    <span class=o>=</span> 9000,8000,7000
+</span></span><span class=line><span class=cl>    <span class=nv>seq_timeout</span> <span class=o>=</span> <span class=m>5</span>
+</span></span><span class=line><span class=cl>    <span class=nb>command</span>     <span class=o>=</span> /sbin/iptables -D INPUT -s %IP% -p tcp --dport <span class=m>22</span> -j ACCEPT
+</span></span><span class=line><span class=cl>    <span class=nv>tcpflags</span>    <span class=o>=</span> syn
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>sudo systemctl <span class=nb>enable</span> --now knockd
+</span></span></code></pre></td></tr></table></div></div><p>Knock the sequence from your client: <code>knock your-server.com 7000 8000 9000</code></p><h2 id=choosing-the-right-firewall-for-your-setup>Choosing the Right Firewall for Your Setup</h2><table><thead><tr><th>Scenario</th><th>Recommendation</th><th>Reason</th></tr></thead><tbody><tr><td><strong>Ubuntu VPS, first self-hosted server</strong></td><td>UFW</td><td>Simplest path to a secure baseline</td></tr><tr><td><strong>RHEL/Fedora/AlmaLinux server</strong></td><td>Firewalld</td><td>Native, zone model fits enterprise patterns</td></tr><tr><td><strong>Multi-homed server (public + private NICs)</strong></td><td>Firewalld</td><td>Zone-based design handles this natively</td></tr><tr><td><strong>Learning networking fundamentals</strong></td><td>iptables/nftables</td><td>Understand what&rsquo;s happening under the hood</td></tr><tr><td><strong>Complex NAT / routing / port forwarding</strong></td><td>iptables/nftables</td><td>Maximum flexibility for custom topologies</td></tr><tr><td><strong>Desktop + server on same machine</strong></td><td>Firewalld</td><td>Different zones for different interfaces</td></tr><tr><td><strong>Automated provisioning (Ansible/Terraform)</strong></td><td>Any — pick what matches your OS</td><td>All three are automation-friendly</td></tr><tr><td><strong>Maximum performance (high-traffic server)</strong></td><td>nftables</td><td>Faster rule evaluation, less memory</td></tr></tbody></table><h2 id=recommended-baseline-checklist>Recommended Baseline Checklist</h2><p>Regardless of which tool you choose, every self-hosted server should have:</p><ol><li><strong>Default deny incoming</strong> — only explicitly allowed ports are open</li><li><strong>SSH rate limiting</strong> — prevent brute-force attacks</li><li><strong>Only ports 80/443 public</strong> — all other services behind a reverse proxy</li><li><strong>Fail2ban integration</strong> — auto-ban IPs after repeated failed logins</li><li><strong>IPv6 rules</strong> — don&rsquo;t forget the IPv6 stack (many firewalls ignore it by default)</li><li><strong>Logging enabled</strong> — so you can investigate suspicious activity</li><li><strong>Regular rule audits</strong> — <code>sudo ufw status</code> or <code>sudo firewall-cmd --list-all</code> quarterly</li></ol><h2 id=conclusion>Conclusion</h2><p>For most self-hosters running Ubuntu or Debian, <strong>UFW</strong> provides the best balance of simplicity and security. If you&rsquo;re on a Red Hat-based distribution, <strong>Firewalld</strong> is the natural choice. Reserve raw <strong>iptables/nftables</strong> for scenarios where you need custom NAT, complex routing, or want to understand the fundamentals of Linux networking.</p><p>The most important thing isn&rsquo;t which tool you pick — it&rsquo;s that you actually configure one, test it, and keep it maintained. An unconfigured server is an open door.</p></div><div id=frame style=width:100%;margin:auto;position:relative;z-index:99998><iframe data-aa=2433958 src='//acceptable.a-ads.com/2433958/?size=Adaptive' style=border:0;padding:0;width:70%;height:auto;overflow:hidden;display:block;margin:auto></iframe></div></article></main><footer class=site-footer><p>Built with <a href=https://gohugo.io>Hugo</a> · <a href=/openswap-guide/index.xml>RSS</a> · <a href=https://github.com/hopkdj>GitHub</a></p><p style=margin-top:8px>&copy; 2026 OpenSwap Guide. All rights reserved.</p></footer></body></html>
