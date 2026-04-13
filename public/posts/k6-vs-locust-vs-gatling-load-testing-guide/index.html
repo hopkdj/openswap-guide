@@ -1,0 +1,860 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Best Self-Hosted Load Testing Tools: k6 vs Locust vs Gatling 2026 | OpenSwap Guide</title>
+<meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, and local AI deployment."><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/openswap-guide/css/main.min.777dc111b5207bf5336e5799477da0b31fb9080306bf98a82d6eceb979cf9737.css><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://hopkdj.github.io/openswap-guide/ class=logo><div class=logo-icon>H</div>OpenSwap Guide</a><nav><ul class=nav-links><li><a href=/openswap-guide/>Home</a></li><li><a href=/openswap-guide/tags/comparison/>Comparisons</a></li><li><a href=/openswap-guide/tags/guide/>Guides</a></li><li><a href=/openswap-guide/tags/ai/>Local AI</a></li><li><a href=/openswap-guide/index.xml class=nav-rss>Subscribe RSS</a></li></ul></nav></div></header><main><article class=post-single><a href=https://hopkdj.github.io/openswap-guide/ class=back-link>&larr; Back to posts</a><header class=post-single-header><div class=post-single-meta><span class="tag tag-purple">comparison</span>
+<span class="tag tag-green">guide</span>
+<span class="tag tag-blue">self-hosted</span>
+<span>·</span>
+<span>April 13, 2026</span>
+<span>·</span>
+<span>16 min read</span></div><h1 class=post-single-title>Best Self-Hosted Load Testing Tools: k6 vs Locust vs Gatling 2026</h1></header><div class=post-single-content><p>If you have ever shipped an application to production only to watch it buckle under real traffic, you already know why load testing matters. Commercial platforms like LoadRunner, BlazeMeter, and LoadNinja make it easy to click through a web interface and run a test — but they come with serious drawbacks. Your test scripts and endpoint configurations live on someone else&rsquo;s servers. Pricing scales with concurrent users, making frequent testing prohibitively expensive. And when a SaaS provider goes down or changes its pricing model, your testing workflow goes with it.</p><p>Self-hosted load testing puts the entire stack under your control. You define the scenarios, own the test data, store the results locally, and run tests on your own schedule without per-user fees or bandwidth caps. Three open-source projects dominate this space in 2026: <strong>k6</strong>, <strong>Locust</strong>, and <strong>Apache JMeter/Gatling</strong>. Each takes a fundamentally different approach, and the right choice depends on your team&rsquo;s workflow, language preferences, and scale requirements.</p><h2 id=why-self-host-your-load-testing-infrastructure>Why Self-Host Your Load Testing Infrastructure</h2><p>Running load tests through a cloud provider introduces several problems that become acute as your testing frequency increases:</p><ul><li><strong>Cost at scale</strong>: Most commercial platforms charge per virtual user or per test run. Running daily regression tests with thousands of concurrent users quickly costs more than a modest cloud VM.</li><li><strong>Data privacy</strong>: Your test scenarios contain API endpoints, authentication tokens, and internal service URLs. Sending this to a third-party platform creates a security surface that compliance teams will flag.</li><li><strong>Internal network access</strong>: Cloud-based load generators cannot reach services behind your firewall, on private subnets, or in staging environments without complex tunneling setups.</li><li><strong>Reproducibility</strong>: Self-hosted environments guarantee identical test conditions. You control the network, the hardware, the test data snapshots, and the monitoring stack — all of which are essential for comparing results across releases.</li><li><strong>CI/CD integration</strong>: When the load testing tool runs in your own infrastructure, integrating it into GitLab CI, Jenkins, or GitHub Actions is a matter of adding a pipeline step, not configuring webhooks and API keys to an external service.</li></ul><p>The trade-off is operational overhead — you manage the load generator machines and the results storage. But with Docker and a few configuration files, this overhead is minimal compared to the cost savings and control you gain.</p><h2 id=k6-developer-first-load-testing>k6: Developer-First Load Testing</h2><p><strong>k6</strong> (by Grafana Labs) has become the go-to load testing tool for teams that prefer writing tests in JavaScript. It treats test scripts as code, integrates naturally with version control, and ships with a CLI that produces clean, actionable output.</p><h3 id=why-choose-k6>Why Choose k6</h3><table><thead><tr><th>Strength</th><th>Detail</th></tr></thead><tbody><tr><td><strong>Scripting language</strong></td><td>JavaScript/TypeScript — most developers can write and review tests without learning a new DSL</td></tr><tr><td><strong>Performance</strong></td><td>Written in Go, a single k6 instance can generate tens of thousands of virtual users</td></tr><tr><td><strong>CI/CD ready</strong></td><td>Designed for pipeline integration from day one; supports thresholds that fail builds automatically</td></tr><tr><td><strong>Extensibility</strong></td><td>Extensions (xk6) written in Go for custom protocols, output formats, and integrations</td></tr><tr><td><strong>Results export</strong></td><td>Native exporters for InfluxDB, Prometheus, Datadog, New Relic, JSON, CSV, and more</td></tr><tr><td><strong>Resource efficiency</strong></td><td>Lower memory footprint than JVM-based tools, making it cheaper to run on small VMs</td></tr></tbody></table><h3 id=installing-k6>Installing k6</h3><p>On Debian/Ubuntu:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>sudo gpg -k
+</span></span><span class=line><span class=cl>sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main&#34;</span> <span class=p>|</span> sudo tee /etc/apt/sources.list.d/k6.list
+</span></span><span class=line><span class=cl>sudo apt-get update
+</span></span><span class=line><span class=cl>sudo apt-get install k6
+</span></span></code></pre></td></tr></table></div></div><p>On macOS:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>brew install k6
+</span></span></code></pre></td></tr></table></div></div><p>Or via Docker (recommended for CI/CD):</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker pull grafana/k6
+</span></span></code></pre></td></tr></table></div></div><h3 id=writing-your-first-k6-test>Writing Your First k6 Test</h3><p>k6 tests are JavaScript files. Here is a realistic scenario that tests a REST API with authentication, mixed traffic patterns, and performance thresholds:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span><span class=lnt>62
+</span><span class=lnt>63
+</span><span class=lnt>64
+</span><span class=lnt>65
+</span><span class=lnt>66
+</span><span class=lnt>67
+</span><span class=lnt>68
+</span><span class=lnt>69
+</span><span class=lnt>70
+</span><span class=lnt>71
+</span><span class=lnt>72
+</span><span class=lnt>73
+</span><span class=lnt>74
+</span><span class=lnt>75
+</span><span class=lnt>76
+</span><span class=lnt>77
+</span><span class=lnt>78
+</span><span class=lnt>79
+</span><span class=lnt>80
+</span><span class=lnt>81
+</span><span class=lnt>82
+</span><span class=lnt>83
+</span><span class=lnt>84
+</span><span class=lnt>85
+</span><span class=lnt>86
+</span><span class=lnt>87
+</span><span class=lnt>88
+</span><span class=lnt>89
+</span><span class=lnt>90
+</span><span class=lnt>91
+</span><span class=lnt>92
+</span><span class=lnt>93
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-javascript data-lang=javascript><span class=line><span class=cl><span class=c1>// api-load-test.js
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=kr>import</span> <span class=nx>http</span> <span class=nx>from</span> <span class=s1>&#39;k6/http&#39;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=kr>import</span> <span class=p>{</span> <span class=nx>check</span><span class=p>,</span> <span class=nx>sleep</span><span class=p>,</span> <span class=nx>group</span> <span class=p>}</span> <span class=nx>from</span> <span class=s1>&#39;k6&#39;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=kr>import</span> <span class=p>{</span> <span class=nx>Rate</span><span class=p>,</span> <span class=nx>Trend</span> <span class=p>}</span> <span class=nx>from</span> <span class=s1>&#39;k6/metrics&#39;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>// Custom metrics
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=kr>const</span> <span class=nx>errorRate</span> <span class=o>=</span> <span class=k>new</span> <span class=nx>Rate</span><span class=p>(</span><span class=s1>&#39;errors&#39;</span><span class=p>);</span>
+</span></span><span class=line><span class=cl><span class=kr>const</span> <span class=nx>apiLatency</span> <span class=o>=</span> <span class=k>new</span> <span class=nx>Trend</span><span class=p>(</span><span class=s1>&#39;api_latency&#39;</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>// Test configuration
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=kr>export</span> <span class=kr>const</span> <span class=nx>options</span> <span class=o>=</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nx>stages</span><span class=o>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>    <span class=p>{</span> <span class=nx>duration</span><span class=o>:</span> <span class=s1>&#39;30s&#39;</span><span class=p>,</span> <span class=nx>target</span><span class=o>:</span> <span class=mi>50</span> <span class=p>},</span>    <span class=c1>// Ramp up to 50 users
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=p>{</span> <span class=nx>duration</span><span class=o>:</span> <span class=s1>&#39;2m&#39;</span><span class=p>,</span> <span class=nx>target</span><span class=o>:</span> <span class=mi>50</span> <span class=p>},</span>     <span class=c1>// Stay at 50 users
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=p>{</span> <span class=nx>duration</span><span class=o>:</span> <span class=s1>&#39;30s&#39;</span><span class=p>,</span> <span class=nx>target</span><span class=o>:</span> <span class=mi>200</span> <span class=p>},</span>   <span class=c1>// Spike to 200 users
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=p>{</span> <span class=nx>duration</span><span class=o>:</span> <span class=s1>&#39;2m&#39;</span><span class=p>,</span> <span class=nx>target</span><span class=o>:</span> <span class=mi>200</span> <span class=p>},</span>    <span class=c1>// Stay at 200 users
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=p>{</span> <span class=nx>duration</span><span class=o>:</span> <span class=s1>&#39;30s&#39;</span><span class=p>,</span> <span class=nx>target</span><span class=o>:</span> <span class=mi>0</span> <span class=p>},</span>     <span class=c1>// Ramp down
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=p>],</span>
+</span></span><span class=line><span class=cl>  <span class=nx>thresholds</span><span class=o>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nx>http_req_duration</span><span class=o>:</span> <span class=p>[</span><span class=s1>&#39;p(95)&lt;500&#39;</span><span class=p>],</span>   <span class=c1>// 95th percentile under 500ms
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=nx>http_req_failed</span><span class=o>:</span> <span class=p>[</span><span class=s1>&#39;rate&lt;0.01&#39;</span><span class=p>],</span>     <span class=c1>// Error rate under 1%
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=nx>api_latency</span><span class=o>:</span> <span class=p>[</span><span class=s1>&#39;p(99)&lt;1000&#39;</span><span class=p>],</span>        <span class=c1>// 99th percentile custom metric under 1s
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=nx>errors</span><span class=o>:</span> <span class=p>[</span><span class=s1>&#39;rate&lt;0.05&#39;</span><span class=p>],</span>              <span class=c1>// Custom error rate under 5%
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=p>},</span>
+</span></span><span class=line><span class=cl><span class=p>};</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kr>const</span> <span class=nx>BASE_URL</span> <span class=o>=</span> <span class=nx>__ENV</span><span class=p>.</span><span class=nx>BASE_URL</span> <span class=o>||</span> <span class=s1>&#39;http://localhost:8080&#39;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kr>export</span> <span class=k>default</span> <span class=kd>function</span> <span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=kr>const</span> <span class=nx>headers</span> <span class=o>=</span> <span class=p>{</span> <span class=s1>&#39;Content-Type&#39;</span><span class=o>:</span> <span class=s1>&#39;application/json&#39;</span> <span class=p>};</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=nx>group</span><span class=p>(</span><span class=s1>&#39;Authentication&#39;</span><span class=p>,</span> <span class=kd>function</span> <span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=kr>const</span> <span class=nx>loginRes</span> <span class=o>=</span> <span class=nx>http</span><span class=p>.</span><span class=nx>post</span><span class=p>(</span><span class=sb>`</span><span class=si>${</span><span class=nx>BASE_URL</span><span class=si>}</span><span class=sb>/api/auth/login`</span><span class=p>,</span> <span class=nx>JSON</span><span class=p>.</span><span class=nx>stringify</span><span class=p>({</span>
+</span></span><span class=line><span class=cl>      <span class=nx>username</span><span class=o>:</span> <span class=s1>&#39;testuser&#39;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nx>password</span><span class=o>:</span> <span class=s1>&#39;testpass&#39;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=p>}),</span> <span class=p>{</span> <span class=nx>headers</span> <span class=p>});</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=nx>check</span><span class=p>(</span><span class=nx>loginRes</span><span class=p>,</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=s1>&#39;login status 200&#39;</span><span class=o>:</span> <span class=p>(</span><span class=nx>r</span><span class=p>)</span> <span class=p>=&gt;</span> <span class=nx>r</span><span class=p>.</span><span class=nx>status</span> <span class=o>===</span> <span class=mi>200</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=s1>&#39;login returns token&#39;</span><span class=o>:</span> <span class=p>(</span><span class=nx>r</span><span class=p>)</span> <span class=p>=&gt;</span> <span class=nx>r</span><span class=p>.</span><span class=nx>json</span><span class=p>(</span><span class=s1>&#39;token&#39;</span><span class=p>)</span> <span class=o>!==</span> <span class=kc>undefined</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=p>});</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=nx>errorRate</span><span class=p>.</span><span class=nx>add</span><span class=p>(</span><span class=nx>loginRes</span><span class=p>.</span><span class=nx>status</span> <span class=o>!==</span> <span class=mi>200</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>  <span class=p>});</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=nx>group</span><span class=p>(</span><span class=s1>&#39;Product Catalog&#39;</span><span class=p>,</span> <span class=kd>function</span> <span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=kr>const</span> <span class=nx>start</span> <span class=o>=</span> <span class=k>new</span> <span class=nb>Date</span><span class=p>().</span><span class=nx>getTime</span><span class=p>();</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kr>const</span> <span class=nx>res</span> <span class=o>=</span> <span class=nx>http</span><span class=p>.</span><span class=nx>get</span><span class=p>(</span><span class=sb>`</span><span class=si>${</span><span class=nx>BASE_URL</span><span class=si>}</span><span class=sb>/api/products?limit=20`</span><span class=p>,</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nx>headers</span><span class=o>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=p>...</span><span class=nx>headers</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s1>&#39;Authorization&#39;</span><span class=o>:</span> <span class=sb>`Bearer </span><span class=si>${</span><span class=nx>loginRes</span><span class=p>.</span><span class=nx>json</span><span class=p>(</span><span class=s1>&#39;token&#39;</span><span class=p>)</span><span class=si>}</span><span class=sb>`</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=p>});</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=nx>apiLatency</span><span class=p>.</span><span class=nx>add</span><span class=p>(</span><span class=k>new</span> <span class=nb>Date</span><span class=p>().</span><span class=nx>getTime</span><span class=p>()</span> <span class=o>-</span> <span class=nx>start</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=nx>check</span><span class=p>(</span><span class=nx>res</span><span class=p>,</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=s1>&#39;products status 200&#39;</span><span class=o>:</span> <span class=p>(</span><span class=nx>r</span><span class=p>)</span> <span class=p>=&gt;</span> <span class=nx>r</span><span class=p>.</span><span class=nx>status</span> <span class=o>===</span> <span class=mi>200</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=s1>&#39;products response &lt; 200KB&#39;</span><span class=o>:</span> <span class=p>(</span><span class=nx>r</span><span class=p>)</span> <span class=p>=&gt;</span> <span class=nx>r</span><span class=p>.</span><span class=nx>body</span><span class=p>.</span><span class=nx>length</span> <span class=o>&lt;</span> <span class=mi>204800</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=p>});</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=nx>errorRate</span><span class=p>.</span><span class=nx>add</span><span class=p>(</span><span class=nx>res</span><span class=p>.</span><span class=nx>status</span> <span class=o>!==</span> <span class=mi>200</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>  <span class=p>});</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=nx>group</span><span class=p>(</span><span class=s1>&#39;Checkout Flow&#39;</span><span class=p>,</span> <span class=kd>function</span> <span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=kr>const</span> <span class=nx>payload</span> <span class=o>=</span> <span class=nx>JSON</span><span class=p>.</span><span class=nx>stringify</span><span class=p>({</span>
+</span></span><span class=line><span class=cl>      <span class=nx>product_id</span><span class=o>:</span> <span class=mi>42</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nx>quantity</span><span class=o>:</span> <span class=mi>1</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nx>shipping</span><span class=o>:</span> <span class=s1>&#39;standard&#39;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=p>});</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kr>const</span> <span class=nx>start</span> <span class=o>=</span> <span class=k>new</span> <span class=nb>Date</span><span class=p>().</span><span class=nx>getTime</span><span class=p>();</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kr>const</span> <span class=nx>res</span> <span class=o>=</span> <span class=nx>http</span><span class=p>.</span><span class=nx>post</span><span class=p>(</span><span class=sb>`</span><span class=si>${</span><span class=nx>BASE_URL</span><span class=si>}</span><span class=sb>/api/checkout`</span><span class=p>,</span> <span class=nx>payload</span><span class=p>,</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nx>headers</span><span class=o>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=p>...</span><span class=nx>headers</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s1>&#39;Authorization&#39;</span><span class=o>:</span> <span class=sb>`Bearer </span><span class=si>${</span><span class=nx>loginRes</span><span class=p>.</span><span class=nx>json</span><span class=p>(</span><span class=s1>&#39;token&#39;</span><span class=p>)</span><span class=si>}</span><span class=sb>`</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=p>});</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=nx>apiLatency</span><span class=p>.</span><span class=nx>add</span><span class=p>(</span><span class=k>new</span> <span class=nb>Date</span><span class=p>().</span><span class=nx>getTime</span><span class=p>()</span> <span class=o>-</span> <span class=nx>start</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=nx>check</span><span class=p>(</span><span class=nx>res</span><span class=p>,</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=s1>&#39;checkout status 201&#39;</span><span class=o>:</span> <span class=p>(</span><span class=nx>r</span><span class=p>)</span> <span class=p>=&gt;</span> <span class=nx>r</span><span class=p>.</span><span class=nx>status</span> <span class=o>===</span> <span class=mi>201</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=s1>&#39;checkout returns order_id&#39;</span><span class=o>:</span> <span class=p>(</span><span class=nx>r</span><span class=p>)</span> <span class=p>=&gt;</span> <span class=nx>r</span><span class=p>.</span><span class=nx>json</span><span class=p>(</span><span class=s1>&#39;order_id&#39;</span><span class=p>)</span> <span class=o>!==</span> <span class=kc>undefined</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=p>});</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=nx>errorRate</span><span class=p>.</span><span class=nx>add</span><span class=p>(</span><span class=nx>res</span><span class=p>.</span><span class=nx>status</span> <span class=o>!==</span> <span class=mi>201</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>  <span class=p>});</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=nx>sleep</span><span class=p>(</span><span class=mi>1</span><span class=p>);</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>Run the test locally:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>k6 run api-load-test.js
+</span></span></code></pre></td></tr></table></div></div><p>Run with Docker against a specific target:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker run --rm -i grafana/k6 run -e <span class=nv>BASE_URL</span><span class=o>=</span>http://staging-api:8080 - &lt; api-load-test.js
+</span></span></code></pre></td></tr></table></div></div><h3 id=running-k6-in-distributed-mode>Running k6 in Distributed Mode</h3><p>For tests that exceed a single machine&rsquo;s capacity, use k6 Cloud execution or set up distributed testing with multiple instances:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># On the coordinator node</span>
+</span></span><span class=line><span class=cl>k6 cloud api-load-test.js
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Or manually distribute across multiple load generators</span>
+</span></span><span class=line><span class=cl><span class=c1># Generator 1</span>
+</span></span><span class=line><span class=cl>k6 run --vus <span class=m>500</span> --duration 5m api-load-test.js
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Generator 2 (identical config, aggregate results via shared output)</span>
+</span></span><span class=line><span class=cl>k6 run --vus <span class=m>500</span> --duration 5m --out <span class=nv>influxdb</span><span class=o>=</span>http://influxdb:8086/k6 api-load-test.js
+</span></span></code></pre></td></tr></table></div></div><h3 id=full-docker-compose-stack-for-k6>Full Docker Compose Stack for k6</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>influxdb</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>influxdb:2.7</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8086:8086&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DOCKER_INFLUXDB_INIT_MODE=setup</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DOCKER_INFLUXDB_INIT_USERNAME=admin</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DOCKER_INFLUXDB_INIT_PASSWORD=admin123</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DOCKER_INFLUXDB_INIT_ORG=myorg</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DOCKER_INFLUXDB_INIT_BUCKET=k6</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>influxdb_data:/var/lib/influxdb2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>grafana</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>grafana/grafana:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;3000:3000&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>GF_AUTH_ANONYMOUS_ENABLED=true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>GF_AUTH_ANONYMOUS_ORG_ROLE=Admin</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>grafana_data:/var/lib/grafana</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>influxdb</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>influxdb_data</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>grafana_data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>This stack gives you persistent test result storage in InfluxDB and real-time dashboards in Grafana. The official k6 Grafana dashboard (ID 13943 in the Grafana library) provides request rates, error rates, response time percentiles, and per-endpoint breakdowns out of the box.</p><h2 id=locust-python-based-load-testing-with-a-web-ui>Locust: Python-Based Load Testing with a Web UI</h2><p><strong>Locust</strong> takes a different philosophy. Instead of CLI-first operation, it provides a live web interface where you can monitor active users, request rates, and response times in real time. Tests are written in Python using a cooperative concurrency model (gevent), making them highly readable and easy to debug.</p><h3 id=why-choose-locust>Why Choose Locust</h3><table><thead><tr><th>Strength</th><th>Detail</th></tr></thead><tbody><tr><td><strong>Python scripting</strong></td><td>Write tests in pure Python — access any library, database driver, or SDK</td></tr><tr><td><strong>Live web UI</strong></td><td>Real-time charts, user count adjustment during tests, and result export without stopping</td></tr><tr><td><strong>Cooperative concurrency</strong></td><td>gevent-based model uses less memory per user than thread-based approaches</td></tr><tr><td><strong>Distributed execution</strong></td><td>Built-in master/worker mode for horizontal scaling across multiple machines</td></tr><tr><td><strong>Extensible</strong></td><td>Python ecosystem means you can integrate with anything — Kafka, databases, message queues</td></tr><tr><td><strong>Event hooks</strong></td><td>Custom event handlers for setup, teardown, request logging, and custom metrics</td></tr></tbody></table><h3 id=installing-locust>Installing Locust</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>pip install locust
+</span></span></code></pre></td></tr></table></div></div><p>Or via Docker:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker pull locustio/locust
+</span></span></code></pre></td></tr></table></div></div><h3 id=writing-your-first-locust-test>Writing Your First Locust Test</h3><p>Locust tests are Python classes that define user behavior. Here is the same scenario as the k6 example above, translated to Locust:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span><span class=lnt>62
+</span><span class=lnt>63
+</span><span class=lnt>64
+</span><span class=lnt>65
+</span><span class=lnt>66
+</span><span class=lnt>67
+</span><span class=lnt>68
+</span><span class=lnt>69
+</span><span class=lnt>70
+</span><span class=lnt>71
+</span><span class=lnt>72
+</span><span class=lnt>73
+</span><span class=lnt>74
+</span><span class=lnt>75
+</span><span class=lnt>76
+</span><span class=lnt>77
+</span><span class=lnt>78
+</span><span class=lnt>79
+</span><span class=lnt>80
+</span><span class=lnt>81
+</span><span class=lnt>82
+</span><span class=lnt>83
+</span><span class=lnt>84
+</span><span class=lnt>85
+</span><span class=lnt>86
+</span><span class=lnt>87
+</span><span class=lnt>88
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=c1># locustfile.py</span>
+</span></span><span class=line><span class=cl><span class=kn>from</span> <span class=nn>locust</span> <span class=kn>import</span> <span class=n>HttpUser</span><span class=p>,</span> <span class=n>task</span><span class=p>,</span> <span class=n>between</span><span class=p>,</span> <span class=n>events</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>json</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>logging</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>time</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>logger</span> <span class=o>=</span> <span class=n>logging</span><span class=o>.</span><span class=n>getLogger</span><span class=p>(</span><span class=vm>__name__</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>class</span> <span class=nc>APIUser</span><span class=p>(</span><span class=n>HttpUser</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>    <span class=n>wait_time</span> <span class=o>=</span> <span class=n>between</span><span class=p>(</span><span class=mf>0.5</span><span class=p>,</span> <span class=mf>2.0</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>host</span> <span class=o>=</span> <span class=s2>&#34;http://localhost:8080&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>def</span> <span class=nf>on_start</span><span class=p>(</span><span class=bp>self</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;&#34;&#34;Called when a simulated user starts — authenticate here.&#34;&#34;&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=n>response</span> <span class=o>=</span> <span class=bp>self</span><span class=o>.</span><span class=n>client</span><span class=o>.</span><span class=n>post</span><span class=p>(</span><span class=s2>&#34;/api/auth/login&#34;</span><span class=p>,</span> <span class=n>json</span><span class=o>=</span><span class=p>{</span>
+</span></span><span class=line><span class=cl>            <span class=s2>&#34;username&#34;</span><span class=p>:</span> <span class=s2>&#34;testuser&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>            <span class=s2>&#34;password&#34;</span><span class=p>:</span> <span class=s2>&#34;testpass&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=p>})</span>
+</span></span><span class=line><span class=cl>        <span class=k>if</span> <span class=n>response</span><span class=o>.</span><span class=n>status_code</span> <span class=o>==</span> <span class=mi>200</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>            <span class=bp>self</span><span class=o>.</span><span class=n>token</span> <span class=o>=</span> <span class=n>response</span><span class=o>.</span><span class=n>json</span><span class=p>()</span><span class=o>.</span><span class=n>get</span><span class=p>(</span><span class=s2>&#34;token&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=k>else</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>            <span class=n>logger</span><span class=o>.</span><span class=n>error</span><span class=p>(</span><span class=sa>f</span><span class=s2>&#34;Login failed: </span><span class=si>{</span><span class=n>response</span><span class=o>.</span><span class=n>status_code</span><span class=si>}</span><span class=s2>&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>            <span class=bp>self</span><span class=o>.</span><span class=n>token</span> <span class=o>=</span> <span class=kc>None</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=nd>@task</span><span class=p>(</span><span class=mi>3</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=k>def</span> <span class=nf>browse_products</span><span class=p>(</span><span class=bp>self</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;&#34;&#34;Browse product catalog — higher weight (3x) since most users do this.&#34;&#34;&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=k>if</span> <span class=ow>not</span> <span class=bp>self</span><span class=o>.</span><span class=n>token</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>            <span class=k>return</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=k>with</span> <span class=bp>self</span><span class=o>.</span><span class=n>client</span><span class=o>.</span><span class=n>get</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>            <span class=s2>&#34;/api/products?limit=20&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>            <span class=n>headers</span><span class=o>=</span><span class=p>{</span><span class=s2>&#34;Authorization&#34;</span><span class=p>:</span> <span class=sa>f</span><span class=s2>&#34;Bearer </span><span class=si>{</span><span class=bp>self</span><span class=o>.</span><span class=n>token</span><span class=si>}</span><span class=s2>&#34;</span><span class=p>},</span>
+</span></span><span class=line><span class=cl>            <span class=n>catch_response</span><span class=o>=</span><span class=kc>True</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>            <span class=n>name</span><span class=o>=</span><span class=s2>&#34;/api/products&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=p>)</span> <span class=k>as</span> <span class=n>response</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>            <span class=k>if</span> <span class=n>response</span><span class=o>.</span><span class=n>status_code</span> <span class=o>==</span> <span class=mi>200</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>                <span class=n>response</span><span class=o>.</span><span class=n>success</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>            <span class=k>elif</span> <span class=n>response</span><span class=o>.</span><span class=n>status_code</span> <span class=o>==</span> <span class=mi>429</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>                <span class=n>response</span><span class=o>.</span><span class=n>failure</span><span class=p>(</span><span class=s2>&#34;Rate limited&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>            <span class=k>else</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>                <span class=n>response</span><span class=o>.</span><span class=n>failure</span><span class=p>(</span><span class=sa>f</span><span class=s2>&#34;Unexpected status: </span><span class=si>{</span><span class=n>response</span><span class=o>.</span><span class=n>status_code</span><span class=si>}</span><span class=s2>&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=nd>@task</span><span class=p>(</span><span class=mi>1</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=k>def</span> <span class=nf>checkout</span><span class=p>(</span><span class=bp>self</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;&#34;&#34;Checkout flow — lower weight (1x) but more critical to test.&#34;&#34;&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=k>if</span> <span class=ow>not</span> <span class=bp>self</span><span class=o>.</span><span class=n>token</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>            <span class=k>return</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=n>payload</span> <span class=o>=</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>            <span class=s2>&#34;product_id&#34;</span><span class=p>:</span> <span class=mi>42</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>            <span class=s2>&#34;quantity&#34;</span><span class=p>:</span> <span class=mi>1</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>            <span class=s2>&#34;shipping&#34;</span><span class=p>:</span> <span class=s2>&#34;standard&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=k>with</span> <span class=bp>self</span><span class=o>.</span><span class=n>client</span><span class=o>.</span><span class=n>post</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>            <span class=s2>&#34;/api/checkout&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>            <span class=n>json</span><span class=o>=</span><span class=n>payload</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>            <span class=n>headers</span><span class=o>=</span><span class=p>{</span>
+</span></span><span class=line><span class=cl>                <span class=s2>&#34;Authorization&#34;</span><span class=p>:</span> <span class=sa>f</span><span class=s2>&#34;Bearer </span><span class=si>{</span><span class=bp>self</span><span class=o>.</span><span class=n>token</span><span class=si>}</span><span class=s2>&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                <span class=s2>&#34;Content-Type&#34;</span><span class=p>:</span> <span class=s2>&#34;application/json&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>            <span class=p>},</span>
+</span></span><span class=line><span class=cl>            <span class=n>catch_response</span><span class=o>=</span><span class=kc>True</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>            <span class=n>name</span><span class=o>=</span><span class=s2>&#34;/api/checkout&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=p>)</span> <span class=k>as</span> <span class=n>response</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>            <span class=k>if</span> <span class=n>response</span><span class=o>.</span><span class=n>status_code</span> <span class=o>==</span> <span class=mi>201</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>                <span class=n>response</span><span class=o>.</span><span class=n>success</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>            <span class=k>else</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>                <span class=n>response</span><span class=o>.</span><span class=n>failure</span><span class=p>(</span><span class=sa>f</span><span class=s2>&#34;Checkout failed: </span><span class=si>{</span><span class=n>response</span><span class=o>.</span><span class=n>status_code</span><span class=si>}</span><span class=s2>&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=nd>@task</span><span class=p>(</span><span class=mi>1</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=k>def</span> <span class=nf>health_check</span><span class=p>(</span><span class=bp>self</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;&#34;&#34;Lightweight health check — simulates monitoring traffic.&#34;&#34;&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=k>with</span> <span class=bp>self</span><span class=o>.</span><span class=n>client</span><span class=o>.</span><span class=n>get</span><span class=p>(</span><span class=s2>&#34;/api/health&#34;</span><span class=p>,</span> <span class=n>name</span><span class=o>=</span><span class=s2>&#34;/api/health&#34;</span><span class=p>)</span> <span class=k>as</span> <span class=n>response</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>            <span class=k>if</span> <span class=n>response</span><span class=o>.</span><span class=n>status_code</span> <span class=o>!=</span> <span class=mi>200</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>                <span class=n>response</span><span class=o>.</span><span class=n>failure</span><span class=p>(</span><span class=s2>&#34;Health check failed&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nd>@events.test_start.add_listener</span>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>on_test_start</span><span class=p>(</span><span class=n>environment</span><span class=p>,</span> <span class=o>**</span><span class=n>kwargs</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>    <span class=n>logger</span><span class=o>.</span><span class=n>info</span><span class=p>(</span><span class=s2>&#34;Load test starting — checking target availability...&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nd>@events.test_stop.add_listener</span>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>on_test_stop</span><span class=p>(</span><span class=n>environment</span><span class=p>,</span> <span class=o>**</span><span class=n>kwargs</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>    <span class=n>stats</span> <span class=o>=</span> <span class=n>environment</span><span class=o>.</span><span class=n>runner</span><span class=o>.</span><span class=n>stats</span>
+</span></span><span class=line><span class=cl>    <span class=n>logger</span><span class=o>.</span><span class=n>info</span><span class=p>(</span><span class=sa>f</span><span class=s2>&#34;Test complete. Total requests: </span><span class=si>{</span><span class=n>stats</span><span class=o>.</span><span class=n>total</span><span class=o>.</span><span class=n>num_requests</span><span class=si>}</span><span class=s2>&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>logger</span><span class=o>.</span><span class=n>info</span><span class=p>(</span><span class=sa>f</span><span class=s2>&#34;Failure rate: </span><span class=si>{</span><span class=n>stats</span><span class=o>.</span><span class=n>total</span><span class=o>.</span><span class=n>fail_ratio</span><span class=si>:</span><span class=s2>.2%</span><span class=si>}</span><span class=s2>&#34;</span><span class=p>)</span>
+</span></span></code></pre></td></tr></table></div></div><p>Run Locust with the web UI:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>locust -f locustfile.py --host<span class=o>=</span>http://staging-api:8080
+</span></span></code></pre></td></tr></table></div></div><p>This starts the web interface at <code>http://localhost:8089</code>. From there, you set the number of users and spawn rate, then watch live charts update as the test runs.</p><p>Run headless (for CI/CD):</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>locust -f locustfile.py <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --host<span class=o>=</span>http://staging-api:8080 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --headless <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --users <span class=m>200</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --spawn-rate <span class=m>10</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --run-time 5m <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --csv results/output
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-compose-for-locust-masterworker-cluster>Docker Compose for Locust Master/Worker Cluster</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>master</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>locustio/locust:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8089:8089&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./locustfile.py:/mnt/locust/locustfile.py:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      -f /mnt/locust/locustfile.py
+</span></span></span><span class=line><span class=cl><span class=sd>      --master
+</span></span></span><span class=line><span class=cl><span class=sd>      --host=http://staging-api:8080
+</span></span></span><span class=line><span class=cl><span class=sd>      --web-host 0.0.0.0
+</span></span></span><span class=line><span class=cl><span class=sd>      --web-port 8089</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>worker</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>locustio/locust:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./locustfile.py:/mnt/locust/locustfile.py:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      -f /mnt/locust/locustfile.py
+</span></span></span><span class=line><span class=cl><span class=sd>      --worker
+</span></span></span><span class=line><span class=cl><span class=sd>      --master-host master</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>deploy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>replicas</span><span class=p>:</span><span class=w> </span><span class=m>4</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>This composition runs one master node with the web UI and four worker nodes that generate traffic. Scale the worker replicas to increase load capacity linearly.</p><h2 id=gatling-high-performance-jvm-based-load-testing>Gatling: High-Performance JVM-Based Load Testing</h2><p><strong>Gatling</strong> is built on Scala and runs on the JVM. It uses Akka for asynchronous message passing, which allows a single Gatling instance to simulate enormous numbers of concurrent users with minimal resource consumption. Gatling generates detailed HTML reports automatically and has first-class support for CI/CD through Maven and Gradle plugins.</p><h3 id=why-choose-gatling>Why Choose Gatling</h3><table><thead><tr><th>Strength</th><th>Detail</th></tr></thead><tbody><tr><td><strong>Raw performance</strong></td><td>Akka-based async architecture handles 20,000+ concurrent users on modest hardware</td></tr><tr><td><strong>Scala DSL</strong></td><td>Type-safe test definitions with compile-time validation — no runtime surprises</td></tr><tr><td><strong>HTML reports</strong></td><td>Auto-generated, publication-quality reports with response time distributions, percentiles, and error breakdowns</td></tr><tr><td><strong>Protocol support</strong></td><td>HTTP, WebSocket, JMS, GraphQL, Server-Sent Events, and gRPC (via plugins)</td></tr><tr><td><strong>CI/CD integration</strong></td><td>Official Maven and Gradle plugins with built-in report generation and assertion checks</td></tr><tr><td><strong>Kafka support</strong></td><td>Native Kafka publisher for streaming results to real-time analytics</td></tr></tbody></table><h3 id=installing-gatling>Installing Gatling</h3><p>Download from the official site or use the Docker image:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker pull denvazh/gatling
+</span></span></code></pre></td></tr></table></div></div><p>For Maven projects, add the plugin to your <code>pom.xml</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-xml data-lang=xml><span class=line><span class=cl><span class=nt>&lt;plugin&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&lt;groupId&gt;</span>io.gatling<span class=nt>&lt;/groupId&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&lt;artifactId&gt;</span>gatling-maven-plugin<span class=nt>&lt;/artifactId&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&lt;version&gt;</span>4.9.0<span class=nt>&lt;/version&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&lt;configuration&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&lt;simulationsFolder&gt;</span>src/test/scala<span class=nt>&lt;/simulationsFolder&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&lt;runMultipleSimulations&gt;</span>true<span class=nt>&lt;/runMultipleSimulations&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&lt;/configuration&gt;</span>
+</span></span><span class=line><span class=cl><span class=nt>&lt;/plugin&gt;</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=writing-your-first-gatling-test>Writing Your First Gatling Test</h3><p>Gatling tests use a Scala DSL that reads almost like English. Here is the same scenario:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=c1>// src/test/scala/com/example/ApiLoadTest.scala
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>package</span> <span class=nn>com.example</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>import</span> <span class=nn>io.gatling.core.Predef._</span>
+</span></span><span class=line><span class=cl><span class=k>import</span> <span class=nn>io.gatling.http.Predef._</span>
+</span></span><span class=line><span class=cl><span class=k>import</span> <span class=nn>scala.concurrent.duration._</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>class</span> <span class=nc>ApiLoadTest</span> <span class=k>extends</span> <span class=nc>Simulation</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=n>httpProtocol</span> <span class=k>=</span> <span class=n>http</span>
+</span></span><span class=line><span class=cl>    <span class=o>.</span><span class=n>baseUrl</span><span class=o>(</span><span class=s>&#34;http://localhost:8080&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=o>.</span><span class=n>header</span><span class=o>(</span><span class=s>&#34;Content-Type&#34;</span><span class=o>,</span> <span class=s>&#34;application/json&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=o>.</span><span class=n>inferHtmlResources</span><span class=o>()</span>
+</span></span><span class=line><span class=cl>    <span class=o>.</span><span class=n>acceptHeader</span><span class=o>(</span><span class=s>&#34;application/json&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=c1>// Shared authentication token feeder
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=k>val</span> <span class=n>loginPayload</span> <span class=k>=</span> <span class=nc>Map</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>    <span class=s>&#34;username&#34;</span> <span class=o>-&gt;</span> <span class=s>&#34;testuser&#34;</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>    <span class=s>&#34;password&#34;</span> <span class=o>-&gt;</span> <span class=s>&#34;testpass&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=n>scn</span> <span class=k>=</span> <span class=n>scenario</span><span class=o>(</span><span class=s>&#34;API Load Test&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=o>.</span><span class=n>exec</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>      <span class=n>http</span><span class=o>(</span><span class=s>&#34;Login&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>        <span class=o>.</span><span class=n>post</span><span class=o>(</span><span class=s>&#34;/api/auth/login&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>        <span class=o>.</span><span class=n>body</span><span class=o>(</span><span class=nc>StringBody</span><span class=o>(</span><span class=s>&#34;&#34;&#34;{&#34;username&#34;:&#34;testuser&#34;,&#34;password&#34;:&#34;testpass&#34;}&#34;&#34;&#34;</span><span class=o>)).</span><span class=n>asJson</span>
+</span></span><span class=line><span class=cl>        <span class=o>.</span><span class=n>check</span><span class=o>(</span><span class=n>status</span><span class=o>.</span><span class=n>is</span><span class=o>(</span><span class=mi>200</span><span class=o>))</span>
+</span></span><span class=line><span class=cl>        <span class=o>.</span><span class=n>check</span><span class=o>(</span><span class=n>jsonPath</span><span class=o>(</span><span class=s>&#34;$.token&#34;</span><span class=o>).</span><span class=n>saveAs</span><span class=o>(</span><span class=s>&#34;token&#34;</span><span class=o>))</span>
+</span></span><span class=line><span class=cl>    <span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=o>.</span><span class=n>pause</span><span class=o>(</span><span class=mi>1</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=o>.</span><span class=n>exec</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>      <span class=n>http</span><span class=o>(</span><span class=s>&#34;Browse Products&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>        <span class=o>.</span><span class=n>get</span><span class=o>(</span><span class=s>&#34;/api/products?limit=20&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>        <span class=o>.</span><span class=n>header</span><span class=o>(</span><span class=s>&#34;Authorization&#34;</span><span class=o>,</span> <span class=s>&#34;Bearer ${token}&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>        <span class=o>.</span><span class=n>check</span><span class=o>(</span><span class=n>status</span><span class=o>.</span><span class=n>is</span><span class=o>(</span><span class=mi>200</span><span class=o>))</span>
+</span></span><span class=line><span class=cl>    <span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=o>.</span><span class=n>pause</span><span class=o>(</span><span class=mi>1</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=o>.</span><span class=n>exec</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>      <span class=n>http</span><span class=o>(</span><span class=s>&#34;Checkout&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>        <span class=o>.</span><span class=n>post</span><span class=o>(</span><span class=s>&#34;/api/checkout&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>        <span class=o>.</span><span class=n>header</span><span class=o>(</span><span class=s>&#34;Authorization&#34;</span><span class=o>,</span> <span class=s>&#34;Bearer ${token}&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>        <span class=o>.</span><span class=n>body</span><span class=o>(</span><span class=nc>StringBody</span><span class=o>(</span><span class=s>&#34;&#34;&#34;{&#34;product_id&#34;:42,&#34;quantity&#34;:1,&#34;shipping&#34;:&#34;standard&#34;}&#34;&#34;&#34;</span><span class=o>)).</span><span class=n>asJson</span>
+</span></span><span class=line><span class=cl>        <span class=o>.</span><span class=n>check</span><span class=o>(</span><span class=n>status</span><span class=o>.</span><span class=n>is</span><span class=o>(</span><span class=mi>201</span><span class=o>))</span>
+</span></span><span class=line><span class=cl>        <span class=o>.</span><span class=n>check</span><span class=o>(</span><span class=n>jsonPath</span><span class=o>(</span><span class=s>&#34;$.order_id&#34;</span><span class=o>).</span><span class=n>exists</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=o>.</span><span class=n>pause</span><span class=o>(</span><span class=mi>2</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=n>setUp</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>    <span class=n>scn</span><span class=o>.</span><span class=n>injectOpen</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>      <span class=n>rampUsersPerSec</span><span class=o>(</span><span class=mi>1</span><span class=o>).</span><span class=n>to</span><span class=o>(</span><span class=mi>10</span><span class=o>).</span><span class=n>during</span><span class=o>(</span><span class=mf>30.</span><span class=n>seconds</span><span class=o>),</span>
+</span></span><span class=line><span class=cl>      <span class=n>constantUsersPerSec</span><span class=o>(</span><span class=mi>10</span><span class=o>).</span><span class=n>during</span><span class=o>(</span><span class=mf>2.</span><span class=n>minutes</span><span class=o>),</span>
+</span></span><span class=line><span class=cl>      <span class=n>rampUsersPerSec</span><span class=o>(</span><span class=mi>10</span><span class=o>).</span><span class=n>to</span><span class=o>(</span><span class=mi>50</span><span class=o>).</span><span class=n>during</span><span class=o>(</span><span class=mf>30.</span><span class=n>seconds</span><span class=o>),</span>
+</span></span><span class=line><span class=cl>      <span class=n>constantUsersPerSec</span><span class=o>(</span><span class=mi>50</span><span class=o>).</span><span class=n>during</span><span class=o>(</span><span class=mf>2.</span><span class=n>minutes</span><span class=o>),</span>
+</span></span><span class=line><span class=cl>      <span class=n>rampUsersPerSec</span><span class=o>(</span><span class=mi>50</span><span class=o>).</span><span class=n>to</span><span class=o>(</span><span class=mi>0</span><span class=o>).</span><span class=n>during</span><span class=o>(</span><span class=mf>30.</span><span class=n>seconds</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=o>)</span>
+</span></span><span class=line><span class=cl>  <span class=o>).</span><span class=n>protocols</span><span class=o>(</span><span class=n>httpProtocol</span><span class=o>).</span><span class=n>assertions</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>    <span class=n>global</span><span class=o>.</span><span class=n>responseTime</span><span class=o>.</span><span class=n>max</span><span class=o>.</span><span class=n>lessThan</span><span class=o>(</span><span class=mi>2000</span><span class=o>),</span>
+</span></span><span class=line><span class=cl>    <span class=n>global</span><span class=o>.</span><span class=n>failedRequests</span><span class=o>.</span><span class=n>percent</span><span class=o>.</span><span class=n>lessThan</span><span class=o>(</span><span class=mi>1</span><span class=o>),</span>
+</span></span><span class=line><span class=cl>    <span class=n>details</span><span class=o>(</span><span class=s>&#34;Checkout&#34;</span><span class=o>).</span><span class=n>responseTime</span><span class=o>.</span><span class=n>percentile3</span><span class=o>.</span><span class=n>lessThan</span><span class=o>(</span><span class=mi>1000</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>  <span class=o>)</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>Run the test:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>mvn gatling:test
+</span></span></code></pre></td></tr></table></div></div><p>Reports are generated in <code>target/gatling/</code> as self-contained HTML files with interactive charts.</p><h3 id=docker-compose-for-gatling>Docker Compose for Gatling</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>gatling</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>denvazh/gatling:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./simulations:/opt/gatling/user-files/simulations:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./results:/opt/gatling/results</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>GATLING_SIMULATION=com.example.ApiLoadTest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      -s com.example.ApiLoadTest
+</span></span></span><span class=line><span class=cl><span class=sd>      -rf /opt/gatling/results</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=comparison-k6-vs-locust-vs-gatling>Comparison: k6 vs Locust vs Gatling</h2><table><thead><tr><th>Feature</th><th>k6</th><th>Locust</th><th>Gatling</th></tr></thead><tbody><tr><td><strong>Language</strong></td><td>JavaScript/TypeScript</td><td>Python</td><td>Scala/Java</td></tr><tr><td><strong>Concurrency model</strong></td><td>Go goroutines</td><td>gevent coroutines</td><td>Akka actors</td></tr><tr><td><strong>Max users per instance</strong></td><td>~50,000</td><td>~10,000–20,000</td><td>~20,000–50,000</td></tr><tr><td><strong>Web UI</strong></td><td>No (Grafana dashboard)</td><td>Yes (built-in)</td><td>No (HTML reports)</td></tr><tr><td><strong>CI/CD integration</strong></td><td>Excellent (thresholds)</td><td>Good (headless mode)</td><td>Excellent (Maven/Gradle)</td></tr><tr><td><strong>Protocol support</strong></td><td>HTTP, gRPC, WebSocket (extensions)</td><td>HTTP, WebSocket, ZeroMQ, MQTT</td><td>HTTP, WebSocket, JMS, GraphQL, gRPC, SSE</td></tr><tr><td><strong>Learning curve</strong></td><td>Low (familiar JS)</td><td>Low (familiar Python)</td><td>Medium (Scala DSL)</td></tr><tr><td><strong>Docker image size</strong></td><td>~80 MB</td><td>~200 MB</td><td>~600 MB</td></tr><tr><td><strong>Report output</strong></td><td>JSON, CSV, InfluxDB, Prometheus</td><td>CSV, web UI charts, JSON</td><td>HTML (interactive)</td></tr><tr><td><strong>Distributed mode</strong></td><td>Manual or k6 Cloud</td><td>Built-in master/worker</td><td>Gatling Enterprise (paid) or manual</td></tr><tr><td><strong>GitHub stars</strong></td><td>25,000+</td><td>27,000+</td><td>9,000+ (OSS repo)</td></tr><tr><td><strong>License</strong></td><td>AGPLv3</td><td>MIT</td><td>Apache 2.0</td></tr></tbody></table><h2 id=choosing-the-right-tool-for-your-team>Choosing the Right Tool for Your Team</h2><p><strong>Pick k6 if:</strong></p><ul><li>Your team writes JavaScript or TypeScript and wants tests that look like application code</li><li>You need tight CI/CD integration with pass/fail thresholds</li><li>You already use Grafana and want results visualized alongside application metrics</li><li>Resource efficiency matters — you want to run tests on small VMs or in CI runners with limited memory</li></ul><p><strong>Pick Locust if:</strong></p><ul><li>Your team prefers Python and wants to reuse existing libraries and SDKs</li><li>You value a live web UI for exploratory testing during development</li><li>You need to test protocols beyond HTTP (MQTT, ZeroMQ, custom binary protocols)</li><li>You want built-in distributed testing without additional infrastructure</li></ul><p><strong>Pick Gatling if:</strong></p><ul><li>Your team works in the JVM ecosystem and is comfortable with Scala</li><li>You need maximum performance per machine for large-scale tests</li><li>You want auto-generated HTML reports for stakeholder communication</li><li>You need advanced protocol support (JMS, gRPC, Server-Sent Events) without writing extensions</li></ul><h2 id=cicd-pipeline-example>CI/CD Pipeline Example</h2><p>Here is how you would integrate k6 into a GitHub Actions workflow as a gate that blocks deployments if performance regressions are detected:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>Load Test</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>push</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>branches</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=l>main]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>schedule</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>cron</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;0 2 * * 1-5&#34;</span><span class=w>  </span><span class=c># Weekday mornings at 2 AM UTC</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>jobs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>load-test</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>runs-on</span><span class=p>:</span><span class=w> </span><span class=l>ubuntu-latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>steps</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>Checkout</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>uses</span><span class=p>:</span><span class=w> </span><span class=l>actions/checkout@v4</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>Deploy to staging</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>run</span><span class=p>:</span><span class=w> </span><span class=p>|</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>          ./scripts/deploy-staging.sh
+</span></span></span><span class=line><span class=cl><span class=sd>          sleep 30  # Wait for services to be ready</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>Run k6 load test</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>uses</span><span class=p>:</span><span class=w> </span><span class=l>grafana/k6-action@v0.3.1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>with</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>filename</span><span class=p>:</span><span class=w> </span><span class=l>tests/api-load-test.js</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>flags</span><span class=p>:</span><span class=w> </span>--<span class=l>out json=results.json</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>env</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>BASE_URL</span><span class=p>:</span><span class=w> </span><span class=l>${{ secrets.STAGING_URL }}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>Upload results</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>if</span><span class=p>:</span><span class=w> </span><span class=l>always()</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>uses</span><span class=p>:</span><span class=w> </span><span class=l>actions/upload-artifact@v4</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>with</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>k6-results</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>path</span><span class=p>:</span><span class=w> </span><span class=l>results.json</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>Tear down staging</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>if</span><span class=p>:</span><span class=w> </span><span class=l>always()</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>run</span><span class=p>:</span><span class=w> </span><span class=l>./scripts/teardown-staging.sh</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>This pipeline deploys to a staging environment, runs the load test with k6, uploads the results as an artifact, and cleans up afterward. The thresholds defined in the k6 test script automatically fail the build if performance criteria are not met.</p><h2 id=monitoring-your-application-during-tests>Monitoring Your Application During Tests</h2><p>Load testing without application monitoring is blind. Pair your load testing tool with an observability stack to see what happens inside your services under load:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>prometheus</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>prom/prometheus:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;9090:9090&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./prometheus.yml:/etc/prometheus/prometheus.yml:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>prometheus_data:/prometheus</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>grafana</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>grafana/grafana:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;3000:3000&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>GF_AUTH_ANONYMOUS_ENABLED=true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>grafana_data:/var/lib/grafana</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./dashboards:/etc/grafana/provisioning/dashboards:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>prometheus</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>node-exporter</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>prom/node-exporter:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;9100:9100&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/proc:/host/proc:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/sys:/host/sys:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s1>&#39;--path.procfs=/host/proc&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s1>&#39;--path.sysfs=/host/sys&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>prometheus_data</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>grafana_data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Configure Prometheus to scrape your application metrics endpoints. When you run a load test, you will see CPU, memory, connection pool saturation, database query times, and garbage collection pauses correlate with request volume — revealing bottlenecks that request-level metrics alone cannot show.</p><h2 id=best-practices-for-self-hosted-load-testing>Best Practices for Self-Hosted Load Testing</h2><ol><li><p><strong>Test in a staging environment that mirrors production</strong> — same instance types, same database configuration, same network topology. Testing on a laptop tells you nothing about production behavior.</p></li><li><p><strong>Use realistic test data</strong> — populate your database with production-like data volumes. An empty database returns fast queries that mask N+1 problems, missing indexes, and unoptimized joins.</p></li><li><p><strong>Ramp up gradually</strong> — sudden traffic spikes cause different failure modes than gradual increases. Use ramp-up stages to find the breaking point rather than hammering with maximum load from the start.</p></li><li><p><strong>Run tests regularly</strong> — a single load test before a major release catches obvious problems, but running tests on every merge or weekly catches regressions early when they are cheaper to fix.</p></li><li><p><strong>Store results and compare over time</strong> — save every test run&rsquo;s output to a time-series database or artifact storage. Build trend dashboards to see whether response times are creeping upward across releases.</p></li><li><p><strong>Test failure scenarios</strong> — what happens when the database connection pool is exhausted? When a downstream service returns 503? When disk space fills up? Load testing should cover degradation, not just happy paths.</p></li><li><p><strong>Keep load generators separate from the target</strong> — running the load generator on the same machine as your application creates resource contention that skews results. Use dedicated load generator VMs or containers.</p></li></ol><h2 id=conclusion>Conclusion</h2><p>Self-hosted load testing is not about avoiding cloud providers — it is about owning your testing pipeline, controlling costs, and integrating performance validation into your development workflow. Whether you choose k6 for its developer-friendly JavaScript API, Locust for its Python ecosystem and live web UI, or Gatling for its JVM-based performance and rich reporting, you get a production-grade tool without subscription fees, usage limits, or vendor lock-in.</p><p>All three tools support Docker, CI/CD integration, and distributed execution. The decision comes down to your team&rsquo;s language preference, the protocols you need to test, and the reporting format that fits your workflow. Start with a single test scenario, integrate it into your pipeline, and expand from there — your production environment will thank you.</p></div><div id=frame style=width:100%;margin:auto;position:relative;z-index:99998><iframe data-aa=2433958 src='//acceptable.a-ads.com/2433958/?size=Adaptive' style=border:0;padding:0;width:70%;height:auto;overflow:hidden;display:block;margin:auto></iframe></div></article></main><footer class=site-footer><p>Built with <a href=https://gohugo.io>Hugo</a> · <a href=/openswap-guide/index.xml>RSS</a> · <a href=https://github.com/hopkdj>GitHub</a></p><p style=margin-top:8px>&copy; 2026 OpenSwap Guide. All rights reserved.</p></footer></body></html>
