@@ -1,0 +1,558 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Gotify vs ntfy: Best Self-Hosted Push Notifications 2026 | OpenSwap Guide</title>
+<meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, and local AI deployment."><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/openswap-guide/css/main.min.777dc111b5207bf5336e5799477da0b31fb9080306bf98a82d6eceb979cf9737.css><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://hopkdj.github.io/openswap-guide/ class=logo><div class=logo-icon>H</div>OpenSwap Guide</a><nav><ul class=nav-links><li><a href=/openswap-guide/>Home</a></li><li><a href=/openswap-guide/tags/comparison/>Comparisons</a></li><li><a href=/openswap-guide/tags/guide/>Guides</a></li><li><a href=/openswap-guide/tags/ai/>Local AI</a></li><li><a href=/openswap-guide/index.xml class=nav-rss>Subscribe RSS</a></li></ul></nav></div></header><main><article class=post-single><a href=https://hopkdj.github.io/openswap-guide/ class=back-link>&larr; Back to posts</a><header class=post-single-header><div class=post-single-meta><span class="tag tag-purple">comparison</span>
+<span class="tag tag-green">guide</span>
+<span class="tag tag-blue">self-hosted</span>
+<span>·</span>
+<span>April 13, 2026</span>
+<span>·</span>
+<span>13 min read</span></div><h1 class=post-single-title>Gotify vs ntfy: Best Self-Hosted Push Notifications 2026</h1></header><div class=post-single-content><p>Push notifications are the nervous system of a self-hosted infrastructure. They tell you when a backup finishes, when your server disk is nearly full, when a CI/CD pipeline fails, or when someone logs into your services. For years, services like Pushbullet and Pushover dominated this space — but both come with monthly fees, closed source code, and the inherent privacy risk of routing your personal alerts through someone else&rsquo;s servers.</p><p>In 2026, the two best self-hosted push notification services are <strong>Gotify</strong> and <strong>ntfy</strong> (pronounced &ldquo;notify&rdquo;). Both are open source, free to run, and give you complete control over your notification infrastructure. But they take fundamentally different approaches to solving the same problem.</p><p>This guide compares both solutions in depth, provides complete Docker deployment instructions, and helps you choose the right tool for your setup.</p><h2 id=why-self-host-your-push-notifications>Why Self-Host Your Push Notifications</h2><p>Before diving into the tools, it&rsquo;s worth understanding why self-hosting notifications matters:</p><ul><li><strong>Privacy</strong>: Commercial notification services see every alert you send — including password change confirmations, security warnings, and personal messages. Self-hosting keeps this data on your own server.</li><li><strong>No subscription fees</strong>: Pushover costs $5 one-time per platform, Pushbullet Pro is $3/month. Self-hosted alternatives are free forever.</li><li><strong>No rate limits</strong>: When you control the server, you set the limits. Sending 10,000 notifications during a migration? No problem.</li><li><strong>Internal network alerts</strong>: Self-hosted services work entirely on your LAN. You can receive alerts even when your internet connection is down, as long as your local network is up.</li><li><strong>Integration flexibility</strong>: Both Gotify and ntfy offer simple REST APIs that can be called from any script, cron job, monitoring tool, or application.</li><li><strong>Regulatory compliance</strong>: If you&rsquo;re managing infrastructure that handles sensitive data (healthcare, finance), routing alerts through third parties may violate compliance requirements.</li></ul><h2 id=gotify-the-structured-notification-server>Gotify: The Structured Notification Server</h2><p>Gotify is a mature, well-established push notification server written in Go. It uses a traditional client-server model where applications register on the server and send messages to specific &ldquo;applications&rdquo; (which act as notification categories).</p><h3 id=architecture>Architecture</h3><p>Gotify follows a classic multi-user model:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>┌─────────────┐     REST API     ┌──────────────┐
+</span></span><span class=line><span class=cl>│  Scripts    │ ────────────────►│              │
+</span></span><span class=line><span class=cl>│  Cron Jobs  │                  │   Gotify     │
+</span></span><span class=line><span class=cl>│  Monitoring │ ────────────────►│    Server    │
+</span></span><span class=line><span class=cl>└─────────────┘                  │              │
+</span></span><span class=line><span class=cl>                                 └──────┬───────┘
+</span></span><span class=line><span class=cl>                                        │ WebSocket
+</span></span><span class=line><span class=cl>                                        ▼
+</span></span><span class=line><span class=cl>                                 ┌──────────────┐
+</span></span><span class=line><span class=cl>                                 │   Android    │
+</span></span><span class=line><span class=cl>                                 │   App /      │
+</span></span><span class=line><span class=cl>                                 │   Web UI     │
+</span></span><span class=line><span class=cl>                                 └──────────────┘
+</span></span></code></pre></td></tr></table></div></div><p>Each application gets its own API token. Messages are organized by application and priority level (1–10), with customizable icons per application.</p><h3 id=docker-deployment>Docker Deployment</h3><p>Here&rsquo;s a production-ready Docker Compose configuration for Gotify:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>gotify</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>gotify/server:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>gotify</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>TZ=UTC</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./gotify/data:/app/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8080:80&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=c># For production, put behind a reverse proxy and remove the port mapping</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>After starting the container with <code>docker compose up -d</code>, visit <code>http://your-server:8080</code>. The default credentials are <code>admin</code> / <code>admin</code> — change these immediately.</p><h3 id=reverse-proxy-setup-traefik>Reverse Proxy Setup (Traefik)</h3><p>For production use, you&rsquo;ll want TLS and a proper domain:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=w>  </span><span class=nt>gotify</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>gotify/server:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>gotify</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./gotify/data:/app/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>labels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;traefik.enable=true&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;traefik.http.routers.gotify.rule=Host(`gotify.example.com`)&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;traefik.http.routers.gotify.entrypoints=websecure&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;traefik.http.routers.gotify.tls.certresolver=letsencrypt&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;traefik.http.services.gotify.loadbalancer.server.port=80&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>web</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=sending-notifications>Sending Notifications</h3><p>Gotify provides a straightforward REST API. Here&rsquo;s how to send a notification using curl:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>curl -X POST <span class=s2>&#34;https://gotify.example.com/message?token=&lt;APP_TOKEN&gt;&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -F <span class=s2>&#34;title=Backup Complete&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -F <span class=s2>&#34;message=Daily backup finished successfully. 2.3GB uploaded.&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -F <span class=s2>&#34;priority=5&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><p>You can also send JSON payloads for more control:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>curl -X POST <span class=s2>&#34;https://gotify.example.com/message?token=&lt;APP_TOKEN&gt;&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -H <span class=s2>&#34;Content-Type: application/json&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -d <span class=s1>&#39;{
+</span></span></span><span class=line><span class=cl><span class=s1>    &#34;title&#34;: &#34;Disk Warning&#34;,
+</span></span></span><span class=line><span class=cl><span class=s1>    &#34;message&#34;: &#34;/dev/sda1 is at 92% capacity&#34;,
+</span></span></span><span class=line><span class=cl><span class=s1>    &#34;priority&#34;: 8,
+</span></span></span><span class=line><span class=cl><span class=s1>    &#34;extras&#34;: {
+</span></span></span><span class=line><span class=cl><span class=s1>      &#34;client::display&#34;: {
+</span></span></span><span class=line><span class=cl><span class=s1>        &#34;contentType&#34;: &#34;text/markdown&#34;
+</span></span></span><span class=line><span class=cl><span class=s1>      }
+</span></span></span><span class=line><span class=cl><span class=s1>    }
+</span></span></span><span class=line><span class=cl><span class=s1>  }&#39;</span>
+</span></span></code></pre></td></tr></table></div></div><p>The <code>extras</code> field supports rich formatting, including Markdown rendering and external notification actions.</p><h3 id=gotify-cli>Gotify CLI</h3><p>Gotify ships with an official CLI tool for quick testing and scripting:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install</span>
+</span></span><span class=line><span class=cl>go install github.com/gotify/cli/v2/gotify@latest
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Configure</span>
+</span></span><span class=line><span class=cl>gotify init
+</span></span><span class=line><span class=cl>gotify config
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Send a message</span>
+</span></span><span class=line><span class=cl>gotify push <span class=s2>&#34;Server restart completed at </span><span class=k>$(</span>date<span class=k>)</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl>gotify push -t <span class=s2>&#34;Alert&#34;</span> -p <span class=m>8</span> <span class=s2>&#34;High CPU usage detected on node-3&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=gotify-plugins>Gotify Plugins</h3><p>One of Gotify&rsquo;s standout features is its plugin system. Written in Go and compiled to shared libraries, plugins can extend Gotify&rsquo;s functionality:</p><ul><li><strong>Gotify WebPush</strong>: Send notifications via the Web Push API (works on iOS via Safari)</li><li><strong>Gotify Discord/Telegram bridges</strong>: Forward notifications to external services</li><li><strong>Gotify Matrix</strong>: Bridge to Matrix rooms</li></ul><p>Install plugins by placing the <code>.so</code> file in Gotify&rsquo;s plugin directory and restarting:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=l>./gotify/data:/app/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=l>./gotify/plugins:/app/plugins</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=l>GOTIFY_PLUGIN_DIR=/app/plugins</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=ntfy-the-http-based-simplicity-champion>ntfy: The HTTP-Based Simplicity Champion</h2><p>ntfy takes a radically different approach. Instead of a traditional client-server model with user accounts and applications, ntfy uses a <strong>pub/sub model based on HTTP topics</strong>. You send a message to a topic via HTTP PUT or POST, and any subscriber to that topic receives it instantly.</p><h3 id=architecture-1>Architecture</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>┌─────────────┐    PUT /my-topic    ┌──────────────┐
+</span></span><span class=line><span class=cl>│  Scripts    │ ───────────────────►│              │
+</span></span><span class=line><span class=cl>│  Cron Jobs  │                     │     ntfy     │
+</span></span><span class=line><span class=cl>│  Monitoring │ ───────────────────►│    Server    │
+</span></span><span class=line><span class=cl>└─────────────┘                     │              │
+</span></span><span class=line><span class=cl>                                    └──────┬───────┘
+</span></span><span class=line><span class=cl>                                           │ SSE / WebSocket
+</span></span><span class=line><span class=cl>                                           ▼
+</span></span><span class=line><span class=cl>                                    ┌──────────────┐
+</span></span><span class=line><span class=cl>                                    │   Browser    │
+</span></span><span class=line><span class=cl>                                    │   Mobile App │
+</span></span><span class=line><span class=cl>                                    │   CLI        │
+</span></span><span class=line><span class=cl>                                    └──────────────┘
+</span></span></code></pre></td></tr></table></div></div><p>No accounts required. No application registration. Just pick a topic name and start publishing and subscribing.</p><h3 id=docker-deployment-1>Docker Deployment</h3><p>ntfy&rsquo;s Docker setup is even simpler than Gotify&rsquo;s:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>ntfy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>binwiederhier/ntfy:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>ntfy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>serve</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>TZ=UTC</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./ntfy/cache:/var/cache/ntfy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./ntfy/config:/etc/ntfy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./ntfy/lib:/var/lib/ntfy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8080:80&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>user</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;1000:1000&#34;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Create a configuration file at <code>./ntfy/config/server.yml</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># ntfy server configuration</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>base-url</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;https://ntfy.example.com&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>listen-http</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;:80&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c># Authentication (optional but recommended)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>auth-file</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;/var/lib/ntfy/user.db&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>auth-default-access</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;deny-all&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c># Cache and message retention</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>cache-file</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;/var/cache/ntfy/cache.db&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>attachment-cache-dir</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;/var/cache/ntfy/attachments&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>message-timeout</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;12h&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c># Upstream: connect to the public ntfy.sh for fallback delivery</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c># upstream-base-url: &#34;https://ntfy.sh&#34;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=reverse-proxy-setup-nginx>Reverse Proxy Setup (Nginx)</h3><p>ntfy works well behind any reverse proxy. Here&rsquo;s an Nginx configuration:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-nginx data-lang=nginx><span class=line><span class=cl><span class=k>server</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=kn>listen</span> <span class=mi>443</span> <span class=s>ssl</span> <span class=s>http2</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=kn>server_name</span> <span class=s>ntfy.example.com</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kn>ssl_certificate</span> <span class=s>/etc/letsencrypt/live/ntfy.example.com/fullchain.pem</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=kn>ssl_certificate_key</span> <span class=s>/etc/letsencrypt/live/ntfy.example.com/privkey.pem</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1># Increase client max body size for file attachments
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=kn>client_max_body_size</span> <span class=mi>15m</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kn>location</span> <span class=s>/</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_pass</span> <span class=s>http://localhost:8080</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_http_version</span> <span class=mi>1</span><span class=s>.1</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=c1># WebSocket support (required for real-time delivery)
+</span></span></span><span class=line><span class=cl><span class=c1></span>        <span class=kn>proxy_set_header</span> <span class=s>Upgrade</span> <span class=nv>$http_upgrade</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_set_header</span> <span class=s>Connection</span> <span class=s>&#34;upgrade&#34;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_set_header</span> <span class=s>Host</span> <span class=nv>$host</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_set_header</span> <span class=s>X-Real-IP</span> <span class=nv>$remote_addr</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_set_header</span> <span class=s>X-Forwarded-For</span> <span class=nv>$proxy_add_x_forwarded_for</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_set_header</span> <span class=s>X-Forwarded-Proto</span> <span class=nv>$scheme</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=c1># Disable buffering for real-time message delivery
+</span></span></span><span class=line><span class=cl><span class=c1></span>        <span class=kn>proxy_buffering</span> <span class=no>off</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_cache</span> <span class=no>off</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=sending-notifications-1>Sending Notifications</h3><p>ntfy&rsquo;s API is beautifully simple. Send a notification with a single curl command:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Basic notification</span>
+</span></span><span class=line><span class=cl>curl -d <span class=s2>&#34;Backup completed at </span><span class=k>$(</span>date<span class=k>)</span><span class=s2>&#34;</span> ntfy.example.com/my-topic
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># With title, priority, and tags</span>
+</span></span><span class=line><span class=cl>curl <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -H <span class=s2>&#34;Title: Disk Alert&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -H <span class=s2>&#34;Priority: urgent&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -H <span class=s2>&#34;Tags: warning,server&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -d <span class=s2>&#34;Root partition is 94% full on webserver-01&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  ntfy.example.com/server-alerts
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># With JSON body for structured data</span>
+</span></span><span class=line><span class=cl>curl -H <span class=s2>&#34;Content-Type: application/json&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -d <span class=s1>&#39;{
+</span></span></span><span class=line><span class=cl><span class=s1>    &#34;topic&#34;: &#34;deployments&#34;,
+</span></span></span><span class=line><span class=cl><span class=s1>    &#34;message&#34;: &#34;Production deploy v2.4.1 succeeded&#34;,
+</span></span></span><span class=line><span class=cl><span class=s1>    &#34;title&#34;: &#34;Deployment Complete&#34;,
+</span></span></span><span class=line><span class=cl><span class=s1>    &#34;priority&#34;: &#34;high&#34;,
+</span></span></span><span class=line><span class=cl><span class=s1>    &#34;tags&#34;: [&#34;rocket&#34;, &#34;production&#34;],
+</span></span></span><span class=line><span class=cl><span class=s1>    &#34;actions&#34;: [
+</span></span></span><span class=line><span class=cl><span class=s1>      {
+</span></span></span><span class=line><span class=cl><span class=s1>        &#34;action&#34;: &#34;view&#34;,
+</span></span></span><span class=line><span class=cl><span class=s1>        &#34;label&#34;: &#34;View Logs&#34;,
+</span></span></span><span class=line><span class=cl><span class=s1>        &#34;url&#34;: &#34;https://ci.example.com/builds/1234&#34;
+</span></span></span><span class=line><span class=cl><span class=s1>      }
+</span></span></span><span class=line><span class=cl><span class=s1>    ]
+</span></span></span><span class=line><span class=cl><span class=s1>  }&#39;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  ntfy.example.com/deployments
+</span></span></code></pre></td></tr></table></div></div><p>The tag system supports <a href=https://ntfy.sh/docs/emojis/>emoji shortcodes</a>, and the <code>actions</code> field creates tappable buttons in mobile notifications — for example, linking directly to a dashboard or CI run.</p><h3 id=ntfy-cli-and-subscription>ntfy CLI and Subscription</h3><p>Subscribe to topics from the command line to receive messages in real time:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Subscribe to a topic (streams messages as they arrive)</span>
+</span></span><span class=line><span class=cl>ntfy sub my-topic
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Subscribe with auto-completion</span>
+</span></span><span class=line><span class=cl>ntfy sub -u https://ntfy.example.com server-alerts
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Pipe notifications to other tools</span>
+</span></span><span class=line><span class=cl>ntfy sub monitoring <span class=p>|</span> grep -i <span class=s2>&#34;error&#34;</span> <span class=p>|</span> mail -s <span class=s2>&#34;Error Alert&#34;</span> admin@example.com
+</span></span></code></pre></td></tr></table></div></div><h3 id=user-authentication-and-acls>User Authentication and ACLs</h3><p>While ntfy works without authentication out of the box, production deployments should enable it:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Create admin user</span>
+</span></span><span class=line><span class=cl>ntfy user add --role<span class=o>=</span>admin admin
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Create regular user</span>
+</span></span><span class=line><span class=cl>ntfy user add jenkins
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Grant read-write access to a topic</span>
+</span></span><span class=line><span class=cl>ntfy access jenkins deployments read-write
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Grant read-only access to a group</span>
+</span></span><span class=line><span class=cl>ntfy access @developers deployments <span class=nb>read</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=head-to-head-comparison>Head-to-Head Comparison</h2><table><thead><tr><th>Feature</th><th>Gotify</th><th>ntfy</th></tr></thead><tbody><tr><td><strong>Architecture</strong></td><td>Client-server with user accounts</td><td>Pub/sub with HTTP topics</td></tr><tr><td><strong>Authentication</strong></td><td>Built-in multi-user system</td><td>Optional ACL-based system</td></tr><tr><td><strong>API Style</strong></td><td>REST with app tokens</td><td>Simple HTTP PUT/POST</td></tr><tr><td><strong>Real-time Delivery</strong></td><td>WebSocket</td><td>WebSocket + Server-Sent Events</td></tr><tr><td><strong>Mobile Apps</strong></td><td>Android only (official)</td><td>Android + iOS (official)</td></tr><tr><td><strong>Web UI</strong></td><td>Full web interface</td><td>Built-in web UI</td></tr><tr><td><strong>iOS Support</strong></td><td>Via WebPush plugin only</td><td>Native app on App Store</td></tr><tr><td><strong>Attachments</strong></td><td>Yes (files, images)</td><td>Yes (up to configurable size)</td></tr><tr><td><strong>Message Persistence</strong></td><td>SQLite database</td><td>File-based cache</td></tr><tr><td><strong>Tags/Emojis</strong></td><td>No native tag system</td><td>Full emoji shortcode support</td></tr><tr><td><strong>Notification Actions</strong></td><td>Limited (via extras)</td><td>Full action button support</td></tr><tr><td><strong>Upstream Relay</strong></td><td>No</td><td>Can relay to public ntfy.sh</td></tr><tr><td><strong>Federation</strong></td><td>No</td><td>No (but upstream relay exists)</td></tr><tr><td><strong>Plugin System</strong></td><td>Go shared libraries</td><td>No plugin system</td></tr><tr><td><strong>Language</strong></td><td>Go</td><td>Go</td></tr><tr><td><strong>Resource Usage</strong></td><td>~50MB RAM</td><td>~30MB RAM</td></tr><tr><td><strong>Binary Size</strong></td><td>~18MB</td><td>~15MB</td></tr><tr><td><strong>Maturity</strong></td><td>Since 2018</td><td>Since 2021</td></tr><tr><td><strong>GitHub Stars</strong></td><td>~12k+</td><td>~19k+</td></tr></tbody></table><h2 id=when-to-choose-gotify>When to Choose Gotify</h2><p>Gotify is the better choice when:</p><ul><li><strong>You need a structured multi-user setup</strong>: Gotify&rsquo;s user and application model provides clear separation. Each team or service gets its own application token, making it easy to audit and revoke access.</li><li><strong>You want Markdown-formatted messages</strong>: Gotify natively supports Markdown in notification bodies, making alerts more readable.</li><li><strong>You need extensibility through plugins</strong>: The plugin system allows deep customization, including bridging to other messaging platforms.</li><li><strong>You prefer a traditional web interface</strong>: Gotify&rsquo;s web UI is polished and provides full message management, user administration, and application configuration.</li><li><strong>You&rsquo;re already in the Android ecosystem</strong>: The Gotify Android app is mature, reliable, and integrates well with Android&rsquo;s notification system.</li></ul><h3 id=example-monitoring-script-with-gotify>Example: Monitoring Script with Gotify</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=cp>#!/bin/bash
+</span></span></span><span class=line><span class=cl><span class=cp></span><span class=c1># check-disk.sh - Monitor disk usage and alert via Gotify</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nv>GOTIFY_URL</span><span class=o>=</span><span class=s2>&#34;https://gotify.example.com&#34;</span>
+</span></span><span class=line><span class=cl><span class=nv>GOTIFY_TOKEN</span><span class=o>=</span><span class=s2>&#34;your-app-token&#34;</span>
+</span></span><span class=line><span class=cl><span class=nv>THRESHOLD</span><span class=o>=</span><span class=m>90</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>df -P <span class=p>|</span> awk <span class=s1>&#39;NR&gt;1 {print $5, $6}&#39;</span> <span class=p>|</span> <span class=k>while</span> <span class=nb>read</span> usage mount<span class=p>;</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>    <span class=nv>usage</span><span class=o>=</span><span class=si>${</span><span class=nv>usage</span><span class=p>%</span><span class=se>\%</span><span class=si>}</span>
+</span></span><span class=line><span class=cl>    <span class=k>if</span> <span class=o>[</span> <span class=s2>&#34;</span><span class=nv>$usage</span><span class=s2>&#34;</span> -ge <span class=s2>&#34;</span><span class=nv>$THRESHOLD</span><span class=s2>&#34;</span> <span class=o>]</span><span class=p>;</span> <span class=k>then</span>
+</span></span><span class=line><span class=cl>        curl -s -X POST <span class=s2>&#34;</span><span class=si>${</span><span class=nv>GOTIFY_URL</span><span class=si>}</span><span class=s2>/message?token=</span><span class=si>${</span><span class=nv>GOTIFY_TOKEN</span><span class=si>}</span><span class=s2>&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>          -H <span class=s2>&#34;Content-Type: application/json&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>          -d <span class=s2>&#34;{
+</span></span></span><span class=line><span class=cl><span class=s2>            \&#34;title\&#34;: \&#34;Disk Space Alert\&#34;,
+</span></span></span><span class=line><span class=cl><span class=s2>            \&#34;message\&#34;: \&#34;**</span><span class=si>${</span><span class=nv>mount</span><span class=si>}</span><span class=s2>** is at **</span><span class=si>${</span><span class=nv>usage</span><span class=si>}</span><span class=s2>%** capacity.\n\nConsider cleaning up or expanding the volume.\&#34;,
+</span></span></span><span class=line><span class=cl><span class=s2>            \&#34;priority\&#34;: 8
+</span></span></span><span class=line><span class=cl><span class=s2>          }&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=k>fi</span>
+</span></span><span class=line><span class=cl><span class=k>done</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=when-to-choose-ntfy>When to Choose ntfy</h2><p>ntfy is the better choice when:</p><ul><li><strong>You need iOS support</strong>: ntfy has an official iOS app on the App Store. Gotify requires the WebPush plugin and browser configuration.</li><li><strong>You want the simplest possible setup</strong>: With ntfy, sending your first notification takes a single curl command. No account creation, no app registration, no token management.</li><li><strong>You need pub/sub patterns</strong>: ntfy&rsquo;s topic-based model naturally fits event-driven architectures. Multiple services publish to topics; multiple subscribers consume from them.</li><li><strong>You want emoji tags and action buttons</strong>: ntfy&rsquo;s notification metadata system is richer, with emoji tags, clickable action buttons, and structured JSON payloads.</li><li><strong>You want upstream relay</strong>: ntfy can relay messages through the public ntfy.sh service, enabling notifications even when your server is temporarily unreachable.</li><li><strong>You need Server-Sent Events</strong>: ntfy supports both WebSocket and SSE, giving you flexibility in how you consume the event stream. SSE is often easier to work with from browser JavaScript.</li></ul><h3 id=example-cicd-pipeline-notifications-with-ntfy>Example: CI/CD Pipeline Notifications with ntfy</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=cp>#!/bin/bash
+</span></span></span><span class=line><span class=cl><span class=cp></span><span class=c1># deploy.sh - Send deployment status via ntfy</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nv>NTFY_URL</span><span class=o>=</span><span class=s2>&#34;https://ntfy.example.com&#34;</span>
+</span></span><span class=line><span class=cl><span class=nv>TOPIC</span><span class=o>=</span><span class=s2>&#34;deployments&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nv>start_time</span><span class=o>=</span><span class=k>$(</span>date +%s<span class=k>)</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;Starting deployment...&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># ... your deployment steps here ...</span>
+</span></span><span class=line><span class=cl><span class=nv>deploy_result</span><span class=o>=</span><span class=nv>$?</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nv>end_time</span><span class=o>=</span><span class=k>$(</span>date +%s<span class=k>)</span>
+</span></span><span class=line><span class=cl><span class=nv>duration</span><span class=o>=</span><span class=k>$((</span>end_time <span class=o>-</span> start_time<span class=k>))</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>if</span> <span class=o>[</span> <span class=nv>$deploy_result</span> -eq <span class=m>0</span> <span class=o>]</span><span class=p>;</span> <span class=k>then</span>
+</span></span><span class=line><span class=cl>    curl -s <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>      -H <span class=s2>&#34;Title: Deploy Successful&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>      -H <span class=s2>&#34;Priority: high&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>      -H <span class=s2>&#34;Tags: white_check_mark,rocket&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>      -H <span class=s2>&#34;Actions: view, View Pipeline, https://ci.example.com/</span><span class=si>${</span><span class=nv>BUILD_ID</span><span class=si>}</span><span class=s2>; view, View Changelog, https://github.com/org/repo/commits/main&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>      -d <span class=s2>&#34;Version </span><span class=si>${</span><span class=nv>VERSION</span><span class=si>}</span><span class=s2> deployed to production in </span><span class=si>${</span><span class=nv>duration</span><span class=si>}</span><span class=s2>s&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>      <span class=s2>&#34;</span><span class=si>${</span><span class=nv>NTFY_URL</span><span class=si>}</span><span class=s2>/</span><span class=si>${</span><span class=nv>TOPIC</span><span class=si>}</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl><span class=k>else</span>
+</span></span><span class=line><span class=cl>    curl -s <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>      -H <span class=s2>&#34;Title: Deploy Failed&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>      -H <span class=s2>&#34;Priority: urgent&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>      -H <span class=s2>&#34;Tags: x,rotating_light&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>      -H <span class=s2>&#34;Actions: view, View Logs, https://ci.example.com/</span><span class=si>${</span><span class=nv>BUILD_ID</span><span class=si>}</span><span class=s2>/log&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>      -d <span class=s2>&#34;Deployment failed with exit code </span><span class=si>${</span><span class=nv>deploy_result</span><span class=si>}</span><span class=s2>. Check logs immediately.&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>      <span class=s2>&#34;</span><span class=si>${</span><span class=nv>NTFY_URL</span><span class=si>}</span><span class=s2>/</span><span class=si>${</span><span class=nv>TOPIC</span><span class=si>}</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=nb>exit</span> <span class=m>1</span>
+</span></span><span class=line><span class=cl><span class=k>fi</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=example-uptime-monitoring-integration>Example: Uptime Monitoring Integration</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=cp>#!/bin/bash
+</span></span></span><span class=line><span class=cl><span class=cp></span><span class=c1># ping-monitor.sh - Simple uptime check with ntfy alerts</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nv>NTFY_URL</span><span class=o>=</span><span class=s2>&#34;https://ntfy.example.com&#34;</span>
+</span></span><span class=line><span class=cl><span class=nv>TOPIC</span><span class=o>=</span><span class=s2>&#34;uptime&#34;</span>
+</span></span><span class=line><span class=cl><span class=nv>TARGETS</span><span class=o>=(</span><span class=s2>&#34;https://example.com&#34;</span> <span class=s2>&#34;https://api.example.com&#34;</span> <span class=s2>&#34;https://status.example.com&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>for</span> url in <span class=s2>&#34;</span><span class=si>${</span><span class=nv>TARGETS</span><span class=p>[@]</span><span class=si>}</span><span class=s2>&#34;</span><span class=p>;</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>    <span class=nv>status_code</span><span class=o>=</span><span class=k>$(</span>curl -s -o /dev/null -w <span class=s2>&#34;%{http_code}&#34;</span> --max-time <span class=m>10</span> <span class=s2>&#34;</span><span class=nv>$url</span><span class=s2>&#34;</span> 2&gt;/dev/null<span class=k>)</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    <span class=k>if</span> <span class=o>[</span> <span class=s2>&#34;</span><span class=nv>$status_code</span><span class=s2>&#34;</span> -ge <span class=m>200</span> <span class=o>]</span> <span class=o>&amp;&amp;</span> <span class=o>[</span> <span class=s2>&#34;</span><span class=nv>$status_code</span><span class=s2>&#34;</span> -lt <span class=m>300</span> <span class=o>]</span><span class=p>;</span> <span class=k>then</span>
+</span></span><span class=line><span class=cl>        <span class=nb>echo</span> <span class=s2>&#34;OK: </span><span class=nv>$url</span><span class=s2> (</span><span class=nv>$status_code</span><span class=s2>)&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=k>else</span>
+</span></span><span class=line><span class=cl>        curl -s <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>          -H <span class=s2>&#34;Title: Service Down&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>          -H <span class=s2>&#34;Priority: urgent&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>          -H <span class=s2>&#34;Tags: no_entry_sign,</span><span class=k>$(</span><span class=nb>echo</span> <span class=nv>$url</span> <span class=p>|</span> sed <span class=s1>&#39;s/[^a-zA-Z0-9]/_/g&#39;</span><span class=k>)</span><span class=s2>&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>          -d <span class=s2>&#34;</span><span class=nv>$url</span><span class=s2> returned HTTP </span><span class=nv>$status_code</span><span class=s2>&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>          <span class=s2>&#34;</span><span class=si>${</span><span class=nv>NTFY_URL</span><span class=si>}</span><span class=s2>/</span><span class=si>${</span><span class=nv>TOPIC</span><span class=si>}</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=k>fi</span>
+</span></span><span class=line><span class=cl><span class=k>done</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=migration-considerations>Migration Considerations</h2><p>If you&rsquo;re currently using Pushbullet or Pushover, migration is straightforward with either tool:</p><p><strong>From Pushover</strong>: Both services support title, message, and priority fields that map directly to Pushover&rsquo;s API. Update your scripts to point to your self-hosted endpoint and swap the token format.</p><p><strong>From Pushbullet</strong>: Pushbullet&rsquo;s device-targeted model maps well to Gotify&rsquo;s application system. If you use Pushbullet&rsquo;s channels, ntfy&rsquo;s topic model is an even closer fit.</p><p>For gradual migration, run both services in parallel. Most monitoring tools (Prometheus Alertmanager, Grafana, Uptime Kuma) support custom webhook notifications that work with both Gotify and ntfy.</p><h3 id=alertmanager-configuration-ntfy>Alertmanager Configuration (ntfy)</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># alertmanager.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>receivers</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=s1>&#39;ntfy&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>webhook_configs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>url</span><span class=p>:</span><span class=w> </span><span class=s1>&#39;https://ntfy.example.com/alerts&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>send_resolved</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>http_config</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>headers</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>Title</span><span class=p>:</span><span class=w> </span><span class=s1>&#39;{{ .CommonAnnotations.summary }}&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>Priority</span><span class=p>:</span><span class=w> </span><span class=s1>&#39;{{ if eq .Status &#34;firing&#34; }}urgent{{ else }}ok{{ end }}&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>Tags</span><span class=p>:</span><span class=w> </span><span class=s1>&#39;{{ if eq .Status &#34;firing&#34; }}rotating_light{{ else }}white_check_mark{{ end }}&#39;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=uptime-kuma-integration>Uptime Kuma Integration</h3><p>Both services work with Uptime Kuma&rsquo;s notification system:</p><ul><li><strong>Gotify</strong>: Use the Gotify notification type — enter your server URL and app token</li><li><strong>ntfy</strong>: Use the generic Webhook notification type with a curl-based payload, or use ntfy&rsquo;s webhook compatibility endpoint</li></ul><h2 id=performance-and-resource-usage>Performance and Resource Usage</h2><p>Both tools are extremely lightweight, but there are measurable differences:</p><table><thead><tr><th>Metric</th><th>Gotify</th><th>ntfy</th></tr></thead><tbody><tr><td>Idle RAM</td><td>~50MB</td><td>~30MB</td></tr><tr><td>Binary Size</td><td>~18MB</td><td>~15MB</td></tr><tr><td>Docker Image</td><td>~45MB</td><td>~35MB</td></tr><tr><td>SQLite DB Growth</td><td>~1KB per message</td><td>~500B per message</td></tr><tr><td>Concurrent Connections</td><td>1,000+ (WebSocket)</td><td>10,000+ (SSE)</td></tr><tr><td>Startup Time</td><td>~1s</td><td>~0.5s</td></tr></tbody></table><p>For a homelab with dozens of services, either tool is negligible. For larger deployments with hundreds of publishers and thousands of subscribers, ntfy&rsquo;s SSE-based architecture handles higher concurrency with lower resource overhead.</p><h2 id=final-recommendation>Final Recommendation</h2><p><strong>For most homelab users, ntfy is the better choice.</strong> Its topic-based pub/sub model is intuitive, the iOS app support is a significant advantage for mixed-device households, and the single-command API makes scripting trivial. The emoji tags and action buttons make notifications genuinely useful rather than just informational.</p><p><strong>For teams and organizations, Gotify has the edge.</strong> Its structured user/application model, plugin system, and Markdown support make it better suited for environments where access control, auditability, and message formatting matter.</p><p><strong>For the ultimate setup</strong>: run ntfy as your primary notification service for scripts and monitoring, and use Gotify for team-based alerts where user isolation and Markdown formatting are needed. Both can run on the same low-end VPS or Raspberry Pi with minimal resource impact.</p><p>The best self-hosted notification service is the one you actually set up. Both Gotify and ntfy can be deployed in under five minutes with Docker — so pick one and start sending yourself alerts today.</p></div><div id=frame style=width:100%;margin:auto;position:relative;z-index:99998><iframe data-aa=2433958 src='//acceptable.a-ads.com/2433958/?size=Adaptive' style=border:0;padding:0;width:70%;height:auto;overflow:hidden;display:block;margin:auto></iframe></div></article></main><footer class=site-footer><p>Built with <a href=https://gohugo.io>Hugo</a> · <a href=/openswap-guide/index.xml>RSS</a> · <a href=https://github.com/hopkdj>GitHub</a></p><p style=margin-top:8px>&copy; 2026 OpenSwap Guide. All rights reserved.</p></footer></body></html>
