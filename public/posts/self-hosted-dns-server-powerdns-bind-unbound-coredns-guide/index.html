@@ -1,0 +1,824 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted DNS Server: PowerDNS vs BIND vs Unbound vs CoreDNS 2026 | OpenSwap Guide</title>
+<meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, and local AI deployment."><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/openswap-guide/css/main.min.777dc111b5207bf5336e5799477da0b31fb9080306bf98a82d6eceb979cf9737.css><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://hopkdj.github.io/openswap-guide/ class=logo><div class=logo-icon>H</div>OpenSwap Guide</a><nav><ul class=nav-links><li><a href=/openswap-guide/>Home</a></li><li><a href=/openswap-guide/tags/comparison/>Comparisons</a></li><li><a href=/openswap-guide/tags/guide/>Guides</a></li><li><a href=/openswap-guide/tags/ai/>Local AI</a></li><li><a href=/openswap-guide/index.xml class=nav-rss>Subscribe RSS</a></li></ul></nav></div></header><main><article class=post-single><a href=https://hopkdj.github.io/openswap-guide/ class=back-link>&larr; Back to posts</a><header class=post-single-header><div class=post-single-meta><span class="tag tag-purple">comparison</span>
+<span class="tag tag-green">guide</span>
+<span class="tag tag-blue">self-hosted</span>
+<span>·</span>
+<span>April 13, 2026</span>
+<span>·</span>
+<span>13 min read</span></div><h1 class=post-single-title>Self-Hosted DNS Server: PowerDNS vs BIND vs Unbound vs CoreDNS 2026</h1></header><div class=post-single-content><h2 id=why-run-your-own-dns-server>Why Run Your Own DNS Server?</h2><p>DNS is the backbone of every network interaction — translating human-readable domain names into IP addresses. Relying entirely on your ISP&rsquo;s or a third-party provider&rsquo;s DNS servers means surrendering visibility and control over a critical piece of your infrastructure.</p><p>Running your own DNS server gives you several tangible benefits:</p><ul><li><strong>Full ownership of your domains</strong>: Authoritative DNS servers let you host your own zone files, manage records, and control TTLs without depending on a registrar&rsquo;s interface or paying for premium DNS hosting.</li><li><strong>Internal name resolution</strong>: A local recursive or caching DNS server speeds up lookups for your entire network, reduces external query volume, and lets you define custom internal domains (e.g., <code>app.internal</code>, <code>db.local</code>).</li><li><strong>Split-horizon DNS</strong>: Serve different answers to internal vs. external queries — expose internal IPs for employees while returning public IPs to the rest of the world.</li><li><strong>Resilience and independence</strong>: If your upstream DNS provider goes down, your local server keeps answering cached queries. In self-hosted setups, DNS is one of the last services you want to outsource.</li><li><strong>Compliance and auditing</strong>: Some industries require you to log DNS queries for security audits. Self-hosted DNS gives you full query logs without handing them to a third party.</li></ul><p>This guide covers four of the most widely used DNS server software options: <strong>BIND</strong> (the internet&rsquo;s original DNS server), <strong>PowerDNS</strong> (a modern authoritative server with database backends), <strong>Unbound</strong> (a focused recursive resolver), and <strong>CoreDNS</strong> (a cloud-native, plugin-based DNS server). Each serves a different purpose, and in practice, many production setups combine them.</p><hr><h2 id=quick-comparison-at-a-glance>Quick Comparison at a Glance</h2><table><thead><tr><th>Feature</th><th>BIND 9</th><th>PowerDNS</th><th>Unbound</th><th>CoreDNS</th></tr></thead><tbody><tr><td><strong>Primary role</strong></td><td>Authoritative + Recursive</td><td>Authoritative</td><td>Recursive</td><td>Authoritative + Proxy</td></tr><tr><td><strong>Written in</strong></td><td>C</td><td>C++</td><td>C</td><td>Go</td></tr><tr><td><strong>Backend storage</strong></td><td>Zone files, DLZ</td><td>MySQL, PostgreSQL, SQLite, BIND zone files, LMDB</td><td>— (recursive only)</td><td>Plugins (file, etcd, Kubernetes, MySQL, etc.)</td></tr><tr><td><strong>DNSSEC</strong></td><td>Yes (signer + validator)</td><td>Yes (validator + signer)</td><td>Yes (validator)</td><td>Yes (via plugin)</td></tr><tr><td><strong>API/Control</strong></td><td>RNDC (remote control)</td><td>REST API (pdns_server)</td><td>unbound-control</td><td>HTTP/metrics endpoint</td></tr><tr><td><strong>IPv6</strong></td><td>Full support</td><td>Full support</td><td>Full support</td><td>Full support</td></tr><tr><td><strong>Config language</strong></td><td>Named.conf (declarative)</td><td>pdns.conf + SQL schemas</td><td>unbound.conf</td><td>Corefile (plugin chain)</td></tr><tr><td><strong>Docker-friendly</strong></td><td>Moderate</td><td>Good</td><td>Excellent</td><td>Excellent</td></tr><tr><td><strong>Best for</strong></td><td>Traditional DNS, learning</td><td>Multi-domain hosting, API-driven</td><td>Recursive caching, DNSSEC validation</td><td>Kubernetes, service discovery, cloud-native</td></tr></tbody></table><hr><h2 id=bind-9-the-internets-original-dns-server>BIND 9: The Internet&rsquo;s Original DNS Server</h2><p>BIND (Berkeley Internet Name Domain) has been the reference implementation of DNS since 1984. It powers a significant portion of the internet&rsquo;s authoritative name servers and remains the most feature-complete DNS server available.</p><h3 id=when-to-choose-bind>When to Choose BIND</h3><ul><li>You need a battle-tested, standards-compliant DNS server</li><li>You want both authoritative and recursive capabilities in one package</li><li>You&rsquo;re managing traditional zone files and prefer file-based configuration</li><li>You need advanced DNS features like views (split-horizon), TSIG, and DNSSEC signing</li></ul><h3 id=installation>Installation</h3><p><strong>Ubuntu/Debian:</strong></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>sudo apt update
+</span></span><span class=line><span class=cl>sudo apt install bind9 bind9utils bind9-dnsutils
+</span></span></code></pre></td></tr></table></div></div><p><strong>Docker:</strong></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>bind9</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>ubuntu/bind9:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>bind9</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;53:53/tcp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;53:53/udp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>BIND9_NO_ROOT_WARNINGS=yes</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./config:/etc/bind</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./zones:/var/cache/bind</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=basic-configuration>Basic Configuration</h3><p>The main configuration file is <code>/etc/bind/named.conf</code> (or <code>/etc/bind/named.conf.local</code> for user-defined zones):</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>// /etc/bind/named.conf.local
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>// Authoritative zone
+</span></span><span class=line><span class=cl>zone &#34;example.com&#34; {
+</span></span><span class=line><span class=cl>    type master;
+</span></span><span class=line><span class=cl>    file &#34;/etc/bind/zones/db.example.com&#34;;
+</span></span><span class=line><span class=cl>    allow-transfer { 10.0.0.2; };  // Secondary DNS server
+</span></span><span class=line><span class=cl>};
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>// Reverse DNS zone
+</span></span><span class=line><span class=cl>zone &#34;0.168.192.in-addr.arpa&#34; {
+</span></span><span class=line><span class=cl>    type master;
+</span></span><span class=line><span class=cl>    file &#34;/etc/bind/zones/db.192.168.0&#34;;
+</span></span><span class=line><span class=cl>};
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>// Forwarders for recursive queries
+</span></span><span class=line><span class=cl>options {
+</span></span><span class=line><span class=cl>    forwarders {
+</span></span><span class=line><span class=cl>        8.8.8.8;
+</span></span><span class=line><span class=cl>        1.1.1.1;
+</span></span><span class=line><span class=cl>    };
+</span></span><span class=line><span class=cl>    dnssec-validation auto;
+</span></span><span class=line><span class=cl>    allow-query { any; };
+</span></span><span class=line><span class=cl>    allow-recursion { 192.168.0.0/24; };
+</span></span><span class=line><span class=cl>};
+</span></span></code></pre></td></tr></table></div></div><p>A typical zone file (<code>/etc/bind/zones/db.example.com</code>):</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-dns data-lang=dns><span class=line><span class=cl><span class=na>$TTL</span><span class=w> </span><span class=sc>86400</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nc>@</span><span class=w>   </span><span class=k>IN</span><span class=w>  </span><span class=k>SOA</span><span class=w> </span><span class=py>ns1.example.com. admin.example.com. </span><span class=p>(</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=sc>2026041301</span><span class=w>  </span><span class=c>; Serial (YYYYMMDDNN)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=sc>3600</span><span class=w>        </span><span class=c>; Refresh</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=sc>1800</span><span class=w>        </span><span class=c>; Retry</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=sc>604800</span><span class=w>      </span><span class=c>; Expire</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=sc>86400</span><span class=w>       </span><span class=c>; Minimum TTL</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nc>@</span><span class=w>       </span><span class=k>IN</span><span class=w>  </span><span class=k>NS</span><span class=w>      </span><span class=py>ns1.example.com.</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nc>@</span><span class=w>       </span><span class=k>IN</span><span class=w>  </span><span class=k>NS</span><span class=w>      </span><span class=py>ns2.example.com.</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nc>@</span><span class=w>       </span><span class=k>IN</span><span class=w>  </span><span class=k>A</span><span class=w>       </span><span class=mi>192.168.1.10</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nc>@</span><span class=w>       </span><span class=k>IN</span><span class=w>  </span><span class=k>AAAA</span><span class=w>    </span><span class=il>2001:db8::10</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nc>ns1</span><span class=w>     </span><span class=k>IN</span><span class=w>  </span><span class=k>A</span><span class=w>       </span><span class=mi>192.168.1.10</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nc>ns2</span><span class=w>     </span><span class=k>IN</span><span class=w>  </span><span class=k>A</span><span class=w>       </span><span class=mi>192.168.1.11</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nc>www</span><span class=w>     </span><span class=k>IN</span><span class=w>  </span><span class=k>A</span><span class=w>       </span><span class=mi>192.168.1.20</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nc>mail</span><span class=w>    </span><span class=k>IN</span><span class=w>  </span><span class=k>A</span><span class=w>       </span><span class=mi>192.168.1.30</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nc>@</span><span class=w>       </span><span class=k>IN</span><span class=w>  </span><span class=k>MX</span><span class=w>  </span><span class=sc>10</span><span class=w>  </span><span class=py>mail.example.com.</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nc>@</span><span class=w>       </span><span class=k>IN</span><span class=w>  </span><span class=k>TXT</span><span class=w>     </span><span class=err>&#34;v=spf1</span><span class=w> </span><span class=err>mx</span><span class=w> </span><span class=err>-all&#34;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=managing-bind>Managing BIND</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Check configuration syntax</span>
+</span></span><span class=line><span class=cl>sudo named-checkconf
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Validate a zone file</span>
+</span></span><span class=line><span class=cl>sudo named-checkzone example.com /etc/bind/zones/db.example.com
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Reload configuration without restart</span>
+</span></span><span class=line><span class=cl>sudo rndc reload
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># View server status</span>
+</span></span><span class=line><span class=cl>sudo rndc status
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Flush the cache</span>
+</span></span><span class=line><span class=cl>sudo rndc flush
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Query logs (journalctl)</span>
+</span></span><span class=line><span class=cl>sudo journalctl -u bind9 -f
+</span></span></code></pre></td></tr></table></div></div><h3 id=dnssec-signing-with-bind>DNSSEC Signing with BIND</h3><p>BIND includes <code>dnssec-keygen</code> and <code>dnssec-signzone</code> for signing zones:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Generate ZSK (Zone Signing Key)</span>
+</span></span><span class=line><span class=cl>dnssec-keygen -a RSASHA256 -b <span class=m>1024</span> -n ZONE example.com
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Generate KSK (Key Signing Key)</span>
+</span></span><span class=line><span class=cl>dnssec-keygen -f KSK -a RSASHA256 -b <span class=m>2048</span> -n ZONE example.com
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Sign the zone</span>
+</span></span><span class=line><span class=cl>dnssec-signzone -o example.com -k Kkey.* /etc/bind/zones/db.example.com
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># The signed zone file is db.example.com.signed — update named.conf to point to it</span>
+</span></span></code></pre></td></tr></table></div></div><hr><h2 id=powerdns-modern-authoritative-dns-with-database-backends>PowerDNS: Modern Authoritative DNS with Database Backends</h2><p>PowerDNS is a high-performance authoritative DNS server that stands out for its ability to store zone data in SQL databases (MySQL, PostgreSQL, SQLite) instead of zone files. This makes it ideal for environments where DNS records need to be managed programmatically or through a web interface.</p><h3 id=when-to-choose-powerdns>When to Choose PowerDNS</h3><ul><li>You want to manage DNS records through a database or REST API</li><li>You need to host hundreds or thousands of domains with dynamic updates</li><li>You want integration with management interfaces like PowerDNS-Admin or the official PowerDNS UI</li><li>You need high availability with database-backed replication</li></ul><h3 id=installation-1>Installation</h3><p><strong>Ubuntu/Debian (Authoritative Server):</strong></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>sudo apt update
+</span></span><span class=line><span class=cl>sudo apt install pdns-server pdns-backend-pgsql
+</span></span></code></pre></td></tr></table></div></div><p><strong>Docker with PostgreSQL Backend:</strong></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>postgres</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>postgres:16-alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_DB</span><span class=p>:</span><span class=w> </span><span class=l>powerdns</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_USER</span><span class=p>:</span><span class=w> </span><span class=l>pdns</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_PASSWORD</span><span class=p>:</span><span class=w> </span><span class=l>${PDNS_DB_PASSWORD}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>pgdata:/var/lib/postgresql/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>healthcheck</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>test</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;CMD-SHELL&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;pg_isready -U pdns&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>interval</span><span class=p>:</span><span class=w> </span><span class=l>5s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>retries</span><span class=p>:</span><span class=w> </span><span class=m>5</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>powerdns</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>pschiffe/pdns-mysql:4.8 </span><span class=w> </span><span class=c># or pdns-postgresql variant</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>powerdns</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;53:53/tcp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;53:53/udp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8081:8081&#34;</span><span class=w>  </span><span class=c># API port</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PDNS_gmysql_host=postgres</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PDNS_gmysql_port=3306</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PDNS_gmysql_dbname=powerdns</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PDNS_gmysql_user=pdns</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PDNS_gmysql_password=${PDNS_DB_PASSWORD}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PDNS_api=yes</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PDNS_api-key=${PDNS_API_KEY}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PDNS_webserver=yes</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PDNS_webserver-address=0.0.0.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PDNS_webserver-password=${PDNS_WEB_PASSWORD}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PDNS_webserver-allow-from=0.0.0.0/0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>postgres</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>condition</span><span class=p>:</span><span class=w> </span><span class=l>service_healthy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>pgdata</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=database-schema-setup>Database Schema Setup</h3><p>If using PostgreSQL, initialize the schema:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Connect to the database</span>
+</span></span><span class=line><span class=cl>psql -U pdns -d powerdns -h localhost
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># PowerDNS provides schema files</span>
+</span></span><span class=line><span class=cl><span class=c1># For PostgreSQL:</span>
+</span></span><span class=line><span class=cl><span class=se>\i</span> /usr/share/doc/pdns-backend-pgsql/schema.pgsql.sql
+</span></span></code></pre></td></tr></table></div></div><h3 id=managing-records-via-rest-api>Managing Records via REST API</h3><p>PowerDNS has a built-in REST API for managing zones and records:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Create a new zone</span>
+</span></span><span class=line><span class=cl>curl -s -X POST <span class=s2>&#34;http://localhost:8081/api/v1/servers/localhost/zones&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -H <span class=s2>&#34;X-API-Key: </span><span class=si>${</span><span class=nv>PDNS_API_KEY</span><span class=si>}</span><span class=s2>&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -H <span class=s2>&#34;Content-Type: application/json&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -d <span class=s1>&#39;{
+</span></span></span><span class=line><span class=cl><span class=s1>    &#34;name&#34;: &#34;example.com.&#34;,
+</span></span></span><span class=line><span class=cl><span class=s1>    &#34;kind&#34;: &#34;Native&#34;,
+</span></span></span><span class=line><span class=cl><span class=s1>    &#34;masters&#34;: [],
+</span></span></span><span class=line><span class=cl><span class=s1>    &#34;nameservers&#34;: [&#34;ns1.example.com.&#34;, &#34;ns2.example.com.&#34;]
+</span></span></span><span class=line><span class=cl><span class=s1>  }&#39;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Add an A record</span>
+</span></span><span class=line><span class=cl>curl -s -X PATCH <span class=s2>&#34;http://localhost:8081/api/v1/servers/localhost/zones/example.com.&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -H <span class=s2>&#34;X-API-Key: </span><span class=si>${</span><span class=nv>PDNS_API_KEY</span><span class=si>}</span><span class=s2>&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -H <span class=s2>&#34;Content-Type: application/json&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -d <span class=s1>&#39;{
+</span></span></span><span class=line><span class=cl><span class=s1>    &#34;rrsets&#34;: [{
+</span></span></span><span class=line><span class=cl><span class=s1>      &#34;name&#34;: &#34;www.example.com.&#34;,
+</span></span></span><span class=line><span class=cl><span class=s1>      &#34;type&#34;: &#34;A&#34;,
+</span></span></span><span class=line><span class=cl><span class=s1>      &#34;ttl&#34;: 300,
+</span></span></span><span class=line><span class=cl><span class=s1>      &#34;changetype&#34;: &#34;REPLACE&#34;,
+</span></span></span><span class=line><span class=cl><span class=s1>      &#34;records&#34;: [{
+</span></span></span><span class=line><span class=cl><span class=s1>        &#34;content&#34;: &#34;192.168.1.20&#34;,
+</span></span></span><span class=line><span class=cl><span class=s1>        &#34;disabled&#34;: false
+</span></span></span><span class=line><span class=cl><span class=s1>      }]
+</span></span></span><span class=line><span class=cl><span class=s1>    }]
+</span></span></span><span class=line><span class=cl><span class=s1>  }&#39;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># List all zones</span>
+</span></span><span class=line><span class=cl>curl -s <span class=s2>&#34;http://localhost:8081/api/v1/servers/localhost/zones&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -H <span class=s2>&#34;X-API-Key: </span><span class=si>${</span><span class=nv>PDNS_API_KEY</span><span class=si>}</span><span class=s2>&#34;</span> <span class=p>|</span> jq <span class=s1>&#39;.[].name&#39;</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=powerdns-admin-web-ui>PowerDNS-Admin (Web UI)</h3><p>For a web-based management interface, PowerDNS-Admin is the most popular option:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># Add to your docker-compose.yml:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>powerdns-admin</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>ngoduykhanh/powerdns-admin:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>powerdns-admin</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;9191:80&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>SQLALCHEMY_DATABASE_URI=mysql://pda:pda@mysql-server/pda</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>GUNICORN_TIMEOUT=60</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>GUNICORN_WORKERS=2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>mysql-server</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><hr><h2 id=unbound-the-focused-recursive-resolver>Unbound: The Focused Recursive Resolver</h2><p>Unbound is a validating, recursive, caching DNS resolver developed by NLnet Labs. Unlike BIND and PowerDNS, Unbound does <strong>not</strong> serve authoritative zones — it focuses exclusively on resolving queries from clients by recursively querying upstream servers.</p><h3 id=when-to-choose-unbound>When to Choose Unbound</h3><ul><li>You want a fast, secure recursive DNS resolver for your network</li><li>You need DNSSEC validation (Unbound has one of the most robust validators)</li><li>You want to run a local caching resolver to reduce external DNS latency</li><li>You&rsquo;re building a privacy-focused DNS setup (pairs well with stubby or dnscrypt-proxy)</li></ul><h3 id=installation-2>Installation</h3><p><strong>Ubuntu/Debian:</strong></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>sudo apt update
+</span></span><span class=line><span class=cl>sudo apt install unbound unbound-anchor unbound-host
+</span></span></code></pre></td></tr></table></div></div><p><strong>Docker:</strong></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>unbound</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>mvance/unbound:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>unbound</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;53:53/tcp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;53:53/udp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./unbound.conf:/opt/unbound/etc/unbound/unbound.conf</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>cap_add</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>NET_BIND_SERVICE</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=configuration>Configuration</h3><p>The main configuration file is <code>/etc/unbound/unbound.conf</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-gdscript3 data-lang=gdscript3><span class=line><span class=cl><span class=n>server</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>  <span class=c1># Listen on all interfaces</span>
+</span></span><span class=line><span class=cl>  <span class=n>interface</span><span class=p>:</span> <span class=mf>0.0</span><span class=o>.</span><span class=mf>0.0</span>
+</span></span><span class=line><span class=cl>  <span class=n>interface</span><span class=p>:</span> <span class=p>::</span><span class=mi>0</span>
+</span></span><span class=line><span class=cl>  <span class=n>port</span><span class=p>:</span> <span class=mi>53</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=c1># Access control — only allow local network</span>
+</span></span><span class=line><span class=cl>  <span class=n>access</span><span class=o>-</span><span class=n>control</span><span class=p>:</span> <span class=mf>127.0</span><span class=o>.</span><span class=mf>0.0</span><span class=o>/</span><span class=mi>8</span> <span class=n>allow</span>
+</span></span><span class=line><span class=cl>  <span class=n>access</span><span class=o>-</span><span class=n>control</span><span class=p>:</span> <span class=mf>192.168</span><span class=o>.</span><span class=mf>0.0</span><span class=o>/</span><span class=mi>16</span> <span class=n>allow</span>
+</span></span><span class=line><span class=cl>  <span class=n>access</span><span class=o>-</span><span class=n>control</span><span class=p>:</span> <span class=mf>10.0</span><span class=o>.</span><span class=mf>0.0</span><span class=o>/</span><span class=mi>8</span> <span class=n>allow</span>
+</span></span><span class=line><span class=cl>  <span class=n>access</span><span class=o>-</span><span class=n>control</span><span class=p>:</span> <span class=mf>0.0</span><span class=o>.</span><span class=mf>0.0</span><span class=o>/</span><span class=mi>0</span> <span class=n>refuse</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=c1># DNSSEC validation</span>
+</span></span><span class=line><span class=cl>  <span class=n>auto</span><span class=o>-</span><span class=n>trust</span><span class=o>-</span><span class=n>anchor</span><span class=o>-</span><span class=n>file</span><span class=p>:</span> <span class=s2>&#34;/var/lib/unbound/root.key&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=n>dnssec</span><span class=p>:</span> <span class=n>yes</span>
+</span></span><span class=line><span class=cl>  <span class=n>dnssec</span><span class=o>-</span><span class=nb>log</span><span class=o>-</span><span class=n>bogus</span><span class=p>:</span> <span class=n>yes</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=c1># Privacy: minimize query information</span>
+</span></span><span class=line><span class=cl>  <span class=n>qname</span><span class=o>-</span><span class=n>minimisation</span><span class=p>:</span> <span class=n>yes</span>
+</span></span><span class=line><span class=cl>  <span class=n>harden</span><span class=o>-</span><span class=n>algo</span><span class=o>-</span><span class=n>downgrade</span><span class=p>:</span> <span class=n>yes</span>
+</span></span><span class=line><span class=cl>  <span class=n>harden</span><span class=o>-</span><span class=n>below</span><span class=o>-</span><span class=n>nxdomain</span><span class=p>:</span> <span class=n>yes</span>
+</span></span><span class=line><span class=cl>  <span class=n>harden</span><span class=o>-</span><span class=n>referral</span><span class=o>-</span><span class=n>path</span><span class=p>:</span> <span class=n>yes</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=c1># Performance tuning</span>
+</span></span><span class=line><span class=cl>  <span class=n>num</span><span class=o>-</span><span class=n>threads</span><span class=p>:</span> <span class=mi>2</span>
+</span></span><span class=line><span class=cl>  <span class=n>msg</span><span class=o>-</span><span class=n>cache</span><span class=o>-</span><span class=n>size</span><span class=p>:</span> <span class=mi>64</span><span class=n>m</span>
+</span></span><span class=line><span class=cl>  <span class=n>rrset</span><span class=o>-</span><span class=n>cache</span><span class=o>-</span><span class=n>size</span><span class=p>:</span> <span class=mi>128</span><span class=n>m</span>
+</span></span><span class=line><span class=cl>  <span class=n>cache</span><span class=o>-</span><span class=nb>max</span><span class=o>-</span><span class=n>ttl</span><span class=p>:</span> <span class=mi>86400</span>
+</span></span><span class=line><span class=cl>  <span class=n>cache</span><span class=o>-</span><span class=nb>min</span><span class=o>-</span><span class=n>ttl</span><span class=p>:</span> <span class=mi>300</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=c1># Logging</span>
+</span></span><span class=line><span class=cl>  <span class=n>verbosity</span><span class=p>:</span> <span class=mi>1</span>
+</span></span><span class=line><span class=cl>  <span class=nb>log</span><span class=o>-</span><span class=n>queries</span><span class=p>:</span> <span class=n>no</span>
+</span></span><span class=line><span class=cl>  <span class=nb>log</span><span class=o>-</span><span class=n>replies</span><span class=p>:</span> <span class=n>no</span>
+</span></span><span class=line><span class=cl>  <span class=nb>log</span><span class=o>-</span><span class=n>tag</span><span class=o>-</span><span class=n>queryreply</span><span class=p>:</span> <span class=n>no</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=c1># Forwarding (optional — use instead of recursion)</span>
+</span></span><span class=line><span class=cl>  <span class=c1># forward-zone:</span>
+</span></span><span class=line><span class=cl>  <span class=c1>#   name: &#34;.&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=c1>#   forward-addr: 1.1.1.1@853  # Cloudflare DoT</span>
+</span></span><span class=line><span class=cl>  <span class=c1>#   forward-addr: 8.8.8.8@853  # Google DoT</span>
+</span></span><span class=line><span class=cl>  <span class=c1>#   forward-tls-upstream: yes</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>remote</span><span class=o>-</span><span class=n>control</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>  <span class=n>control</span><span class=o>-</span><span class=n>enable</span><span class=p>:</span> <span class=n>yes</span>
+</span></span><span class=line><span class=cl>  <span class=n>control</span><span class=o>-</span><span class=n>interface</span><span class=p>:</span> <span class=mf>127.0</span><span class=o>.</span><span class=mf>0.1</span>
+</span></span><span class=line><span class=cl>  <span class=n>control</span><span class=o>-</span><span class=n>port</span><span class=p>:</span> <span class=mi>8953</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=managing-unbound>Managing Unbound</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Update the root trust anchor (DNSSEC)</span>
+</span></span><span class=line><span class=cl>sudo unbound-anchor
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Check configuration syntax</span>
+</span></span><span class=line><span class=cl>sudo unbound-checkconf
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Restart the service</span>
+</span></span><span class=line><span class=cl>sudo systemctl restart unbound
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Flush the cache</span>
+</span></span><span class=line><span class=cl>sudo unbound-control flush_zone example.com
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># View cache statistics</span>
+</span></span><span class=line><span class=cl>sudo unbound-control stats
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Dump the cache to a file</span>
+</span></span><span class=line><span class=cl>sudo unbound-control dump_cache &gt; cache_dump.txt
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Query a domain through Unbound</span>
+</span></span><span class=line><span class=cl>dig @127.0.0.1 example.com A +dnssec
+</span></span></code></pre></td></tr></table></div></div><h3 id=pairing-unbound-with-stubby-dot-upstream>Pairing Unbound with Stubby (DoT Upstream)</h3><p>For maximum privacy, use Unbound as a local cache and Stubby for encrypted upstream resolution:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>sudo apt install stubby
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># /etc/stubby/stubby.yml</span>
+</span></span><span class=line><span class=cl>dns:
+</span></span><span class=line><span class=cl>  listen_addresses: 127.0.0.1@5353
+</span></span><span class=line><span class=cl>  upstream_recursive_servers:
+</span></span><span class=line><span class=cl>    - address_data: 1.1.1.1
+</span></span><span class=line><span class=cl>      tls_auth_name: <span class=s2>&#34;cloudflare-dns.com&#34;</span>
+</span></span><span class=line><span class=cl>    - address_data: 1.0.0.1
+</span></span><span class=line><span class=cl>      tls_auth_name: <span class=s2>&#34;cloudflare-dns.com&#34;</span>
+</span></span><span class=line><span class=cl>    - address_data: 8.8.8.8
+</span></span><span class=line><span class=cl>      tls_auth_name: <span class=s2>&#34;dns.google&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><p>Then configure Unbound to forward to Stubby:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>forward-zone:
+</span></span><span class=line><span class=cl>  name: &#34;.&#34;
+</span></span><span class=line><span class=cl>  forward-addr: 127.0.0.1@5353
+</span></span></code></pre></td></tr></table></div></div><hr><h2 id=coredns-cloud-native-dns-for-modern-infrastructure>CoreDNS: Cloud-Native DNS for Modern Infrastructure</h2><p>CoreDNS is a DNS server written in Go with a plugin-based architecture. It is the default DNS server in Kubernetes and excels at service discovery, acting as a DNS proxy, and integrating with modern infrastructure components.</p><h3 id=when-to-choose-coredns>When to Choose CoreDNS</h3><ul><li>You&rsquo;re running Kubernetes and want to customize cluster DNS</li><li>You need DNS-based service discovery for microservices</li><li>You want a lightweight DNS server with a simple configuration language (Corefile)</li><li>You need integration with etcd, Kubernetes, AWS Route 53, or other cloud backends</li><li>You want Prometheus metrics out of the box</li></ul><h3 id=installation-3>Installation</h3><p><strong>Docker (standalone):</strong></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>coredns</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>coredns/coredns:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>coredns</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;53:53/tcp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;53:53/udp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;9153:9153&#34;</span><span class=w>  </span><span class=c># Prometheus metrics</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./Corefile:/etc/coredns/Corefile</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span>-<span class=l>conf /etc/coredns/Corefile</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=corefile-configuration>Corefile Configuration</h3><p>CoreDNS uses a <code>Corefile</code> — a declarative plugin chain that processes DNS queries:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-gdscript3 data-lang=gdscript3><span class=line><span class=cl><span class=c1># Corefile — basic recursive + caching setup</span>
+</span></span><span class=line><span class=cl><span class=o>.</span><span class=p>:</span><span class=mi>53</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nb>log</span>
+</span></span><span class=line><span class=cl>    <span class=n>errors</span>
+</span></span><span class=line><span class=cl>    <span class=n>health</span>
+</span></span><span class=line><span class=cl>    <span class=n>ready</span>
+</span></span><span class=line><span class=cl>    <span class=n>prometheus</span> <span class=p>:</span><span class=mi>9153</span>
+</span></span><span class=line><span class=cl>    <span class=n>cache</span> <span class=mi>30</span>
+</span></span><span class=line><span class=cl>    <span class=n>forward</span> <span class=o>.</span> <span class=mf>1.1</span><span class=o>.</span><span class=mf>1.1</span> <span class=mf>8.8</span><span class=o>.</span><span class=mf>8.8</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>max_concurrent</span> <span class=mi>1000</span>
+</span></span><span class=line><span class=cl>        <span class=n>health_check</span> <span class=mi>5</span><span class=n>s</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=n>loop</span>
+</span></span><span class=line><span class=cl>    <span class=n>reload</span> <span class=mi>30</span><span class=n>s</span>
+</span></span><span class=line><span class=cl>    <span class=n>loadbalance</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Internal zone with custom records</span>
+</span></span><span class=line><span class=cl><span class=n>internal</span><span class=o>.</span><span class=n>local</span><span class=p>:</span><span class=mi>53</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>file</span> <span class=o>/</span><span class=n>etc</span><span class=o>/</span><span class=n>coredns</span><span class=o>/</span><span class=n>db</span><span class=o>.</span><span class=n>internal</span><span class=o>.</span><span class=n>local</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>reload</span> <span class=mi>30</span><span class=n>s</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=n>cache</span> <span class=mi>30</span>
+</span></span><span class=line><span class=cl>    <span class=nb>log</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=zone-file-for-coredns>Zone File for CoreDNS</h3><p>Create <code>/etc/coredns/db.internal.local</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>$TTL 3600
+</span></span><span class=line><span class=cl>internal.local.    IN SOA   ns.internal.local. admin.internal.local. (
+</span></span><span class=line><span class=cl>                        2026041301 ; serial
+</span></span><span class=line><span class=cl>                        7200       ; refresh
+</span></span><span class=line><span class=cl>                        3600       ; retry
+</span></span><span class=line><span class=cl>                        1209600    ; expire
+</span></span><span class=line><span class=cl>                        3600       ; minimum
+</span></span><span class=line><span class=cl>)
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>internal.local.    IN NS    ns.internal.local.
+</span></span><span class=line><span class=cl>ns.internal.local. IN A     192.168.1.10
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>app.internal.local.    IN A   192.168.1.20
+</span></span><span class=line><span class=cl>api.internal.local.    IN A   192.168.1.21
+</span></span><span class=line><span class=cl>db.internal.local.     IN A   192.168.1.30
+</span></span><span class=line><span class=cl>cache.internal.local.  IN A   192.168.1.31
+</span></span></code></pre></td></tr></table></div></div><h3 id=kubernetes-integration>Kubernetes Integration</h3><p>In Kubernetes, CoreDNS runs as a Deployment and Service in the <code>kube-system</code> namespace. To customize it, edit the <code>coredns</code> ConfigMap:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>kubectl edit configmap coredns -n kube-system
+</span></span></code></pre></td></tr></table></div></div><p>Example with custom upstream and rewrite rules:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-gdscript3 data-lang=gdscript3><span class=line><span class=cl><span class=n>Corefile</span><span class=p>:</span> <span class=o>|</span>
+</span></span><span class=line><span class=cl>  <span class=o>.</span><span class=p>:</span><span class=mi>53</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=n>errors</span>
+</span></span><span class=line><span class=cl>      <span class=n>health</span> <span class=p>{</span> <span class=n>lameduck</span> <span class=mi>5</span><span class=n>s</span> <span class=p>}</span>
+</span></span><span class=line><span class=cl>      <span class=n>ready</span>
+</span></span><span class=line><span class=cl>      <span class=n>kubernetes</span> <span class=n>cluster</span><span class=o>.</span><span class=n>local</span> <span class=ow>in</span><span class=o>-</span><span class=n>addr</span><span class=o>.</span><span class=n>arpa</span> <span class=n>ip6</span><span class=o>.</span><span class=n>arpa</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>          <span class=n>pods</span> <span class=n>insecure</span>
+</span></span><span class=line><span class=cl>          <span class=n>fallthrough</span> <span class=ow>in</span><span class=o>-</span><span class=n>addr</span><span class=o>.</span><span class=n>arpa</span> <span class=n>ip6</span><span class=o>.</span><span class=n>arpa</span>
+</span></span><span class=line><span class=cl>          <span class=n>ttl</span> <span class=mi>30</span>
+</span></span><span class=line><span class=cl>      <span class=p>}</span>
+</span></span><span class=line><span class=cl>      <span class=n>prometheus</span> <span class=p>:</span><span class=mi>9153</span>
+</span></span><span class=line><span class=cl>      <span class=n>forward</span> <span class=o>.</span> <span class=o>/</span><span class=n>etc</span><span class=o>/</span><span class=n>resolv</span><span class=o>.</span><span class=n>conf</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>          <span class=n>max_concurrent</span> <span class=mi>1000</span>
+</span></span><span class=line><span class=cl>      <span class=p>}</span>
+</span></span><span class=line><span class=cl>      <span class=n>cache</span> <span class=mi>30</span>
+</span></span><span class=line><span class=cl>      <span class=n>loop</span>
+</span></span><span class=line><span class=cl>      <span class=n>reload</span>
+</span></span><span class=line><span class=cl>      <span class=n>loadbalance</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=c1># Custom domain pointing to an internal service</span>
+</span></span><span class=line><span class=cl>  <span class=n>api</span><span class=o>.</span><span class=n>internal</span><span class=o>.</span><span class=n>cluster</span><span class=o>.</span><span class=n>local</span><span class=p>:</span><span class=mi>53</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=n>forward</span> <span class=o>.</span> <span class=mf>192.168</span><span class=o>.</span><span class=mf>1.21</span><span class=p>:</span><span class=mi>53</span>
+</span></span><span class=line><span class=cl>      <span class=n>cache</span> <span class=mi>30</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=etcd-backend-for-service-discovery>etcd Backend for Service Discovery</h3><p>CoreDNS can use etcd as a DNS backend, enabling dynamic service discovery:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>.:53 {
+</span></span><span class=line><span class=cl>    etcd internal.local {
+</span></span><span class=line><span class=cl>        endpoint http://etcd:2379
+</span></span><span class=line><span class=cl>        path /skydns
+</span></span><span class=line><span class=cl>    }
+</span></span><span class=line><span class=cl>    cache 30
+</span></span><span class=line><span class=cl>    log
+</span></span><span class=line><span class=cl>}
+</span></span></code></pre></td></tr></table></div></div><p>Register a service in etcd:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install etcdctl</span>
+</span></span><span class=line><span class=cl>apt install etcd-client
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Add a DNS record</span>
+</span></span><span class=line><span class=cl>etcdctl put /skydns/local/internal/app/website <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  <span class=s1>&#39;{&#34;host&#34;:&#34;192.168.1.20&#34;,&#34;port&#34;:8080,&#34;ttl&#34;:60}&#39;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Query it</span>
+</span></span><span class=line><span class=cl>dig @127.0.0.1 app.internal.local A
+</span></span></code></pre></td></tr></table></div></div><h3 id=prometheus-metrics>Prometheus Metrics</h3><p>CoreDNS exposes metrics at <code>:9153/metrics</code> by default when the <code>prometheus</code> plugin is enabled:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Scrape metrics</span>
+</span></span><span class=line><span class=cl>curl http://localhost:9153/metrics
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Key metrics to monitor</span>
+</span></span><span class=line><span class=cl><span class=c1># coredns_dns_request_count_total    — total queries received</span>
+</span></span><span class=line><span class=cl><span class=c1># coredns_dns_response_rcode_count_total — responses by RCODE</span>
+</span></span><span class=line><span class=cl><span class=c1># coredns_cache_hits_total           — cache hit rate</span>
+</span></span><span class=line><span class=cl><span class=c1># coredns_forward_request_count_total — upstream queries</span>
+</span></span><span class=line><span class=cl><span class=c1># coredns_dns_request_duration_seconds — query latency histogram</span>
+</span></span></code></pre></td></tr></table></div></div><hr><h2 id=choosing-the-right-dns-server-for-your-setup>Choosing the Right DNS Server for Your Setup</h2><p>The right choice depends on what you need DNS to do:</p><table><thead><tr><th>Scenario</th><th>Recommended Server(s)</th></tr></thead><tbody><tr><td><strong>Hosting your own domain&rsquo;s DNS</strong></td><td>PowerDNS (with database) or BIND</td></tr><tr><td><strong>Local network recursive resolver</strong></td><td>Unbound</td></tr><tr><td><strong>Kubernetes cluster DNS</strong></td><td>CoreDNS (default, hard to beat)</td></tr><tr><td><strong>DNS-based service discovery</strong></td><td>CoreDNS + etcd or Kubernetes plugin</td></tr><tr><td><strong>High-availability authoritative DNS</strong></td><td>PowerDNS with database replication</td></tr><tr><td><strong>DNSSEC validation for your network</strong></td><td>Unbound</td></tr><tr><td><strong>Learning DNS fundamentals</strong></td><td>BIND</td></tr><tr><td><strong>Split-horizon DNS</strong></td><td>BIND (views) or PowerDNS (geoip backend)</td></tr><tr><td><strong>Dynamic DNS record management via API</strong></td><td>PowerDNS</td></tr><tr><td><strong>Lightweight DNS proxy with plugins</strong></td><td>CoreDNS</td></tr></tbody></table><h3 id=common-production-patterns>Common Production Patterns</h3><p>In real-world setups, you often combine multiple DNS servers:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+</span></span><span class=line><span class=cl>│   Clients   │────▶│   Unbound   │────▶│  Stubby     │
+</span></span><span class=line><span class=cl>│  (LAN)      │     │ (cache +    │     │  (DoT/DoH   │
+</span></span><span class=line><span class=cl>└─────────────┘     │  validate)  │     │   upstream) │
+</span></span><span class=line><span class=cl>                    └─────────────┘     └─────────────┘
+</span></span><span class=line><span class=cl>                           │
+</span></span><span class=line><span class=cl>                    ┌──────▼──────┐
+</span></span><span class=line><span class=cl>                    │  PowerDNS   │
+</span></span><span class=line><span class=cl>                    │ (internal   │
+</span></span><span class=line><span class=cl>                    │  zones)     │
+</span></span><span class=line><span class=cl>                    └─────────────┘
+</span></span></code></pre></td></tr></table></div></div><p>A typical self-hosted stack might use <strong>Unbound</strong> as the local recursive resolver (with DNSSEC validation), <strong>PowerDNS</strong> as the authoritative server for your domains (managed via API), and <strong>Stubby</strong> or <strong>dnscrypt-proxy</strong> as the encrypted upstream forwarder.</p><h3 id=getting-started-recommendation>Getting Started Recommendation</h3><p>If you&rsquo;re new to self-hosted DNS:</p><ol><li><strong>Start with Unbound</strong> as a local caching resolver — it&rsquo;s simple, secure, and immediately improves your network&rsquo;s DNS performance.</li><li><strong>Add PowerDNS</strong> when you need to host your own domains with programmatic record management.</li><li><strong>Explore CoreDNS</strong> when you adopt Kubernetes or need plugin-based DNS routing.</li><li><strong>Study BIND</strong> to understand DNS deeply — even if you don&rsquo;t run it in production, knowing BIND makes every other DNS server easier to understand.</li></ol><hr><h2 id=monitoring-and-maintenance>Monitoring and Maintenance</h2><p>Regardless of which DNS server you choose, set up proper monitoring:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Health check for any DNS server</span>
+</span></span><span class=line><span class=cl>dig @127.0.0.1 example.com A +short +time<span class=o>=</span><span class=m>2</span> +tries<span class=o>=</span><span class=m>1</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Check DNSSEC validation (look for &#34;ad&#34; flag in response)</span>
+</span></span><span class=line><span class=cl>dig @127.0.0.1 dnssec.works A +dnssec <span class=p>|</span> grep <span class=s2>&#34;flags:&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Monitor query latency</span>
+</span></span><span class=line><span class=cl>watch -n <span class=m>1</span> <span class=s2>&#34;dig @127.0.0.1 example.com A +stats 2&gt;&amp;1 | grep &#39;Query time&#39;&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Test against public resolvers for comparison</span>
+</span></span><span class=line><span class=cl>dig @8.8.8.8 example.com A +stats <span class=p>|</span> grep <span class=s2>&#34;Query time&#34;</span>
+</span></span><span class=line><span class=cl>dig @1.1.1.1 example.com A +stats <span class=p>|</span> grep <span class=s2>&#34;Query time&#34;</span>
+</span></span><span class=line><span class=cl>dig @127.0.0.1 example.com A +stats <span class=p>|</span> grep <span class=s2>&#34;Query time&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><p>Set up automated alerts for:</p><ul><li>DNS server process failures (systemd monitoring)</li><li>Cache hit rate dropping below 50% (indicates upstream issues)</li><li>DNSSEC validation failures (potential attacks or misconfigurations)</li><li>Query response times exceeding 500ms</li></ul><p>Running your own DNS server is one of the most impactful infrastructure decisions you can make. It gives you control, visibility, and resilience — and with the tools covered in this guide, there&rsquo;s a solution for every use case from home lab to enterprise production.</p></div><div id=frame style=width:100%;margin:auto;position:relative;z-index:99998><iframe data-aa=2433958 src='//acceptable.a-ads.com/2433958/?size=Adaptive' style=border:0;padding:0;width:70%;height:auto;overflow:hidden;display:block;margin:auto></iframe></div></article></main><footer class=site-footer><p>Built with <a href=https://gohugo.io>Hugo</a> · <a href=/openswap-guide/index.xml>RSS</a> · <a href=https://github.com/hopkdj>GitHub</a></p><p style=margin-top:8px>&copy; 2026 OpenSwap Guide. All rights reserved.</p></footer></body></html>
