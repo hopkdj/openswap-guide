@@ -1,0 +1,1008 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Kubernetes vs Docker Swarm vs Nomad: Container Orchestration 2026 | OpenSwap Guide</title>
+<meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, and local AI deployment."><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/openswap-guide/css/main.min.777dc111b5207bf5336e5799477da0b31fb9080306bf98a82d6eceb979cf9737.css><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://hopkdj.github.io/openswap-guide/ class=logo><div class=logo-icon>H</div>OpenSwap Guide</a><nav><ul class=nav-links><li><a href=/openswap-guide/>Home</a></li><li><a href=/openswap-guide/tags/comparison/>Comparisons</a></li><li><a href=/openswap-guide/tags/guide/>Guides</a></li><li><a href=/openswap-guide/tags/ai/>Local AI</a></li><li><a href=/openswap-guide/index.xml class=nav-rss>Subscribe RSS</a></li></ul></nav></div></header><main><article class=post-single><a href=https://hopkdj.github.io/openswap-guide/ class=back-link>&larr; Back to posts</a><header class=post-single-header><div class=post-single-meta><span class="tag tag-purple">comparison</span>
+<span class="tag tag-green">guide</span>
+<span class="tag tag-blue">self-hosted</span>
+<span>·</span>
+<span>April 13, 2026</span>
+<span>·</span>
+<span>15 min read</span></div><h1 class=post-single-title>Kubernetes vs Docker Swarm vs Nomad: Container Orchestration 2026</h1></header><div class=post-single-content><p>When your self-hosted setup grows beyond a single <code>docker-compose.yml</code>, you need a container orchestrator. The question is: which one? In 2026, the three leading open-source options are <strong>Kubernetes</strong>, <strong>Docker Swarm</strong>, and <strong>HashiCorp Nomad</strong>. Each takes a fundamentally different approach to the same problem — managing containers across multiple machines.</p><p>This guide breaks down all three, walks through real setup examples, and helps you pick the right orchestrator for your homelab or production environment.</p><h2 id=why-self-host-your-own-container-orchestrator>Why Self-Host Your Own Container Orchestrator?</h2><p>Running your own orchestration platform gives you complete control over your infrastructure. Instead of paying for managed Kubernetes on AWS, GCP, or Azure, you can run the same workloads on your own hardware — whether that&rsquo;s a rack of servers, a cluster of Raspberry Pis, or a few repurposed desktops.</p><p>Key advantages of self-hosted orchestration:</p><ul><li><strong>Full data sovereignty</strong> — your containers, your data, your rules</li><li><strong>No vendor lock-in</strong> — avoid cloud provider APIs and pricing models</li><li><strong>Cost efficiency</strong> — after hardware, the software is free</li><li><strong>Learning opportunity</strong> — deep understanding of distributed systems</li><li><strong>Privacy</strong> — no telemetry or usage reporting to third parties</li><li><strong>Custom scheduling</strong> — fine-tune placement policies for your hardware</li></ul><p>Whether you&rsquo;re running Jellyfin for media, Nextcloud for files, or dozens of microservices, a proper orchestrator handles health checks, rolling updates, service discovery, and load balancing automatically.</p><hr><h2 id=docker-swarm-the-gentle-introduction>Docker Swarm: The Gentle Introduction</h2><p>Docker Swarm is built right into Docker. If you already use <code>docker compose</code>, Swarm feels familiar — because it uses the same Compose file format with a few additions.</p><h3 id=how-it-works>How It Works</h3><p>Swarm turns a pool of Docker hosts into a single virtual Docker host. You designate one node as a <strong>manager</strong> (which orchestrates) and the rest as <strong>workers</strong> (which run containers). The manager uses the standard Docker API, so any tool that talks to Docker can talk to a Swarm cluster.</p><h3 id=when-to-choose-docker-swarm>When to Choose Docker Swarm</h3><ul><li>You&rsquo;re a solo operator or small team</li><li>You already know Docker Compose well</li><li>You need basic high availability and scaling</li><li>You want the simplest possible multi-host setup</li><li>Your workloads are straightforward web services and databases</li></ul><h3 id=quick-start-3-node-swarm-cluster>Quick Start: 3-Node Swarm Cluster</h3><p>Initialize the swarm on your manager node:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># On the manager node</span>
+</span></span><span class=line><span class=cl>docker swarm init --advertise-addr 192.168.1.10
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Copy the join command from the output, then run it on worker nodes:</span>
+</span></span><span class=line><span class=cl><span class=c1># docker swarm join --token SWMTKN-1-... 192.168.1.10:2377</span>
+</span></span></code></pre></td></tr></table></div></div><p>Verify the cluster:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker node ls
+</span></span><span class=line><span class=cl><span class=c1># ID                            HOSTNAME      STATUS    AVAILABILITY   MANAGER STATUS</span>
+</span></span><span class=line><span class=cl><span class=c1># abc123 *                      swarm-mgr     Ready     Active         Leader</span>
+</span></span><span class=line><span class=cl><span class=c1># def456                        worker-01     Ready     Active</span>
+</span></span><span class=line><span class=cl><span class=c1># ghi789                        worker-02     Ready     Active</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=example-deploying-a-full-stack-on-swarm>Example: Deploying a Full Stack on Swarm</h3><p>Here&rsquo;s a production-ready <code>docker-compose.yml</code> for a web application with a database and reverse proxy:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span><span class=lnt>62
+</span><span class=lnt>63
+</span><span class=lnt>64
+</span><span class=lnt>65
+</span><span class=lnt>66
+</span><span class=lnt>67
+</span><span class=lnt>68
+</span><span class=lnt>69
+</span><span class=lnt>70
+</span><span class=lnt>71
+</span><span class=lnt>72
+</span><span class=lnt>73
+</span><span class=lnt>74
+</span><span class=lnt>75
+</span><span class=lnt>76
+</span><span class=lnt>77
+</span><span class=lnt>78
+</span><span class=lnt>79
+</span><span class=lnt>80
+</span><span class=lnt>81
+</span><span class=lnt>82
+</span><span class=lnt>83
+</span><span class=lnt>84
+</span><span class=lnt>85
+</span><span class=lnt>86
+</span><span class=lnt>87
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>traefik</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>traefik:v3.1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;80:80&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;443:443&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/var/run/docker.sock:/var/run/docker.sock:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./traefik.yml:/etc/traefik/traefik.yml:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>certs:/letsencrypt</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>deploy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>placement</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>constraints</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=l>node.role == manager]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>restart_policy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>condition</span><span class=p>:</span><span class=w> </span><span class=kc>on</span>-<span class=l>failure</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>proxy-net</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>webapp</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>registry.example.com/webapp:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DATABASE_URL=postgres://appuser:${DB_PASS}@postgres:5432/appdb</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>deploy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>replicas</span><span class=p>:</span><span class=w> </span><span class=m>3</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>update_config</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>parallelism</span><span class=p>:</span><span class=w> </span><span class=m>1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>delay</span><span class=p>:</span><span class=w> </span><span class=l>10s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>order</span><span class=p>:</span><span class=w> </span><span class=l>start-first</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>restart_policy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>condition</span><span class=p>:</span><span class=w> </span><span class=kc>on</span>-<span class=l>failure</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>resources</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>limits</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>cpus</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;1.0&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>memory</span><span class=p>:</span><span class=w> </span><span class=l>512M</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>proxy-net</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>app-net</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>labels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;traefik.enable=true&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;traefik.http.routers.webapp.rule=Host(`app.example.com`)&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;traefik.http.routers.webapp.tls=true&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>postgres</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>postgres:17-alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>pgdata:/var/lib/postgresql/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_USER</span><span class=p>:</span><span class=w> </span><span class=l>appuser</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_PASSWORD_FILE</span><span class=p>:</span><span class=w> </span><span class=l>/run/secrets/db_password</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_DB</span><span class=p>:</span><span class=w> </span><span class=l>appdb</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>deploy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>placement</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>constraints</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=l>node.role == manager]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>restart_policy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>condition</span><span class=p>:</span><span class=w> </span><span class=kc>on</span>-<span class=l>failure</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>secrets</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>db_password</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>app-net</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>redis</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>redis:7-alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>deploy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>replicas</span><span class=p>:</span><span class=w> </span><span class=m>1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>restart_policy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>condition</span><span class=p>:</span><span class=w> </span><span class=kc>on</span>-<span class=l>failure</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>app-net</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>pgdata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>local</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>certs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>local</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>secrets</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>db_password</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>external</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>proxy-net</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>overlay</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>app-net</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>overlay</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>internal</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Deploy with a single command:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker stack deploy -c docker-compose.yml myapp
+</span></span><span class=line><span class=cl>docker stack ps myapp    <span class=c1># Check running services</span>
+</span></span><span class=line><span class=cl>docker service ls         <span class=c1># List all services</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=swarm-strengths-and-weaknesses>Swarm Strengths and Weaknesses</h3><table><thead><tr><th>Aspect</th><th>Assessment</th></tr></thead><tbody><tr><td>Setup complexity</td><td>Very low — <code>docker swarm init</code> and you&rsquo;re done</td></tr><tr><td>Learning curve</td><td>Minimal if you know Docker</td></tr><tr><td>High availability</td><td>Manager quorum (odd number of managers)</td></tr><tr><td>Rolling updates</td><td>Built-in with configurable rollout strategies</td></tr><tr><td>Service mesh</td><td>None built-in; needs Traefik or similar</td></tr><tr><td>Storage</td><td>Basic volume support; no advanced CSI</td></tr><tr><td>Resource limits</td><td>CPU and memory limits per service</td></tr><tr><td>Ecosystem</td><td>Smaller than Kubernetes but growing</td></tr></tbody></table><hr><h2 id=kubernetes-the-industry-standard>Kubernetes: The Industry Standard</h2><p>Kubernetes (K8s) is the dominant container orchestration platform. Created by Google, now maintained by the CNCF, it runs everything from homelabs to the largest cloud deployments in the world.</p><h3 id=how-it-works-1>How It Works</h3><p>Kubernetes uses a <strong>declarative model</strong> — you describe the desired state in YAML manifests, and the control plane continuously reconciles the actual state to match. Key concepts include:</p><ul><li><strong>Pods</strong> — the smallest deployable unit (one or more containers)</li><li><strong>Deployments</strong> — manage replica sets and rolling updates</li><li><strong>Services</strong> — stable networking endpoints for pods</li><li><strong>ConfigMaps/Secrets</strong> — configuration and sensitive data</li><li><strong>Ingress</strong> — HTTP/HTTPS routing to services</li><li><strong>PersistentVolumes</strong> — abstracted storage management</li></ul><h3 id=when-to-choose-kubernetes>When to Choose Kubernetes</h3><ul><li>You need advanced scheduling, autoscaling, or custom resource definitions</li><li>Your team has DevOps experience or is willing to learn</li><li>You want maximum ecosystem compatibility (Helm charts, operators, CNCF tools)</li><li>You plan to run complex, multi-tier applications</li><li>You want your skills to transfer to cloud-managed K8s</li></ul><h3 id=quick-start-lightweight-k3s-cluster>Quick Start: Lightweight K3s Cluster</h3><p>For self-hosting, <strong>K3s</strong> (by Rancher/SUSE) is the best entry point. It&rsquo;s a fully compliant Kubernetes distribution designed for resource-constrained environments — perfect for homelabs.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># On the server (control plane) node</span>
+</span></span><span class=line><span class=cl>curl -sfL https://get.k3s.io <span class=p>|</span> sh -
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Get the node token</span>
+</span></span><span class=line><span class=cl>sudo cat /var/lib/rancher/k3s/server/node-token
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># On each agent (worker) node</span>
+</span></span><span class=line><span class=cl>curl -sfL https://get.k3s.io <span class=p>|</span> <span class=nv>K3S_URL</span><span class=o>=</span>https://192.168.1.10:6443 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  <span class=nv>K3S_TOKEN</span><span class=o>=</span>&lt;node-token&gt; sh -
+</span></span></code></pre></td></tr></table></div></div><p>Verify the cluster:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=nb>export</span> <span class=nv>KUBECONFIG</span><span class=o>=</span>/etc/rancher/k3s/k3s.yaml
+</span></span><span class=line><span class=cl>kubectl get nodes
+</span></span><span class=line><span class=cl><span class=c1># NAME        STATUS   ROLES                  AGE   VERSION</span>
+</span></span><span class=line><span class=cl><span class=c1># k3s-server  Ready    control-plane,master   5m    v1.32.3+k3s1</span>
+</span></span><span class=line><span class=cl><span class=c1># k3s-agent1  Ready    &lt;none&gt;                 2m    v1.32.3+k3s1</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=example-deploying-the-same-stack-on-kubernetes>Example: Deploying the Same Stack on Kubernetes</h3><p>Here&rsquo;s the equivalent deployment using Kubernetes manifests:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>  1
+</span><span class=lnt>  2
+</span><span class=lnt>  3
+</span><span class=lnt>  4
+</span><span class=lnt>  5
+</span><span class=lnt>  6
+</span><span class=lnt>  7
+</span><span class=lnt>  8
+</span><span class=lnt>  9
+</span><span class=lnt> 10
+</span><span class=lnt> 11
+</span><span class=lnt> 12
+</span><span class=lnt> 13
+</span><span class=lnt> 14
+</span><span class=lnt> 15
+</span><span class=lnt> 16
+</span><span class=lnt> 17
+</span><span class=lnt> 18
+</span><span class=lnt> 19
+</span><span class=lnt> 20
+</span><span class=lnt> 21
+</span><span class=lnt> 22
+</span><span class=lnt> 23
+</span><span class=lnt> 24
+</span><span class=lnt> 25
+</span><span class=lnt> 26
+</span><span class=lnt> 27
+</span><span class=lnt> 28
+</span><span class=lnt> 29
+</span><span class=lnt> 30
+</span><span class=lnt> 31
+</span><span class=lnt> 32
+</span><span class=lnt> 33
+</span><span class=lnt> 34
+</span><span class=lnt> 35
+</span><span class=lnt> 36
+</span><span class=lnt> 37
+</span><span class=lnt> 38
+</span><span class=lnt> 39
+</span><span class=lnt> 40
+</span><span class=lnt> 41
+</span><span class=lnt> 42
+</span><span class=lnt> 43
+</span><span class=lnt> 44
+</span><span class=lnt> 45
+</span><span class=lnt> 46
+</span><span class=lnt> 47
+</span><span class=lnt> 48
+</span><span class=lnt> 49
+</span><span class=lnt> 50
+</span><span class=lnt> 51
+</span><span class=lnt> 52
+</span><span class=lnt> 53
+</span><span class=lnt> 54
+</span><span class=lnt> 55
+</span><span class=lnt> 56
+</span><span class=lnt> 57
+</span><span class=lnt> 58
+</span><span class=lnt> 59
+</span><span class=lnt> 60
+</span><span class=lnt> 61
+</span><span class=lnt> 62
+</span><span class=lnt> 63
+</span><span class=lnt> 64
+</span><span class=lnt> 65
+</span><span class=lnt> 66
+</span><span class=lnt> 67
+</span><span class=lnt> 68
+</span><span class=lnt> 69
+</span><span class=lnt> 70
+</span><span class=lnt> 71
+</span><span class=lnt> 72
+</span><span class=lnt> 73
+</span><span class=lnt> 74
+</span><span class=lnt> 75
+</span><span class=lnt> 76
+</span><span class=lnt> 77
+</span><span class=lnt> 78
+</span><span class=lnt> 79
+</span><span class=lnt> 80
+</span><span class=lnt> 81
+</span><span class=lnt> 82
+</span><span class=lnt> 83
+</span><span class=lnt> 84
+</span><span class=lnt> 85
+</span><span class=lnt> 86
+</span><span class=lnt> 87
+</span><span class=lnt> 88
+</span><span class=lnt> 89
+</span><span class=lnt> 90
+</span><span class=lnt> 91
+</span><span class=lnt> 92
+</span><span class=lnt> 93
+</span><span class=lnt> 94
+</span><span class=lnt> 95
+</span><span class=lnt> 96
+</span><span class=lnt> 97
+</span><span class=lnt> 98
+</span><span class=lnt> 99
+</span><span class=lnt>100
+</span><span class=lnt>101
+</span><span class=lnt>102
+</span><span class=lnt>103
+</span><span class=lnt>104
+</span><span class=lnt>105
+</span><span class=lnt>106
+</span><span class=lnt>107
+</span><span class=lnt>108
+</span><span class=lnt>109
+</span><span class=lnt>110
+</span><span class=lnt>111
+</span><span class=lnt>112
+</span><span class=lnt>113
+</span><span class=lnt>114
+</span><span class=lnt>115
+</span><span class=lnt>116
+</span><span class=lnt>117
+</span><span class=lnt>118
+</span><span class=lnt>119
+</span><span class=lnt>120
+</span><span class=lnt>121
+</span><span class=lnt>122
+</span><span class=lnt>123
+</span><span class=lnt>124
+</span><span class=lnt>125
+</span><span class=lnt>126
+</span><span class=lnt>127
+</span><span class=lnt>128
+</span><span class=lnt>129
+</span><span class=lnt>130
+</span><span class=lnt>131
+</span><span class=lnt>132
+</span><span class=lnt>133
+</span><span class=lnt>134
+</span><span class=lnt>135
+</span><span class=lnt>136
+</span><span class=lnt>137
+</span><span class=lnt>138
+</span><span class=lnt>139
+</span><span class=lnt>140
+</span><span class=lnt>141
+</span><span class=lnt>142
+</span><span class=lnt>143
+</span><span class=lnt>144
+</span><span class=lnt>145
+</span><span class=lnt>146
+</span><span class=lnt>147
+</span><span class=lnt>148
+</span><span class=lnt>149
+</span><span class=lnt>150
+</span><span class=lnt>151
+</span><span class=lnt>152
+</span><span class=lnt>153
+</span><span class=lnt>154
+</span><span class=lnt>155
+</span><span class=lnt>156
+</span><span class=lnt>157
+</span><span class=lnt>158
+</span><span class=lnt>159
+</span><span class=lnt>160
+</span><span class=lnt>161
+</span><span class=lnt>162
+</span><span class=lnt>163
+</span><span class=lnt>164
+</span><span class=lnt>165
+</span><span class=lnt>166
+</span><span class=lnt>167
+</span><span class=lnt>168
+</span><span class=lnt>169
+</span><span class=lnt>170
+</span><span class=lnt>171
+</span><span class=lnt>172
+</span><span class=lnt>173
+</span><span class=lnt>174
+</span><span class=lnt>175
+</span><span class=lnt>176
+</span><span class=lnt>177
+</span><span class=lnt>178
+</span><span class=lnt>179
+</span><span class=lnt>180
+</span><span class=lnt>181
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># namespace.yaml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Namespace</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>myapp</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nn>---</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c># secrets.yaml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Secret</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>db-credentials</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>myapp</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>type</span><span class=p>:</span><span class=w> </span><span class=l>Opaque</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>stringData</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>POSTGRES_USER</span><span class=p>:</span><span class=w> </span><span class=l>appuser</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>POSTGRES_PASSWORD</span><span class=p>:</span><span class=w> </span><span class=l>changeme-to-a-secure-password</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>POSTGRES_DB</span><span class=p>:</span><span class=w> </span><span class=l>appdb</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>DATABASE_URL</span><span class=p>:</span><span class=w> </span><span class=l>postgresql://appuser:changeme-to-a-secure-password@postgres:5432/appdb</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nn>---</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c># postgres-statefulset.yaml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>PersistentVolumeClaim</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>postgres-pvc</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>myapp</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>accessModes</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=l>ReadWriteOnce]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>resources</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>requests</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>storage</span><span class=p>:</span><span class=w> </span><span class=l>20Gi</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nn>---</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>apps/v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>StatefulSet</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>postgres</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>myapp</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>serviceName</span><span class=p>:</span><span class=w> </span><span class=l>postgres</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>replicas</span><span class=p>:</span><span class=w> </span><span class=m>1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>selector</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>matchLabels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>app</span><span class=p>:</span><span class=w> </span><span class=l>postgres</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>template</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>labels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>app</span><span class=p>:</span><span class=w> </span><span class=l>postgres</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>containers</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>postgres</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>postgres:17-alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>containerPort</span><span class=p>:</span><span class=w> </span><span class=m>5432</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>envFrom</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>secretRef</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>db-credentials</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>volumeMounts</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>postgres-storage</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>mountPath</span><span class=p>:</span><span class=w> </span><span class=l>/var/lib/postgresql/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>resources</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>limits</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>cpu</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;1&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>memory</span><span class=p>:</span><span class=w> </span><span class=l>1Gi</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>requests</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>cpu</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;250m&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>memory</span><span class=p>:</span><span class=w> </span><span class=l>256Mi</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>volumeClaimTemplates</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>postgres-storage</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>accessModes</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=l>ReadWriteOnce]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>resources</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>requests</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>storage</span><span class=p>:</span><span class=w> </span><span class=l>20Gi</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nn>---</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c># postgres-service.yaml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Service</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>postgres</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>myapp</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>selector</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>app</span><span class=p>:</span><span class=w> </span><span class=l>postgres</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>port</span><span class=p>:</span><span class=w> </span><span class=m>5432</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>targetPort</span><span class=p>:</span><span class=w> </span><span class=m>5432</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nn>---</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c># webapp-deployment.yaml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>apps/v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Deployment</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>webapp</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>myapp</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>replicas</span><span class=p>:</span><span class=w> </span><span class=m>3</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>selector</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>matchLabels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>app</span><span class=p>:</span><span class=w> </span><span class=l>webapp</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>strategy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>type</span><span class=p>:</span><span class=w> </span><span class=l>RollingUpdate</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>rollingUpdate</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>maxSurge</span><span class=p>:</span><span class=w> </span><span class=m>1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>maxUnavailable</span><span class=p>:</span><span class=w> </span><span class=m>0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>template</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>labels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>app</span><span class=p>:</span><span class=w> </span><span class=l>webapp</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>containers</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>webapp</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>registry.example.com/webapp:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>containerPort</span><span class=p>:</span><span class=w> </span><span class=m>8080</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>envFrom</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>secretRef</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>db-credentials</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>resources</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>limits</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>cpu</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;500m&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>memory</span><span class=p>:</span><span class=w> </span><span class=l>512Mi</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>requests</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>cpu</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;100m&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>memory</span><span class=p>:</span><span class=w> </span><span class=l>128Mi</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>readinessProbe</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>httpGet</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>path</span><span class=p>:</span><span class=w> </span><span class=l>/healthz</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>port</span><span class=p>:</span><span class=w> </span><span class=m>8080</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>initialDelaySeconds</span><span class=p>:</span><span class=w> </span><span class=m>5</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>periodSeconds</span><span class=p>:</span><span class=w> </span><span class=m>10</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>livenessProbe</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>httpGet</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>path</span><span class=p>:</span><span class=w> </span><span class=l>/healthz</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>port</span><span class=p>:</span><span class=w> </span><span class=m>8080</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>initialDelaySeconds</span><span class=p>:</span><span class=w> </span><span class=m>15</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>periodSeconds</span><span class=p>:</span><span class=w> </span><span class=m>20</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nn>---</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c># webapp-service.yaml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Service</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>webapp</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>myapp</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>selector</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>app</span><span class=p>:</span><span class=w> </span><span class=l>webapp</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>port</span><span class=p>:</span><span class=w> </span><span class=m>80</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>targetPort</span><span class=p>:</span><span class=w> </span><span class=m>8080</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>type</span><span class=p>:</span><span class=w> </span><span class=l>ClusterIP</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nn>---</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c># ingress.yaml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>networking.k8s.io/v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Ingress</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>webapp-ingress</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>myapp</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>annotations</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>cert-manager.io/cluster-issuer</span><span class=p>:</span><span class=w> </span><span class=l>letsencrypt-prod</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>ingressClassName</span><span class=p>:</span><span class=w> </span><span class=l>traefik</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>tls</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>hosts</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=l>app.example.com</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>secretName</span><span class=p>:</span><span class=w> </span><span class=l>webapp-tls</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>rules</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>host</span><span class=p>:</span><span class=w> </span><span class=l>app.example.com</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>http</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>paths</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span>- <span class=nt>path</span><span class=p>:</span><span class=w> </span><span class=l>/</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>pathType</span><span class=p>:</span><span class=w> </span><span class=l>Prefix</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>backend</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>service</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>webapp</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=nt>port</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                  </span><span class=nt>number</span><span class=p>:</span><span class=w> </span><span class=m>80</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Apply everything:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>kubectl apply -f namespace.yaml
+</span></span><span class=line><span class=cl>kubectl apply -f secrets.yaml
+</span></span><span class=line><span class=cl>kubectl apply -f postgres-statefulset.yaml
+</span></span><span class=line><span class=cl>kubectl apply -f postgres-service.yaml
+</span></span><span class=line><span class=cl>kubectl apply -f webapp-deployment.yaml
+</span></span><span class=line><span class=cl>kubectl apply -f webapp-service.yaml
+</span></span><span class=line><span class=cl>kubectl apply -f ingress.yaml
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Monitor rollout</span>
+</span></span><span class=line><span class=cl>kubectl rollout status deployment/webapp -n myapp
+</span></span><span class=line><span class=cl>kubectl get pods -n myapp -w
+</span></span></code></pre></td></tr></table></div></div><h3 id=kubernetes-strengths-and-weaknesses>Kubernetes Strengths and Weaknesses</h3><table><thead><tr><th>Aspect</th><th>Assessment</th></tr></thead><tbody><tr><td>Setup complexity</td><td>High, but K3s brings it down significantly</td></tr><tr><td>Learning curve</td><td>Steep — Pods, Deployments, Services, Ingress, PVs, RBAC</td></tr><tr><td>High availability</td><td>Multi-master etcd clusters; battle-tested at scale</td></tr><tr><td>Rolling updates</td><td>Sophisticated — blue/green, canary, progressive delivery</td></tr><tr><td>Service mesh</td><td>Istio, Linkerd, Cilium — industry-leading options</td></tr><tr><td>Storage</td><td>Full CSI driver support; NFS, Ceph, Longhorn</td></tr><tr><td>Resource limits</td><td>Granular — CPU, memory, GPU, hugepages, ephemeral storage</td></tr><tr><td>Ecosystem</td><td>Massive — Helm, Operators, CNCF landscape</td></tr></tbody></table><hr><h2 id=hashicorp-nomad-the-pragmatic-challenger>HashiCorp Nomad: The Pragmatic Challenger</h2><p>Nomad takes a different philosophy: it&rsquo;s a <strong>simple, flexible workload orchestrator</strong> that can run containers, VMs, Java apps, and raw binaries — all defined in a single HCL configuration format.</p><h3 id=how-it-works-2>How It Works</h3><p>Nomad uses a <strong>server/client architecture</strong>. Server nodes handle scheduling and cluster management (using Raft consensus), while client nodes run the actual workloads. Unlike Kubernetes, Nomad doesn&rsquo;t try to manage every aspect of your infrastructure — it focuses purely on scheduling and running workloads.</p><h3 id=when-to-choose-nomad>When to Choose Nomad</h3><ul><li>You want to run mixed workloads (containers + VMs + binaries)</li><li>You value simplicity over feature breadth</li><li>You already use HashiCorp tools (Consul, Vault, Terraform)</li><li>You need a lightweight orchestrator for edge deployments</li><li>Your team finds Kubernetes too complex</li></ul><h3 id=quick-start-nomad-development-cluster>Quick Start: Nomad Development Cluster</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install Nomad (all nodes)</span>
+</span></span><span class=line><span class=cl>curl -fsSL https://apt.releases.hashicorp.com/gpg <span class=p>|</span> sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com </span><span class=k>$(</span>lsb_release -cs<span class=k>)</span><span class=s2> main&#34;</span> <span class=p>|</span> sudo tee /etc/apt/sources.list.d/hashicorp.list
+</span></span><span class=line><span class=cl>sudo apt update <span class=o>&amp;&amp;</span> sudo apt install nomad
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Start a dev server (single node — for production, use proper server config)</span>
+</span></span><span class=line><span class=cl>nomad agent -dev -bind 0.0.0.0
+</span></span></code></pre></td></tr></table></div></div><p>For production, configure server and client nodes separately:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-hcl data-lang=hcl><span class=line><span class=cl><span class=c1># server.hcl
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=n>data_dir</span>  <span class=o>=</span> <span class=s2>&#34;/opt/nomad/data&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>bind_addr</span> <span class=o>=</span> <span class=s2>&#34;0.0.0.0&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>server</span> {
+</span></span><span class=line><span class=cl><span class=n>  enabled</span>          <span class=o>=</span> <span class=kt>true</span>
+</span></span><span class=line><span class=cl><span class=n>  bootstrap_expect</span> <span class=o>=</span> <span class=m>3</span>
+</span></span><span class=line><span class=cl>}
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>consul</span> {
+</span></span><span class=line><span class=cl><span class=n>  address</span> <span class=o>=</span> <span class=s2>&#34;127.0.0.1:8500&#34;</span>
+</span></span><span class=line><span class=cl>}
+</span></span></code></pre></td></tr></table></div></div><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-hcl data-lang=hcl><span class=line><span class=cl><span class=c1># client.hcl
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=n>data_dir</span>  <span class=o>=</span> <span class=s2>&#34;/opt/nomad/data&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>bind_addr</span> <span class=o>=</span> <span class=s2>&#34;0.0.0.0&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>client</span> {
+</span></span><span class=line><span class=cl><span class=n>  enabled</span> <span class=o>=</span> <span class=kt>true</span>
+</span></span><span class=line><span class=cl><span class=n>  servers</span> <span class=o>=</span> <span class=p>[</span><span class=s2>&#34;192.168.1.10&#34;, &#34;192.168.1.11&#34;, &#34;192.168.1.12&#34;</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>}
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>plugin</span> <span class=s2>&#34;docker&#34;</span> {
+</span></span><span class=line><span class=cl>  <span class=k>config</span> {
+</span></span><span class=line><span class=cl><span class=n>    allow_privileged</span> <span class=o>=</span> <span class=kt>false</span>
+</span></span><span class=line><span class=cl>  }
+</span></span><span class=line><span class=cl>}
+</span></span></code></pre></td></tr></table></div></div><h3 id=example-the-same-stack-on-nomad>Example: The Same Stack on Nomad</h3><p>Nomad uses <strong>HCL (HashiCorp Configuration Language)</strong> job files. Here&rsquo;s the equivalent deployment:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>  1
+</span><span class=lnt>  2
+</span><span class=lnt>  3
+</span><span class=lnt>  4
+</span><span class=lnt>  5
+</span><span class=lnt>  6
+</span><span class=lnt>  7
+</span><span class=lnt>  8
+</span><span class=lnt>  9
+</span><span class=lnt> 10
+</span><span class=lnt> 11
+</span><span class=lnt> 12
+</span><span class=lnt> 13
+</span><span class=lnt> 14
+</span><span class=lnt> 15
+</span><span class=lnt> 16
+</span><span class=lnt> 17
+</span><span class=lnt> 18
+</span><span class=lnt> 19
+</span><span class=lnt> 20
+</span><span class=lnt> 21
+</span><span class=lnt> 22
+</span><span class=lnt> 23
+</span><span class=lnt> 24
+</span><span class=lnt> 25
+</span><span class=lnt> 26
+</span><span class=lnt> 27
+</span><span class=lnt> 28
+</span><span class=lnt> 29
+</span><span class=lnt> 30
+</span><span class=lnt> 31
+</span><span class=lnt> 32
+</span><span class=lnt> 33
+</span><span class=lnt> 34
+</span><span class=lnt> 35
+</span><span class=lnt> 36
+</span><span class=lnt> 37
+</span><span class=lnt> 38
+</span><span class=lnt> 39
+</span><span class=lnt> 40
+</span><span class=lnt> 41
+</span><span class=lnt> 42
+</span><span class=lnt> 43
+</span><span class=lnt> 44
+</span><span class=lnt> 45
+</span><span class=lnt> 46
+</span><span class=lnt> 47
+</span><span class=lnt> 48
+</span><span class=lnt> 49
+</span><span class=lnt> 50
+</span><span class=lnt> 51
+</span><span class=lnt> 52
+</span><span class=lnt> 53
+</span><span class=lnt> 54
+</span><span class=lnt> 55
+</span><span class=lnt> 56
+</span><span class=lnt> 57
+</span><span class=lnt> 58
+</span><span class=lnt> 59
+</span><span class=lnt> 60
+</span><span class=lnt> 61
+</span><span class=lnt> 62
+</span><span class=lnt> 63
+</span><span class=lnt> 64
+</span><span class=lnt> 65
+</span><span class=lnt> 66
+</span><span class=lnt> 67
+</span><span class=lnt> 68
+</span><span class=lnt> 69
+</span><span class=lnt> 70
+</span><span class=lnt> 71
+</span><span class=lnt> 72
+</span><span class=lnt> 73
+</span><span class=lnt> 74
+</span><span class=lnt> 75
+</span><span class=lnt> 76
+</span><span class=lnt> 77
+</span><span class=lnt> 78
+</span><span class=lnt> 79
+</span><span class=lnt> 80
+</span><span class=lnt> 81
+</span><span class=lnt> 82
+</span><span class=lnt> 83
+</span><span class=lnt> 84
+</span><span class=lnt> 85
+</span><span class=lnt> 86
+</span><span class=lnt> 87
+</span><span class=lnt> 88
+</span><span class=lnt> 89
+</span><span class=lnt> 90
+</span><span class=lnt> 91
+</span><span class=lnt> 92
+</span><span class=lnt> 93
+</span><span class=lnt> 94
+</span><span class=lnt> 95
+</span><span class=lnt> 96
+</span><span class=lnt> 97
+</span><span class=lnt> 98
+</span><span class=lnt> 99
+</span><span class=lnt>100
+</span><span class=lnt>101
+</span><span class=lnt>102
+</span><span class=lnt>103
+</span><span class=lnt>104
+</span><span class=lnt>105
+</span><span class=lnt>106
+</span><span class=lnt>107
+</span><span class=lnt>108
+</span><span class=lnt>109
+</span><span class=lnt>110
+</span><span class=lnt>111
+</span><span class=lnt>112
+</span><span class=lnt>113
+</span><span class=lnt>114
+</span><span class=lnt>115
+</span><span class=lnt>116
+</span><span class=lnt>117
+</span><span class=lnt>118
+</span><span class=lnt>119
+</span><span class=lnt>120
+</span><span class=lnt>121
+</span><span class=lnt>122
+</span><span class=lnt>123
+</span><span class=lnt>124
+</span><span class=lnt>125
+</span><span class=lnt>126
+</span><span class=lnt>127
+</span><span class=lnt>128
+</span><span class=lnt>129
+</span><span class=lnt>130
+</span><span class=lnt>131
+</span><span class=lnt>132
+</span><span class=lnt>133
+</span><span class=lnt>134
+</span><span class=lnt>135
+</span><span class=lnt>136
+</span><span class=lnt>137
+</span><span class=lnt>138
+</span><span class=lnt>139
+</span><span class=lnt>140
+</span><span class=lnt>141
+</span><span class=lnt>142
+</span><span class=lnt>143
+</span><span class=lnt>144
+</span><span class=lnt>145
+</span><span class=lnt>146
+</span><span class=lnt>147
+</span><span class=lnt>148
+</span><span class=lnt>149
+</span><span class=lnt>150
+</span><span class=lnt>151
+</span><span class=lnt>152
+</span><span class=lnt>153
+</span><span class=lnt>154
+</span><span class=lnt>155
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-hcl data-lang=hcl><span class=line><span class=cl><span class=c1># myapp.nomad
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>job</span> <span class=s2>&#34;myapp&#34;</span> {
+</span></span><span class=line><span class=cl><span class=n>  datacenters</span> <span class=o>=</span> <span class=p>[</span><span class=s2>&#34;dc1&#34;</span><span class=p>]</span>
+</span></span><span class=line><span class=cl><span class=n>  type</span>        <span class=o>=</span> <span class=s2>&#34;service&#34;</span><span class=c1>
+</span></span></span><span class=line><span class=cl><span class=c1>
+</span></span></span><span class=line><span class=cl><span class=c1>  # ─── Reverse Proxy ───
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=k>group</span> <span class=s2>&#34;traefik&#34;</span> {
+</span></span><span class=line><span class=cl><span class=n>    count</span> <span class=o>=</span> <span class=m>1</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>constraint</span> {
+</span></span><span class=line><span class=cl><span class=n>      attribute</span> <span class=o>=</span> <span class=s2>&#34;${node.role}&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>      value</span>     <span class=o>=</span> <span class=s2>&#34;manager&#34;</span>
+</span></span><span class=line><span class=cl>    }
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>network</span> {
+</span></span><span class=line><span class=cl><span class=n>      port &#34;http&#34;  { static</span> <span class=o>=</span> <span class=m>80</span> }
+</span></span><span class=line><span class=cl><span class=n>      port &#34;https&#34; { static</span> <span class=o>=</span> <span class=m>443</span> }
+</span></span><span class=line><span class=cl>    }
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>service</span> {
+</span></span><span class=line><span class=cl><span class=n>      name</span> <span class=o>=</span> <span class=s2>&#34;traefik-dashboard&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>      port</span> <span class=o>=</span> <span class=s2>&#34;8080&#34;</span>
+</span></span><span class=line><span class=cl>    }
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>task</span> <span class=s2>&#34;traefik&#34;</span> {
+</span></span><span class=line><span class=cl><span class=n>      driver</span> <span class=o>=</span> <span class=s2>&#34;docker&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>      <span class=k>config</span> {
+</span></span><span class=line><span class=cl><span class=n>        image</span> <span class=o>=</span> <span class=s2>&#34;traefik:v3.1&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>        ports</span> <span class=o>=</span> <span class=p>[</span><span class=s2>&#34;http&#34;, &#34;https&#34;</span><span class=p>]</span>
+</span></span><span class=line><span class=cl><span class=n>        volumes</span> <span class=o>=</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>          <span class=s2>&#34;/var/run/docker.sock:/var/run/docker.sock&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>          <span class=s2>&#34;local/traefik.yml:/etc/traefik/traefik.yml&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=p>]</span>
+</span></span><span class=line><span class=cl>      }
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>      <span class=k>template</span> {
+</span></span><span class=line><span class=cl><span class=n>        data</span> <span class=o>=</span> <span class=err>&lt;&lt;</span><span class=k>EOF</span>
+</span></span><span class=line><span class=cl><span class=k>entryPoints</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=k>web</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>    <span class=k>address</span><span class=err>:</span> <span class=s2>&#34;:80&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=k>websecure</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>    <span class=k>address</span><span class=err>:</span> <span class=s2>&#34;:443&#34;</span>
+</span></span><span class=line><span class=cl><span class=k>providers</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>  <span class=k>docker</span><span class=err>:</span>
+</span></span><span class=line><span class=cl>    <span class=k>exposedByDefault</span><span class=err>:</span> <span class=kt>false</span>
+</span></span><span class=line><span class=cl>        <span class=k>EOF</span>
+</span></span><span class=line><span class=cl><span class=n>        destination</span> <span class=o>=</span> <span class=s2>&#34;local/traefik.yml&#34;</span>
+</span></span><span class=line><span class=cl>      }
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>      <span class=k>resources</span> {
+</span></span><span class=line><span class=cl><span class=n>        cpu</span>    <span class=o>=</span> <span class=m>250</span>
+</span></span><span class=line><span class=cl><span class=n>        memory</span> <span class=o>=</span> <span class=m>256</span>
+</span></span><span class=line><span class=cl>      }
+</span></span><span class=line><span class=cl>    }
+</span></span><span class=line><span class=cl>  }<span class=c1>
+</span></span></span><span class=line><span class=cl><span class=c1>
+</span></span></span><span class=line><span class=cl><span class=c1>  # ─── PostgreSQL ───
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=k>group</span> <span class=s2>&#34;postgres&#34;</span> {
+</span></span><span class=line><span class=cl><span class=n>    count</span> <span class=o>=</span> <span class=m>1</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>volume</span> <span class=s2>&#34;pgdata&#34;</span> {
+</span></span><span class=line><span class=cl><span class=n>      type</span>      <span class=o>=</span> <span class=s2>&#34;host&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>      read_only</span> <span class=o>=</span> <span class=kt>false</span>
+</span></span><span class=line><span class=cl><span class=n>      source</span>    <span class=o>=</span> <span class=s2>&#34;postgres-data&#34;</span>
+</span></span><span class=line><span class=cl>    }
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>constraint</span> {
+</span></span><span class=line><span class=cl><span class=n>      attribute</span> <span class=o>=</span> <span class=s2>&#34;${node.role}&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>      value</span>     <span class=o>=</span> <span class=s2>&#34;manager&#34;</span>
+</span></span><span class=line><span class=cl>    }
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>network</span> {
+</span></span><span class=line><span class=cl><span class=n>      port &#34;db&#34; { to</span> <span class=o>=</span> <span class=m>5432</span> }
+</span></span><span class=line><span class=cl>    }
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>service</span> {
+</span></span><span class=line><span class=cl><span class=n>      name</span> <span class=o>=</span> <span class=s2>&#34;postgres&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>      port</span> <span class=o>=</span> <span class=s2>&#34;db&#34;</span>
+</span></span><span class=line><span class=cl>    }
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>task</span> <span class=s2>&#34;postgres&#34;</span> {
+</span></span><span class=line><span class=cl><span class=n>      driver</span> <span class=o>=</span> <span class=s2>&#34;docker&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>      <span class=k>config</span> {
+</span></span><span class=line><span class=cl><span class=n>        image</span> <span class=o>=</span> <span class=s2>&#34;postgres:17-alpine&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>        ports</span> <span class=o>=</span> <span class=p>[</span><span class=s2>&#34;db&#34;</span><span class=p>]</span>
+</span></span><span class=line><span class=cl><span class=n>        volumes</span> <span class=o>=</span> <span class=p>[</span><span class=s2>&#34;pgdata:/var/lib/postgresql/data&#34;</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>      }
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>      <span class=k>env</span> {
+</span></span><span class=line><span class=cl><span class=n>        POSTGRES_USER</span>     <span class=o>=</span> <span class=s2>&#34;appuser&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>        POSTGRES_DB</span>       <span class=o>=</span> <span class=s2>&#34;appdb&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>        POSTGRES_PASSWORD</span> <span class=o>=</span> <span class=s2>&#34;changeme-to-a-secure-password&#34;</span>
+</span></span><span class=line><span class=cl>      }
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>      <span class=k>resources</span> {
+</span></span><span class=line><span class=cl><span class=n>        cpu</span>    <span class=o>=</span> <span class=m>500</span>
+</span></span><span class=line><span class=cl><span class=n>        memory</span> <span class=o>=</span> <span class=m>512</span>
+</span></span><span class=line><span class=cl>      }
+</span></span><span class=line><span class=cl>    }
+</span></span><span class=line><span class=cl>  }<span class=c1>
+</span></span></span><span class=line><span class=cl><span class=c1>
+</span></span></span><span class=line><span class=cl><span class=c1>  # ─── Web Application ───
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=k>group</span> <span class=s2>&#34;webapp&#34;</span> {
+</span></span><span class=line><span class=cl><span class=n>    count</span> <span class=o>=</span> <span class=m>3</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>network</span> {
+</span></span><span class=line><span class=cl><span class=n>      port &#34;http&#34; { to</span> <span class=o>=</span> <span class=m>8080</span> }
+</span></span><span class=line><span class=cl>    }
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>service</span> {
+</span></span><span class=line><span class=cl><span class=n>      name</span> <span class=o>=</span> <span class=s2>&#34;webapp&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>      port</span> <span class=o>=</span> <span class=s2>&#34;http&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>      <span class=k>check</span> {
+</span></span><span class=line><span class=cl><span class=n>        type</span>     <span class=o>=</span> <span class=s2>&#34;http&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>        path</span>     <span class=o>=</span> <span class=s2>&#34;/healthz&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>        interval</span> <span class=o>=</span> <span class=s2>&#34;10s&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>        timeout</span>  <span class=o>=</span> <span class=s2>&#34;2s&#34;</span>
+</span></span><span class=line><span class=cl>      }
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>      tags</span> <span class=o>=</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl><span class=n>        &#34;traefik.enable</span><span class=o>=</span><span class=kt>true</span><span class=err>&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl><span class=n>        &#34;traefik.http.routers.webapp.rule</span><span class=o>=</span><span class=k>Host</span><span class=p>(</span><span class=err>`</span><span class=k>app</span><span class=p>.</span><span class=k>example</span><span class=p>.</span><span class=k>com</span><span class=err>`</span><span class=p>)</span><span class=err>&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl><span class=n>        &#34;traefik.http.routers.webapp.tls</span><span class=o>=</span><span class=kt>true</span><span class=err>&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=p>]</span>
+</span></span><span class=line><span class=cl>    }
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>restart</span> {
+</span></span><span class=line><span class=cl><span class=n>      attempts</span> <span class=o>=</span> <span class=m>3</span>
+</span></span><span class=line><span class=cl><span class=n>      interval</span> <span class=o>=</span> <span class=s2>&#34;10m&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>      delay</span>    <span class=o>=</span> <span class=s2>&#34;30s&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>      mode</span>     <span class=o>=</span> <span class=s2>&#34;delay&#34;</span>
+</span></span><span class=line><span class=cl>    }
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>task</span> <span class=s2>&#34;webapp&#34;</span> {
+</span></span><span class=line><span class=cl><span class=n>      driver</span> <span class=o>=</span> <span class=s2>&#34;docker&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>      <span class=k>config</span> {
+</span></span><span class=line><span class=cl><span class=n>        image</span> <span class=o>=</span> <span class=s2>&#34;registry.example.com/webapp:latest&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>        ports</span> <span class=o>=</span> <span class=p>[</span><span class=s2>&#34;http&#34;</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>      }
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>      <span class=k>env</span> {
+</span></span><span class=line><span class=cl><span class=n>        DATABASE_URL</span> <span class=o>=</span> <span class=s2>&#34;postgresql://appuser:changeme-to-a-secure-password@postgres.service.consul:5432/appdb&#34;</span>
+</span></span><span class=line><span class=cl>      }
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>      <span class=k>resources</span> {
+</span></span><span class=line><span class=cl><span class=n>        cpu</span>    <span class=o>=</span> <span class=m>500</span>
+</span></span><span class=line><span class=cl><span class=n>        memory</span> <span class=o>=</span> <span class=m>512</span>
+</span></span><span class=line><span class=cl>      }
+</span></span><span class=line><span class=cl>    }
+</span></span><span class=line><span class=cl>  }
+</span></span><span class=line><span class=cl>}
+</span></span></code></pre></td></tr></table></div></div><p>Deploy and manage:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>nomad job run myapp.nomad          <span class=c1># Deploy</span>
+</span></span><span class=line><span class=cl>nomad job status myapp             <span class=c1># Check status</span>
+</span></span><span class=line><span class=cl>nomad job plan myapp.nomad         <span class=c1># Preview changes (like terraform plan)</span>
+</span></span><span class=line><span class=cl>nomad job stop myapp               <span class=c1># Stop the job</span>
+</span></span><span class=line><span class=cl>nomad alloc status                 <span class=c1># View allocations</span>
+</span></span><span class=line><span class=cl>nomad node status                  <span class=c1># View cluster nodes</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=nomad-strengths-and-weaknesses>Nomad Strengths and Weaknesses</h3><table><thead><tr><th>Aspect</th><th>Assessment</th></tr></thead><tbody><tr><td>Setup complexity</td><td>Low to moderate — single binary, straightforward config</td></tr><tr><td>Learning curve</td><td>Moderate — HCL is easy to read, fewer concepts than K8s</td></tr><tr><td>High availability</td><td>Raft consensus; 3 or 5 server nodes</td></tr><tr><td>Rolling updates</td><td>Blue/green deployments; canary support</td></tr><tr><td>Service mesh</td><td>Consul Connect integration</td></tr><tr><td>Storage</td><td>Host volumes, CSI plugin support</td></tr><tr><td>Resource limits</td><td>CPU, memory, network, disk I/O</td></tr><tr><td>Ecosystem</td><td>HashiCorp ecosystem (Consul, Vault); smaller than K8s</td></tr></tbody></table><hr><h2 id=head-to-head-comparison>Head-to-Head Comparison</h2><p>Here&rsquo;s how the three stack up across the dimensions that matter most:</p><table><thead><tr><th>Feature</th><th>Docker Swarm</th><th>Kubernetes (K3s)</th><th>Nomad</th></tr></thead><tbody><tr><td><strong>Initial setup</strong></td><td>2 minutes</td><td>15–30 minutes</td><td>10–20 minutes</td></tr><tr><td><strong>Architecture</strong></td><td>Manager/worker</td><td>Control plane/etcd/nodes</td><td>Server/client</td></tr><tr><td><strong>Workload types</strong></td><td>Containers only</td><td>Containers (+ CRDs)</td><td>Containers, VMs, binaries, Java</td></tr><tr><td><strong>Config format</strong></td><td>Docker Compose YAML</td><td>Kubernetes YAML/JSON</td><td>HCL job files</td></tr><tr><td><strong>Scaling</strong></td><td>Manual or basic autoscale</td><td>HPA/VPA (autoscaling built-in)</td><td>Manual or external scheduler</td></tr><tr><td><strong>Service discovery</strong></td><td>Built-in (DNS + VIP)</td><td>CoreDNS + Services</td><td>Consul integration</td></tr><tr><td><strong>Load balancing</strong></td><td>Built-in (IPVS)</td><td>kube-proxy + Ingress</td><td>Consul or external LB</td></tr><tr><td><strong>Secrets management</strong></td><td>Basic (Raft-encrypted)</td><td>Secrets + external (Vault, SOPS)</td><td>Vault integration</td></tr><tr><td><strong>Rolling updates</strong></td><td>Yes, configurable</td><td>Yes, advanced strategies</td><td>Yes, blue/green + canary</td></tr><tr><td><strong>Self-healing</strong></td><td>Yes</td><td>Yes (industry best)</td><td>Yes</td></tr><tr><td><strong>Dashboard/UI</strong></td><td>Portainer (external)</td><td>Dashboard, Lens, Octant</td><td>Built-in UI</td></tr><tr><td><strong>Multi-cluster</strong></td><td>No native support</td><td>Federation, Cluster API</td><td>Nomad federated clusters</td></tr><tr><td><strong>Resource footprint</strong></td><td>~200MB per node</td><td>~500MB–1GB per node</td><td>~100MB per node</td></tr><tr><td><strong>Binary size</strong></td><td>Included in Docker</td><td>k3s: ~70MB single binary</td><td>~80MB single binary</td></tr><tr><td><strong>Community size</strong></td><td>Moderate</td><td>Largest</td><td>Smaller but active</td></tr><tr><td><strong>Production maturity</strong></td><td>High</td><td>Very high</td><td>High (HashiCorp, Cloudflare uses it)</td></tr></tbody></table><hr><h2 id=decision-framework>Decision Framework</h2><h3 id=choose-docker-swarm-if>Choose Docker Swarm if:</h3><ul><li>You have <strong>1–10 nodes</strong> and a <strong>small team</strong> (1–3 people)</li><li>You&rsquo;re already comfortable with Docker Compose</li><li>Your applications are <strong>standard web services and databases</strong></li><li>You want <strong>multi-host deployments with minimal learning</strong></li><li>You don&rsquo;t need advanced scheduling or custom resource types</li></ul><h3 id=choose-kubernetes-k3s-if>Choose Kubernetes (K3s) if:</h3><ul><li>You have <strong>5+ nodes</strong> and plan to scale further</li><li>You want access to the <strong>largest ecosystem</strong> of tools and operators</li><li>You need <strong>advanced features</strong> — HPA, VPA, admission controllers, webhooks</li><li>Your team has (or wants to build) <strong>DevOps expertise</strong></li><li>You want skills that <strong>transfer to cloud environments</strong></li><li>You plan to use <strong>GitOps</strong> (ArgoCD, Flux) for declarative management</li></ul><h3 id=choose-nomad-if>Choose Nomad if:</h3><ul><li>You need to run <strong>mixed workloads</strong> — not just containers</li><li>You value <strong>operational simplicity</strong> over feature breadth</li><li>You&rsquo;re already invested in the <strong>HashiCorp ecosystem</strong></li><li>You need a <strong>lightweight orchestrator</strong> for edge or resource-constrained environments</li><li>You want the <strong>middle ground</strong> between Swarm&rsquo;s simplicity and K8s&rsquo;s power</li></ul><hr><h2 id=the-verdict>The Verdict</h2><p>For most self-hosters in 2026, <strong>K3s (lightweight Kubernetes)</strong> is the best long-term investment. The learning curve is real, but the ecosystem, community support, and skill portability make it worthwhile. The K3s distribution removes most of Kubernetes&rsquo; complexity — single binary, SQLite instead of etcd, built-in Traefik — while keeping full API compatibility.</p><p>That said, <strong>Docker Swarm</strong> remains the right choice if you want something that &ldquo;just works&rdquo; with your existing Docker knowledge. And <strong>Nomad</strong> is the underrated option that deserves more attention — especially if you run non-container workloads or already use Consul and Vault.</p><p>The good news? All three are open source, free to run, and can be tested on a single machine. Spin up a VM or container, try each one for a weekend, and see which workflow fits your brain.</p><p>Whichever you choose, you&rsquo;ll have taken your self-hosted infrastructure to the next level — multi-node, self-healing, rolling-update-capable, and fully under your control.</p></div><div id=frame style=width:100%;margin:auto;position:relative;z-index:99998><iframe data-aa=2433958 src='//acceptable.a-ads.com/2433958/?size=Adaptive' style=border:0;padding:0;width:70%;height:auto;overflow:hidden;display:block;margin:auto></iframe></div></article></main><footer class=site-footer><p>Built with <a href=https://gohugo.io>Hugo</a> · <a href=/openswap-guide/index.xml>RSS</a> · <a href=https://github.com/hopkdj>GitHub</a></p><p style=margin-top:8px>&copy; 2026 OpenSwap Guide. All rights reserved.</p></footer></body></html>
