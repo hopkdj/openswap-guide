@@ -1,0 +1,390 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>ArgoCD vs Flux: Best Self-Hosted GitOps Platforms 2026 | OpenSwap Guide</title>
+<meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, and local AI deployment."><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/openswap-guide/css/main.min.777dc111b5207bf5336e5799477da0b31fb9080306bf98a82d6eceb979cf9737.css><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://hopkdj.github.io/openswap-guide/ class=logo><div class=logo-icon>H</div>OpenSwap Guide</a><nav><ul class=nav-links><li><a href=/openswap-guide/>Home</a></li><li><a href=/openswap-guide/tags/comparison/>Comparisons</a></li><li><a href=/openswap-guide/tags/guide/>Guides</a></li><li><a href=/openswap-guide/tags/ai/>Local AI</a></li><li><a href=/openswap-guide/index.xml class=nav-rss>Subscribe RSS</a></li></ul></nav></div></header><main><article class=post-single><a href=https://hopkdj.github.io/openswap-guide/ class=back-link>&larr; Back to posts</a><header class=post-single-header><div class=post-single-meta><span class="tag tag-purple">comparison</span>
+<span class="tag tag-green">guide</span>
+<span class="tag tag-blue">self-hosted</span>
+<span>·</span>
+<span>April 13, 2026</span>
+<span>·</span>
+<span>12 min read</span></div><h1 class=post-single-title>ArgoCD vs Flux: Best Self-Hosted GitOps Platforms 2026</h1></header><div class=post-single-content><p>GitOps has fundamentally changed how teams deploy and manage infrastructure. Instead of running ad-hoc scripts or clicking through dashboards, GitOps treats your Git repository as the single source of truth for your entire system state. Two open-source platforms dominate this space: <strong>ArgoCD</strong> (a CNCF graduated project originally built by Intuit) and <strong>Flux</strong> (a CNCF graduated project originally built by Weaveworks).</p><p>Both are production-grade, widely adopted, and completely free to self-host. But they take very different approaches to the same problem. This guide compares them head-to-head and walks you through deploying each one on your own infrastructure.</p><h2 id=why-self-host-your-gitops-platform>Why Self-Host Your GitOps Platform</h2><p>Running a GitOps controller on your own cluster — rather than relying on a managed SaaS offering — gives you complete control over your deployment pipeline:</p><ul><li><strong>Zero vendor lock-in</strong>: Your Git repository is the source of truth, not a proprietary cloud dashboard.</li><li><strong>Full audit trail</strong>: Every change is a Git commit with an author, timestamp, and diff. No black-box deployment logs.</li><li><strong>Air-gapped deployments</strong>: Both ArgoCD and Flux work in environments with no outbound internet access.</li><li><strong>Multi-cluster management</strong>: Manage dozens of clusters from a single Git repository without sending data to a third party.</li><li><strong>Cost</strong>: No per-seat pricing, no per-deployment fees. The only cost is your own infrastructure.</li><li><strong>Compliance</strong>: Keep deployment data inside your own network for regulatory requirements like SOC 2, HIPAA, or GDPR.</li></ul><p>If you are already running Kubernetes (or plan to), self-hosting a GitOps platform is one of the highest-leverage infrastructure decisions you can make.</p><h2 id=what-is-gitops-exactly>What Is GitOps, Exactly?</h2><p>GitOps is an operational framework built on four principles:</p><ol><li><strong>Declarative</strong>: The desired state of your system is described declaratively (usually in YAML or Kustomize).</li><li><strong>Versioned and immutable</strong>: The desired state is stored in Git, providing an immutable history.</li><li><strong>Automatically delivered</strong>: Software agents continuously reconcile the live state with the desired state.</li><li><strong>Continuously reconciled</strong>: The system automatically corrects drift — if someone manually changes a resource, the GitOps operator reverts it.</li></ol><p>In practice, this means you never <code>kubectl apply</code> manually again. You push a commit to Git, and the GitOps controller picks it up and applies it to your cluster.</p><h2 id=architecture-comparison>Architecture Comparison</h2><h3 id=argocd-architecture>ArgoCD Architecture</h3><p>ArgoCD runs as a set of Kubernetes deployments inside the cluster it manages. It uses a <strong>pull-based</strong> model:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>┌──────────────────────────────────────────────┐
+</span></span><span class=line><span class=cl>│              Kubernetes Cluster              │
+</span></span><span class=line><span class=cl>│                                              │
+</span></span><span class=line><span class=cl>│  ┌──────────────┐    ┌─────────────────────┐ │
+</span></span><span class=line><span class=cl>│  │  ArgoCD API  │    │  ApplicationSet     │ │
+</span></span><span class=line><span class=cl>│  │   Server     │    │    Controller       │ │
+</span></span><span class=line><span class=cl>│  └──────┬───────┘    └──────────┬──────────┘ │
+</span></span><span class=line><span class=cl>│         │                       │            │
+</span></span><span class=line><span class=cl>│  ┌──────▼───────┐    ┌──────────▼──────────┐ │
+</span></span><span class=line><span class=cl>│  │  ArgoCD UI   │    │  Application        │ │
+</span></span><span class=line><span class=cl>│  │  (optional)  │    │    Controller       │ │
+</span></span><span class=line><span class=cl>│  └──────────────┘    └──────────┬──────────┘ │
+</span></span><span class=line><span class=cl>│                                 │            │
+</span></span><span class=line><span class=cl>│                    ┌────────────▼──────────┐ │
+</span></span><span class=line><span class=cl>│                    │   Redis + Repo Server │ │
+</span></span><span class=line><span class=cl>│                    └───────────────────────┘ │
+</span></span><span class=line><span class=cl>└──────────────────────────────────────────────┘
+</span></span><span class=line><span class=cl>         │                        │
+</span></span><span class=line><span class=cl>         ▼                        ▼
+</span></span><span class=line><span class=cl>   ┌───────────┐          ┌─────────────┐
+</span></span><span class=line><span class=cl>   │ Git Repo  │          │ Helm Repos  │
+</span></span><span class=line><span class=cl>   └───────────┘          └─────────────┘
+</span></span></code></pre></td></tr></table></div></div><p>Key components:</p><ul><li><strong>API Server</strong>: gRPC/REST API for the CLI and web UI</li><li><strong>Application Controller</strong>: Monitors applications and compares live state to desired state</li><li><strong>Repo Server</strong>: Clones Git repositories and renders manifests (Helm, Kustomize, Jsonnet)</li><li><strong>Redis</strong>: Caches repository data and application state</li></ul><h3 id=flux-architecture>Flux Architecture</h3><p>Flux uses a modular architecture built on the <strong>GitOps Toolkit</strong> — a set of composable APIs and controllers:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>┌──────────────────────────────────────────────┐
+</span></span><span class=line><span class=cl>│              Kubernetes Cluster              │
+</span></span><span class=line><span class=cl>│                                              │
+</span></span><span class=line><span class=cl>│  ┌──────────────┐  ┌──────────────┐         │
+</span></span><span class=line><span class=cl>│  │ Source       │  │ Kustomize    │         │
+</span></span><span class=line><span class=cl>│  │ Controller   │─▶│ Controller   │         │
+</span></span><span class=line><span class=cl>│  └──────────────┘  └──────┬───────┘         │
+</span></span><span class=line><span class=cl>│                           │                 │
+</span></span><span class=line><span class=cl>│  ┌──────────────┐  ┌──────▼───────┐         │
+</span></span><span class=line><span class=cl>│  │ Source       │  │ Helm         │         │
+</span></span><span class=line><span class=cl>│  │ Controller   │─▶│ Controller   │         │
+</span></span><span class=line><span class=cl>│  └──────────────┘  └──────────────┘         │
+</span></span><span class=line><span class=cl>│                                              │
+</span></span><span class=line><span class=cl>│  ┌──────────────┐  ┌──────────────┐         │
+</span></span><span class=line><span class=cl>│  │ Notification │  │ Image        │         │
+</span></span><span class=line><span class=cl>│  │ Controller   │  │ Controller   │         │
+</span></span><span class=line><span class=cl>│  └──────────────┘  └──────────────┘         │
+</span></span><span class=line><span class=cl>└──────────────────────────────────────────────┘
+</span></span><span class=line><span class=cl>         │
+</span></span><span class=line><span class=cl>         ▼
+</span></span><span class=line><span class=cl>   ┌───────────┐
+</span></span><span class=line><span class=cl>   │ Git Repo  │
+</span></span><span class=line><span class=cl>   └───────────┘
+</span></span></code></pre></td></tr></table></div></div><p>Key components:</p><ul><li><strong>Source Controller</strong>: Manages Git, Helm, and Bucket sources as Kubernetes CRDs</li><li><strong>Kustomize Controller</strong>: Applies Kustomize overlays and plain YAML manifests</li><li><strong>Helm Controller</strong>: Manages Helm releases from any Helm repository</li><li><strong>Notification Controller</strong>: Sends alerts to Slack, Discord, Teams, and webhooks</li><li><strong>Image Automation Controller</strong>: Automatically updates image tags in Git</li></ul><h2 id=feature-comparison>Feature Comparison</h2><table><thead><tr><th>Feature</th><th>ArgoCD</th><th>Flux</th></tr></thead><tbody><tr><td><strong>CNCF Status</strong></td><td>Graduated</td><td>Graduated</td></tr><tr><td><strong>Primary Language</strong></td><td>Go</td><td>Go</td></tr><tr><td><strong>Web UI</strong></td><td>Full-featured built-in UI</td><td>No built-in UI (Weave GitOps is a separate commercial product)</td></tr><tr><td><strong>CLI</strong></td><td><code>argocd</code></td><td><code>flux</code></td></tr><tr><td><strong>Git Providers</strong></td><td>Any Git provider</td><td>Any Git provider</td></tr><tr><td><strong>Helm Support</strong></td><td>Yes</td><td>Yes (native, first-class)</td></tr><tr><td><strong>Kustomize Support</strong></td><td>Yes</td><td>Yes (native, first-class)</td></tr><tr><td><strong>Helm-like Templating</strong></td><td>Application-level parameters</td><td>HelmRelease CRD</td></tr><tr><td><strong>Multi-Cluster</strong></td><td>Yes (one ArgoCD per cluster or hub-spoke)</td><td>Yes (Flux with cluster API)</td></tr><tr><td><strong>Multi-Tenancy</strong></td><td>Namespaces + AppProject RBAC</td><td>Namespaces + Kustomization isolation</td></tr><tr><td><strong>Sync Strategy</strong></td><td>Manual or automatic with sync waves</td><td>Automatic reconciliation loop</td></tr><tr><td><strong>Drift Detection</strong></td><td>Yes, visual diff in UI</td><td>Yes, events and conditions</td></tr><tr><td><strong>Rollback</strong></td><td>Yes, one-click via UI or CLI</td><td>Yes, via HelmRelease or Git revert</td></tr><tr><td><strong>Auto Image Updates</strong></td><td>Via external Image Updater</td><td>Built-in Image Automation</td></tr><tr><td><strong>Secrets Integration</strong></td><td>External secrets, Sealed Secrets</td><td>SOPS encryption built-in</td></tr><tr><td><strong>Notification</strong></td><td>Webhook, Slack (via Notification Controller)</td><td>Slack, Discord, Teams (built-in)</td></tr><tr><td><strong>Progressive Delivery</strong></td><td>Argo Rollouts integration</td><td>Flagger integration</td></tr><tr><td><strong>Dashboard/Metrics</strong></td><td>Built-in + Prometheus metrics</td><td>Prometheus metrics + Grafana dashboards</td></tr><tr><td><strong>Resource Requirements</strong></td><td>~500m CPU, 512Mi RAM (minimum)</td><td>~200m CPU, 256Mi RAM (minimum)</td></tr></tbody></table><h2 id=installing-argocd>Installing ArgoCD</h2><h3 id=prerequisites>Prerequisites</h3><ul><li>A running Kubernetes cluster (v1.24+)</li><li><code>kubectl</code> configured with cluster-admin access</li><li>At least 2 CPU cores and 2 GiB RAM available</li></ul><h3 id=quick-install>Quick Install</h3><p>The fastest way to get ArgoCD running is via the official manifest:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>kubectl create namespace argocd
+</span></span><span class=line><span class=cl>kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+</span></span></code></pre></td></tr></table></div></div><p>Wait for all pods to be ready:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>kubectl <span class=nb>wait</span> --for<span class=o>=</span><span class=nv>condition</span><span class=o>=</span>Ready pods --all -n argocd --timeout<span class=o>=</span>300s
+</span></span></code></pre></td></tr></table></div></div><h3 id=install-via-helm-recommended-for-production>Install via Helm (Recommended for Production)</h3><p>Using Helm gives you more control over the deployment:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>helm repo add argo https://argoproj.github.io/argo-helm
+</span></span><span class=line><span class=cl>helm repo update
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>helm install argocd argo/argo-cd <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --namespace argocd <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --create-namespace <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --set server.service.type<span class=o>=</span>ClusterIP <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --set configs.secret.argocdServerAdminPassword<span class=o>=</span><span class=s1>&#39;$2a$10$rN4KfQZsVh8F3K0GqJxKFO5K3hGvX3QfGvX3QfGvX3QfGvX3QfGvX&#39;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --set server.extraArgs<span class=o>=</span><span class=s1>&#39;{&#34;--insecure&#34;}&#39;</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=accessing-the-ui>Accessing the UI</h3><p>Port-forward to access the web UI:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>kubectl port-forward svc/argocd-server -n argocd 8080:443
+</span></span></code></pre></td></tr></table></div></div><p>Then open <code>https://localhost:8080</code>. The default username is <code>admin</code>. Get the initial password:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>kubectl -n argocd get secret argocd-initial-admin-secret <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -o <span class=nv>jsonpath</span><span class=o>=</span><span class=s2>&#34;{.data.password}&#34;</span> <span class=p>|</span> base64 -d
+</span></span></code></pre></td></tr></table></div></div><h3 id=deploying-your-first-application>Deploying Your First Application</h3><p>Create an <code>Application</code> manifest that points to your Git repository:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>argoproj.io/v1alpha1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Application</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>my-app</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>argocd</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>project</span><span class=p>:</span><span class=w> </span><span class=l>default</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>source</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>repoURL</span><span class=p>:</span><span class=w> </span><span class=l>https://github.com/your-org/my-app-config.git</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>targetRevision</span><span class=p>:</span><span class=w> </span><span class=l>main</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>path</span><span class=p>:</span><span class=w> </span><span class=l>k8s/overlays/production</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>destination</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>server</span><span class=p>:</span><span class=w> </span><span class=l>https://kubernetes.default.svc</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>my-app</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>syncPolicy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>automated</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>prune</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>selfHeal</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>syncOptions</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>CreateNamespace=true</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Apply it:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>kubectl apply -f my-app.yaml
+</span></span></code></pre></td></tr></table></div></div><p>ArgoCD will now continuously reconcile this application. Any drift between your Git repository and the cluster state will be automatically corrected.</p><h3 id=setting-up-a-reverse-proxy>Setting Up a Reverse Proxy</h3><p>For production access, place ArgoCD behind a reverse proxy with TLS termination. Here is a Traefik configuration:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>traefik.io/v1alpha1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>IngressRoute</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>argocd-server</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>argocd</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>entryPoints</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=l>websecure</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>routes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>match</span><span class=p>:</span><span class=w> </span><span class=l>Host(`argocd.your-domain.com`)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Rule</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>argocd-server</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>port</span><span class=p>:</span><span class=w> </span><span class=m>443</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>tls</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>secretName</span><span class=p>:</span><span class=w> </span><span class=l>argocd-tls-secret</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=installing-flux>Installing Flux</h2><h3 id=prerequisites-1>Prerequisites</h3><ul><li>A running Kubernetes cluster (v1.24+)</li><li><code>kubectl</code> configured with cluster-admin access</li><li>The <code>flux</code> CLI installed</li></ul><p>Install the CLI on Linux:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>curl -s https://fluxcd.io/install.sh <span class=p>|</span> sudo bash
+</span></span></code></pre></td></tr></table></div></div><p>Install via Homebrew on macOS:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>brew install fluxcd/tap/flux
+</span></span></code></pre></td></tr></table></div></div><h3 id=pre-flight-check>Pre-Flight Check</h3><p>Flux includes a built-in diagnostic tool:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>flux check --pre
+</span></span></code></pre></td></tr></table></div></div><p>This verifies your cluster meets the requirements (RBAC, CRD support, resource quotas).</p><h3 id=bootstrap-flux>Bootstrap Flux</h3><p>Flux bootstraps itself directly from a Git repository. This command installs Flux controllers and creates the initial sync configuration:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>flux bootstrap github <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --owner<span class=o>=</span>your-org <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --repository<span class=o>=</span>cluster-config <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --branch<span class=o>=</span>main <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --path<span class=o>=</span>clusters/production <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --personal
+</span></span></code></pre></td></tr></table></div></div><p>For GitLab:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>flux bootstrap gitlab <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --owner<span class=o>=</span>your-org <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --repository<span class=o>=</span>cluster-config <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --branch<span class=o>=</span>main <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --path<span class=o>=</span>clusters/production <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --token-auth
+</span></span></code></pre></td></tr></table></div></div><p>For a generic Git server (self-hosted Gitea, Forgejo, etc.):</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>flux bootstrap git <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --url<span class=o>=</span>ssh://git@git.example.com/org/cluster-config.git <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --branch<span class=o>=</span>main <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --path<span class=o>=</span>clusters/production <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --private-key-file<span class=o>=</span>~/.ssh/id_ed25519
+</span></span></code></pre></td></tr></table></div></div><p>This single command:</p><ol><li>Creates the repository (if it does not exist)</li><li>Commits the Flux manifests</li><li>Installs all Flux controllers</li><li>Configures the source controller to watch the repository</li></ol><h3 id=creating-a-gitrepository-source>Creating a GitRepository Source</h3><p>Define a Git source that Flux will watch:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>source.toolkit.fluxcd.io/v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>GitRepository</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>app-config</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>flux-system</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>interval</span><span class=p>:</span><span class=w> </span><span class=l>1m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>url</span><span class=p>:</span><span class=w> </span><span class=l>https://github.com/your-org/app-config.git</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>ref</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>branch</span><span class=p>:</span><span class=w> </span><span class=l>main</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=creating-a-kustomization>Creating a Kustomization</h3><p>Apply the manifests from that source:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>kustomize.toolkit.fluxcd.io/v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Kustomization</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>app-config</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>flux-system</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>interval</span><span class=p>:</span><span class=w> </span><span class=l>5m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>path</span><span class=p>:</span><span class=w> </span><span class=l>./k8s/production</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>prune</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>sourceRef</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>GitRepository</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>app-config</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>wait</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>timeout</span><span class=p>:</span><span class=w> </span><span class=l>2m</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=deploying-a-helm-chart>Deploying a Helm Chart</h3><p>Flux makes Helm chart deployment straightforward:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>source.toolkit.fluxcd.io/v1beta2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>HelmRepository</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>bitnami</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>flux-system</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>interval</span><span class=p>:</span><span class=w> </span><span class=l>1h</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>url</span><span class=p>:</span><span class=w> </span><span class=l>https://charts.bitnami.com/bitnami</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nn>---</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>helm.toolkit.fluxcd.io/v2beta2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>HelmRelease</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>postgresql</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>flux-system</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>interval</span><span class=p>:</span><span class=w> </span><span class=l>5m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>chart</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>chart</span><span class=p>:</span><span class=w> </span><span class=l>postgresql</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;15.x&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>sourceRef</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>HelmRepository</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>bitnami</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>values</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>auth</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>postgresPassword</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;change-me&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>primary</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>persistence</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>size</span><span class=p>:</span><span class=w> </span><span class=l>10Gi</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=setting-up-encrypted-secrets-with-sops>Setting Up Encrypted Secrets with SOPS</h3><p>Flux has first-class support for Mozilla SOPS (Secrets OPerationS). This lets you store encrypted secrets directly in your Git repository:</p><p>Install the SOPS controller:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>flux create secret sops my-sops-key <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --namespace<span class=o>=</span>flux-system <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --pgp-key-file<span class=o>=</span>/path/to/pgp/key.asc
+</span></span></code></pre></td></tr></table></div></div><p>Create an encrypted secret file:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>sops --encrypt --pgp &lt;fingerprint&gt; secret.yaml &gt; secret.enc.yaml
+</span></span></code></pre></td></tr></table></div></div><p>Then reference it in a Kustomization:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>kustomize.toolkit.fluxcd.io/v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Kustomization</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>app-secrets</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>flux-system</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>interval</span><span class=p>:</span><span class=w> </span><span class=l>5m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>path</span><span class=p>:</span><span class=w> </span><span class=l>./secrets</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>prune</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>sourceRef</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>GitRepository</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>app-config</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>decryption</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>provider</span><span class=p>:</span><span class=w> </span><span class=l>sops</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>secretRef</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>my-sops-key</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Flux automatically decrypts SOPS-encrypted files before applying them. No external secrets operator needed.</p><h2 id=head-to-head-when-to-choose-which>Head-to-Head: When to Choose Which</h2><h3 id=choose-argocd-when>Choose ArgoCD When</h3><ul><li><strong>Your team needs a web UI</strong>: ArgoCD&rsquo;s built-in dashboard is excellent. You can visualize application health, sync status, resource trees, and diffs without leaving the browser.</li><li><strong>You want visual diff and sync waves</strong>: The UI shows exactly what changed before you sync. Sync waves let you control the order of deployments (database migrations before app updates, for example).</li><li><strong>You are already invested in the Argo ecosystem</strong>: If you use Argo Workflows, Argo Events, or Argo Rollouts, ArgoCD integrates naturally.</li><li><strong>You need multi-cluster management from a single pane</strong>: ArgoCD&rsquo;s ApplicationSets make it easy to deploy the same application across multiple clusters with different configurations.</li><li><strong>Your team prefers imperative + declarative workflows</strong>: ArgoCD lets you sync manually via the UI while still maintaining Git as the source of truth.</li></ul><h3 id=choose-flux-when>Choose Flux When</h3><ul><li><strong>You want a lightweight, CLI-first approach</strong>: Flux has no built-in UI and uses fewer cluster resources. It gets out of your way.</li><li><strong>You need built-in secret encryption</strong>: SOPS support is built into Flux, not bolted on. This is a significant advantage for teams that store secrets in Git.</li><li><strong>You want automatic image tag updates</strong>: Flux&rsquo;s Image Automation Controller can watch container registries and automatically update image tags in your Git repository.</li><li><strong>You prefer a modular, composable architecture</strong>: Flux controllers are independent. You can use only the ones you need (Helm without Kustomize, for example).</li><li><strong>You use GitLab, Gitea, or Forgejo</strong>: Flux bootstrap works seamlessly with any Git provider, including self-hosted instances.</li><li><strong>You want notifications out of the box</strong>: Flux&rsquo;s Notification Controller supports Slack, Discord, Microsoft Teams, and generic webhooks without additional setup.</li></ul><h2 id=resource-requirements>Resource Requirements</h2><p>For teams running GitOps on smaller clusters or homelabs, resource footprint matters:</p><table><thead><tr><th>Metric</th><th>ArgoCD (minimum)</th><th>Flux (minimum)</th></tr></thead><tbody><tr><td>CPU</td><td>500m</td><td>200m</td></tr><tr><td>Memory</td><td>512 MiB</td><td>256 MiB</td></tr><tr><td>Storage</td><td>1 GiB (Redis + repo cache)</td><td>512 MiB</td></tr><tr><td>Pods</td><td>5+ (API server, controller, repo server, Redis, Dex)</td><td>4+ (source, kustomize, helm, notification)</td></tr></tbody></table><p>On a 4-core, 8 GB cluster, you can comfortably run either. On a 2-core, 4 GB homelab node, Flux will leave more room for your actual workloads.</p><h2 id=migration-considerations>Migration Considerations</h2><p>Moving from one GitOps platform to the other is not trivial, but it is manageable:</p><ol><li><strong>Export current state</strong>: List all applications (<code>argocd app list</code> or <code>flux get all</code>).</li><li><strong>Create equivalent CRDs</strong>: Translate ArgoCD Applications to Flux GitRepository + Kustomization pairs, or vice versa.</li><li><strong>Disable auto-sync</strong> on the old platform before enabling it on the new one to avoid conflicts.</li><li><strong>Test in a non-production cluster first</strong>. The CRD structures are fundamentally different, and manual testing is essential.</li><li><strong>Migrate secrets</strong>: If you use SOPS with Flux, re-encrypt secrets for the new platform. ArgoCD typically relies on External Secrets Operator or Sealed Secrets.</li></ol><h2 id=production-best-practices>Production Best Practices</h2><p>Regardless of which platform you choose, follow these practices:</p><ul><li><strong>Pin versions</strong>: Always specify exact chart versions and image tags in production. Avoid <code>latest</code>.</li><li><strong>Use sync windows</strong>: Configure maintenance windows to prevent deployments during peak traffic.</li><li><strong>Set up alerting</strong>: Monitor sync failures and drift detection events. Send alerts to your team communication tool.</li><li><strong>Separate environments</strong>: Use different branches or directories for dev, staging, and production.</li><li><strong>Enable RBAC</strong>: Restrict who can sync, who can approve changes, and who can view secrets.</li><li><strong>Test manifests before committing</strong>: Run <code>kubeval</code>, <code>kubeconform</code>, or <code>kubectl --dry-run=client</code> in your CI pipeline.</li><li><strong>Back up your Git repository</strong>: Your Git repository IS your backup, but also mirror it to a second remote.</li></ul><h2 id=the-verdict>The Verdict</h2><p>Both ArgoCD and Flux are CNCF-graduated, production-proven GitOps platforms that will serve you well. The choice comes down to your team&rsquo;s workflow preferences:</p><p><strong>ArgoCD</strong> is the better choice if you value a polished web UI, visual diff capabilities, and sync wave orchestration. It is ideal for teams that want to see exactly what will change before applying it.</p><p><strong>Flux</strong> is the better choice if you prefer a lightweight, modular approach with built-in secret encryption and image automation. It excels in CLI-driven workflows and resource-constrained environments.</p><p>Many organizations actually run both: Flux for core infrastructure (because of its SOPS integration and small footprint) and ArgoCD for application deployments (because of its superior UI and sync controls). There is no rule against this — they can coexist in the same cluster without conflict.</p><p>The most important step is to adopt GitOps at all. Once your desired state lives in Git and a controller continuously reconciles it, the specific tool matters far less than the discipline of never deploying outside of Git.</p></div><div id=frame style=width:100%;margin:auto;position:relative;z-index:99998><iframe data-aa=2433958 src='//acceptable.a-ads.com/2433958/?size=Adaptive' style=border:0;padding:0;width:70%;height:auto;overflow:hidden;display:block;margin:auto></iframe></div></article></main><footer class=site-footer><p>Built with <a href=https://gohugo.io>Hugo</a> · <a href=/openswap-guide/index.xml>RSS</a> · <a href=https://github.com/hopkdj>GitHub</a></p><p style=margin-top:8px>&copy; 2026 OpenSwap Guide. All rights reserved.</p></footer></body></html>
