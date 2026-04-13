@@ -1,0 +1,394 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted Remote Desktop: Apache Guacamole vs RustDesk vs MeshCentral 2026 | OpenSwap Guide</title>
+<meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, and local AI deployment."><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/openswap-guide/css/main.min.777dc111b5207bf5336e5799477da0b31fb9080306bf98a82d6eceb979cf9737.css><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://hopkdj.github.io/openswap-guide/ class=logo><div class=logo-icon>H</div>OpenSwap Guide</a><nav><ul class=nav-links><li><a href=/openswap-guide/>Home</a></li><li><a href=/openswap-guide/tags/comparison/>Comparisons</a></li><li><a href=/openswap-guide/tags/guide/>Guides</a></li><li><a href=/openswap-guide/tags/ai/>Local AI</a></li><li><a href=/openswap-guide/index.xml class=nav-rss>Subscribe RSS</a></li></ul></nav></div></header><main><article class=post-single><a href=https://hopkdj.github.io/openswap-guide/ class=back-link>&larr; Back to posts</a><header class=post-single-header><div class=post-single-meta><span class="tag tag-purple">comparison</span>
+<span class="tag tag-green">guide</span>
+<span class="tag tag-blue">self-hosted</span>
+<span>·</span>
+<span>April 13, 2026</span>
+<span>·</span>
+<span>12 min read</span></div><h1 class=post-single-title>Self-Hosted Remote Desktop: Apache Guacamole vs RustDesk vs MeshCentral 2026</h1></header><div class=post-single-content><h2 id=why-self-host-your-remote-desktop-infrastructure>Why Self-Host Your Remote Desktop Infrastructure</h2><p>Remote desktop access is a foundational requirement for any homelab, small business, or distributed team. Commercial solutions like TeamViewer, AnyDesk, and Splashtop offer convenience at a cost — both financial and privacy-related. Subscription pricing for these services has climbed steadily, with enterprise plans regularly exceeding $50 per user per month. More critically, every connection routed through a third-party relay server means your session metadata — connection times, endpoint IPs, and session durations — is visible to the provider.</p><p>Self-hosting your remote desktop infrastructure eliminates these trade-offs entirely:</p><ul><li><strong>Full session privacy</strong> — no third party logs which machines you connect to, when, or for how long</li><li><strong>No per-seat licensing</strong> — support unlimited endpoints on your own hardware regardless of user count</li><li><strong>Customizable access control</strong> — integrate with your existing authentication system (LDAP, OAuth, SAML)</li><li><strong>On-premises data processing</strong> — screen recordings, file transfers, and clipboard data never leave your network</li><li><strong>Resilient connectivity</strong> — operate through your own relay infrastructure, unaffected by commercial service outages</li><li><strong>Audit trail ownership</strong> — maintain complete session logs for compliance and incident review</li></ul><p>Whether you&rsquo;re managing a fleet of workstations, providing IT support across a distributed organization, or accessing your homelab from anywhere, a self-hosted remote desktop solution gives you control without the recurring costs or surveillance dependencies.</p><h2 id=quick-comparison>Quick Comparison</h2><table><thead><tr><th>Feature</th><th>Apache Guacamole</th><th>RustDesk</th><th>MeshCentral</th></tr></thead><tbody><tr><td><strong>Type</strong></td><td>Web gateway</td><td>P2P + relay</td><td>Full IT management</td></tr><tr><td><strong>Protocols</strong></td><td>RDP, VNC, SSH, Telnet, Kubernetes</td><td>Proprietary (encrypted)</td><td>RDP, VNC, SSH, Terminal</td></tr><tr><td><strong>Client</strong></td><td>Browser-based (HTML5)</td><td>Desktop + web + mobile</td><td>Web-based</td></tr><tr><td><strong>Self-Host Relay</strong></td><td>N/A (direct)</td><td>✅ Built-in</td><td>✅ Built-in</td></tr><tr><td><strong>File Transfer</strong></td><td>✅ Via RDP/VNC</td><td>✅ Native</td><td>✅ Native</td></tr><tr><td><strong>Clipboard Sync</strong></td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td><strong>Multi-Monitor</strong></td><td>✅ (RDP)</td><td>✅</td><td>✅</td></tr><tr><td><strong>Audio Redirection</strong></td><td>✅ (RDP)</td><td>✅</td><td>❌</td></tr><tr><td><strong>Recording</strong></td><td>✅ Session recording</td><td>✅ Optional</td><td>✅ Screen + terminal</td></tr><tr><td><strong>2FA / MFA</strong></td><td>✅ (TOTP, LDAP, SAML)</td><td>✅ (OAuth, LDAP)</td><td>✅ (SAML, LDAP, 2FA)</td></tr><tr><td><strong>Agent Required</strong></td><td>❌ (server-side)</td><td>✅ (both ends)</td><td>✅ (target only)</td></tr><tr><td><strong>NAT Traversal</strong></td><td>❌ Manual port forward</td><td>✅ STUN/TURN</td><td>✅ Built-in</td></tr><tr><td><strong>Group/Org Mgmt</strong></td><td>✅ Connection groups</td><td>✅ Address book</td><td>✅ Full device groups</td></tr><tr><td><strong>Resource Usage</strong></td><td>Medium (Java)</td><td>Low (Rust)</td><td>Medium (Node.js)</td></tr><tr><td><strong>Best For</strong></td><td>Browser access, mixed protocols</td><td>Fast P2P, simplicity</td><td>Full IT fleet management</td></tr></tbody></table><hr><h2 id=1-apache-guacamole-the-protocol-agnostic-gateway>1. Apache Guacamole (The Protocol-Agnostic Gateway)</h2><p><strong>Best for</strong>: Browser-based access to heterogeneous endpoints (RDP, VNC, SSH)</p><h3 id=key-features>Key Features</h3><p>Apache Guacamole is a clientless remote desktop gateway. It supports standard protocols — RDP, VNC, SSH, telnet, and Kubernetes exec — and renders sessions as HTML5 in any modern browser. No client software installation is required on the user side. The architecture consists of two components:</p><ul><li><strong>guacd</strong>: The proxy daemon that speaks native protocols and translates to Guacamole&rsquo;s internal protocol</li><li><strong>guacamole</strong>: The web application (WAR file) running on a servlet container (Tomcat)</li></ul><p>Guacamole excels in environments where users need to access a mix of Windows (RDP), Linux (VNC/SSH), and network equipment (SSH/telnet) from a single browser interface. It integrates with Active Directory, LDAP, SAML, CAS, and OpenID Connect for authentication, and supports two-factor authentication via TOTP.</p><h3 id=docker-deployment>Docker Deployment</h3><p>The official Docker deployment requires three services: Guacamole, guacd, and a database (PostgreSQL or MySQL) for connection configuration:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s1>&#39;3&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>guacd</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>guacamole/guacd:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>guacd</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./drive:/drive:rw</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./record:/record:rw</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>postgres</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>postgres:16-alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>guac-postgres</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_DB</span><span class=p>:</span><span class=w> </span><span class=l>guacamole_db</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_USER</span><span class=p>:</span><span class=w> </span><span class=l>guacamole_user</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_PASSWORD</span><span class=p>:</span><span class=w> </span><span class=l>changeme_secure_password_2026</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./pgdata:/var/lib/postgresql/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>guacamole</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>guacamole/guacamole:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>guacamole</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>guacd</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>postgres</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8080:8080&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>GUACD_HOSTNAME</span><span class=p>:</span><span class=w> </span><span class=l>guacd</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_HOSTNAME</span><span class=p>:</span><span class=w> </span><span class=l>postgres</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_DATABASE</span><span class=p>:</span><span class=w> </span><span class=l>guacamole_db</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_USER</span><span class=p>:</span><span class=w> </span><span class=l>guacamole_user</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_PASSWORD</span><span class=p>:</span><span class=w> </span><span class=l>changeme_secure_password_2026</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=c># Enable TOTP for two-factor auth</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>TOTP_ENABLED</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;true&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=c># Session recording</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>RECORDING_PATH</span><span class=p>:</span><span class=w> </span><span class=l>/record</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Before starting the stack, initialize the PostgreSQL database with Guacamole&rsquo;s schema:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Generate the initialization SQL</span>
+</span></span><span class=line><span class=cl>docker run --rm guacamole/guacamole /opt/guacamole/bin/initdb.sh --postgres &gt; initdb.sql
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Run it against the database</span>
+</span></span><span class=line><span class=cl>docker cp initdb.sql guac-postgres:/initdb.sql
+</span></span><span class=line><span class=cl>docker <span class=nb>exec</span> -u postgres guac-postgres psql -d guacamole_db -f /initdb.sql
+</span></span></code></pre></td></tr></table></div></div><p>Start the stack:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker compose up -d
+</span></span></code></pre></td></tr></table></div></div><p>Access the web interface at <code>http://your-server:8080/guacamole</code>. Default credentials: <code>guacadmin</code> / <code>guacadmin</code>. <strong>Change this immediately after first login.</strong></p><h3 id=configuring-a-windows-rdp-connection>Configuring a Windows RDP Connection</h3><p>After logging in, navigate to <strong>Settings → Connections → New Connection</strong>:</p><ul><li><strong>Name</strong>: <code>Workstation-01</code></li><li><strong>Protocol</strong>: RDP</li><li><strong>Parameters</strong>:<ul><li>Hostname: <code>192.168.1.50</code> (or DNS name)</li><li>Port: <code>3389</code></li><li>Username: your Windows username</li><li>Password: your Windows password</li><li>Security mode: <code>NLA</code> (Network Level Authentication)</li><li>Color depth: <code>32-bit</code></li><li>Enable clipboard: checked</li><li>Enable audio: checked</li></ul></li></ul><p>For Linux endpoints, use VNC protocol with the hostname of your VNC server (e.g., TigerVNC or x11vnc).</p><h3 id=advanced-ldap-integration>Advanced: LDAP Integration</h3><p>For organizations with existing directory infrastructure, Guacamole supports LDAP authentication. Place the extension JAR in the extensions directory and configure:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-properties data-lang=properties><span class=line><span class=cl><span class=c1># guacamole.properties</span>
+</span></span><span class=line><span class=cl><span class=na>auth-provider</span><span class=o>:</span> <span class=s>net.sourceforge.guacamole.net.auth.ldap.LdapAuthenticationProvider</span>
+</span></span><span class=line><span class=cl><span class=na>ldap-hostname</span><span class=o>:</span> <span class=s>ldap.yourdomain.com</span>
+</span></span><span class=line><span class=cl><span class=na>ldap-port</span><span class=o>:</span> <span class=s>636</span>
+</span></span><span class=line><span class=cl><span class=na>ldap-encryption-method</span><span class=o>:</span> <span class=s>ssl</span>
+</span></span><span class=line><span class=cl><span class=na>ldap-search-bind-dn</span><span class=o>:</span> <span class=s>cn=guacamole,ou=services,dc=yourdomain,dc=com</span>
+</span></span><span class=line><span class=cl><span class=na>ldap-search-bind-password</span><span class=o>:</span> <span class=s>service_account_password</span>
+</span></span><span class=line><span class=cl><span class=na>ldap-user-base-dn</span><span class=o>:</span> <span class=s>ou=users,dc=yourdomain,dc=com</span>
+</span></span><span class=line><span class=cl><span class=na>ldap-user-search-filter</span><span class=o>:</span> <span class=s>(uid={0})</span>
+</span></span><span class=line><span class=cl><span class=na>ldap-config-base-dn</span><span class=o>:</span> <span class=s>dc=yourdomain,dc=com</span>
+</span></span><span class=line><span class=cl><span class=na>ldap-group-base-dn</span><span class=o>:</span> <span class=s>ou=groups,dc=yourdomain,dc=com</span>
+</span></span><span class=line><span class=cl><span class=na>ldap-group-search-filter</span><span class=o>:</span> <span class=s>(member={0})</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=pros-and-cons>Pros and Cons</h3><p><strong>Pros</strong>: Protocol-agnostic (RDP + VNC + SSH + more), browser-based access, mature project with strong security audit history, excellent LDAP/SAML integration, session recording</p><p><strong>Cons</strong>: Requires manual connection setup per endpoint, no automatic NAT traversal (firewall rules needed), Java dependency increases resource usage, no native file transfer without RDP drive redirection</p><hr><h2 id=2-rustdesk-the-modern-p2p-alternative>2. RustDesk (The Modern P2P Alternative)</h2><p><strong>Best for</strong>: Fast peer-to-peer remote access with automatic NAT traversal</p><h3 id=key-features-1>Key Features</h3><p>RustDesk is an open-source remote desktop application written in Rust. It was designed as a TeamViewer alternative from the ground up, with a focus on performance, privacy, and self-hosting. The key differentiator is its peer-to-peer architecture with automatic relay fallback — when a direct connection can be established between two machines, data flows directly without touching any server.</p><p>RustDesk includes:</p><ul><li>End-to-end encryption using ChaCha20-Poly1305</li><li>Built-in file transfer and TCP tunneling</li><li>Multi-platform clients (Windows, macOS, Linux, iOS, Android, Web)</li><li>Unattended access with permanent password</li><li>Address book with tags and groups</li><li>Session recording (optional)</li><li>Custom branding for self-hosted deployments</li></ul><h3 id=self-hosting-the-relay-server>Self-Hosting the Relay Server</h3><p>For optimal performance and full data control, deploy your own RustDesk ID and relay server. This eliminates the public relay servers and keeps all metadata within your infrastructure:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s1>&#39;3&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>hbbs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>rustdesk/rustdesk-server:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>rustdesk-hbbs</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=l>hbbs -r relay.yourdomain.com:21117</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;21115:21115&#34;</span><span class=w>    </span><span class=c># TCP NAT test</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;21116:21116&#34;</span><span class=w>    </span><span class=c># TCP ID server</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;21116:21116/udp&#34;</span><span class=w> </span><span class=c># UDP ID server</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;21118:21118&#34;</span><span class=w>    </span><span class=c># TCP WebSocket</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./hbbs-data:/root</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>hbbr</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>rustdesk/rustdesk-server:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>rustdesk-hbbr</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=l>hbbr</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;21117:21117&#34;</span><span class=w>    </span><span class=c># TCP relay</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;21119:21119&#34;</span><span class=w>    </span><span class=c># TCP WebSocket relay</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./hbbr-data:/root</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>hbbs</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>The two components serve different purposes:</p><ul><li><strong>hbbs</strong> (ID server): Handles peer discovery and connection brokering</li><li><strong>hbbr</strong> (Relay server): Acts as a data relay when P2P connection fails</li></ul><p>Start the servers:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker compose up -d
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Get the public key for client configuration</span>
+</span></span><span class=line><span class=cl>cat ./hbbs-data/id_ed25519.pub
+</span></span></code></pre></td></tr></table></div></div><h3 id=client-configuration>Client Configuration</h3><p>On each RustDesk client, configure the custom server settings:</p><p><strong>Via GUI</strong>: Open RustDesk → Settings → Network → ID/Relay Server:</p><ul><li><strong>ID Server</strong>: <code>relay.yourdomain.com</code> (port 21116)</li><li><strong>Relay Server</strong>: <code>relay.yourdomain.com</code> (port 21117)</li><li><strong>Key</strong>: Content of <code>id_ed25519.pub</code></li><li><strong>API Server</strong>: Leave empty (unless using RustDesk&rsquo;s web console)</li></ul><p><strong>Via CLI/registry</strong> (for mass deployment):</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Linux</span>
+</span></span><span class=line><span class=cl>rustdesk --config <span class=s2>&#34;id_server=relay.yourdomain.com&#34;</span>
+</span></span><span class=line><span class=cl>rustdesk --config <span class=s2>&#34;relay_server=relay.yourdomain.com:21117&#34;</span>
+</span></span><span class=line><span class=cl>rustdesk --config <span class=s2>&#34;key=&lt;contents of id_ed25519.pub&gt;&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Windows (registry)</span>
+</span></span><span class=line><span class=cl>reg add <span class=s2>&#34;HKCU\Software\RustDesk&#34;</span> /v <span class=s2>&#34;id_server&#34;</span> /t REG_SZ /d <span class=s2>&#34;relay.yourdomain.com&#34;</span> /f
+</span></span><span class=line><span class=cl>reg add <span class=s2>&#34;HKCU\Software\RustDesk&#34;</span> /v <span class=s2>&#34;relay_server&#34;</span> /t REG_SZ /d <span class=s2>&#34;relay.yourdomain.com:21117&#34;</span> /f
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># macOS</span>
+</span></span><span class=line><span class=cl>defaults write com.carller.rustdesk <span class=s2>&#34;id_server&#34;</span> -string <span class=s2>&#34;relay.yourdomain.com&#34;</span>
+</span></span><span class=line><span class=cl>defaults write com.carller.rustdesk <span class=s2>&#34;relay_server&#34;</span> -string <span class=s2>&#34;relay.yourdomain.com:21117&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=unattended-access-setup>Unattended Access Setup</h3><p>For headless servers and workstations that need permanent remote access:</p><ol><li>Open RustDesk on the target machine</li><li>Set a permanent password: <strong>Settings → Security → Permanent Password</strong></li><li>Enable <strong>Start on Boot</strong> and <strong>Enable Service</strong> (runs with system privileges before login)</li><li>Note the RustDesk ID — this is your permanent identifier</li></ol><p>The client can now be accessed at any time using the ID and permanent password, even when no user is logged in.</p><h3 id=reverse-proxy-with-tls>Reverse Proxy with TLS</h3><p>For the web client and API, put the relay behind a reverse proxy:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-nginx data-lang=nginx><span class=line><span class=cl><span class=k>server</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=kn>listen</span> <span class=mi>443</span> <span class=s>ssl</span> <span class=s>http2</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=kn>server_name</span> <span class=s>relay.yourdomain.com</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kn>ssl_certificate</span> <span class=s>/etc/letsencrypt/live/relay.yourdomain.com/fullchain.pem</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=kn>ssl_certificate_key</span> <span class=s>/etc/letsencrypt/live/relay.yourdomain.com/privkey.pem</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1># WebSocket support for hbbs
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=kn>location</span> <span class=s>/</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_pass</span> <span class=s>http://127.0.0.1:21118</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_http_version</span> <span class=mi>1</span><span class=s>.1</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_set_header</span> <span class=s>Upgrade</span> <span class=nv>$http_upgrade</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_set_header</span> <span class=s>Connection</span> <span class=s>&#34;upgrade&#34;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_set_header</span> <span class=s>Host</span> <span class=nv>$host</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_set_header</span> <span class=s>X-Real-IP</span> <span class=nv>$remote_addr</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1># WebSocket relay for hbbr
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=kn>location</span> <span class=s>/relay</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_pass</span> <span class=s>http://127.0.0.1:21119</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_http_version</span> <span class=mi>1</span><span class=s>.1</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_set_header</span> <span class=s>Upgrade</span> <span class=nv>$http_upgrade</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_set_header</span> <span class=s>Connection</span> <span class=s>&#34;upgrade&#34;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_set_header</span> <span class=s>Host</span> <span class=nv>$host</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=pros-and-cons-1>Pros and Cons</h3><p><strong>Pros</strong>: True P2P connectivity, minimal latency on direct connections, excellent NAT traversal, native clients for all platforms, easy to deploy, Rust-based performance, built-in file transfer and TCP tunneling</p><p><strong>Cons</strong>: Requires agent installation on both ends, proprietary protocol (though open-source), no built-in web management console in the free version, limited protocol support (RustDesk only — no RDP/VNC bridging)</p><hr><h2 id=3-meshcentral-the-full-it-management-platform>3. MeshCentral (The Full IT Management Platform)</h2><p><strong>Best for</strong>: Comprehensive device fleet management with remote desktop as one feature</p><h3 id=key-features-2>Key Features</h3><p>MeshCentral (by Ylian Saint-Hill, creator of Intel AMT) is a full-featured remote management platform that goes well beyond simple remote desktop. It provides device management, remote terminal access, file management, power control (via Intel AMT), Wake-on-LAN, event logging, user permissions, and alerting — all from a single web interface.</p><p>MeshCentral&rsquo;s architecture is designed for scale:</p><ul><li><strong>MeshAgent</strong>: Lightweight agent installed on managed devices (Windows, Linux, macOS)</li><li><strong>MeshCentral Server</strong>: Node.js-based server with web interface</li><li><strong>Relay support</strong>: Built-in relay for cross-network connectivity</li><li><strong>Intel AMT support</strong>: Out-of-band management for compatible hardware</li></ul><h3 id=docker-deployment-1>Docker Deployment</h3><p>MeshCentral requires a MongoDB (or NeDB for small deployments) backend:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s1>&#39;3&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>mongodb</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>mongo:7</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>mesh-mongo</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./mongodb:/data/db</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>MONGO_INITDB_ROOT_USERNAME</span><span class=p>:</span><span class=w> </span><span class=l>meshadmin</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>MONGO_INITDB_ROOT_PASSWORD</span><span class=p>:</span><span class=w> </span><span class=l>mesh_secure_password_2026</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>meshcentral</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>typex51/meshcentral:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>meshcentral</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>mongodb</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;4430:443&#34;</span><span class=w>      </span><span class=c># Web interface</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;4433:4433&#34;</span><span class=w>      </span><span class=c># Mesh agent relay</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;10001:10001/udp&#34;</span><span class=w> </span><span class=c># Intel AMT</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./meshcentral-data:/opt/meshcentral/meshcentral-data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./meshcentral-files:/opt/meshcentral/meshcentral-files</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./meshcentral-logs:/opt/meshcentral/meshcentral-logs</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>HOSTNAME=mesh.yourdomain.com</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>MONGODB=mongodb://meshadmin:mesh_secure_password_2026@mongodb:27017/meshcentral</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>USE_MONGODB=true</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Create the initial configuration file at <code>./meshcentral-data/config.json</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;settings&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;cert&#34;</span><span class=p>:</span> <span class=s2>&#34;mesh.yourdomain.com&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;WANonly&#34;</span><span class=p>:</span> <span class=kc>true</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;_agentHeartbeat&#34;</span><span class=p>:</span> <span class=mi>300</span>
+</span></span><span class=line><span class=cl>  <span class=p>},</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;domains&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;title&#34;</span><span class=p>:</span> <span class=s2>&#34;IT Operations&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;title2&#34;</span><span class=p>:</span> <span class=s2>&#34;MeshCentral&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;newAccounts&#34;</span><span class=p>:</span> <span class=kc>false</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;auth&#34;</span><span class=p>:</span> <span class=s2>&#34;ldapauth&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=p>},</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;ldap&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;url&#34;</span><span class=p>:</span> <span class=s2>&#34;ldap://ldap.yourdomain.com:389&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;base&#34;</span><span class=p>:</span> <span class=s2>&#34;dc=yourdomain,dc=com&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;bindDN&#34;</span><span class=p>:</span> <span class=s2>&#34;cn=mesh,ou=services,dc=yourdomain,dc=com&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;bindPassword&#34;</span><span class=p>:</span> <span class=s2>&#34;ldap_service_password&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;searchFilter&#34;</span><span class=p>:</span> <span class=s2>&#34;(&amp;(objectClass=user)(sAMAccountName={{username}}))&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;ca&#34;</span><span class=p>:</span> <span class=s2>&#34;/opt/meshcentral/meshcentral-data/ca.pem&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>Start the stack:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker compose up -d
+</span></span></code></pre></td></tr></table></div></div><p>Access the web interface at <code>https://mesh.yourdomain.com:4430</code>. Create the first admin account (disabled <code>newAccounts</code> after setup for security).</p><h3 id=agent-deployment>Agent Deployment</h3><p>Deploy the MeshAgent to managed devices. Download the agent installer from the MeshCentral web interface, or deploy via script:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Linux agent installation</span>
+</span></span><span class=line><span class=cl>curl -sSL https://mesh.yourdomain.com:4430/meshagents?id<span class=o>=</span>1<span class=p>&amp;</span><span class=nv>installflags</span><span class=o>=</span><span class=m>1</span> -o meshagent
+</span></span><span class=line><span class=cl>chmod +x meshagent
+</span></span><span class=line><span class=cl>sudo ./meshagent -install
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Windows (via PowerShell)</span>
+</span></span><span class=line><span class=cl>Invoke-WebRequest -Uri <span class=s2>&#34;https://mesh.yourdomain.com:4430/meshagents?id=1&amp;installflags=1&#34;</span> -OutFile <span class=s2>&#34;</span><span class=nv>$env</span><span class=s2>:TEMP\meshagent.exe&#34;</span>
+</span></span><span class=line><span class=cl>Start-Process -FilePath <span class=s2>&#34;</span><span class=nv>$env</span><span class=s2>:TEMP\meshagent.exe&#34;</span> -ArgumentList <span class=s2>&#34;-install&#34;</span> -Wait
+</span></span></code></pre></td></tr></table></div></div><h3 id=managing-devices>Managing Devices</h3><p>Once agents are installed, devices appear in the MeshCentral web interface organized by groups. For each device, you can:</p><ul><li><strong>Remote Desktop</strong>: Full screen remote control with quality adjustment</li><li><strong>Terminal</strong>: Remote command-line access (Linux shell, Windows CMD/PowerShell)</li><li><strong>Files</strong>: Browse, upload, and download files</li><li><strong>Wake-on-LAN</strong>: Power on devices (requires network configuration)</li><li><strong>Power Control</strong>: Reboot, shutdown, or send Intel AMT commands</li><li><strong>Event Log</strong>: View agent events, connection history, and system changes</li></ul><h3 id=advanced-user-groups-and-permissions>Advanced: User Groups and Permissions</h3><p>MeshCentral supports fine-grained access control. Create user groups with different permission levels:</p><ul><li><strong>Full Access</strong>: Remote desktop, terminal, file transfer, power control</li><li><strong>View Only</strong>: Remote desktop without input (screen sharing)</li><li><strong>Terminal Only</strong>: Command-line access without desktop</li><li><strong>Custom</strong>: Selective permission combination</li></ul><p>Permissions can be set per-device or per-group, allowing contractors temporary access to specific machines while restricting others.</p><h3 id=pros-and-cons-2>Pros and Cons</h3><p><strong>Pros</strong>: Comprehensive IT management beyond just remote desktop, Intel AMT out-of-band management, excellent user permission system, built-in file manager, event logging, group/device organization, active development</p><p><strong>Cons</strong>: More complex setup than Guacamole or RustDesk, Node.js resource footprint, MongoDB dependency, web-only interface (no native desktop client), steeper learning curve</p><hr><h2 id=network-and-firewall-configuration>Network and Firewall Configuration</h2><p>Each solution has different networking requirements. Here&rsquo;s what you need to open in your firewall:</p><table><thead><tr><th>Port</th><th>Protocol</th><th>Guacamole</th><th>RustDesk</th><th>MeshCentral</th></tr></thead><tbody><tr><td>80/443</td><td>TCP</td><td>✅ Web UI</td><td>❌</td><td>✅ Web UI</td></tr><tr><td>3389</td><td>TCP</td><td>✅ RDP target</td><td>❌</td><td>❌</td></tr><tr><td>5900</td><td>TCP</td><td>✅ VNC target</td><td>❌</td><td>❌</td></tr><tr><td>22</td><td>TCP</td><td>✅ SSH target</td><td>❌</td><td>❌</td></tr><tr><td>21115</td><td>TCP</td><td>❌</td><td>✅ ID server</td><td>❌</td></tr><tr><td>21116</td><td>TCP/UDP</td><td>❌</td><td>✅ ID server</td><td>❌</td></tr><tr><td>21117</td><td>TCP</td><td>❌</td><td>✅ Relay</td><td>❌</td></tr><tr><td>21118</td><td>TCP</td><td>❌</td><td>✅ WebSocket</td><td>❌</td></tr><tr><td>21119</td><td>TCP</td><td>❌</td><td>✅ WebSocket</td><td>❌</td></tr><tr><td>4433</td><td>TCP</td><td>❌</td><td>❌</td><td>✅ Agent relay</td></tr><tr><td>10001</td><td>UDP</td><td>❌</td><td>❌</td><td>✅ Intel AMT</td></tr></tbody></table><p>For Guacamole, only port 8080 (or 443 behind a reverse proxy) needs to be exposed — all target machine connections originate from the server side. For RustDesk, the relay ports must be reachable from all client machines. For MeshCentral, ports 443 and 4433 must be accessible from managed devices.</p><h2 id=security-best-practices>Security Best Practices</h2><p>Regardless of which solution you choose, follow these security fundamentals:</p><p><strong>Authentication</strong>:</p><ul><li>Always enable two-factor authentication (TOTP or hardware tokens)</li><li>Integrate with your LDAP/Active Directory for centralized user management</li><li>Disable default accounts immediately after setup</li><li>Implement IP-based access restrictions where possible</li></ul><p><strong>Network</strong>:</p><ul><li>Place the remote desktop server behind a reverse proxy with TLS termination</li><li>Use fail2ban or equivalent to block brute-force attempts</li><li>Implement rate limiting on the authentication endpoint</li><li>Consider a bastion host architecture for internet-facing deployments</li></ul><p><strong>Session Security</strong>:</p><ul><li>Enable session recording for audit purposes</li><li>Set idle timeout policies (15-30 minutes recommended)</li><li>Restrict clipboard sharing and file transfer to trusted users</li><li>Regularly rotate permanent access passwords</li></ul><p><strong>Infrastructure</strong>:</p><ul><li>Keep the server software updated — check for security advisories monthly</li><li>Run each component in isolated containers with minimal privileges</li><li>Back up configuration databases (PostgreSQL, MongoDB) daily</li><li>Monitor connection logs for anomalous access patterns</li></ul><h2 id=choosing-the-right-solution>Choosing the Right Solution</h2><p>Your choice depends on your primary use case:</p><ul><li><p><strong>Choose Apache Guacamole</strong> if you need browser-based access to a mixed environment of Windows (RDP), Linux (VNC), and network devices (SSH) without installing agents on endpoints. Ideal for IT teams managing diverse infrastructure.</p></li><li><p><strong>Choose RustDesk</strong> if you want the fastest possible connection speeds with minimal latency, need automatic NAT traversal, and are comfortable deploying a lightweight client on both the controller and target machines. Ideal for individual users and small teams.</p></li><li><p><strong>Choose MeshCentral</strong> if you need comprehensive device management including power control, file management, terminal access, and user permissions alongside remote desktop. Ideal for IT departments managing fleets of workstations and servers.</p></li></ul><p>All three solutions are fully open-source, actively maintained, and can be deployed on commodity hardware. Start with the Docker compositions provided above, and scale from there based on your requirements.</p></div><div id=frame style=width:100%;margin:auto;position:relative;z-index:99998><iframe data-aa=2433958 src='//acceptable.a-ads.com/2433958/?size=Adaptive' style=border:0;padding:0;width:70%;height:auto;overflow:hidden;display:block;margin:auto></iframe></div></article></main><footer class=site-footer><p>Built with <a href=https://gohugo.io>Hugo</a> · <a href=/openswap-guide/index.xml>RSS</a> · <a href=https://github.com/hopkdj>GitHub</a></p><p style=margin-top:8px>&copy; 2026 OpenSwap Guide. All rights reserved.</p></footer></body></html>
