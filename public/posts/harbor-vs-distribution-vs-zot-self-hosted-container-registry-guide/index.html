@@ -1,0 +1,666 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Best Self-Hosted Container Registry 2026: Harbor vs CNCF Distribution vs Zot | OpenSwap Guide</title>
+<meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, and local AI deployment."><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/openswap-guide/css/main.min.777dc111b5207bf5336e5799477da0b31fb9080306bf98a82d6eceb979cf9737.css><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://hopkdj.github.io/openswap-guide/ class=logo><div class=logo-icon>H</div>OpenSwap Guide</a><nav><ul class=nav-links><li><a href=/openswap-guide/>Home</a></li><li><a href=/openswap-guide/tags/comparison/>Comparisons</a></li><li><a href=/openswap-guide/tags/guide/>Guides</a></li><li><a href=/openswap-guide/tags/ai/>Local AI</a></li><li><a href=/openswap-guide/index.xml class=nav-rss>Subscribe RSS</a></li></ul></nav></div></header><main><article class=post-single><a href=https://hopkdj.github.io/openswap-guide/ class=back-link>&larr; Back to posts</a><header class=post-single-header><div class=post-single-meta><span class="tag tag-purple">comparison</span>
+<span class="tag tag-green">guide</span>
+<span class="tag tag-blue">self-hosted</span>
+<span>·</span>
+<span>April 13, 2026</span>
+<span>·</span>
+<span>13 min read</span></div><h1 class=post-single-title>Best Self-Hosted Container Registry 2026: Harbor vs CNCF Distribution vs Zot</h1></header><div class=post-single-content><h2 id=why-self-host-a-container-registry>Why Self-Host a Container Registry?</h2><p>If you run Docker containers — whether for a homelab, a small team, or a production environment — you eventually hit the limits of Docker Hub. Rate limits, image size restrictions, privacy concerns, and dependency on an external service make a self-hosted container registry one of the most practical infrastructure decisions you can make.</p><p>Here&rsquo;s what you gain by running your own registry:</p><p><strong>No rate limits.</strong> Docker Hub&rsquo;s free tier caps anonymous pulls at 100 per 6 hours and authenticated pulls at 200 per 6 hours. A self-hosted registry has zero pull limits — your only bottleneck is network bandwidth.</p><p><strong>Full image privacy.</strong> Your proprietary application images, internal tooling, and custom base images never leave your network. This matters for compliance (SOC 2, HIPAA, GDPR) and for protecting intellectual property.</p><p><strong>Faster pulls.</strong> When your registry lives on the same LAN or data center as your compute nodes, image pulls happen at local network speeds. A 2 GB image that takes 30 seconds from Docker Hub might pull in under 3 seconds locally.</p><p><strong>Complete control over retention and cleanup.</strong> Set your own policies for how many image tags to keep, when to delete untagged manifests, and how long to retain pull logs. No vendor-imposed quotas.</p><p><strong>Cost predictability.</strong> Docker Hub Pro costs $60/user/year with storage limits. Harbor, Distribution, and Zot are all free and open-source — you only pay for the disk and compute you provision.</p><p>In 2026, three projects stand out in the self-hosted container registry space: <strong>Harbor</strong> (the enterprise-grade platform from VMware/CNCF), <strong>CNCF Distribution</strong> (the minimal, composable registry that powers Docker Hub itself), and <strong>Zot</strong> (the modern OCI-native registry with built-in security scanning). Let&rsquo;s compare them.</p><h2 id=quick-comparison-table>Quick Comparison Table</h2><table><thead><tr><th>Feature</th><th>Harbor</th><th>CNCF Distribution</th><th>Zot</th></tr></thead><tbody><tr><td><strong>License</strong></td><td>Apache 2.0</td><td>Apache 2.0</td><td>Apache 2.0</td></tr><tr><td><strong>Written In</strong></td><td>Go + Vue.js (UI)</td><td>Go</td><td>Go</td></tr><tr><td><strong>OCI Compliant</strong></td><td>✅</td><td>✅ (originator)</td><td>✅ Native</td></tr><tr><td><strong>Web UI</strong></td><td>✅ Full-featured</td><td>❌ None</td><td>✅ Basic</td></tr><tr><td><strong>RBAC</strong></td><td>✅ Project-based, LDAP/AD/OIDC</td><td>❌ Basic auth only</td><td>✅ OIDC, htpasswd</td></tr><tr><td><strong>Image Scanning</strong></td><td>✅ Trivy, Clair</td><td>❌ Plugin required</td><td>✅ Built-in Trivy</td></tr><tr><td><strong>Replication</strong></td><td>✅ To other registries</td><td>❌ Manual</td><td>✅ Pull/Push</td></tr><tr><td><strong>Content Trust</strong></td><td>✅ Notary integration</td><td>❌ Not supported</td><td>✅ Cosign support</td></tr><tr><td><strong>Helm Charts</strong></td><td>✅ Native support</td><td>❌</td><td>❌</td></tr><tr><td><strong>Proxy Cache</strong></td><td>✅ Cache Docker Hub, GHCR, etc.</td><td>✅ Via registry-mirror</td><td>✅ Via upstream config</td></tr><tr><td><strong>Min RAM</strong></td><td>~2 GB</td><td>~64 MB</td><td>~128 MB</td></tr><tr><td><strong>Docker Compose</strong></td><td>✅ Official compose file</td><td>✅ Simple config</td><td>✅ Single binary</td></tr><tr><td><strong>Garbage Collection</strong></td><td>✅ Online GC</td><td>✅ Online GC</td><td>✅ Online GC</td></tr><tr><td><strong>API</strong></td><td>✅ REST + Swagger</td><td>✅ REST</td><td>✅ REST + OpenAPI</td></tr><tr><td><strong>Best For</strong></td><td>Enterprises, teams</td><td>Minimal setups, embedded</td><td>Security-focused teams</td></tr></tbody></table><h2 id=harbor-the-enterprise-registry-platform>Harbor: The Enterprise Registry Platform</h2><p>Harbor is the most feature-complete container registry available as open-source software. Originally developed by VMware and now a graduated CNCF project, Harbor is the registry of choice for organizations that need role-based access control, image vulnerability scanning, audit logging, and replication out of the box.</p><h3 id=when-to-choose-harbor>When to Choose Harbor</h3><p>Harbor makes sense when you need more than just a place to push and pull images. It&rsquo;s ideal for:</p><ul><li>Teams managing dozens of projects with different access policies</li><li>Organizations that require vulnerability scanning before deployment</li><li>Environments that need to replicate images across multiple registry instances (e.g., edge deployments)</li><li>Anyone who wants a full web UI for browsing, searching, and managing container images</li></ul><h3 id=architecture>Architecture</h3><p>Harbor is a multi-service architecture. A typical deployment includes:</p><ul><li><strong>Core</strong> — the main API and web UI server</li><li><strong>Jobservice</strong> — handles replication, scanning, and garbage collection jobs</li><li><strong>Registry</strong> — the underlying CNCF Distribution instance for actual image storage</li><li><strong>Portal</strong> — the Vue.js frontend</li><li><strong>Database</strong> — PostgreSQL for metadata (users, projects, RBAC, scan results)</li><li><strong>Redis</strong> — caching and session management</li><li><strong>Trivy</strong> — optional container image vulnerability scanner</li></ul><p>This means Harbor has more moving parts than the alternatives, but each component is production-grade and horizontally scalable.</p><h3 id=installation-with-docker-compose>Installation with Docker Compose</h3><p>Harbor provides an official installer that generates a complete Docker Compose configuration. Here&rsquo;s the recommended setup for a production homelab or small team:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Download and extract Harbor</span>
+</span></span><span class=line><span class=cl><span class=nv>HARBOR_VERSION</span><span class=o>=</span><span class=s2>&#34;v2.12.2&#34;</span>
+</span></span><span class=line><span class=cl>wget <span class=s2>&#34;https://github.com/goharbor/harbor/releases/download/</span><span class=si>${</span><span class=nv>HARBOR_VERSION</span><span class=si>}</span><span class=s2>/harbor-offline-installer-</span><span class=si>${</span><span class=nv>HARBOR_VERSION</span><span class=si>}</span><span class=s2>.tgz&#34;</span>
+</span></span><span class=line><span class=cl>tar -xzf <span class=s2>&#34;harbor-offline-installer-</span><span class=si>${</span><span class=nv>HARBOR_VERSION</span><span class=si>}</span><span class=s2>.tgz&#34;</span>
+</span></span><span class=line><span class=cl><span class=nb>cd</span> harbor
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Edit the configuration</span>
+</span></span><span class=line><span class=cl>cat &gt; harbor.yml <span class=s>&lt;&lt; &#39;EOF&#39;
+</span></span></span><span class=line><span class=cl><span class=s>hostname: registry.example.com
+</span></span></span><span class=line><span class=cl><span class=s>http:
+</span></span></span><span class=line><span class=cl><span class=s>  port: 8080
+</span></span></span><span class=line><span class=cl><span class=s>https:
+</span></span></span><span class=line><span class=cl><span class=s>  port: 8443
+</span></span></span><span class=line><span class=cl><span class=s>  certificate: /data/cert/server.crt
+</span></span></span><span class=line><span class=cl><span class=s>  private_key: /data/cert/server.key
+</span></span></span><span class=line><span class=cl><span class=s>harbor_admin_password: ChangeMeNow2026!
+</span></span></span><span class=line><span class=cl><span class=s>database:
+</span></span></span><span class=line><span class=cl><span class=s>  password: db_password_secure
+</span></span></span><span class=line><span class=cl><span class=s>  max_idle_conns: 100
+</span></span></span><span class=line><span class=cl><span class=s>  max_open_conns: 900
+</span></span></span><span class=line><span class=cl><span class=s>data_volume: /opt/harbor/data
+</span></span></span><span class=line><span class=cl><span class=s>trivy:
+</span></span></span><span class=line><span class=cl><span class=s>  ignore_unfixed: false
+</span></span></span><span class=line><span class=cl><span class=s>  skip_update: false
+</span></span></span><span class=line><span class=cl><span class=s>  offline_scan: false
+</span></span></span><span class=line><span class=cl><span class=s>  insecure: false
+</span></span></span><span class=line><span class=cl><span class=s>jobservice:
+</span></span></span><span class=line><span class=cl><span class=s>  max_job_workers: 10
+</span></span></span><span class=line><span class=cl><span class=s>notification:
+</span></span></span><span class=line><span class=cl><span class=s>  webhook_job_max_retry: 10
+</span></span></span><span class=line><span class=cl><span class=s>log:
+</span></span></span><span class=line><span class=cl><span class=s>  level: info
+</span></span></span><span class=line><span class=cl><span class=s>  local:
+</span></span></span><span class=line><span class=cl><span class=s>    rotate_count: 50
+</span></span></span><span class=line><span class=cl><span class=s>    rotate_size: 200M
+</span></span></span><span class=line><span class=cl><span class=s>    location: /var/log/harbor
+</span></span></span><span class=line><span class=cl><span class=s>proxy:
+</span></span></span><span class=line><span class=cl><span class=s>  http_proxy:
+</span></span></span><span class=line><span class=cl><span class=s>  https_proxy:
+</span></span></span><span class=line><span class=cl><span class=s>  no_proxy:
+</span></span></span><span class=line><span class=cl><span class=s>  components:
+</span></span></span><span class=line><span class=cl><span class=s>    - core
+</span></span></span><span class=line><span class=cl><span class=s>    - jobservice
+</span></span></span><span class=line><span class=cl><span class=s>    - trivy
+</span></span></span><span class=line><span class=cl><span class=s>EOF</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Install with HTTPS enabled</span>
+</span></span><span class=line><span class=cl>./install.sh --with-trivy --with-chartmuseum
+</span></span></code></pre></td></tr></table></div></div><p>For a lightweight homelab setup without HTTPS (behind a reverse proxy):</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose.harbor.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>harbor-core</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>goharbor/harbor-core:v2.12.2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>harbor-db</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>harbor-redis</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>CORE_SECRET=your_core_secret_key</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PORT=8080</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/opt/harbor/config:/etc/core:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>harbor-net</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>registry</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>goharbor/registry-photon:v2.12.2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/opt/harbor/data/registry:/storage:z</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>harbor-net</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>harbor-db</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>goharbor/harbor-db:v2.12.2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>POSTGRESQL_PASSWORD=db_password_secure</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/opt/harbor/data/database:/var/lib/postgresql/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>harbor-net</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>harbor-redis</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>goharbor/redis-photon:v2.12.2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>harbor-net</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>trivy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>goharbor/trivy-adapter-photon:v2.12.2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/opt/harbor/data/trivy:/home/scanner/.cache/trivy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>harbor-net</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>harbor-net</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>bridge</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>After starting with <code>docker compose -f docker-compose.harbor.yml up -d</code>, access the web UI at <code>http://your-server:8080</code> and log in with <code>admin</code> / your configured password.</p><h3 id=configuring-proxy-cache-for-docker-hub>Configuring Proxy Cache for Docker Hub</h3><p>One of Harbor&rsquo;s most useful features is the proxy cache. Instead of hitting Docker Hub rate limits, Harbor caches every pulled image locally:</p><ol><li>Log into the Harbor web UI as admin</li><li>Navigate to <strong>Registries</strong> > <strong>New Endpoint</strong></li><li>Set provider to <strong>Docker Hub</strong>, enter credentials</li><li>Navigate to <strong>Projects</strong> > <strong>New Project</strong>, enable <strong>Proxy Cache</strong>, select your Docker Hub endpoint</li><li>Pull via your Harbor: <code>docker pull harbor.example.com/dockerhub/library/nginx:latest</code></li></ol><p>Harbor now caches every image pulled through this project. Subsequent pulls of the same tag hit Harbor&rsquo;s local cache instantly.</p><h2 id=cncf-distribution-the-minimal-registry>CNCF Distribution: The Minimal Registry</h2><p>CNCF Distribution (formerly Docker Distribution) is the reference implementation of the OCI Distribution Specification. It&rsquo;s the simplest, most lightweight option — a single binary that serves as a Docker-compatible registry with minimal dependencies.</p><h3 id=when-to-choose-distribution>When to Choose Distribution</h3><p>Distribution is the right choice when you want:</p><ul><li>A dead-simple registry with zero ceremony</li><li>Minimal resource footprint (runs comfortably on a Raspberry Pi)</li><li>The exact same technology that powers Docker Hub and GitHub Container Registry</li><li>A registry to embed into another application or pipeline</li><li>No web UI, no database, no scanning — just push and pull</li></ul><h3 id=installation-with-docker-compose-1>Installation with Docker Compose</h3><p>Distribution can run as a single container with a simple configuration file:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose.distribution.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>registry</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>registry:2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>distribution-registry</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;5000:5000&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/opt/registry/data:/var/lib/registry</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/opt/registry/config/config.yml:/etc/distribution/config.yml:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/opt/registry/certs:/certs:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>REGISTRY_HTTP_ADDR=0.0.0.0:5000</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>REGISTRY_HTTP_TLS_CERTIFICATE=/certs/domain.crt</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>REGISTRY_HTTP_TLS_KEY=/certs/domain.key</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>REGISTRY_STORAGE_DELETE_ENABLED=true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>REGISTRY_LOG_LEVEL=info</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Minimal configuration file (<code>/opt/registry/config/config.yml</code>):</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=m>0.1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>log</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>fields</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>service</span><span class=p>:</span><span class=w> </span><span class=l>registry</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>storage</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>cache</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>blobdescriptor</span><span class=p>:</span><span class=w> </span><span class=l>inmemory</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>filesystem</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>rootdirectory</span><span class=p>:</span><span class=w> </span><span class=l>/var/lib/registry</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>delete</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>enabled</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>http</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>addr</span><span class=p>:</span><span class=w> </span><span class=p>:</span><span class=m>5000</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>headers</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>X-Content-Type-Options</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=l>nosniff]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>tls</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>certificate</span><span class=p>:</span><span class=w> </span><span class=l>/certs/domain.crt</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>key</span><span class=p>:</span><span class=w> </span><span class=l>/certs/domain.key</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>auth</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>htpasswd</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>realm</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;Registry Realm&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>path</span><span class=p>:</span><span class=w> </span><span class=l>/etc/distribution/htpasswd</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>health</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>storagedriver</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>enabled</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>interval</span><span class=p>:</span><span class=w> </span><span class=l>10s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>threshold</span><span class=p>:</span><span class=w> </span><span class=m>3</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Generate the htpasswd file for basic authentication:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>mkdir -p /opt/registry/certs /opt/registry/config
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Install htpasswd utility (if not available)</span>
+</span></span><span class=line><span class=cl>apt-get install -y apache2-utils
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Create user credentials</span>
+</span></span><span class=line><span class=cl>htpasswd -Bbn devuser <span class=s2>&#34;SecurePass2026!&#34;</span> &gt; /opt/registry/config/htpasswd
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Generate self-signed TLS certs for testing</span>
+</span></span><span class=line><span class=cl>openssl req -x509 -newkey rsa:4096 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -keyout /opt/registry/certs/domain.key <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -out /opt/registry/certs/domain.crt <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -days <span class=m>365</span> -nodes <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -subj <span class=s2>&#34;/CN=registry.example.com&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Start the registry</span>
+</span></span><span class=line><span class=cl>docker compose -f docker-compose.distribution.yml up -d
+</span></span></code></pre></td></tr></table></div></div><p>To use the registry from your Docker client, configure the daemon to trust the registry&rsquo;s CA certificate:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Copy the CA cert to Docker&#39;s trusted store</span>
+</span></span><span class=line><span class=cl>sudo mkdir -p /etc/docker/certs.d/registry.example.com:5000
+</span></span><span class=line><span class=cl>sudo cp /opt/registry/certs/domain.crt <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  /etc/docker/certs.d/registry.example.com:5000/ca.crt
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Restart Docker</span>
+</span></span><span class=line><span class=cl>sudo systemctl restart docker
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Login and push</span>
+</span></span><span class=line><span class=cl>docker login registry.example.com:5000
+</span></span><span class=line><span class=cl>docker tag myapp:latest registry.example.com:5000/myapp:latest
+</span></span><span class=line><span class=cl>docker push registry.example.com:5000/myapp:latest
+</span></span></code></pre></td></tr></table></div></div><h3 id=adding-garbage-collection>Adding Garbage Collection</h3><p>Distribution supports garbage collection to reclaim disk space from deleted images. Run it periodically via a cron job:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Garbage collect weekly</span>
+</span></span><span class=line><span class=cl><span class=m>0</span> <span class=m>3</span> * * <span class=m>0</span> docker <span class=nb>exec</span> distribution-registry registry garbage-collect /etc/distribution/config.yml --delete-untagged
+</span></span></code></pre></td></tr></table></div></div><h2 id=zot-the-oci-native-security-registry>Zot: The OCI-Native Security Registry</h2><p>Zot is a modern, OCI-native container registry built from the ground up with security in mind. Developed by Project Zot (a CNCF sandbox project), it offers built-in image scanning with Trivy, fine-grained access control, and a clean web UI — all in a single binary with no external database dependencies.</p><h3 id=when-to-choose-zot>When to Choose Zot</h3><p>Zot is a great fit when you want:</p><ul><li>Built-in vulnerability scanning without deploying a separate scanner</li><li>Cosign-based content trust and signature verification</li><li>A single-binary deployment that&rsquo;s easy to manage</li><li>OCI-native features like referrers API and artifact manifests</li><li>Fine-grained authorization policies without the complexity of Harbor</li></ul><h3 id=installation-with-docker-compose-2>Installation with Docker Compose</h3><p>Zot runs as a single process with a YAML configuration file. Here&rsquo;s a production-ready setup:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose.zot.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>zot</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>ghcr.io/project-zot/zot:v2.1.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>zot-registry</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;5000:5000&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/opt/zot/data:/var/lib/registry</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/opt/zot/config/config.json:/etc/zot/config.json:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>ZOT_LOG_LEVEL=info</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Configuration file (<code>/opt/zot/config/config.json</code>):</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>  1
+</span><span class=lnt>  2
+</span><span class=lnt>  3
+</span><span class=lnt>  4
+</span><span class=lnt>  5
+</span><span class=lnt>  6
+</span><span class=lnt>  7
+</span><span class=lnt>  8
+</span><span class=lnt>  9
+</span><span class=lnt> 10
+</span><span class=lnt> 11
+</span><span class=lnt> 12
+</span><span class=lnt> 13
+</span><span class=lnt> 14
+</span><span class=lnt> 15
+</span><span class=lnt> 16
+</span><span class=lnt> 17
+</span><span class=lnt> 18
+</span><span class=lnt> 19
+</span><span class=lnt> 20
+</span><span class=lnt> 21
+</span><span class=lnt> 22
+</span><span class=lnt> 23
+</span><span class=lnt> 24
+</span><span class=lnt> 25
+</span><span class=lnt> 26
+</span><span class=lnt> 27
+</span><span class=lnt> 28
+</span><span class=lnt> 29
+</span><span class=lnt> 30
+</span><span class=lnt> 31
+</span><span class=lnt> 32
+</span><span class=lnt> 33
+</span><span class=lnt> 34
+</span><span class=lnt> 35
+</span><span class=lnt> 36
+</span><span class=lnt> 37
+</span><span class=lnt> 38
+</span><span class=lnt> 39
+</span><span class=lnt> 40
+</span><span class=lnt> 41
+</span><span class=lnt> 42
+</span><span class=lnt> 43
+</span><span class=lnt> 44
+</span><span class=lnt> 45
+</span><span class=lnt> 46
+</span><span class=lnt> 47
+</span><span class=lnt> 48
+</span><span class=lnt> 49
+</span><span class=lnt> 50
+</span><span class=lnt> 51
+</span><span class=lnt> 52
+</span><span class=lnt> 53
+</span><span class=lnt> 54
+</span><span class=lnt> 55
+</span><span class=lnt> 56
+</span><span class=lnt> 57
+</span><span class=lnt> 58
+</span><span class=lnt> 59
+</span><span class=lnt> 60
+</span><span class=lnt> 61
+</span><span class=lnt> 62
+</span><span class=lnt> 63
+</span><span class=lnt> 64
+</span><span class=lnt> 65
+</span><span class=lnt> 66
+</span><span class=lnt> 67
+</span><span class=lnt> 68
+</span><span class=lnt> 69
+</span><span class=lnt> 70
+</span><span class=lnt> 71
+</span><span class=lnt> 72
+</span><span class=lnt> 73
+</span><span class=lnt> 74
+</span><span class=lnt> 75
+</span><span class=lnt> 76
+</span><span class=lnt> 77
+</span><span class=lnt> 78
+</span><span class=lnt> 79
+</span><span class=lnt> 80
+</span><span class=lnt> 81
+</span><span class=lnt> 82
+</span><span class=lnt> 83
+</span><span class=lnt> 84
+</span><span class=lnt> 85
+</span><span class=lnt> 86
+</span><span class=lnt> 87
+</span><span class=lnt> 88
+</span><span class=lnt> 89
+</span><span class=lnt> 90
+</span><span class=lnt> 91
+</span><span class=lnt> 92
+</span><span class=lnt> 93
+</span><span class=lnt> 94
+</span><span class=lnt> 95
+</span><span class=lnt> 96
+</span><span class=lnt> 97
+</span><span class=lnt> 98
+</span><span class=lnt> 99
+</span><span class=lnt>100
+</span><span class=lnt>101
+</span><span class=lnt>102
+</span><span class=lnt>103
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;distSpecVersion&#34;</span><span class=p>:</span> <span class=s2>&#34;1.1.0&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;storage&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;rootDirectory&#34;</span><span class=p>:</span> <span class=s2>&#34;/var/lib/registry&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;dedupe&#34;</span><span class=p>:</span> <span class=kc>true</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;remoteCache&#34;</span><span class=p>:</span> <span class=kc>true</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;gc&#34;</span><span class=p>:</span> <span class=kc>true</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;gcDelay&#34;</span><span class=p>:</span> <span class=s2>&#34;1h&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;gcInterval&#34;</span><span class=p>:</span> <span class=s2>&#34;24h&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;subPaths&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;/project-a&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&#34;rootDirectory&#34;</span><span class=p>:</span> <span class=s2>&#34;/var/lib/registry/project-a&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&#34;dedupe&#34;</span><span class=p>:</span> <span class=kc>true</span>
+</span></span><span class=line><span class=cl>      <span class=p>},</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;/project-b&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&#34;rootDirectory&#34;</span><span class=p>:</span> <span class=s2>&#34;/var/lib/registry/project-b&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&#34;dedupe&#34;</span><span class=p>:</span> <span class=kc>true</span>
+</span></span><span class=line><span class=cl>      <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=p>},</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;http&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;address&#34;</span><span class=p>:</span> <span class=s2>&#34;0.0.0.0&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;port&#34;</span><span class=p>:</span> <span class=s2>&#34;5000&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;realm&#34;</span><span class=p>:</span> <span class=s2>&#34;Zot Registry&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;tls&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;cert&#34;</span><span class=p>:</span> <span class=s2>&#34;/etc/zot/certs/server.crt&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;key&#34;</span><span class=p>:</span> <span class=s2>&#34;/etc/zot/certs/server.key&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=p>},</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;log&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;level&#34;</span><span class=p>:</span> <span class=s2>&#34;info&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;output&#34;</span><span class=p>:</span> <span class=s2>&#34;/var/log/zot.log&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=p>},</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;auth&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;htpasswd&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;path&#34;</span><span class=p>:</span> <span class=s2>&#34;/etc/zot/htpasswd&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;failDelay&#34;</span><span class=p>:</span> <span class=mi>5</span>
+</span></span><span class=line><span class=cl>  <span class=p>},</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;accessControl&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;repositories&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;**&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&#34;policies&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>          <span class=p>{</span>
+</span></span><span class=line><span class=cl>            <span class=nt>&#34;users&#34;</span><span class=p>:</span> <span class=p>[</span><span class=s2>&#34;admin&#34;</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>            <span class=nt>&#34;actions&#34;</span><span class=p>:</span> <span class=p>[</span><span class=s2>&#34;read&#34;</span><span class=p>,</span> <span class=s2>&#34;create&#34;</span><span class=p>,</span> <span class=s2>&#34;update&#34;</span><span class=p>,</span> <span class=s2>&#34;delete&#34;</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>          <span class=p>},</span>
+</span></span><span class=line><span class=cl>          <span class=p>{</span>
+</span></span><span class=line><span class=cl>            <span class=nt>&#34;users&#34;</span><span class=p>:</span> <span class=p>[</span><span class=s2>&#34;developer&#34;</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>            <span class=nt>&#34;actions&#34;</span><span class=p>:</span> <span class=p>[</span><span class=s2>&#34;read&#34;</span><span class=p>,</span> <span class=s2>&#34;create&#34;</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>          <span class=p>},</span>
+</span></span><span class=line><span class=cl>          <span class=p>{</span>
+</span></span><span class=line><span class=cl>            <span class=nt>&#34;users&#34;</span><span class=p>:</span> <span class=p>[</span><span class=s2>&#34;viewer&#34;</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>            <span class=nt>&#34;actions&#34;</span><span class=p>:</span> <span class=p>[</span><span class=s2>&#34;read&#34;</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>          <span class=p>}</span>
+</span></span><span class=line><span class=cl>        <span class=p>],</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&#34;defaultPolicy&#34;</span><span class=p>:</span> <span class=p>[]</span>
+</span></span><span class=line><span class=cl>      <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;adminPolicy&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;users&#34;</span><span class=p>:</span> <span class=p>[</span><span class=s2>&#34;admin&#34;</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;actions&#34;</span><span class=p>:</span> <span class=p>[</span><span class=s2>&#34;read&#34;</span><span class=p>,</span> <span class=s2>&#34;create&#34;</span><span class=p>,</span> <span class=s2>&#34;update&#34;</span><span class=p>,</span> <span class=s2>&#34;delete&#34;</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=p>},</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;extensions&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;search&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;enable&#34;</span><span class=p>:</span> <span class=kc>true</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;cve&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&#34;updateInterval&#34;</span><span class=p>:</span> <span class=s2>&#34;24h&#34;</span>
+</span></span><span class=line><span class=cl>      <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;scrub&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;enable&#34;</span><span class=p>:</span> <span class=kc>true</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;interval&#34;</span><span class=p>:</span> <span class=s2>&#34;24h&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;ui&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;enable&#34;</span><span class=p>:</span> <span class=kc>true</span>
+</span></span><span class=line><span class=cl>    <span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;sync&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;credentialsFile&#34;</span><span class=p>:</span> <span class=s2>&#34;/etc/zot/sync-credentials.json&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;registries&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>        <span class=p>{</span>
+</span></span><span class=line><span class=cl>          <span class=nt>&#34;urls&#34;</span><span class=p>:</span> <span class=p>[</span><span class=s2>&#34;https://registry-1.docker.io&#34;</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>          <span class=nt>&#34;pollInterval&#34;</span><span class=p>:</span> <span class=s2>&#34;6h&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>          <span class=nt>&#34;content&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>            <span class=p>{</span>
+</span></span><span class=line><span class=cl>              <span class=nt>&#34;prefix&#34;</span><span class=p>:</span> <span class=s2>&#34;library/nginx&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>              <span class=nt>&#34;tags&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>                <span class=nt>&#34;semver&#34;</span><span class=p>:</span> <span class=kc>true</span>
+</span></span><span class=line><span class=cl>              <span class=p>}</span>
+</span></span><span class=line><span class=cl>            <span class=p>},</span>
+</span></span><span class=line><span class=cl>            <span class=p>{</span>
+</span></span><span class=line><span class=cl>              <span class=nt>&#34;prefix&#34;</span><span class=p>:</span> <span class=s2>&#34;library/alpine&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>              <span class=nt>&#34;tags&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>                <span class=nt>&#34;regex&#34;</span><span class=p>:</span> <span class=s2>&#34;3\\.\\d+\\.\\d+&#34;</span>
+</span></span><span class=line><span class=cl>              <span class=p>}</span>
+</span></span><span class=line><span class=cl>            <span class=p>}</span>
+</span></span><span class=line><span class=cl>          <span class=p>]</span>
+</span></span><span class=line><span class=cl>        <span class=p>}</span>
+</span></span><span class=line><span class=cl>      <span class=p>]</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>Set up and start Zot:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>mkdir -p /opt/zot/<span class=o>{</span>data,config,logs<span class=o>}</span> /opt/zot/certs
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Generate TLS certificates</span>
+</span></span><span class=line><span class=cl>openssl req -x509 -newkey rsa:4096 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -keyout /opt/zot/certs/server.key <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -out /opt/zot/certs/server.crt <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -days <span class=m>365</span> -nodes <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -subj <span class=s2>&#34;/CN=registry.example.com&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Create htpasswd file</span>
+</span></span><span class=line><span class=cl>apt-get install -y apache2-utils
+</span></span><span class=line><span class=cl>htpasswd -Bbn admin <span class=s2>&#34;AdminPass2026!&#34;</span> &gt; /opt/zot/config/htpasswd
+</span></span><span class=line><span class=cl>htpasswd -Bbn developer <span class=s2>&#34;DevPass2026!&#34;</span> &gt;&gt; /opt/zot/config/htpasswd
+</span></span><span class=line><span class=cl>htpasswd -Bbn viewer <span class=s2>&#34;ViewPass2026!&#34;</span> &gt;&gt; /opt/zot/config/htpasswd
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Create sync credentials (if mirroring Docker Hub)</span>
+</span></span><span class=line><span class=cl>cat &gt; /opt/zot/config/sync-credentials.json <span class=s>&lt;&lt; &#39;EOF&#39;
+</span></span></span><span class=line><span class=cl><span class=s>{
+</span></span></span><span class=line><span class=cl><span class=s>  &#34;registries&#34;: [
+</span></span></span><span class=line><span class=cl><span class=s>    {
+</span></span></span><span class=line><span class=cl><span class=s>      &#34;url&#34;: &#34;https://registry-1.docker.io&#34;,
+</span></span></span><span class=line><span class=cl><span class=s>      &#34;username&#34;: &#34;your-dockerhub-user&#34;,
+</span></span></span><span class=line><span class=cl><span class=s>      &#34;password&#34;: &#34;your-dockerhub-password&#34;
+</span></span></span><span class=line><span class=cl><span class=s>    }
+</span></span></span><span class=line><span class=cl><span class=s>  ]
+</span></span></span><span class=line><span class=cl><span class=s>}
+</span></span></span><span class=line><span class=cl><span class=s>EOF</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Start Zot</span>
+</span></span><span class=line><span class=cl>docker compose -f docker-compose.zot.yml up -d
+</span></span></code></pre></td></tr></table></div></div><p>Access the web UI at <code>https://registry.example.com:5000</code> — Zot&rsquo;s built-in interface lets you browse repositories, view image tags, inspect manifests, and see CVE scan results without any additional setup.</p><h3 id=built-in-image-scanning>Built-in Image Scanning</h3><p>Zot&rsquo;s standout feature is its integrated Trivy scanner. Unlike Harbor (which requires a separate Trivy container), Zot runs scanning as a built-in extension. It automatically scans every pushed image and surfaces vulnerabilities directly in the web UI and API:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Check scan results via API</span>
+</span></span><span class=line><span class=cl>curl -s -u admin:AdminPass2026! <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  https://registry.example.com:5000/v2/_zot/ext/monitor <span class=p>|</span> jq .
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># View CVE details for a specific image</span>
+</span></span><span class=line><span class=cl>curl -s -u admin:AdminPass2026! <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  <span class=s2>&#34;https://registry.example.com:5000/v2/myapp/manifests/latest&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -H <span class=s2>&#34;Accept: application/vnd.oci.image.manifest.v1+json&#34;</span> <span class=p>|</span> jq .
+</span></span></code></pre></td></tr></table></div></div><h2 id=detailed-feature-breakdown>Detailed Feature Breakdown</h2><h3 id=security>Security</h3><table><thead><tr><th>Aspect</th><th>Harbor</th><th>Distribution</th><th>Zot</th></tr></thead><tbody><tr><td><strong>Authentication</strong></td><td>LDAP, AD, OIDC, DB</td><td>htpasswd, token</td><td>htpasswd, OIDC, LDAP</td></tr><tr><td><strong>Authorization</strong></td><td>RBAC per project</td><td>Basic</td><td>Policy-based ACL</td></tr><tr><td><strong>Image Scanning</strong></td><td>Trivy, Clair (separate)</td><td>None built-in</td><td>Trivy (built-in)</td></tr><tr><td><strong>Content Trust</strong></td><td>Notary v1/v2</td><td>Not supported</td><td>Cosign, Notation</td></tr><tr><td><strong>Audit Logging</strong></td><td>✅ Full audit trail</td><td>❌</td><td>✅ Basic</td></tr><tr><td><strong>TLS</strong></td><td>✅ Mutual TLS support</td><td>✅</td><td>✅</td></tr><tr><td><strong>SBOM Generation</strong></td><td>✅ Via Trivy</td><td>❌</td><td>✅ Built-in</td></tr></tbody></table><h3 id=developer-experience>Developer Experience</h3><table><thead><tr><th>Aspect</th><th>Harbor</th><th>Distribution</th><th>Zot</th></tr></thead><tbody><tr><td><strong>Web UI</strong></td><td>Full project management</td><td>None</td><td>Browse, search, CVE view</td></tr><tr><td><strong>API</strong></td><td>REST + Swagger docs</td><td>REST</td><td>REST + OpenAPI</td></tr><tr><td><strong>CLI</strong></td><td><code>harbor-cli</code> (community)</td><td><code>reg</code> (third-party)</td><td><code>zot</code> (limited)</td></tr><tr><td><strong>Helm Support</strong></td><td>✅ Native chart repo</td><td>❌</td><td>❌</td></tr><tr><td><strong>Proxy Cache</strong></td><td>✅ Multi-source</td><td>Via mirror config</td><td>✅ Sync extension</td></tr><tr><td><strong>Replication</strong></td><td>✅ Push/Pull to remote</td><td>❌</td><td>✅ Pull from upstream</td></tr></tbody></table><h3 id=operational-requirements>Operational Requirements</h3><table><thead><tr><th>Aspect</th><th>Harbor</th><th>Distribution</th><th>Zot</th></tr></thead><tbody><tr><td><strong>Min RAM</strong></td><td>~2 GB</td><td>~64 MB</td><td>~128 MB</td></tr><tr><td><strong>Containers</strong></td><td>6-8 services</td><td>1 container</td><td>1 container</td></tr><tr><td><strong>External DB</strong></td><td>PostgreSQL required</td><td>None</td><td>None</td></tr><tr><td><strong>External Cache</strong></td><td>Redis required</td><td>None</td><td>None</td></tr><tr><td><strong>Disk for 100 images</strong></td><td>~5 GB + DB overhead</td><td>~4 GB</td><td>~4 GB</td></tr><tr><td><strong>Upgrade complexity</strong></td><td>Multi-service upgrade</td><td>Single binary swap</td><td>Single binary swap</td></tr><tr><td><strong>Backup</strong></td><td>DB + registry storage</td><td>Registry storage only</td><td>Registry storage only</td></tr></tbody></table><h2 id=choosing-the-right-registry>Choosing the Right Registry</h2><p>The decision comes down to your team size, security requirements, and operational tolerance:</p><p><strong>Pick Harbor if</strong> you&rsquo;re running a team or organization that needs the full platform experience — user management, project-scoped permissions, vulnerability scanning, replication across sites, and Helm chart hosting. The operational overhead of managing 6-8 containers is justified by the feature set. Harbor is what you run when Docker Hub isn&rsquo;t enough but you still want everything in one place.</p><p><strong>Pick CNCF Distribution if</strong> you want the absolute simplest registry possible. It&rsquo;s a single container, a config file, and a data directory. No database, no Redis, no UI, no scanning. Just <code>docker push</code> and <code>docker pull</code>. This is perfect for homelab users who need a private registry for personal projects, CI pipelines that build and consume images on the same machine, or embedded use cases where you ship a registry as part of a larger product.</p><p><strong>Pick Zot if</strong> you want a middle ground — single-binary simplicity with modern security features built in. Zot&rsquo;s integrated Trivy scanning, Cosign signature verification, and fine-grained access control give you enterprise-grade capabilities without Harbor&rsquo;s operational complexity. The built-in web UI and sync extension (for mirroring upstream registries) make it a compelling choice for small-to-medium teams that care about supply chain security.</p><h2 id=practical-recommendations>Practical Recommendations</h2><p>For a <strong>homelab with 1-2 users</strong>: Start with CNCF Distribution. It takes 5 minutes to set up, uses negligible resources, and does exactly what you need. Add Zot later if you want scanning and a web UI.</p><p>For a <strong>small team (5-20 people)</strong>: Zot hits the sweet spot. You get vulnerability scanning, role-based access, a web UI, and sync capabilities — all in a single container with no database to manage.</p><p>For a <strong>larger team or organization</strong>: Harbor is worth the operational investment. The project-based RBAC, replication, Helm support, and audit logging solve real problems that Zot and Distribution simply don&rsquo;t address.</p><p>No matter which you choose, running your own container registry in 2026 means faster builds, zero rate limits, full data sovereignty, and no surprises on your monthly cloud bill. The setup is straightforward, the maintenance is minimal, and the benefits compound with every image you push.</p></div><div id=frame style=width:100%;margin:auto;position:relative;z-index:99998><iframe data-aa=2433958 src='//acceptable.a-ads.com/2433958/?size=Adaptive' style=border:0;padding:0;width:70%;height:auto;overflow:hidden;display:block;margin:auto></iframe></div></article></main><footer class=site-footer><p>Built with <a href=https://gohugo.io>Hugo</a> · <a href=/openswap-guide/index.xml>RSS</a> · <a href=https://github.com/hopkdj>GitHub</a></p><p style=margin-top:8px>&copy; 2026 OpenSwap Guide. All rights reserved.</p></footer></body></html>
