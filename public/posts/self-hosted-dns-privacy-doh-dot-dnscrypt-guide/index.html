@@ -1,0 +1,480 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Complete Guide to Self-Hosted DNS Privacy (DoH/DoT/DNSCrypt) 2026 | OpenSwap Guide</title>
+<meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, and local AI deployment."><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/openswap-guide/css/main.min.777dc111b5207bf5336e5799477da0b31fb9080306bf98a82d6eceb979cf9737.css><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://hopkdj.github.io/openswap-guide/ class=logo><div class=logo-icon>H</div>OpenSwap Guide</a><nav><ul class=nav-links><li><a href=/openswap-guide/>Home</a></li><li><a href=/openswap-guide/tags/comparison/>Comparisons</a></li><li><a href=/openswap-guide/tags/guide/>Guides</a></li><li><a href=/openswap-guide/tags/ai/>Local AI</a></li><li><a href=/openswap-guide/index.xml class=nav-rss>Subscribe RSS</a></li></ul></nav></div></header><main><article class=post-single><a href=https://hopkdj.github.io/openswap-guide/ class=back-link>&larr; Back to posts</a><header class=post-single-header><div class=post-single-meta><span class="tag tag-purple">comparison</span>
+<span class="tag tag-green">guide</span>
+<span class="tag tag-blue">self-hosted</span>
+<span>·</span>
+<span>April 13, 2026</span>
+<span>·</span>
+<span>10 min read</span></div><h1 class=post-single-title>Complete Guide to Self-Hosted DNS Privacy (DoH/DoT/DNSCrypt) 2026</h1></header><div class=post-single-content><h2 id=why-encrypt-your-dns-traffic>Why Encrypt Your DNS Traffic?</h2><p>Every time you visit a website, your device performs a DNS lookup to translate the domain name into an IP address. By default, these lookups travel in <strong>plain text</strong> — anyone on your network (your ISP, a coffee shop Wi-Fi operator, or a malicious actor) can see every site you visit, block access to specific domains, or even redirect you to fraudulent sites through DNS spoofing.</p><p>Encrypting DNS traffic solves all three problems:</p><ul><li><strong>Privacy</strong>: Your ISP and network observers can no longer see which domains you&rsquo;re looking up. They only see encrypted connections to your DNS resolver.</li><li><strong>Integrity</strong>: DNS-over-HTTPS (DoH), DNS-over-TLS (DoT), and DNSCrypt use cryptographic verification to ensure responses haven&rsquo;t been tampered with in transit.</li><li><strong>Censorship resistance</strong>: Encrypted DNS bypasses many forms of DNS-based blocking and filtering, giving you control over which resolver you trust.</li></ul><p>Self-hosting your own encrypted DNS proxy gives you the best of both worlds: you pick the upstream resolvers you trust, you control the caching and filtering behavior, and every device on your network benefits from encrypted lookups without needing individual configuration.</p><h2 id=three-protocols-three-tools>Three Protocols, Three Tools</h2><p>Three protocols dominate encrypted DNS, each with a leading open-source implementation:</p><table><thead><tr><th>Protocol</th><th>How It Works</th><th>Leading Tool</th><th>Port</th></tr></thead><tbody><tr><td><strong>DNS-over-HTTPS (DoH)</strong></td><td>DNS queries wrapped in HTTPS requests</td><td><code>cloudflared</code></td><td>443</td></tr><tr><td><strong>DNS-over-TLS (DoT)</strong></td><td>DNS queries over a dedicated TLS connection</td><td><code>stubby</code></td><td>853</td></tr><tr><td><strong>DNSCrypt v2</strong></td><td>DNS queries encrypted with NaCl cryptography</td><td><code>dnscrypt-proxy</code></td><td>443</td></tr></tbody></table><h3 id=dns-over-https-doh>DNS-over-HTTPS (DoH)</h3><p>DoH sends DNS queries as standard HTTPS requests to a resolver endpoint. The biggest advantage is that DoH traffic is <strong>indistinguishable from regular HTTPS</strong> — firewalls and deep packet inspection systems cannot tell it apart from browsing a website. Cloudflare, Google, and Quad9 all operate public DoH resolvers.</p><h3 id=dns-over-tls-dot>DNS-over-TLS (DoT)</h3><p>DoT uses a dedicated port (853) with TLS encryption. It&rsquo;s simpler to implement than DoH since it doesn&rsquo;t need to speak HTTP, but the dedicated port makes it easy for network administrators to block. Most modern operating systems support DoT natively.</p><h3 id=dnscrypt-v2>DNSCrypt v2</h3><p>DNSCrypt is a protocol designed specifically for DNS encryption. Unlike DoH and DoT, DNSCrypt provides <strong>authenticated encryption</strong> — you cryptographically verify the identity of the resolver, not just the transport. The <code>dnscrypt-proxy</code> tool supports multiple resolvers, automatic fallback, and built-in filtering.</p><h2 id=setting-up-cloudflared-doh>Setting Up cloudflared (DoH)</h2><p>Cloudflared is Cloudflare&rsquo;s official DoH proxy. It listens on a local port, forwards queries to Cloudflare&rsquo;s DoH endpoint over HTTPS, and caches responses.</p><h3 id=docker-compose-setup>Docker Compose Setup</h3><p>Create a directory for your DoH proxy:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>mkdir -p ~/dns-proxy/cloudflared
+</span></span><span class=line><span class=cl><span class=nb>cd</span> ~/dns-proxy/cloudflared
+</span></span></code></pre></td></tr></table></div></div><p>Create <code>docker-compose.yml</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>cloudflared</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>cloudflare/cloudflared:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>cloudflared-doh</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=l>proxy-dns</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;5053:5053/udp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;5053:5053/tcp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>TUNNEL_DNS_UPSTREAM=https://cloudflare-dns.com/dns-query,https://dns.quad9.net/dns-query</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>TUNNEL_DNS_PORT=5053</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>TUNNEL_DNS_METRICS_PORT=49312</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>logging</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>json-file</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>options</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>max-size</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;1m&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>max-file</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3&#34;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Start the service:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker compose up -d
+</span></span></code></pre></td></tr></table></div></div><p>Verify it&rsquo;s working:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>dig @127.0.0.1 -p <span class=m>5053</span> example.com +short
+</span></span></code></pre></td></tr></table></div></div><p>You should see an IP address returned. To confirm encryption is working, check the metrics endpoint:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>curl -s http://127.0.0.1:49312/metrics <span class=p>|</span> grep cloudflared_dns_upstream
+</span></span></code></pre></td></tr></table></div></div><h3 id=multiple-upstream-resolvers>Multiple Upstream Resolvers</h3><p>For resilience, configure multiple upstream DoH providers. cloudflared will query all configured resolvers and use the fastest response:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=l>TUNNEL_DNS_UPSTREAM=https://cloudflare-dns.com/dns-query,https://dns.quad9.net/dns-query,https://dns.google/resolve,https://doh.dns.sb/dns-query</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=making-it-system-wide>Making It System-Wide</h3><p>Configure your system to use the local proxy as its DNS resolver. Edit <code>/etc/systemd/resolved.conf</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=k>[Resolve]</span>
+</span></span><span class=line><span class=cl><span class=na>DNS</span><span class=o>=</span><span class=s>127.0.0.1</span>
+</span></span><span class=line><span class=cl><span class=na>Domains</span><span class=o>=</span><span class=s>~.</span>
+</span></span></code></pre></td></tr></table></div></div><p>Then restart the resolver:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>systemctl restart systemd-resolved
+</span></span></code></pre></td></tr></table></div></div><h2 id=setting-up-stubby-dot>Setting Up stubby (DoT)</h2><p>Stubby is developed by the GetDNS project and is the reference implementation for DNS-over-TLS. It&rsquo;s lightweight, supports strict TLS verification, and can round-robin across multiple upstream resolvers.</p><h3 id=docker-compose-setup-1>Docker Compose Setup</h3><p>Create the configuration directory:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>mkdir -p ~/dns-proxy/stubby
+</span></span><span class=line><span class=cl><span class=nb>cd</span> ~/dns-proxy/stubby
+</span></span></code></pre></td></tr></table></div></div><p>Create <code>stubby.yml</code> — the main configuration file:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>resolution_type</span><span class=p>:</span><span class=w> </span><span class=l>GETDNS_RESOLUTION_STUB</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>round_robin_upstreams</span><span class=p>:</span><span class=w> </span><span class=m>1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>appdata_dir</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;/var/cache/stubby&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>tls_authentication</span><span class=p>:</span><span class=w> </span><span class=l>GETDNS_AUTHENTICATION_REQUIRED</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>tls_query_padding_blocksize</span><span class=p>:</span><span class=w> </span><span class=m>128</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>edns_client_subnet</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>opaque_bit</span><span class=p>:</span><span class=w> </span><span class=m>0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>address</span><span class=p>:</span><span class=w> </span><span class=m>0.0.0.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>upstream_recursive_servers</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># Cloudflare DoT</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=nt>address_data</span><span class=p>:</span><span class=w> </span><span class=m>1.1.1.1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>tls_auth_name</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;cloudflare-dns.com&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=nt>address_data</span><span class=p>:</span><span class=w> </span><span class=m>1.0.0.1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>tls_auth_name</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;cloudflare-dns.com&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># Quad9 DoT</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=nt>address_data</span><span class=p>:</span><span class=w> </span><span class=m>9.9.9.9</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>tls_auth_name</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;dns.quad9.net&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=nt>address_data</span><span class=p>:</span><span class=w> </span><span class=m>149.112.112.112</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>tls_auth_name</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;dns.quad9.net&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># Google DoT</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=nt>address_data</span><span class=p>:</span><span class=w> </span><span class=m>8.8.8.8</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>tls_auth_name</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;dns.google&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=nt>address_data</span><span class=p>:</span><span class=w> </span><span class=m>8.8.4.4</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>tls_auth_name</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;dns.google&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>listen_addresses</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=m>127.0.0.1</span>@<span class=m>5300</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=m>0</span><span class=p>::</span><span class=m>1</span>@<span class=m>5300</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Key configuration notes:</p><ul><li><code>round_robin_upstreams: 1</code> distributes queries evenly across resolvers for load balancing</li><li><code>tls_query_padding_blocksize: 128</code> pads queries to obscure their exact size, adding a layer of privacy</li><li><code>tls_auth_name</code> ensures the TLS certificate matches the expected hostname, preventing man-in-the-middle attacks</li></ul><p>Create <code>docker-compose.yml</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>stubby</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>getdnsapi/stubby:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>stubby-dot</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./stubby.yml:/etc/stubby/stubby.yml:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;5300:5300/udp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;5300:5300/tcp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>cap_drop</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>ALL</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>cap_add</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>NET_BIND_SERVICE</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>security_opt</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=kc>no</span>-<span class=l>new-privileges:true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>logging</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>json-file</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>options</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>max-size</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;1m&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>max-file</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3&#34;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Start and test:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker compose up -d
+</span></span><span class=line><span class=cl>dig @127.0.0.1 -p <span class=m>5300</span> example.com +short
+</span></span></code></pre></td></tr></table></div></div><h3 id=verifying-tls-is-active>Verifying TLS Is Active</h3><p>To confirm queries are actually encrypted, use <code>stubby</code>&rsquo;s built-in status check:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Get container ID</span>
+</span></span><span class=line><span class=cl><span class=nv>CONTAINER</span><span class=o>=</span><span class=k>$(</span>docker ps -q -f <span class=nv>name</span><span class=o>=</span>stubby-dot<span class=k>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Check stubby logs for TLS connections</span>
+</span></span><span class=line><span class=cl>docker logs <span class=nv>$CONTAINER</span> 2&gt;<span class=p>&amp;</span><span class=m>1</span> <span class=p>|</span> grep -i <span class=s2>&#34;tls&#34;</span> <span class=p>|</span> tail -5
+</span></span></code></pre></td></tr></table></div></div><p>You should see lines confirming TLS handshakes with your configured upstream servers.</p><h2 id=setting-up-dnscrypt-proxy>Setting Up dnscrypt-proxy</h2><p><code>dnscrypt-proxy</code> is the most feature-rich option. It supports DNSCrypt v2, DoH, and DoT simultaneously, with built-in caching, load balancing, filtering, and cloaking.</p><h3 id=docker-compose-setup-2>Docker Compose Setup</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>mkdir -p ~/dns-proxy/dnscrypt
+</span></span><span class=line><span class=cl><span class=nb>cd</span> ~/dns-proxy/dnscrypt
+</span></span></code></pre></td></tr></table></div></div><p>Create <code>dnscrypt-proxy.toml</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-toml data-lang=toml><span class=line><span class=cl><span class=nx>listen_addresses</span> <span class=p>=</span> <span class=p>[</span><span class=s1>&#39;0.0.0.0:5400&#39;</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c># Use multiple strategies for resilience</span>
+</span></span><span class=line><span class=cl><span class=nx>server_names</span> <span class=p>=</span> <span class=p>[</span><span class=s1>&#39;cloudflare&#39;</span><span class=p>,</span> <span class=s1>&#39;quad9&#39;</span><span class=p>,</span> <span class=s1>&#39;google&#39;</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c># Minimum number of servers required</span>
+</span></span><span class=line><span class=cl><span class=nx>require_dnssec</span> <span class=p>=</span> <span class=kc>true</span>
+</span></span><span class=line><span class=cl><span class=nx>require_nolog</span> <span class=p>=</span> <span class=kc>true</span>
+</span></span><span class=line><span class=cl><span class=nx>require_nofilter</span> <span class=p>=</span> <span class=kc>true</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c># Performance</span>
+</span></span><span class=line><span class=cl><span class=nx>cache</span> <span class=p>=</span> <span class=kc>true</span>
+</span></span><span class=line><span class=cl><span class=nx>cache_size</span> <span class=p>=</span> <span class=mi>4096</span>
+</span></span><span class=line><span class=cl><span class=nx>cache_min_ttl</span> <span class=p>=</span> <span class=mi>60</span>
+</span></span><span class=line><span class=cl><span class=nx>cache_max_ttl</span> <span class=p>=</span> <span class=mi>86400</span>
+</span></span><span class=line><span class=cl><span class=nx>cache_neg_min_ttl</span> <span class=p>=</span> <span class=mi>60</span>
+</span></span><span class=line><span class=cl><span class=nx>cache_neg_max_ttl</span> <span class=p>=</span> <span class=mi>600</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c># Privacy: hide client subnet from upstream</span>
+</span></span><span class=line><span class=cl><span class=nx>dnscrypt_ephemeral_keys</span> <span class=p>=</span> <span class=kc>true</span>
+</span></span><span class=line><span class=cl><span class=nx>tls_disable_session_tickets</span> <span class=p>=</span> <span class=kc>true</span>
+</span></span><span class=line><span class=cl><span class=nx>ignore_system_dns</span> <span class=p>=</span> <span class=kc>true</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c># Query logging (optional, set to false for max privacy)</span>
+</span></span><span class=line><span class=cl><span class=p>[</span><span class=nx>query_log</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>  <span class=nx>file</span> <span class=p>=</span> <span class=s1>&#39;/var/log/dnscrypt-proxy/query.log&#39;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=p>[</span><span class=nx>nx_log</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>  <span class=nx>file</span> <span class=p>=</span> <span class=s1>&#39;/var/log/dnscrypt-proxy/nx.log&#39;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=p>[</span><span class=nx>log</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>  <span class=nx>level</span> <span class=p>=</span> <span class=mi>2</span>
+</span></span><span class=line><span class=cl>  <span class=nx>file</span> <span class=p>=</span> <span class=s1>&#39;/var/log/dnscrypt-proxy/dnscrypt-proxy.log&#39;</span>
+</span></span></code></pre></td></tr></table></div></div><p>Create <code>docker-compose.yml</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>dnscrypt-proxy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>klutchell/dnscrypt-proxy:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>dnscrypt-proxy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./dnscrypt-proxy.toml:/etc/dnscrypt-proxy/dnscrypt-proxy.toml:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;5400:5400/udp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;5400:5400/tcp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>logging</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>json-file</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>options</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>max-size</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;1m&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>max-file</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3&#34;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Start and test:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker compose up -d
+</span></span><span class=line><span class=cl>dig @127.0.0.1 -p <span class=m>5400</span> example.com +short
+</span></span></code></pre></td></tr></table></div></div><h3 id=using-the-built-in-blocklist>Using the Built-in Blocklist</h3><p>One of dnscrypt-proxy&rsquo;s strongest features is its built-in ad and malware blocking. Add this to your configuration:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-toml data-lang=toml><span class=line><span class=cl><span class=p>[</span><span class=nx>blocked_names</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>  <span class=nx>blocked_names_file</span> <span class=p>=</span> <span class=s1>&#39;/etc/dnscrypt-proxy/blocked-names.txt&#39;</span>
+</span></span><span class=line><span class=cl>  <span class=nx>log_file</span> <span class=p>=</span> <span class=s1>&#39;/var/log/dnscrypt-proxy/blocked.log&#39;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=p>[</span><span class=nx>sources</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>  <span class=p>[</span><span class=nx>sources</span><span class=p>.</span><span class=s1>&#39;public-resolvers&#39;</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>    <span class=nx>urls</span> <span class=p>=</span> <span class=p>[</span><span class=s1>&#39;https://download.dnscrypt.info/resolvers-list/v2/public-resolvers.md&#39;</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>    <span class=nx>cache_file</span> <span class=p>=</span> <span class=s1>&#39;/etc/dnscrypt-proxy/public-resolvers.md&#39;</span>
+</span></span><span class=line><span class=cl>    <span class=nx>minisign_key</span> <span class=p>=</span> <span class=s1>&#39;RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaL7ikOB&#39;</span>
+</span></span><span class=line><span class=cl>    <span class=nx>refresh_delay</span> <span class=p>=</span> <span class=mi>72</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=p>[</span><span class=nx>sources</span><span class=p>.</span><span class=s1>&#39;relays&#39;</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>    <span class=nx>urls</span> <span class=p>=</span> <span class=p>[</span><span class=s1>&#39;https://download.dnscrypt.info/resolvers-list/v2/relays.md&#39;</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>    <span class=nx>cache_file</span> <span class=p>=</span> <span class=s1>&#39;/etc/dnscrypt-proxy/relays.md&#39;</span>
+</span></span><span class=line><span class=cl>    <span class=nx>minisign_key</span> <span class=p>=</span> <span class=s1>&#39;RWQf6LRCGA9i53mlYecO4IzT51TGPpvWucNSCh1CBM0QTaL7ikOB&#39;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=p>[</span><span class=nx>sources</span><span class=p>.</span><span class=s1>&#39;oisd-basic&#39;</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>    <span class=nx>urls</span> <span class=p>=</span> <span class=p>[</span><span class=s1>&#39;https://big.oisd.nl/domainswild&#39;</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>    <span class=nx>format</span> <span class=p>=</span> <span class=s1>&#39;domains&#39;</span>
+</span></span><span class=line><span class=cl>    <span class=nx>cache_file</span> <span class=p>=</span> <span class=s1>&#39;/etc/dnscrypt-proxy/oisd-basic.txt&#39;</span>
+</span></span><span class=line><span class=cl>    <span class=nx>refresh_delay</span> <span class=p>=</span> <span class=mi>72</span>
+</span></span><span class=line><span class=cl>    <span class=nx>prefix</span> <span class=p>=</span> <span class=s1>&#39;ads-&#39;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=p>[</span><span class=nx>sources</span><span class=p>.</span><span class=s1>&#39;malware-domain-list&#39;</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>    <span class=nx>urls</span> <span class=p>=</span> <span class=p>[</span><span class=s1>&#39;https://malware.gitlab.io/-/raw/main/output/domains-md.txt&#39;</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>    <span class=nx>format</span> <span class=p>=</span> <span class=s1>&#39;domains&#39;</span>
+</span></span><span class=line><span class=cl>    <span class=nx>cache_file</span> <span class=p>=</span> <span class=s1>&#39;/etc/dnscrypt-proxy/malware.txt&#39;</span>
+</span></span><span class=line><span class=cl>    <span class=nx>refresh_delay</span> <span class=p>=</span> <span class=mi>72</span>
+</span></span><span class=line><span class=cl>    <span class=nx>prefix</span> <span class=p>=</span> <span class=s1>&#39;malware-&#39;</span>
+</span></span></code></pre></td></tr></table></div></div><p>This automatically downloads and maintains blocklists from OISD (one of the best community-maintained blocklists) and a malware domain list, refreshing every 72 hours.</p><h2 id=comparison-which-tool-should-you-use>Comparison: Which Tool Should You Use?</h2><table><thead><tr><th>Feature</th><th>cloudflared</th><th>stubby</th><th>dnscrypt-proxy</th></tr></thead><tbody><tr><td><strong>Protocols</strong></td><td>DoH only</td><td>DoT only</td><td>DNSCrypt v2, DoH, DoT</td></tr><tr><td><strong>Ease of Setup</strong></td><td>Easiest</td><td>Easy</td><td>Moderate</td></tr><tr><td><strong>Multiple Upstreams</strong></td><td>Yes (fastest wins)</td><td>Yes (round-robin)</td><td>Yes (LB + fallback)</td></tr><tr><td><strong>Built-in Caching</strong></td><td>Basic</td><td>No (relies on system)</td><td>Advanced (TTL control)</td></tr><tr><td><strong>Ad Blocking</strong></td><td>No</td><td>No</td><td>Yes (blocklist support)</td></tr><tr><td><strong>Cloaking</strong></td><td>No</td><td>No</td><td>Yes</td></tr><tr><td><strong>IPv6</strong></td><td>Yes</td><td>Yes</td><td>Yes</td></tr><tr><td><strong>Query Logging</strong></td><td>Metrics only</td><td>Logs</td><td>Full query/NX logs</td></tr><tr><td><strong>Binary Size</strong></td><td>~30 MB</td><td>~2 MB</td><td>~8 MB</td></tr><tr><td><strong>Memory Usage</strong></td><td>~40 MB</td><td>~5 MB</td><td>~15 MB</td></tr><tr><td><strong>Best For</strong></td><td>Quick DoH setup</td><td>Minimal DoT</td><td>Full-featured proxy</td></tr></tbody></table><h3 id=quick-decision-guide>Quick Decision Guide</h3><ul><li><p><strong>Choose cloudflared</strong> if you want the simplest possible DoH setup and already trust Cloudflare&rsquo;s infrastructure. It&rsquo;s essentially a &ldquo;set and forget&rdquo; solution.</p></li><li><p><strong>Choose stubby</strong> if you want a minimal, purpose-built DoT proxy with the smallest footprint. It&rsquo;s ideal for resource-constrained environments like a Raspberry Pi running alongside other services.</p></li><li><p><strong>Choose dnscrypt-proxy</strong> if you want the most features — protocol flexibility, caching, ad blocking, cloaking, and detailed logging. It&rsquo;s the Swiss Army knife of encrypted DNS.</p></li></ul><h2 id=integrating-with-pi-hole-or-adguard-home>Integrating with Pi-hole or AdGuard Home</h2><p>The most powerful setup combines encrypted DNS upstream with a local DNS filter. Here&rsquo;s how to chain them together.</p><h3 id=with-pi-hole>With Pi-hole</h3><p>Edit <code>/etc/pihole/setupVars.conf</code> and set the upstream DNS to your encrypted proxy:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=nv>PIHOLE_DNS_1</span><span class=o>=</span>127.0.0.1#5400
+</span></span><span class=line><span class=cl><span class=nv>PIHOLE_DNS_2</span><span class=o>=</span>127.0.0.1#5053
+</span></span></code></pre></td></tr></table></div></div><p>Then restart Pi-hole:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>pihole restartdns
+</span></span></code></pre></td></tr></table></div></div><p>In this chain: Pi-hole handles ad blocking and local DNS → forwards to dnscrypt-proxy/cloudflared → which encrypts the query to the upstream resolver.</p><h3 id=with-adguard-home>With AdGuard Home</h3><p>In the AdGuard Home web interface, go to <strong>Settings → DNS Settings</strong> and set your upstream servers:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>127.0.0.1:5400
+</span></span><span class=line><span class=cl>127.0.0.1:5053
+</span></span></code></pre></td></tr></table></div></div><p>Or edit <code>AdGuardHome.yaml</code> directly:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>dns</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>upstream_dns</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=m>127.0.0.1</span><span class=p>:</span><span class=m>5400</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=m>127.0.0.1</span><span class=p>:</span><span class=m>5053</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>bootstrap_dns</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=m>1.1.1.1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=m>9.9.9.9</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>This gives you the full stack: client → AdGuard Home (filtering) → encrypted proxy (DoH/DoT/DNSCrypt) → upstream resolver.</p><h3 id=with-a-single-docker-compose>With a Single Docker Compose</h3><p>You can run the entire stack in one compose file:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>adguard-home</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>adguard/adguardhome:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>adguard-home</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;53:53/udp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;53:53/tcp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;3000:3000/tcp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./adguard/work:/opt/adguardhome/work</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./adguard/conf:/opt/adguardhome/conf</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>dnscrypt</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>dnscrypt-proxy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>klutchell/dnscrypt-proxy:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>dnscrypt-proxy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./dnscrypt/dnscrypt-proxy.toml:/etc/dnscrypt-proxy/dnscrypt-proxy.toml:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>expose</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;5400/udp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;5400/tcp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>default</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>bridge</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Configure AdGuard Home&rsquo;s upstream to <code>dnscrypt-proxy:5400</code> using Docker&rsquo;s internal DNS resolution.</p><h2 id=choosing-trustworthy-upstream-resolvers>Choosing Trustworthy Upstream Resolvers</h2><p>Encryption protects your queries in transit, but the upstream resolver can still see them. Choose resolvers based on their privacy policies:</p><table><thead><tr><th>Resolver</th><th>Protocol</th><th>No-Log Policy</th><th>Location</th></tr></thead><tbody><tr><td><strong>Cloudflare (1.1.1.1)</strong></td><td>DoH, DoT</td><td>Yes (audited by KPMG)</td><td>Global</td></tr><tr><td><strong>Quad9 (9.9.9.9)</strong></td><td>DoH, DoT, DNSCrypt</td><td>Yes</td><td>Switzerland</td></tr><tr><td><strong>Google (8.8.8.8)</strong></td><td>DoH, DoT</td><td>Limited logging</td><td>Global</td></tr><tr><td><strong>DNS.SB</strong></td><td>DoH, DoT</td><td>Yes</td><td>Iceland</td></tr><tr><td><strong>NextDNS</strong></td><td>DoH, DoT</td><td>Configurable</td><td>Global (customizable)</td></tr><tr><td><strong>Mullvad DNS</strong></td><td>DoH, DoT</td><td>Yes</td><td>Sweden</td></tr></tbody></table><p>For maximum privacy, use a combination of Quad9 (Swiss jurisdiction, strong privacy) and Mullvad (no-account DNS with no persistent logs).</p><h2 id=common-pitfalls-and-troubleshooting>Common Pitfalls and Troubleshooting</h2><h3 id=dns-resolution-fails-after-switching>DNS Resolution Fails After Switching</h3><p>If your system can&rsquo;t resolve domains after pointing to the local proxy, check:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Verify the proxy is running</span>
+</span></span><span class=line><span class=cl>docker ps <span class=p>|</span> grep -E <span class=s2>&#34;cloudflared|stubby|dnscrypt&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Test direct resolution</span>
+</span></span><span class=line><span class=cl>dig @127.0.0.1 -p <span class=m>5400</span> example.com
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Check if systemd-resolved is conflicting</span>
+</span></span><span class=line><span class=cl>resolvectl status
+</span></span></code></pre></td></tr></table></div></div><p>A common issue is systemd-resolved still pointing to the old DNS servers. Fix it with:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>sudo ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
+</span></span></code></pre></td></tr></table></div></div><h3 id=slow-resolution-times>Slow Resolution Times</h3><p>If queries feel slow, the issue is usually one of:</p><ol><li><strong>No local caching</strong> — stubby has no built-in cache. Pair it with <code>unbound</code> or switch to dnscrypt-proxy which caches by default.</li><li><strong>Geographic distance to upstream</strong> — pick resolvers with points of presence near you. Use <code>dig</code> to measure latency:<div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>dig @1.1.1.1 example.com <span class=p>|</span> grep <span class=s2>&#34;Query time&#34;</span>
+</span></span><span class=line><span class=cl>dig @9.9.9.9 example.com <span class=p>|</span> grep <span class=s2>&#34;Query time&#34;</span>
+</span></span></code></pre></td></tr></table></div></div></li><li><strong>IPv6 fallback delays</strong> — if IPv6 is configured but not working, disable it in your proxy config.</li></ol><h3 id=docker-network-conflicts>Docker Network Conflicts</h3><p>If your containers can&rsquo;t reach upstream resolvers, ensure outbound DNS isn&rsquo;t blocked by Docker&rsquo;s default bridge:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># Add to your compose file</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>default</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>bridge</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>driver_opts</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>com.docker.network.bridge.enable_ip_masquerade</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;true&#34;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=conclusion>Conclusion</h2><p>Encrypting your DNS traffic is one of the highest-impact privacy improvements you can make with minimal effort. The three tools covered here — cloudflared, stubby, and dnscrypt-proxy — each serve different needs, from the simplest possible setup to a fully-featured encrypted DNS proxy with caching and filtering.</p><p>The recommended path for most homelab users is <strong>dnscrypt-proxy paired with Pi-hole or AdGuard Home</strong>: the filter handles ad blocking and local DNS, while dnscrypt-proxy encrypts all upstream queries and adds an additional layer of blocklist protection on top. Run both in Docker, point your router&rsquo;s DNS to the filter, and every device on your network gets encrypted DNS without any client-side configuration.</p></div><div id=frame style=width:100%;margin:auto;position:relative;z-index:99998><iframe data-aa=2433958 src='//acceptable.a-ads.com/2433958/?size=Adaptive' style=border:0;padding:0;width:70%;height:auto;overflow:hidden;display:block;margin:auto></iframe></div></article></main><footer class=site-footer><p>Built with <a href=https://gohugo.io>Hugo</a> · <a href=/openswap-guide/index.xml>RSS</a> · <a href=https://github.com/hopkdj>GitHub</a></p><p style=margin-top:8px>&copy; 2026 OpenSwap Guide. All rights reserved.</p></footer></body></html>
