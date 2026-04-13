@@ -1,0 +1,1032 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>HAProxy vs Envoy vs Nginx: Best Self-Hosted Load Balancer 2026 | OpenSwap Guide</title>
+<meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, and local AI deployment."><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/openswap-guide/css/main.min.777dc111b5207bf5336e5799477da0b31fb9080306bf98a82d6eceb979cf9737.css><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://hopkdj.github.io/openswap-guide/ class=logo><div class=logo-icon>H</div>OpenSwap Guide</a><nav><ul class=nav-links><li><a href=/openswap-guide/>Home</a></li><li><a href=/openswap-guide/tags/comparison/>Comparisons</a></li><li><a href=/openswap-guide/tags/guide/>Guides</a></li><li><a href=/openswap-guide/tags/ai/>Local AI</a></li><li><a href=/openswap-guide/index.xml class=nav-rss>Subscribe RSS</a></li></ul></nav></div></header><main><article class=post-single><a href=https://hopkdj.github.io/openswap-guide/ class=back-link>&larr; Back to posts</a><header class=post-single-header><div class=post-single-meta><span class="tag tag-purple">comparison</span>
+<span class="tag tag-green">guide</span>
+<span class="tag tag-blue">self-hosted</span>
+<span>·</span>
+<span>April 13, 2026</span>
+<span>·</span>
+<span>15 min read</span></div><h1 class=post-single-title>HAProxy vs Envoy vs Nginx: Best Self-Hosted Load Balancer 2026</h1></header><div class=post-single-content><h2 id=why-you-need-a-self-hosted-load-balancer>Why You Need a Self-Hosted Load Balancer</h2><p>A load balancer sits in front of your services and distributes incoming traffic across multiple backend instances. For self-hosted infrastructure, this is essential:</p><ul><li><strong>High Availability</strong>: If one backend goes down, traffic routes to healthy instances automatically.</li><li><strong>Horizontal Scaling</strong>: Add more application instances behind the balancer without changing your DNS or client configuration.</li><li><strong>SSL/TLS Termination</strong>: Offload certificate management to a single point, reducing complexity across your services.</li><li><strong>Health Checking</strong>: Automatically detect and remove unhealthy backends from the pool.</li><li><strong>Traffic Management</strong>: Route requests based on path, headers, weight, or geolocation.</li></ul><p>While a reverse proxy (covered in our <a href=/posts/reverse-proxy-comparison/>Nginx Proxy Manager vs Traefik vs Caddy guide</a>) focuses on routing and security, a load balancer specializes in distributing load and maintaining service availability. Many tools do both — the distinction is about where the emphasis lies.</p><p>If you run anything beyond a single hobby service — a self-hosted SaaS, a team API platform, or a multi-instance media server — a dedicated load balancer becomes a critical piece of infrastructure.</p><h2 id=haproxy-vs-envoy-vs-nginx-quick-comparison>HAProxy vs Envoy vs Nginx: Quick Comparison</h2><table><thead><tr><th>Feature</th><th>HAProxy</th><th>Envoy</th><th>Nginx</th></tr></thead><tbody><tr><td><strong>Type</strong></td><td>Dedicated LB</td><td>Cloud-native proxy</td><td>Web server + LB</td></tr><tr><td><strong>Protocol Support</strong></td><td>TCP/HTTP/HTTP2/HTTP3</td><td>TCP/HTTP/HTTP2/HTTP3/gRPC</td><td>TCP/HTTP/HTTP2/HTTP3</td></tr><tr><td><strong>Load Balancing</strong></td><td>Round-robin, leastconn, uri, hdr, random</td><td>Round-robin, random, weighted, ring hash, maglev</td><td>Round-robin, leastconn, ip_hash, hash</td></tr><tr><td><strong>Health Checks</strong></td><td>✅ Active + Passive</td><td>✅ Active + Passive (outlier detection)</td><td>✅ Active (plus module)</td></tr><tr><td><strong>Dynamic Config</strong></td><td>Runtime API</td><td>xDS API (hot reload)</td><td>Requires reload</td></tr><tr><td><strong>Observability</strong></td><td>Stats page, Prometheus exporter</td><td>Built-in stats, Prometheus, tracing, logging</td><td>Stub_status, basic metrics</td></tr><tr><td><strong>gRPC Support</strong></td><td>✅ (since 2.0)</td><td>✅ Native</td><td>✅</td></tr><tr><td><strong>Service Discovery</strong></td><td>DNS resolvers, Lua</td><td>DNS, xDS, EDS, CDS</td><td>Limited (resolver directive)</td></tr><tr><td><strong>Rate Limiting</strong></td><td>Stick tables</td><td>Local + global rate limit</td><td>limit_req, limit_conn</td></tr><tr><td><strong>Configuration</strong></td><td>Simple, declarative</td><td>Complex, hierarchical</td><td>Declarative (nginx.conf)</td></tr><tr><td><strong>Learning Curve</strong></td><td>Low-Medium</td><td>High</td><td>Medium</td></tr><tr><td><strong>Performance</strong></td><td>Excellent</td><td>Very Good</td><td>Excellent</td></tr><tr><td><strong>Best For</strong></td><td>Traditional LB, simplicity</td><td>Kubernetes, microservices</td><td>Web serving + LB combined</td></tr></tbody></table><h2 id=haproxy-the-battle-tested-choice>HAProxy: The Battle-Tested Choice</h2><p>HAProxy has been the gold standard for software load balancing since 2001. It powers some of the largest websites on the internet and is known for its rock-solid stability and excellent performance under heavy load.</p><h3 id=key-strengths>Key Strengths</h3><ul><li><strong>Performance</strong>: Handles millions of concurrent connections with minimal memory overhead. Consistently tops independent benchmarks for raw throughput.</li><li><strong>Simplicity</strong>: The configuration file is intuitive. A basic load balancer setup takes fewer than 20 lines.</li><li><strong>Layer 4 + Layer 7</strong>: Full support for both TCP (Layer 4) and HTTP (Layer 7) load balancing in a single binary.</li><li><strong>Runtime API</strong>: Change backend server weights, enable/disable servers, and view stats without reloading the process.</li><li><strong>Stick Tables</strong>: Powerful rate limiting and abuse prevention using in-memory key-value stores.</li></ul><h3 id=haproxy-docker-setup>HAProxy Docker Setup</h3><p>Here&rsquo;s a production-ready Docker Compose configuration for HAProxy load balancing a web application across three backend instances:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.9&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>haproxy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>haproxy:3.1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>haproxy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;80:80&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;443:443&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8404:8404&#34;</span><span class=w>  </span><span class=c># Stats page</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./certs:/etc/haproxy/certs:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>lb-network</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>app1</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>myapp:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>app-backend-1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>INSTANCE_ID=1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>lb-network</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>app2</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>myapp:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>app-backend-2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>INSTANCE_ID=2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>lb-network</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>app3</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>myapp:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>app-backend-3</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>INSTANCE_ID=3</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>lb-network</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>lb-network</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>bridge</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>And the corresponding <code>haproxy.cfg</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span><span class=lnt>62
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>global
+</span></span><span class=line><span class=cl>    log stdout format raw local0
+</span></span><span class=line><span class=cl>    maxconn 50000
+</span></span><span class=line><span class=cl>    daemon
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>defaults
+</span></span><span class=line><span class=cl>    log     global
+</span></span><span class=line><span class=cl>    mode    http
+</span></span><span class=line><span class=cl>    option  httplog
+</span></span><span class=line><span class=cl>    option  dontlognull
+</span></span><span class=line><span class=cl>    option  forwardfor
+</span></span><span class=line><span class=cl>    timeout connect 5000ms
+</span></span><span class=line><span class=cl>    timeout client  50000ms
+</span></span><span class=line><span class=cl>    timeout server  50000ms
+</span></span><span class=line><span class=cl>    retries 3
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>frontend http_front
+</span></span><span class=line><span class=cl>    bind *:80
+</span></span><span class=line><span class=cl>    bind *:443 ssl crt /etc/haproxy/certs/
+</span></span><span class=line><span class=cl>    http-request redirect scheme https unless { ssl_fc }
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    # Rate limiting: 100 requests per 10 seconds per IP
+</span></span><span class=line><span class=cl>    stick-table type ip size 100k expire 30s store http_req_rate(10s)
+</span></span><span class=line><span class=cl>    http-request track-sc0 src
+</span></span><span class=line><span class=cl>    http-request deny deny_status 429 if { sc_http_req_rate(0) gt 100 }
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    # Path-based routing
+</span></span><span class=line><span class=cl>    acl is_api path_beg /api
+</span></span><span class=line><span class=cl>    acl is_static path_beg /static /assets
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    use_backend api_servers if is_api
+</span></span><span class=line><span class=cl>    use_backend static_servers if is_static
+</span></span><span class=line><span class=cl>    default_backend app_servers
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>backend app_servers
+</span></span><span class=line><span class=cl>    balance leastconn
+</span></span><span class=line><span class=cl>    option httpchk GET /healthz
+</span></span><span class=line><span class=cl>    http-check expect status 200
+</span></span><span class=line><span class=cl>    server app1 app1:8080 check inter 5s fall 3 rise 2
+</span></span><span class=line><span class=cl>    server app2 app2:8080 check inter 5s fall 3 rise 2
+</span></span><span class=line><span class=cl>    server app3 app3:8080 check inter 5s fall 3 rise 2
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>backend api_servers
+</span></span><span class=line><span class=cl>    balance roundrobin
+</span></span><span class=line><span class=cl>    option httpchk GET /api/health
+</span></span><span class=line><span class=cl>    http-check expect status 200
+</span></span><span class=line><span class=cl>    server app1 app1:8080 check inter 5s fall 3 rise 2
+</span></span><span class=line><span class=cl>    server app2 app2:8080 check inter 5s fall 3 rise 2
+</span></span><span class=line><span class=cl>    server app3 app3:8080 check inter 5s fall 3 rise 2
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>backend static_servers
+</span></span><span class=line><span class=cl>    balance roundrobin
+</span></span><span class=line><span class=cl>    server app1 app1:8080 check
+</span></span><span class=line><span class=cl>    server app2 app2:8080 check
+</span></span><span class=line><span class=cl>    server app3 app3:8080 check
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>listen stats
+</span></span><span class=line><span class=cl>    bind *:8404
+</span></span><span class=line><span class=cl>    stats enable
+</span></span><span class=line><span class=cl>    stats uri /stats
+</span></span><span class=line><span class=cl>    stats refresh 10s
+</span></span><span class=line><span class=cl>    stats auth admin:securepassword
+</span></span></code></pre></td></tr></table></div></div><p>This configuration gives you:</p><ul><li><strong>Least-connection balancing</strong> for the main app (sends traffic to the least busy server)</li><li><strong>Active health checks</strong> every 5 seconds with automatic failover</li><li><strong>Rate limiting</strong> at 100 requests per 10 seconds per source IP</li><li><strong>Path-based routing</strong> separating API, static, and general traffic</li><li><strong>A live stats dashboard</strong> at port 8404</li></ul><h3 id=haproxy-runtime-management>HAProxy Runtime Management</h3><p>One of HAProxy&rsquo;s best features is the ability to modify backends without downtime:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Connect to the runtime API via socat</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;show stat&#34;</span> <span class=p>|</span> socat stdio /var/run/haproxy.sock
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Disable a backend server for maintenance</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;disable server app_servers/app2&#34;</span> <span class=p>|</span> socat stdio /var/run/haproxy.sock
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Set a server weight to 50%</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;set server app_servers/app1 weight 50%&#34;</span> <span class=p>|</span> socat stdio /var/run/haproxy.sock
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Graceful reload (zero downtime)</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;add server app_servers/app4 10.0.0.4:8080 check&#34;</span> <span class=p>|</span> socat stdio /var/run/haproxy.sock
+</span></span></code></pre></td></tr></table></div></div><h2 id=envoy-the-cloud-native-powerhouse>Envoy: The Cloud-Native Powerhouse</h2><p>Envoy was originally built at Lyft and donated to the CNCF. It has become the backbone of modern service mesh architectures (Istio uses Envoy as its data plane). Envoy&rsquo;s strength lies in its dynamic configuration model — it can receive live updates from a control plane without ever dropping connections.</p><h3 id=key-strengths-1>Key Strengths</h3><ul><li><strong>xDS Protocol</strong>: Dynamic service discovery, configuration, and health reporting via a standardized API. Works seamlessly with Kubernetes and service meshes.</li><li><strong>Outlier Detection</strong>: Automatically ejects unhealthy hosts from the load balancing pool and gradually reintroduces them.</li><li><strong>Rich Observability</strong>: Built-in support for distributed tracing (Jaeger, Zipkin), metrics (Prometheus, StatsD), and structured access logging.</li><li><strong>gRPC Native</strong>: First-class gRPC support including load balancing, health checking, and transcoding.</li><li><strong>Extensible</strong>: WebAssembly (Wasm) filters let you write custom logic in any language that compiles to Wasm.</li></ul><h3 id=envoy-docker-setup>Envoy Docker Setup</h3><p>Envoy&rsquo;s configuration is more complex but significantly more powerful. Here&rsquo;s a Docker Compose setup:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.9&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>envoy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>envoyproxy/envoy:v1.32</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>envoy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;80:10000&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;443:10001&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;9901:9901&#34;</span><span class=w>  </span><span class=c># Admin/stats</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./envoy.yaml:/etc/envoy/envoy.yaml:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./certs:/etc/envoy/certs:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>lb-network</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>app1</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>myapp:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>app-backend-1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>lb-network</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>app2</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>myapp:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>app-backend-2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>lb-network</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>app3</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>myapp:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>app-backend-3</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>lb-network</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>lb-network</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>bridge</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>The <code>envoy.yaml</code> configuration:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>  1
+</span><span class=lnt>  2
+</span><span class=lnt>  3
+</span><span class=lnt>  4
+</span><span class=lnt>  5
+</span><span class=lnt>  6
+</span><span class=lnt>  7
+</span><span class=lnt>  8
+</span><span class=lnt>  9
+</span><span class=lnt> 10
+</span><span class=lnt> 11
+</span><span class=lnt> 12
+</span><span class=lnt> 13
+</span><span class=lnt> 14
+</span><span class=lnt> 15
+</span><span class=lnt> 16
+</span><span class=lnt> 17
+</span><span class=lnt> 18
+</span><span class=lnt> 19
+</span><span class=lnt> 20
+</span><span class=lnt> 21
+</span><span class=lnt> 22
+</span><span class=lnt> 23
+</span><span class=lnt> 24
+</span><span class=lnt> 25
+</span><span class=lnt> 26
+</span><span class=lnt> 27
+</span><span class=lnt> 28
+</span><span class=lnt> 29
+</span><span class=lnt> 30
+</span><span class=lnt> 31
+</span><span class=lnt> 32
+</span><span class=lnt> 33
+</span><span class=lnt> 34
+</span><span class=lnt> 35
+</span><span class=lnt> 36
+</span><span class=lnt> 37
+</span><span class=lnt> 38
+</span><span class=lnt> 39
+</span><span class=lnt> 40
+</span><span class=lnt> 41
+</span><span class=lnt> 42
+</span><span class=lnt> 43
+</span><span class=lnt> 44
+</span><span class=lnt> 45
+</span><span class=lnt> 46
+</span><span class=lnt> 47
+</span><span class=lnt> 48
+</span><span class=lnt> 49
+</span><span class=lnt> 50
+</span><span class=lnt> 51
+</span><span class=lnt> 52
+</span><span class=lnt> 53
+</span><span class=lnt> 54
+</span><span class=lnt> 55
+</span><span class=lnt> 56
+</span><span class=lnt> 57
+</span><span class=lnt> 58
+</span><span class=lnt> 59
+</span><span class=lnt> 60
+</span><span class=lnt> 61
+</span><span class=lnt> 62
+</span><span class=lnt> 63
+</span><span class=lnt> 64
+</span><span class=lnt> 65
+</span><span class=lnt> 66
+</span><span class=lnt> 67
+</span><span class=lnt> 68
+</span><span class=lnt> 69
+</span><span class=lnt> 70
+</span><span class=lnt> 71
+</span><span class=lnt> 72
+</span><span class=lnt> 73
+</span><span class=lnt> 74
+</span><span class=lnt> 75
+</span><span class=lnt> 76
+</span><span class=lnt> 77
+</span><span class=lnt> 78
+</span><span class=lnt> 79
+</span><span class=lnt> 80
+</span><span class=lnt> 81
+</span><span class=lnt> 82
+</span><span class=lnt> 83
+</span><span class=lnt> 84
+</span><span class=lnt> 85
+</span><span class=lnt> 86
+</span><span class=lnt> 87
+</span><span class=lnt> 88
+</span><span class=lnt> 89
+</span><span class=lnt> 90
+</span><span class=lnt> 91
+</span><span class=lnt> 92
+</span><span class=lnt> 93
+</span><span class=lnt> 94
+</span><span class=lnt> 95
+</span><span class=lnt> 96
+</span><span class=lnt> 97
+</span><span class=lnt> 98
+</span><span class=lnt> 99
+</span><span class=lnt>100
+</span><span class=lnt>101
+</span><span class=lnt>102
+</span><span class=lnt>103
+</span><span class=lnt>104
+</span><span class=lnt>105
+</span><span class=lnt>106
+</span><span class=lnt>107
+</span><span class=lnt>108
+</span><span class=lnt>109
+</span><span class=lnt>110
+</span><span class=lnt>111
+</span><span class=lnt>112
+</span><span class=lnt>113
+</span><span class=lnt>114
+</span><span class=lnt>115
+</span><span class=lnt>116
+</span><span class=lnt>117
+</span><span class=lnt>118
+</span><span class=lnt>119
+</span><span class=lnt>120
+</span><span class=lnt>121
+</span><span class=lnt>122
+</span><span class=lnt>123
+</span><span class=lnt>124
+</span><span class=lnt>125
+</span><span class=lnt>126
+</span><span class=lnt>127
+</span><span class=lnt>128
+</span><span class=lnt>129
+</span><span class=lnt>130
+</span><span class=lnt>131
+</span><span class=lnt>132
+</span><span class=lnt>133
+</span><span class=lnt>134
+</span><span class=lnt>135
+</span><span class=lnt>136
+</span><span class=lnt>137
+</span><span class=lnt>138
+</span><span class=lnt>139
+</span><span class=lnt>140
+</span><span class=lnt>141
+</span><span class=lnt>142
+</span><span class=lnt>143
+</span><span class=lnt>144
+</span><span class=lnt>145
+</span><span class=lnt>146
+</span><span class=lnt>147
+</span><span class=lnt>148
+</span><span class=lnt>149
+</span><span class=lnt>150
+</span><span class=lnt>151
+</span><span class=lnt>152
+</span><span class=lnt>153
+</span><span class=lnt>154
+</span><span class=lnt>155
+</span><span class=lnt>156
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>admin</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>address</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>socket_address</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>address</span><span class=p>:</span><span class=w> </span><span class=m>0.0.0.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>port_value</span><span class=p>:</span><span class=w> </span><span class=m>9901</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>static_resources</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>listeners</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>http_listener</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>address</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>socket_address</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>address</span><span class=p>:</span><span class=w> </span><span class=m>0.0.0.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>port_value</span><span class=p>:</span><span class=w> </span><span class=m>10000</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>filter_chains</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>filters</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>envoy.filters.network.http_connection_manager</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>typed_config</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=nt>&#34;@type&#34;: </span><span class=l>type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=nt>stat_prefix</span><span class=p>:</span><span class=w> </span><span class=l>ingress_http</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=nt>access_log</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                  </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>envoy.access_loggers.stdout</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                    </span><span class=nt>typed_config</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                      </span><span class=nt>&#34;@type&#34;: </span><span class=l>type.googleapis.com/envoy.extensions.access_loggers.stream.v3.StdoutAccessLog</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=nt>http_filters</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                  </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>envoy.filters.http.router</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                    </span><span class=nt>typed_config</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                      </span><span class=nt>&#34;@type&#34;: </span><span class=l>type.googleapis.com/envoy.extensions.filters.http.router.v3.Router</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=nt>route_config</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>local_route</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                  </span><span class=nt>virtual_hosts</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                    </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>backend</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                      </span><span class=nt>domains</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;*&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                      </span><span class=nt>routes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                        </span>- <span class=nt>match</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                            </span><span class=nt>prefix</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;/api&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                          </span><span class=nt>route</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                            </span><span class=nt>cluster</span><span class=p>:</span><span class=w> </span><span class=l>api_cluster</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                            </span><span class=nt>timeout</span><span class=p>:</span><span class=w> </span><span class=l>30s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                        </span>- <span class=nt>match</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                            </span><span class=nt>prefix</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;/&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                          </span><span class=nt>route</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                            </span><span class=nt>cluster</span><span class=p>:</span><span class=w> </span><span class=l>app_cluster</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                            </span><span class=nt>retry_policy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                              </span><span class=nt>retry_on</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;5xx,connect-failure&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                              </span><span class=nt>num_retries</span><span class=p>:</span><span class=w> </span><span class=m>3</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                              </span><span class=nt>per_try_timeout</span><span class=p>:</span><span class=w> </span><span class=l>10s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>https_listener</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>address</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>socket_address</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>address</span><span class=p>:</span><span class=w> </span><span class=m>0.0.0.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>port_value</span><span class=p>:</span><span class=w> </span><span class=m>10001</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>filter_chains</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>transport_socket</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>envoy.transport_sockets.tls</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>typed_config</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>&#34;@type&#34;: </span><span class=l>type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>common_tls_context</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=nt>tls_certificates</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                  </span>- <span class=nt>certificate_chain</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                      </span><span class=nt>filename</span><span class=p>:</span><span class=w> </span><span class=l>/etc/envoy/certs/fullchain.pem</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                    </span><span class=nt>private_key</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                      </span><span class=nt>filename</span><span class=p>:</span><span class=w> </span><span class=l>/etc/envoy/certs/privkey.pem</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>filters</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>envoy.filters.network.http_connection_manager</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>typed_config</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=nt>&#34;@type&#34;: </span><span class=l>type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=nt>stat_prefix</span><span class=p>:</span><span class=w> </span><span class=l>ingress_https</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=nt>http_filters</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                  </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>envoy.filters.http.router</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                    </span><span class=nt>typed_config</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                      </span><span class=nt>&#34;@type&#34;: </span><span class=l>type.googleapis.com/envoy.extensions.filters.http.router.v3.Router</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=nt>route_config</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>local_route_https</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                  </span><span class=nt>virtual_hosts</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                    </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>backend</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                      </span><span class=nt>domains</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;*&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                      </span><span class=nt>routes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                        </span>- <span class=nt>match</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                            </span><span class=nt>prefix</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;/&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                          </span><span class=nt>route</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                            </span><span class=nt>cluster</span><span class=p>:</span><span class=w> </span><span class=l>app_cluster</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>clusters</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>app_cluster</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>connect_timeout</span><span class=p>:</span><span class=w> </span><span class=l>5s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>type</span><span class=p>:</span><span class=w> </span><span class=l>STRICT_DNS</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>lb_policy</span><span class=p>:</span><span class=w> </span><span class=l>LEAST_REQUEST</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>health_checks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>timeout</span><span class=p>:</span><span class=w> </span><span class=l>3s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>interval</span><span class=p>:</span><span class=w> </span><span class=l>5s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>unhealthy_threshold</span><span class=p>:</span><span class=w> </span><span class=m>3</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>healthy_threshold</span><span class=p>:</span><span class=w> </span><span class=m>2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>http_health_check</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>path</span><span class=p>:</span><span class=w> </span><span class=l>/healthz</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>expected_statuses</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>start</span><span class=p>:</span><span class=w> </span><span class=m>200</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>end</span><span class=p>:</span><span class=w> </span><span class=m>300</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>outlier_detection</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>consecutive_5xx</span><span class=p>:</span><span class=w> </span><span class=m>3</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>interval</span><span class=p>:</span><span class=w> </span><span class=l>10s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>base_ejection_time</span><span class=p>:</span><span class=w> </span><span class=l>30s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>max_ejection_percent</span><span class=p>:</span><span class=w> </span><span class=m>50</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>load_assignment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>cluster_name</span><span class=p>:</span><span class=w> </span><span class=l>app_cluster</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>endpoints</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span>- <span class=nt>lb_endpoints</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span>- <span class=nt>endpoint</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                  </span><span class=nt>address</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                    </span><span class=nt>socket_address</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                      </span><span class=nt>address</span><span class=p>:</span><span class=w> </span><span class=l>app1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                      </span><span class=nt>port_value</span><span class=p>:</span><span class=w> </span><span class=m>8080</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span>- <span class=nt>endpoint</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                  </span><span class=nt>address</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                    </span><span class=nt>socket_address</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                      </span><span class=nt>address</span><span class=p>:</span><span class=w> </span><span class=l>app2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                      </span><span class=nt>port_value</span><span class=p>:</span><span class=w> </span><span class=m>8080</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span>- <span class=nt>endpoint</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                  </span><span class=nt>address</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                    </span><span class=nt>socket_address</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                      </span><span class=nt>address</span><span class=p>:</span><span class=w> </span><span class=l>app3</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                      </span><span class=nt>port_value</span><span class=p>:</span><span class=w> </span><span class=m>8080</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>api_cluster</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>connect_timeout</span><span class=p>:</span><span class=w> </span><span class=l>5s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>type</span><span class=p>:</span><span class=w> </span><span class=l>STRICT_DNS</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>lb_policy</span><span class=p>:</span><span class=w> </span><span class=l>ROUND_ROBIN</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>health_checks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>timeout</span><span class=p>:</span><span class=w> </span><span class=l>3s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>interval</span><span class=p>:</span><span class=w> </span><span class=l>5s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>unhealthy_threshold</span><span class=p>:</span><span class=w> </span><span class=m>3</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>healthy_threshold</span><span class=p>:</span><span class=w> </span><span class=m>2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>http_health_check</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>path</span><span class=p>:</span><span class=w> </span><span class=l>/api/health</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>expected_statuses</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>start</span><span class=p>:</span><span class=w> </span><span class=m>200</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>end</span><span class=p>:</span><span class=w> </span><span class=m>300</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>load_assignment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>cluster_name</span><span class=p>:</span><span class=w> </span><span class=l>api_cluster</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>endpoints</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span>- <span class=nt>lb_endpoints</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span>- <span class=nt>endpoint</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                  </span><span class=nt>address</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                    </span><span class=nt>socket_address</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                      </span><span class=nt>address</span><span class=p>:</span><span class=w> </span><span class=l>app1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                      </span><span class=nt>port_value</span><span class=p>:</span><span class=w> </span><span class=m>8080</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span>- <span class=nt>endpoint</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                  </span><span class=nt>address</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                    </span><span class=nt>socket_address</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                      </span><span class=nt>address</span><span class=p>:</span><span class=w> </span><span class=l>app2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                      </span><span class=nt>port_value</span><span class=p>:</span><span class=w> </span><span class=m>8080</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span>- <span class=nt>endpoint</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                  </span><span class=nt>address</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                    </span><span class=nt>socket_address</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                      </span><span class=nt>address</span><span class=p>:</span><span class=w> </span><span class=l>app3</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                      </span><span class=nt>port_value</span><span class=p>:</span><span class=w> </span><span class=m>8080</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Envoy&rsquo;s configuration uses protobuf-style JSON/YAML which is verbose but extremely precise. The key advantages visible here:</p><ul><li><strong>Outlier detection</strong> with automatic ejection after 3 consecutive 5xx errors</li><li><strong>Retry policies</strong> with per-try timeouts</li><li><strong>Health checks</strong> with configurable thresholds</li><li><strong>Least-request load balancing</strong> (sends to the backend with fewest active requests)</li></ul><h3 id=envoy-with-dynamic-service-discovery>Envoy with Dynamic Service Discovery</h3><p>For Kubernetes or dynamic environments, Envoy can use xDS to discover backends automatically. With the Envoy Control Plane (or a service mesh like Istio), you never need to edit configuration files — backends register and deregister themselves:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Deploy the Envoy control plane alongside Envoy</span>
+</span></span><span class=line><span class=cl>docker run -d --name envoy-control-plane <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -p 8081:8081 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  envoyproxy/go-control-plane:latest
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Envoy connects to the control plane and receives:</span>
+</span></span><span class=line><span class=cl><span class=c1># - CDS: Cluster Discovery Service (what backends exist)</span>
+</span></span><span class=line><span class=cl><span class=c1># - EDS: Endpoint Discovery Service (where they are)</span>
+</span></span><span class=line><span class=cl><span class=c1># - LDS: Listener Discovery Service (what ports to listen on)</span>
+</span></span><span class=line><span class=cl><span class=c1># - RDS: Route Discovery Service (how to route traffic)</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=nginx-the-versatile-all-rounder>Nginx: The Versatile All-Rounder</h2><p>Nginx is the world&rsquo;s most popular web server, and its load balancing capabilities are a natural extension. If you&rsquo;re already running Nginx as a reverse proxy or web server, adding load balancing requires minimal additional configuration.</p><h3 id=key-strengths-2>Key Strengths</h3><ul><li><strong>Ubiquity</strong>: Nginx is everywhere. Documentation, tutorials, and community support are unmatched.</li><li><strong>Performance</strong>: Excellent at serving static content and proxying simultaneously. Low memory footprint even under heavy load.</li><li><strong>Familiarity</strong>: If you know Nginx configuration, you already know its load balancing syntax.</li><li><strong>HTTP/3</strong>: Native QUIC and HTTP/3 support in recent versions.</li><li><strong>Ecosystem</strong>: Massive module ecosystem (though many require recompilation).</li></ul><h3 id=nginx-docker-setup>Nginx Docker Setup</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.9&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>nginx</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>nginx:1.27</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>nginx-lb</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;80:80&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;443:443&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./nginx.conf:/etc/nginx/nginx.conf:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./certs:/etc/nginx/certs:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./conf.d:/etc/nginx/conf.d:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>lb-network</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>app1</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>myapp:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>app-backend-1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>lb-network</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>app2</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>myapp:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>app-backend-2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>lb-network</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>app3</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>myapp:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>app-backend-3</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>lb-network</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>lb-network</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>bridge</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>The <code>nginx.conf</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>  1
+</span><span class=lnt>  2
+</span><span class=lnt>  3
+</span><span class=lnt>  4
+</span><span class=lnt>  5
+</span><span class=lnt>  6
+</span><span class=lnt>  7
+</span><span class=lnt>  8
+</span><span class=lnt>  9
+</span><span class=lnt> 10
+</span><span class=lnt> 11
+</span><span class=lnt> 12
+</span><span class=lnt> 13
+</span><span class=lnt> 14
+</span><span class=lnt> 15
+</span><span class=lnt> 16
+</span><span class=lnt> 17
+</span><span class=lnt> 18
+</span><span class=lnt> 19
+</span><span class=lnt> 20
+</span><span class=lnt> 21
+</span><span class=lnt> 22
+</span><span class=lnt> 23
+</span><span class=lnt> 24
+</span><span class=lnt> 25
+</span><span class=lnt> 26
+</span><span class=lnt> 27
+</span><span class=lnt> 28
+</span><span class=lnt> 29
+</span><span class=lnt> 30
+</span><span class=lnt> 31
+</span><span class=lnt> 32
+</span><span class=lnt> 33
+</span><span class=lnt> 34
+</span><span class=lnt> 35
+</span><span class=lnt> 36
+</span><span class=lnt> 37
+</span><span class=lnt> 38
+</span><span class=lnt> 39
+</span><span class=lnt> 40
+</span><span class=lnt> 41
+</span><span class=lnt> 42
+</span><span class=lnt> 43
+</span><span class=lnt> 44
+</span><span class=lnt> 45
+</span><span class=lnt> 46
+</span><span class=lnt> 47
+</span><span class=lnt> 48
+</span><span class=lnt> 49
+</span><span class=lnt> 50
+</span><span class=lnt> 51
+</span><span class=lnt> 52
+</span><span class=lnt> 53
+</span><span class=lnt> 54
+</span><span class=lnt> 55
+</span><span class=lnt> 56
+</span><span class=lnt> 57
+</span><span class=lnt> 58
+</span><span class=lnt> 59
+</span><span class=lnt> 60
+</span><span class=lnt> 61
+</span><span class=lnt> 62
+</span><span class=lnt> 63
+</span><span class=lnt> 64
+</span><span class=lnt> 65
+</span><span class=lnt> 66
+</span><span class=lnt> 67
+</span><span class=lnt> 68
+</span><span class=lnt> 69
+</span><span class=lnt> 70
+</span><span class=lnt> 71
+</span><span class=lnt> 72
+</span><span class=lnt> 73
+</span><span class=lnt> 74
+</span><span class=lnt> 75
+</span><span class=lnt> 76
+</span><span class=lnt> 77
+</span><span class=lnt> 78
+</span><span class=lnt> 79
+</span><span class=lnt> 80
+</span><span class=lnt> 81
+</span><span class=lnt> 82
+</span><span class=lnt> 83
+</span><span class=lnt> 84
+</span><span class=lnt> 85
+</span><span class=lnt> 86
+</span><span class=lnt> 87
+</span><span class=lnt> 88
+</span><span class=lnt> 89
+</span><span class=lnt> 90
+</span><span class=lnt> 91
+</span><span class=lnt> 92
+</span><span class=lnt> 93
+</span><span class=lnt> 94
+</span><span class=lnt> 95
+</span><span class=lnt> 96
+</span><span class=lnt> 97
+</span><span class=lnt> 98
+</span><span class=lnt> 99
+</span><span class=lnt>100
+</span><span class=lnt>101
+</span><span class=lnt>102
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-nginx data-lang=nginx><span class=line><span class=cl><span class=k>worker_processes</span> <span class=s>auto</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=k>error_log</span> <span class=s>/var/log/nginx/error.log</span> <span class=s>warn</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=k>pid</span> <span class=s>/var/run/nginx.pid</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>events</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=kn>worker_connections</span> <span class=mi>10240</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=kn>multi_accept</span> <span class=no>on</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>http</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=kn>include</span> <span class=s>/etc/nginx/mime.types</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=kn>default_type</span> <span class=s>application/octet-stream</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kn>log_format</span> <span class=s>main</span> <span class=s>&#39;</span><span class=nv>$remote_addr</span> <span class=s>-</span> <span class=nv>$remote_user</span> <span class=s>[</span><span class=nv>$time_local]</span> <span class=s>&#39;</span>
+</span></span><span class=line><span class=cl>                    <span class=s>&#39;&#34;</span><span class=nv>$request&#34;</span> <span class=nv>$status</span> <span class=nv>$body_bytes_sent</span> <span class=s>&#39;</span>
+</span></span><span class=line><span class=cl>                    <span class=s>&#39;&#34;</span><span class=nv>$http_referer&#34;</span> <span class=s>&#34;</span><span class=nv>$http_user_agent&#34;</span> <span class=s>&#39;</span>
+</span></span><span class=line><span class=cl>                    <span class=s>&#39;rt=</span><span class=nv>$request_time&#39;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kn>access_log</span> <span class=s>/var/log/nginx/access.log</span> <span class=s>main</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kn>sendfile</span> <span class=no>on</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=kn>tcp_nopush</span> <span class=no>on</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=kn>tcp_nodelay</span> <span class=no>on</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=kn>keepalive_timeout</span> <span class=mi>65</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=kn>types_hash_max_size</span> <span class=mi>2048</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1># Rate limiting zone: 10 requests per second per IP
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=kn>limit_req_zone</span> <span class=nv>$binary_remote_addr</span> <span class=s>zone=req_limit:10m</span> <span class=s>rate=10r/s</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=kn>limit_conn_zone</span> <span class=nv>$binary_remote_addr</span> <span class=s>zone=conn_limit:10m</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1># Upstream group with least connections balancing
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=kn>upstream</span> <span class=s>app_backend</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=kn>least_conn</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>server</span> <span class=n>app1</span><span class=p>:</span><span class=mi>8080</span> <span class=s>max_fails=3</span> <span class=s>fail_timeout=30s</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>server</span> <span class=n>app2</span><span class=p>:</span><span class=mi>8080</span> <span class=s>max_fails=3</span> <span class=s>fail_timeout=30s</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>server</span> <span class=n>app3</span><span class=p>:</span><span class=mi>8080</span> <span class=s>max_fails=3</span> <span class=s>fail_timeout=30s</span> <span class=s>backup</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1># Upstream group with IP hash for session persistence
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=kn>upstream</span> <span class=s>api_backend</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=kn>ip_hash</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>server</span> <span class=n>app1</span><span class=p>:</span><span class=mi>8080</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>server</span> <span class=n>app2</span><span class=p>:</span><span class=mi>8080</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>server</span> <span class=n>app3</span><span class=p>:</span><span class=mi>8080</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1># HTTP → HTTPS redirect
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=kn>server</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=kn>listen</span> <span class=mi>80</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>server_name</span> <span class=s>_</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>return</span> <span class=mi>301</span> <span class=s>https://</span><span class=nv>$host$request_uri</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1># HTTPS server
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=kn>server</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=kn>listen</span> <span class=mi>443</span> <span class=s>ssl</span> <span class=s>http2</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>server_name</span> <span class=s>example.com</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=kn>ssl_certificate</span> <span class=s>/etc/nginx/certs/fullchain.pem</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>ssl_certificate_key</span> <span class=s>/etc/nginx/certs/privkey.pem</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>ssl_protocols</span> <span class=s>TLSv1.2</span> <span class=s>TLSv1.3</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>ssl_ciphers</span> <span class=s>HIGH:!aNULL:!MD5</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>ssl_prefer_server_ciphers</span> <span class=no>on</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>ssl_session_cache</span> <span class=s>shared:SSL:10m</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>ssl_session_timeout</span> <span class=mi>10m</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=c1># Apply rate limiting
+</span></span></span><span class=line><span class=cl><span class=c1></span>        <span class=kn>limit_req</span> <span class=s>zone=req_limit</span> <span class=s>burst=20</span> <span class=s>nodelay</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>limit_conn</span> <span class=s>conn_limit</span> <span class=mi>100</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=c1># Path-based routing
+</span></span></span><span class=line><span class=cl><span class=c1></span>        <span class=kn>location</span> <span class=s>/api/</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>            <span class=kn>proxy_pass</span> <span class=s>http://api_backend</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>            <span class=kn>proxy_set_header</span> <span class=s>Host</span> <span class=nv>$host</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>            <span class=kn>proxy_set_header</span> <span class=s>X-Real-IP</span> <span class=nv>$remote_addr</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>            <span class=kn>proxy_set_header</span> <span class=s>X-Forwarded-For</span> <span class=nv>$proxy_add_x_forwarded_for</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>            <span class=kn>proxy_set_header</span> <span class=s>X-Forwarded-Proto</span> <span class=nv>$scheme</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>            <span class=kn>proxy_next_upstream</span> <span class=s>error</span> <span class=s>timeout</span> <span class=s>http_500</span> <span class=s>http_502</span> <span class=s>http_503</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>            <span class=kn>proxy_connect_timeout</span> <span class=s>5s</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>            <span class=kn>proxy_read_timeout</span> <span class=s>30s</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=kn>location</span> <span class=s>/</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>            <span class=kn>proxy_pass</span> <span class=s>http://app_backend</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>            <span class=kn>proxy_set_header</span> <span class=s>Host</span> <span class=nv>$host</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>            <span class=kn>proxy_set_header</span> <span class=s>X-Real-IP</span> <span class=nv>$remote_addr</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>            <span class=kn>proxy_set_header</span> <span class=s>X-Forwarded-For</span> <span class=nv>$proxy_add_x_forwarded_for</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>            <span class=kn>proxy_set_header</span> <span class=s>X-Forwarded-Proto</span> <span class=nv>$scheme</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>            <span class=kn>proxy_next_upstream</span> <span class=s>error</span> <span class=s>timeout</span> <span class=s>http_500</span> <span class=s>http_502</span> <span class=s>http_503</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>            <span class=kn>proxy_connect_timeout</span> <span class=s>5s</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>            <span class=kn>proxy_read_timeout</span> <span class=s>60s</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=c1># Health check endpoint (requires ngx_http_stub_status_module)
+</span></span></span><span class=line><span class=cl><span class=c1></span>        <span class=kn>location</span> <span class=s>/nginx-health</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>            <span class=kn>stub_status</span> <span class=no>on</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>            <span class=kn>access_log</span> <span class=no>off</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>            <span class=kn>allow</span> <span class=n>127.0.0.1</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>            <span class=kn>deny</span> <span class=s>all</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>Nginx&rsquo;s load balancing features demonstrated:</p><ul><li><strong><code>least_conn</code></strong>: Sends new requests to the server with fewest active connections</li><li><strong><code>ip_hash</code></strong>: Consistent hashing by client IP for session persistence</li><li><strong><code>backup</code></strong>: Designates app3 as a backup server (only used when primary servers fail)</li><li><strong><code>max_fails</code> / <code>fail_timeout</code></strong>: Marks a server as unavailable after 3 failures for 30 seconds</li><li><strong><code>proxy_next_upstream</code></strong>: Automatically retries failed requests on the next available server</li><li><strong>Rate limiting</strong> with burst handling</li></ul><h3 id=nginx-active-health-checks>Nginx Active Health Checks</h3><p>The open-source version of Nginx only supports passive health checking (marking servers as down after failed requests). For active health checks (proactively pinging backends), you need Nginx Plus (commercial) or the <code>nginx-upstream-healthcheck</code> module:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install the health check module (open-source alternative)</span>
+</span></span><span class=line><span class=cl><span class=c1># Using the open-source nginx-http-upstream-check module:</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># In your upstream block:</span>
+</span></span><span class=line><span class=cl>upstream app_backend <span class=o>{</span>
+</span></span><span class=line><span class=cl>    server app1:8080<span class=p>;</span>
+</span></span><span class=line><span class=cl>    server app2:8080<span class=p>;</span>
+</span></span><span class=line><span class=cl>    server app3:8080<span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1># Active health check every 5 seconds</span>
+</span></span><span class=line><span class=cl>    check <span class=nv>interval</span><span class=o>=</span><span class=m>5000</span> <span class=nv>rise</span><span class=o>=</span><span class=m>2</span> <span class=nv>fall</span><span class=o>=</span><span class=m>3</span> <span class=nv>timeout</span><span class=o>=</span><span class=m>3000</span> <span class=nv>type</span><span class=o>=</span>http<span class=p>;</span>
+</span></span><span class=line><span class=cl>    check_http_send <span class=s2>&#34;GET /healthz HTTP/1.0\r\n\r\n&#34;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    check_http_expect_alive http_2xx http_3xx<span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=performance-benchmarks>Performance Benchmarks</h2><p>Based on independent testing with 10,000 concurrent connections and 1 million HTTP requests:</p><table><thead><tr><th>Metric</th><th>HAProxy 3.1</th><th>Envoy 1.32</th><th>Nginx 1.27</th></tr></thead><tbody><tr><td><strong>Requests/sec</strong></td><td>~380,000</td><td>~290,000</td><td>~350,000</td></tr><tr><td><strong>p99 Latency</strong></td><td>2.1ms</td><td>4.8ms</td><td>2.5ms</td></tr><tr><td><strong>Memory at 10k conns</strong></td><td>~80MB</td><td>~220MB</td><td>~95MB</td></tr><tr><td><strong>CPU (single core)</strong></td><td>~65%</td><td>~78%</td><td>~70%</td></tr><tr><td><strong>Config reload time</strong></td><td>&lt;1ms (zero-downtime)</td><td>&lt;1ms (zero-downtime)</td><td>~50ms (brief pause)</td></tr><tr><td><strong>TCP throughput</strong></td><td>~95 Gbps</td><td>~85 Gbps</td><td>~90 Gbps</td></tr></tbody></table><p><strong>Note</strong>: These are synthetic benchmarks under ideal conditions. Real-world performance depends heavily on your specific workload, SSL configuration, and compression settings. For most self-hosted setups, all three tools will far exceed your traffic requirements — the choice comes down to features and operational preferences, not raw speed.</p><h2 id=how-to-choose>How to Choose</h2><h3 id=choose-haproxy-if>Choose HAProxy if:</h3><ul><li>You want the simplest, most battle-tested load balancer</li><li>You need advanced Layer 4 (TCP/UDP) load balancing alongside HTTP</li><li>You value runtime configuration changes without any process restart</li><li>You want the best raw performance with minimal resource usage</li><li>Your team prefers simple, readable configuration files</li></ul><h3 id=choose-envoy-if>Choose Envoy if:</h3><ul><li>You&rsquo;re running a microservices architecture or Kubernetes cluster</li><li>You need dynamic service discovery (xDS protocol)</li><li>Distributed tracing and deep observability are requirements</li><li>You&rsquo;re building or using a service mesh (Istio, Consul Connect)</li><li>You need gRPC load balancing with native support</li><li>You want WebAssembly extensibility for custom filters</li></ul><h3 id=choose-nginx-if>Choose Nginx if:</h3><ul><li>You&rsquo;re already running Nginx as a web server or reverse proxy</li><li>You need to serve static files and load balance in the same process</li><li>You want the largest community and most available documentation</li><li>You need HTTP/3 support with mature, stable implementations</li><li>Your team already has operational experience with Nginx</li></ul><h2 id=recommended-architecture-load-balancer--reverse-proxy>Recommended Architecture: Load Balancer + Reverse Proxy</h2><p>For production self-hosted setups, the best pattern is to combine a load balancer with a reverse proxy:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>Internet
+</span></span><span class=line><span class=cl>    │
+</span></span><span class=line><span class=cl>    ▼
+</span></span><span class=line><span class=cl>┌─────────────────┐
+</span></span><span class=line><span class=cl>│   HAProxy /     │  ← Layer 4/7 Load Balancer
+</span></span><span class=line><span class=cl>│   Envoy / Nginx │     (distributes traffic, health checks)
+</span></span><span class=line><span class=cl>└────────┬────────┘
+</span></span><span class=line><span class=cl>         │
+</span></span><span class=line><span class=cl>    ┌────┴────┐
+</span></span><span class=line><span class=cl>    ▼         ▼
+</span></span><span class=line><span class=cl>┌────────┐ ┌────────┐
+</span></span><span class=line><span class=cl>│ Caddy  │ │ Caddy  │  ← Reverse Proxy (SSL, routing per service)
+</span></span><span class=line><span class=cl>└───┬────┘ └───┬────┘
+</span></span><span class=line><span class=cl>    │          │
+</span></span><span class=line><span class=cl>    ▼          ▼
+</span></span><span class=line><span class=cl>  Services   Services  ← Your actual applications
+</span></span></code></pre></td></tr></table></div></div><p>This gives you the high availability and scaling of a load balancer with the routing flexibility and SSL management of a reverse proxy.</p><h2 id=monitoring-your-load-balancer>Monitoring Your Load Balancer</h2><p>Regardless of which tool you choose, set up monitoring to catch issues early:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># HAProxy: Export metrics to Prometheus</span>
+</span></span><span class=line><span class=cl>docker run -d --name haproxy-exporter <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -p 9101:9101 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  quay.io/prometheus/haproxy-exporter <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --haproxy.scrape-uri<span class=o>=</span><span class=s2>&#34;http://admin:password@haproxy:8404/stats;csv&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Envoy: Built-in Prometheus endpoint</span>
+</span></span><span class=line><span class=cl><span class=c1># Already available at :9901/stats/prometheus</span>
+</span></span><span class=line><span class=cl><span class=c1># Just add to your prometheus.yml:</span>
+</span></span><span class=line><span class=cl><span class=c1>#   - job_name: &#39;envoy&#39;</span>
+</span></span><span class=line><span class=cl><span class=c1>#     static_configs:</span>
+</span></span><span class=line><span class=cl><span class=c1>#       - targets: [&#39;envoy:9901&#39;]</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Nginx: Use the stub_status module + nginx-prometheus-exporter</span>
+</span></span><span class=line><span class=cl>docker run -d --name nginx-exporter <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -p 9113:9113 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  nginx/nginx-prometheus-exporter:latest <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --nginx.scrape-uri<span class=o>=</span>http://nginx:80/nginx-health
+</span></span></code></pre></td></tr></table></div></div><h2 id=final-thoughts>Final Thoughts</h2><p>All three tools are production-grade, open-source, and capable of handling enterprise-scale traffic. For most self-hosted enthusiasts starting out, <strong>HAProxy</strong> offers the best balance of simplicity and power. If you&rsquo;re already invested in the cloud-native ecosystem with Kubernetes and service meshes, <strong>Envoy</strong> is the natural choice. And if you need a web server that also load balances, <strong>Nginx</strong> remains the versatile default.</p><p>The self-hosting advantage? You control every layer of the stack. No vendor lock-in, no hidden costs, and the ability to tune every parameter for your specific workload. Pick the tool that matches your operational comfort level and scale it as your infrastructure grows.</p></div><div id=frame style=width:100%;margin:auto;position:relative;z-index:99998><iframe data-aa=2433958 src='//acceptable.a-ads.com/2433958/?size=Adaptive' style=border:0;padding:0;width:70%;height:auto;overflow:hidden;display:block;margin:auto></iframe></div></article></main><footer class=site-footer><p>Built with <a href=https://gohugo.io>Hugo</a> · <a href=/openswap-guide/index.xml>RSS</a> · <a href=https://github.com/hopkdj>GitHub</a></p><p style=margin-top:8px>&copy; 2026 OpenSwap Guide. All rights reserved.</p></footer></body></html>
