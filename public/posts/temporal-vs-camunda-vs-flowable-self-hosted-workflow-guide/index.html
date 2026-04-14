@@ -1,0 +1,620 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Best Self-Hosted Workflow Engines: Temporal vs Camunda vs Flowable 2026 | OpenSwap Guide</title>
+<meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, and local AI deployment."><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/openswap-guide/css/main.min.777dc111b5207bf5336e5799477da0b31fb9080306bf98a82d6eceb979cf9737.css><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://hopkdj.github.io/openswap-guide/ class=logo><div class=logo-icon>H</div>OpenSwap Guide</a><nav><ul class=nav-links><li><a href=/openswap-guide/>Home</a></li><li><a href=/openswap-guide/tags/comparison/>Comparisons</a></li><li><a href=/openswap-guide/tags/guide/>Guides</a></li><li><a href=/openswap-guide/tags/ai/>Local AI</a></li><li><a href=/openswap-guide/index.xml class=nav-rss>Subscribe RSS</a></li></ul></nav></div></header><main><article class=post-single><a href=https://hopkdj.github.io/openswap-guide/ class=back-link>&larr; Back to posts</a><header class=post-single-header><div class=post-single-meta><span class="tag tag-purple">comparison</span>
+<span class="tag tag-green">guide</span>
+<span class="tag tag-blue">self-hosted</span>
+<span>·</span>
+<span>April 14, 2026</span>
+<span>·</span>
+<span>14 min read</span></div><h1 class=post-single-title>Best Self-Hosted Workflow Engines: Temporal vs Camunda vs Flowable 2026</h1></header><div class=post-single-content><p>Managing complex business processes and long-running microservice workflows is one of the hardest problems in modern software architecture. When you need guarantees around durability, retries, and state management, a purpose-built workflow engine makes the difference between a fragile system held together by cron jobs and message queues, and a reliable platform that recovers gracefully from failures.</p><p>This guide covers the three leading open-source workflow engines you can self-host: <strong>Temporal</strong>, <strong>Camunda 8 (Zeebe)</strong>, and <strong>Flowable</strong>. Each brings a different philosophy to workflow orchestration, and understanding those differences will help you pick the right tool for your infrastructure.</p><h2 id=why-self-host-your-workflow-engine>Why Self-Host Your Workflow Engine</h2><p>Before diving into the comparison, it&rsquo;s worth understanding why organizations choose to self-host workflow engines rather than relying on managed cloud services:</p><p><strong>Data sovereignty and compliance.</strong> Workflow engines process business-critical data — order fulfillment, patient records, financial transactions. Keeping that data within your own infrastructure means you control retention, encryption, and audit trails. Industries with strict regulatory requirements (healthcare, finance, government) often cannot send workflow data to third-party cloud providers.</p><p><strong>Cost predictability at scale.</strong> Managed workflow services typically charge per workflow execution, per step, or per active instance. When you&rsquo;re running tens of thousands of concurrent workflows, self-hosting on your own hardware becomes significantly cheaper. A single mid-range server running a self-hosted engine can handle workloads that would cost thousands per month on a managed platform.</p><p><strong>Deep customization and extensibility.</strong> Open-source workflow engines allow you to modify the codebase, add custom plugins, integrate with internal systems, and tune performance parameters. You&rsquo;re not constrained by the features and limitations of a SaaS provider&rsquo;s roadmap.</p><p><strong>Network latency and reliability.</strong> Running a workflow engine on the same network as your microservices eliminates cross-internet latency for every workflow step. It also means your workflows continue running even when your internet connection goes down or a cloud provider experiences an outage.</p><p><strong>Vendor lock-in avoidance.</strong> Once your business logic is encoded in a workflow engine&rsquo;s DSL or SDK, migrating to a different platform becomes a major engineering project. Self-hosting an open-source engine keeps you in control of that decision.</p><h2 id=what-is-a-workflow-engine>What Is a Workflow Engine?</h2><p>A workflow engine is a system that orchestrates the execution of multi-step processes, called workflows. Unlike simple task queues (Celery, BullMQ, Sidekiq) that fire-and-forget individual jobs, a workflow engine:</p><ul><li><strong>Maintains durable state</strong> — if a server crashes mid-workflow, the engine resumes from the last completed step when it recovers</li><li><strong>Handles complex control flow</strong> — parallel branches, conditionals, timers, sub-workflows, and human-in-the-loop steps</li><li><strong>Manages retries and error handling</strong> — automatic retries with exponential backoff, compensation logic for failed steps, and dead-letter queues</li><li><strong>Provides observability</strong> — visual dashboards showing active workflows, step-by-step execution traces, and performance metrics</li><li><strong>Enforces business logic consistency</strong> — ensuring that workflows execute exactly as defined, regardless of infrastructure failures</li></ul><p>The key distinction from data orchestration tools like Apache Airflow is that workflow engines are designed for <strong>operational workflows</strong> (order processing, user onboarding, incident response) rather than <strong>data pipelines</strong> (ETL, model training, report generation).</p><h2 id=temporal>Temporal</h2><p>Temporal is an open-source workflow orchestration platform originally created by the founders of Uber&rsquo;s Cadence project. It uses a code-first approach where you write workflows in your programming language of choice, and Temporal guarantees they execute reliably.</p><h3 id=architecture>Architecture</h3><p>Temporal consists of four core components:</p><ul><li><strong>Temporal Server</strong> — the orchestration backend that schedules activities, tracks workflow state, and manages history</li><li><strong>Workers</strong> — your application code that executes workflow and activity logic</li><li><strong>Client SDKs</strong> — libraries in Go, Java, Python, TypeScript, and .NET for defining and starting workflows</li><li><strong>Temporal UI</strong> — a web dashboard for monitoring workflow executions</li></ul><p>The server itself comprises several services (history, matching, frontend, worker) backed by a persistence layer (PostgreSQL or Cassandra) and a visibility store (Elasticsearch or OpenSearch).</p><h3 id=docker-compose-setup>Docker Compose Setup</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.9&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>postgresql</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>postgres:16</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_USER</span><span class=p>:</span><span class=w> </span><span class=l>temporal</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_PASSWORD</span><span class=p>:</span><span class=w> </span><span class=l>temporal_password</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_DB</span><span class=p>:</span><span class=w> </span><span class=l>temporal</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>temporal_postgres_data:/var/lib/postgresql/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>healthcheck</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>test</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;CMD-SHELL&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;pg_isready -U temporal&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>interval</span><span class=p>:</span><span class=w> </span><span class=l>5s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>retries</span><span class=p>:</span><span class=w> </span><span class=m>5</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>temporal</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>temporalio/auto-setup:1.25</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DB=postgresql</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DB_PORT=5432</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>POSTGRES_USER=temporal</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>POSTGRES_PWD=temporal_password</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>POSTGRES_SEEDS=postgresql</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DYNAMIC_CONFIG_FILE_PATH=config/dynamicconfig/development.yaml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;7233:7233&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>postgresql</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>condition</span><span class=p>:</span><span class=w> </span><span class=l>service_healthy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>temporal-admin-tools</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>temporalio/admin-tools:1.25</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>TEMPORAL_ADDRESS=temporal:7233</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>temporal</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>temporal-ui</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>temporalio/ui:2.29</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>TEMPORAL_ADDRESS=temporal:7233</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>TEMPORAL_CORS_ORIGINS=http://localhost:3000</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8080:8080&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>temporal</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>temporal_postgres_data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Start the stack with:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker compose up -d
+</span></span></code></pre></td></tr></table></div></div><p>Access the Temporal UI at <code>http://localhost:8080</code> and connect to the server at <code>localhost:7233</code>.</p><h3 id=defining-a-workflow-python>Defining a Workflow (Python)</h3><p>Temporal&rsquo;s Python SDK lets you write workflows as regular Python functions decorated with <code>@workflow.defn</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=kn>from</span> <span class=nn>temporalio</span> <span class=kn>import</span> <span class=n>workflow</span><span class=p>,</span> <span class=n>activity</span>
+</span></span><span class=line><span class=cl><span class=kn>from</span> <span class=nn>datetime</span> <span class=kn>import</span> <span class=n>timedelta</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nd>@activity.defn</span>
+</span></span><span class=line><span class=cl><span class=k>async</span> <span class=k>def</span> <span class=nf>send_confirmation_email</span><span class=p>(</span><span class=n>customer_email</span><span class=p>:</span> <span class=nb>str</span><span class=p>,</span> <span class=n>order_id</span><span class=p>:</span> <span class=nb>str</span><span class=p>)</span> <span class=o>-&gt;</span> <span class=nb>str</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>    <span class=c1># Actual email sending logic here</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=sa>f</span><span class=s2>&#34;Confirmation sent to </span><span class=si>{</span><span class=n>customer_email</span><span class=si>}</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nd>@activity.defn</span>
+</span></span><span class=line><span class=cl><span class=k>async</span> <span class=k>def</span> <span class=nf>process_payment</span><span class=p>(</span><span class=n>order_id</span><span class=p>:</span> <span class=nb>str</span><span class=p>,</span> <span class=n>amount</span><span class=p>:</span> <span class=nb>float</span><span class=p>)</span> <span class=o>-&gt;</span> <span class=nb>dict</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>    <span class=c1># Payment processing logic</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=p>{</span><span class=s2>&#34;status&#34;</span><span class=p>:</span> <span class=s2>&#34;success&#34;</span><span class=p>,</span> <span class=s2>&#34;transaction_id&#34;</span><span class=p>:</span> <span class=s2>&#34;txn_123&#34;</span><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nd>@workflow.defn</span>
+</span></span><span class=line><span class=cl><span class=k>class</span> <span class=nc>OrderFulfillmentWorkflow</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>    <span class=nd>@workflow.run</span>
+</span></span><span class=line><span class=cl>    <span class=k>async</span> <span class=k>def</span> <span class=nf>run</span><span class=p>(</span><span class=bp>self</span><span class=p>,</span> <span class=n>order</span><span class=p>:</span> <span class=nb>dict</span><span class=p>)</span> <span class=o>-&gt;</span> <span class=nb>str</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>        <span class=c1># Process payment first</span>
+</span></span><span class=line><span class=cl>        <span class=n>payment</span> <span class=o>=</span> <span class=k>await</span> <span class=n>workflow</span><span class=o>.</span><span class=n>execute_activity</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>            <span class=n>process_payment</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>            <span class=n>args</span><span class=o>=</span><span class=p>[</span><span class=n>order</span><span class=p>[</span><span class=s2>&#34;id&#34;</span><span class=p>],</span> <span class=n>order</span><span class=p>[</span><span class=s2>&#34;total&#34;</span><span class=p>]],</span>
+</span></span><span class=line><span class=cl>            <span class=n>start_to_close_timeout</span><span class=o>=</span><span class=n>timedelta</span><span class=p>(</span><span class=n>seconds</span><span class=o>=</span><span class=mi>30</span><span class=p>),</span>
+</span></span><span class=line><span class=cl>            <span class=n>retry_policy</span><span class=o>=</span><span class=p>{</span>
+</span></span><span class=line><span class=cl>                <span class=s2>&#34;initial_interval&#34;</span><span class=p>:</span> <span class=n>timedelta</span><span class=p>(</span><span class=n>seconds</span><span class=o>=</span><span class=mi>1</span><span class=p>),</span>
+</span></span><span class=line><span class=cl>                <span class=s2>&#34;maximum_interval&#34;</span><span class=p>:</span> <span class=n>timedelta</span><span class=p>(</span><span class=n>seconds</span><span class=o>=</span><span class=mi>30</span><span class=p>),</span>
+</span></span><span class=line><span class=cl>                <span class=s2>&#34;maximum_attempts&#34;</span><span class=p>:</span> <span class=mi>5</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>            <span class=p>},</span>
+</span></span><span class=line><span class=cl>        <span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=k>if</span> <span class=n>payment</span><span class=p>[</span><span class=s2>&#34;status&#34;</span><span class=p>]</span> <span class=o>!=</span> <span class=s2>&#34;success&#34;</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>            <span class=k>raise</span> <span class=ne>Exception</span><span class=p>(</span><span class=s2>&#34;Payment failed&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=c1># Send confirmation email</span>
+</span></span><span class=line><span class=cl>        <span class=k>await</span> <span class=n>workflow</span><span class=o>.</span><span class=n>execute_activity</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>            <span class=n>send_confirmation_email</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>            <span class=n>args</span><span class=o>=</span><span class=p>[</span><span class=n>order</span><span class=p>[</span><span class=s2>&#34;email&#34;</span><span class=p>],</span> <span class=n>order</span><span class=p>[</span><span class=s2>&#34;id&#34;</span><span class=p>]],</span>
+</span></span><span class=line><span class=cl>            <span class=n>start_to_close_timeout</span><span class=o>=</span><span class=n>timedelta</span><span class=p>(</span><span class=n>seconds</span><span class=o>=</span><span class=mi>15</span><span class=p>),</span>
+</span></span><span class=line><span class=cl>        <span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=c1># Wait 24 hours, then send a follow-up</span>
+</span></span><span class=line><span class=cl>        <span class=k>await</span> <span class=n>workflow</span><span class=o>.</span><span class=n>sleep</span><span class=p>(</span><span class=n>timedelta</span><span class=p>(</span><span class=n>hours</span><span class=o>=</span><span class=mi>24</span><span class=p>))</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=k>await</span> <span class=n>workflow</span><span class=o>.</span><span class=n>execute_activity</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>            <span class=n>send_confirmation_email</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>            <span class=n>args</span><span class=o>=</span><span class=p>[</span><span class=n>order</span><span class=p>[</span><span class=s2>&#34;email&#34;</span><span class=p>],</span> <span class=n>order</span><span class=p>[</span><span class=s2>&#34;id&#34;</span><span class=p>]],</span>
+</span></span><span class=line><span class=cl>            <span class=n>start_to_close_timeout</span><span class=o>=</span><span class=n>timedelta</span><span class=p>(</span><span class=n>seconds</span><span class=o>=</span><span class=mi>15</span><span class=p>),</span>
+</span></span><span class=line><span class=cl>        <span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=k>return</span> <span class=sa>f</span><span class=s2>&#34;Order </span><span class=si>{</span><span class=n>order</span><span class=p>[</span><span class=s1>&#39;id&#39;</span><span class=p>]</span><span class=si>}</span><span class=s2> fulfilled&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><p>The magic here is that <code>workflow.sleep()</code> doesn&rsquo;t block a thread — Temporal persists the workflow state and wakes it up after 24 hours, even if the worker process restarts multiple times during that period.</p><h3 id=key-strengths>Key Strengths</h3><ul><li><strong>Code-first workflow definitions</strong> — no XML, no visual designer required; your workflows are just code</li><li><strong>Language-native SDKs</strong> — workflows are written in Go, Java, Python, TypeScript, or .NET using familiar patterns</li><li><strong>Deterministic execution</strong> — Temporal replays workflow history to rebuild state, ensuring consistent behavior</li><li><strong>Built-in retry policies</strong> — configure retries at the activity or workflow level with exponential backoff</li><li><strong>Signal and query support</strong> — send events to running workflows and query their state in real time</li><li><strong>Cron-style scheduling</strong> — schedule recurring workflows with familiar cron expressions</li><li><strong>Strong community and ecosystem</strong> — backed by a well-funded company with active open-source development</li></ul><h3 id=limitations>Limitations</h3><ul><li><strong>Steeper learning curve</strong> — understanding replay semantics and determinism constraints takes time</li><li><strong>No built-in BPMN support</strong> — workflows are defined in code, not in a visual standard format</li><li><strong>Resource-intensive server</strong> — the full server stack with Elasticsearch requires significant memory (4GB+ recommended)</li><li><strong>Python SDK is newer</strong> — Go and Java SDKs are more mature; Python SDK reached production stability more recently</li></ul><h2 id=camunda-8-zeebe>Camunda 8 (Zeebe)</h2><p>Camunda 8 represents a complete re-architecture of the Camunda platform, built around the Zeebe workflow engine. Unlike Camunda 7 (which used a relational database and BPMN execution on a single node), Camunda 8 is designed from the ground up for horizontal scalability and cloud-native deployment.</p><h3 id=architecture-1>Architecture</h3><p>Camunda 8 consists of:</p><ul><li><strong>Zeebe</strong> — the distributed workflow engine that partitions workflow instances across multiple brokers</li><li><strong>Operate</strong> — monitoring dashboard for workflow instances and incidents</li><li><strong>Tasklist</strong> — interface for human task management</li><li><strong>Optimize</strong> — process analytics and performance dashboards</li><li><strong>Identity</strong> — authentication and authorization (Keycloak-based)</li><li><strong>Modeler</strong> — desktop application for designing BPMN workflows visually</li></ul><h3 id=docker-compose-setup-1>Docker Compose Setup</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.9&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>zeebe</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>camunda/zeebe:8.5.5</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME=io.camunda.zeebe.exporter.ElasticsearchExporter</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL=http://elasticsearch:9200</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>ZEEBE_BROKER_NETWORK_HOST=0.0.0.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;26500:26500&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;9600:9600&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>elasticsearch</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>condition</span><span class=p>:</span><span class=w> </span><span class=l>service_healthy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>elasticsearch</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>docker.elastic.co/elasticsearch/elasticsearch:8.13.4</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>discovery.type=single-node</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>xpack.security.enabled=false</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;ES_JAVA_OPTS=-Xms512m -Xmx512m&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;9200:9200&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>healthcheck</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>test</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;CMD-SHELL&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;curl -f http://localhost:9200/_cluster/health || exit 1&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>interval</span><span class=p>:</span><span class=w> </span><span class=l>10s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>retries</span><span class=p>:</span><span class=w> </span><span class=m>10</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>operate</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>camunda/operate:8.5.5</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=zeebe:26500</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>CAMUNDA_OPERATE_ELASTICSEARCH_URL=http://elasticsearch:9200</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8081:8080&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>zeebe</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>elasticsearch</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>tasklist</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>camunda/tasklist:8.5.5</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS=zeebe:26500</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>CAMUNDA_TASKLIST_ELASTICSEARCH_URL=http://elasticsearch:9200</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8082:8080&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>zeebe</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>elasticsearch</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>connectors</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>camunda/connectors-bundle:8.5.5</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>ZEEBE_CLIENT_BROKER_GATEWAY-ADDRESS=zeebe:26500</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>ZEEBE_CLIENT_SECURITY_PLAINTEXT=true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>CAMUNDA_OPERATE_CLIENT_URL=http://operate:8080</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8085:8080&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>zeebe</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Start with:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker compose up -d
+</span></span></code></pre></td></tr></table></div></div><p>Access Operate at <code>http://localhost:8081</code>, Tasklist at <code>http://localhost:8082</code>, and the Connectors at <code>http://localhost:8085</code>.</p><h3 id=defining-a-workflow>Defining a Workflow</h3><p>Camunda 8 uses <strong>BPMN 2.0</strong> (Business Process Model and Notation) — an XML-based visual workflow standard. You design workflows in Camunda Modeler, then deploy them to Zeebe. Here&rsquo;s what a typical order processing workflow looks like in the BPMN XML structure:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-xml data-lang=xml><span class=line><span class=cl><span class=cp>&lt;?xml version=&#34;1.0&#34; encoding=&#34;UTF-8&#34;?&gt;</span>
+</span></span><span class=line><span class=cl><span class=nt>&lt;bpmn:definitions</span> <span class=na>xmlns:bpmn=</span><span class=s>&#34;http://www.omg.org/spec/BPMN/20100524/MODEL&#34;</span><span class=nt>&gt;</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&lt;bpmn:process</span> <span class=na>id=</span><span class=s>&#34;order-fulfillment&#34;</span> <span class=na>name=</span><span class=s>&#34;Order Fulfillment&#34;</span> <span class=na>isExecutable=</span><span class=s>&#34;true&#34;</span><span class=nt>&gt;</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    <span class=nt>&lt;bpmn:startEvent</span> <span class=na>id=</span><span class=s>&#34;start&#34;</span> <span class=na>name=</span><span class=s>&#34;Order Received&#34;</span><span class=nt>&gt;</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&lt;bpmn:outgoing&gt;</span>flow_1<span class=nt>&lt;/bpmn:outgoing&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&lt;/bpmn:startEvent&gt;</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    <span class=nt>&lt;bpmn:serviceTask</span> <span class=na>id=</span><span class=s>&#34;validate_order&#34;</span> <span class=na>name=</span><span class=s>&#34;Validate Order&#34;</span><span class=nt>&gt;</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&lt;bpmn:extensionElements&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&lt;zeebe:taskDefinition</span> <span class=na>type=</span><span class=s>&#34;validate-order&#34;</span> <span class=nt>/&gt;</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&lt;/bpmn:extensionElements&gt;</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&lt;bpmn:incoming&gt;</span>flow_1<span class=nt>&lt;/bpmn:incoming&gt;</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&lt;bpmn:outgoing&gt;</span>flow_2<span class=nt>&lt;/bpmn:outgoing&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&lt;/bpmn:serviceTask&gt;</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    <span class=nt>&lt;bpmn:exclusiveGateway</span> <span class=na>id=</span><span class=s>&#34;payment_gateway&#34;</span> <span class=na>name=</span><span class=s>&#34;Payment Check&#34;</span><span class=nt>&gt;</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&lt;bpmn:incoming&gt;</span>flow_2<span class=nt>&lt;/bpmn:incoming&gt;</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&lt;bpmn:outgoing&gt;</span>flow_3<span class=nt>&lt;/bpmn:outgoing&gt;</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&lt;bpmn:outgoing&gt;</span>flow_4<span class=nt>&lt;/bpmn:outgoing&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&lt;/bpmn:exclusiveGateway&gt;</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    <span class=nt>&lt;bpmn:serviceTask</span> <span class=na>id=</span><span class=s>&#34;process_payment&#34;</span> <span class=na>name=</span><span class=s>&#34;Process Payment&#34;</span><span class=nt>&gt;</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&lt;bpmn:extensionElements&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&lt;zeebe:taskDefinition</span> <span class=na>type=</span><span class=s>&#34;process-payment&#34;</span> <span class=nt>/&gt;</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&lt;/bpmn:extensionElements&gt;</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&lt;bpmn:incoming&gt;</span>flow_3<span class=nt>&lt;/bpmn:incoming&gt;</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&lt;bpmn:outgoing&gt;</span>flow_5<span class=nt>&lt;/bpmn:outgoing&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&lt;/bpmn:serviceTask&gt;</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    <span class=nt>&lt;bpmn:userTask</span> <span class=na>id=</span><span class=s>&#34;manual_review&#34;</span> <span class=na>name=</span><span class=s>&#34;Manual Review&#34;</span><span class=nt>&gt;</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&lt;bpmn:incoming&gt;</span>flow_4<span class=nt>&lt;/bpmn:incoming&gt;</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&lt;bpmn:outgoing&gt;</span>flow_6<span class=nt>&lt;/bpmn:outgoing&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&lt;/bpmn:userTask&gt;</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    <span class=nt>&lt;bpmn:endEvent</span> <span class=na>id=</span><span class=s>&#34;end&#34;</span> <span class=na>name=</span><span class=s>&#34;Order Complete&#34;</span><span class=nt>&gt;</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&lt;bpmn:incoming&gt;</span>flow_5<span class=nt>&lt;/bpmn:incoming&gt;</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&lt;bpmn:incoming&gt;</span>flow_6<span class=nt>&lt;/bpmn:incoming&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&lt;/bpmn:endEvent&gt;</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>  <span class=nt>&lt;/bpmn:process&gt;</span>
+</span></span><span class=line><span class=cl><span class=nt>&lt;/bpmn:definitions&gt;</span>
+</span></span></code></pre></td></tr></table></div></div><p>You then deploy the BPMN file using the Zeebe client:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=kn>from</span> <span class=nn>pyzeebe</span> <span class=kn>import</span> <span class=n>ZeebeClient</span><span class=p>,</span> <span class=n>JobWorker</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>asyncio</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>async</span> <span class=k>def</span> <span class=nf>main</span><span class=p>():</span>
+</span></span><span class=line><span class=cl>    <span class=n>client</span> <span class=o>=</span> <span class=n>ZeebeClient</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    <span class=c1># Deploy the workflow</span>
+</span></span><span class=line><span class=cl>    <span class=k>await</span> <span class=n>client</span><span class=o>.</span><span class=n>deploy_process</span><span class=p>(</span><span class=s2>&#34;order-fulfillment.bpmn&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    <span class=c1># Start a workflow instance</span>
+</span></span><span class=line><span class=cl>    <span class=n>result</span> <span class=o>=</span> <span class=k>await</span> <span class=n>client</span><span class=o>.</span><span class=n>run_process</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;order-fulfillment&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=n>variables</span><span class=o>=</span><span class=p>{</span><span class=s2>&#34;order_id&#34;</span><span class=p>:</span> <span class=s2>&#34;ORD-001&#34;</span><span class=p>,</span> <span class=s2>&#34;amount&#34;</span><span class=p>:</span> <span class=mf>99.99</span><span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=nb>print</span><span class=p>(</span><span class=sa>f</span><span class=s2>&#34;Workflow key: </span><span class=si>{</span><span class=n>result</span><span class=o>.</span><span class=n>process_instance_key</span><span class=si>}</span><span class=s2>&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>asyncio</span><span class=o>.</span><span class=n>run</span><span class=p>(</span><span class=n>main</span><span class=p>())</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=key-strengths-1>Key Strengths</h3><ul><li><strong>BPMN 2.0 standard</strong> — industry-standard visual workflow notation that business analysts and developers can both understand</li><li><strong>Rich visual tooling</strong> — Camunda Modeler provides drag-and-drop workflow design with validation</li><li><strong>Human task management</strong> — Tasklist provides a built-in interface for user tasks (approvals, reviews, manual steps)</li><li><strong>Process analytics</strong> — Optimize offers dashboards for process duration, bottlenecks, and KPI tracking</li><li><strong>Horizontal scalability</strong> — Zeebe partitions workflow instances across multiple brokers for high throughput</li><li><strong>Mature ecosystem</strong> — one of the oldest and most established workflow engine projects, with extensive documentation</li></ul><h3 id=limitations-1>Limitations</h3><ul><li><strong>Heavier infrastructure footprint</strong> — requires Elasticsearch, multiple services, and significant RAM (8GB+ recommended)</li><li><strong>BPMN complexity</strong> — while powerful, BPMN has a steep learning curve and verbose XML</li><li><strong>Camunda 8 SDK maturity</strong> — Python SDK (pyzeebe) is community-maintained; Java SDK is the primary supported language</li><li><strong>Operational complexity</strong> — managing Zeebe partitions, Elasticsearch, and multiple services requires DevOps expertise</li></ul><h2 id=flowable>Flowable</h2><p>Flowable is a fork of Activiti (which itself was created by the original jBPM developers). It provides a lightweight, embeddable workflow engine that supports BPMN 2.0, CMMN (Case Management), and DMN (Decision Table Notation).</p><h3 id=architecture-2>Architecture</h3><p>Flowable&rsquo;s architecture is simpler than Temporal or Camunda 8:</p><ul><li><strong>Flowable Engine</strong> — the core workflow engine, embeddable in any Java application or run standalone</li><li><strong>Flowable UI</strong> — web applications for model design, task management, and administration</li><li><strong>Relational database</strong> — uses PostgreSQL, MySQL, or other RDBMS for persistence (no Elasticsearch required)</li><li><strong>REST API</strong> — comprehensive REST endpoints for all engine operations</li></ul><h3 id=docker-compose-setup-2>Docker Compose Setup</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.9&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>postgresql</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>postgres:16</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_USER</span><span class=p>:</span><span class=w> </span><span class=l>flowable</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_PASSWORD</span><span class=p>:</span><span class=w> </span><span class=l>flowable_password</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_DB</span><span class=p>:</span><span class=w> </span><span class=l>flowable</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>flowable_postgres_data:/var/lib/postgresql/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>healthcheck</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>test</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;CMD-SHELL&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;pg_isready -U flowable&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>interval</span><span class=p>:</span><span class=w> </span><span class=l>5s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>retries</span><span class=p>:</span><span class=w> </span><span class=m>5</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>flowable-ui</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>flowable/flowable-ui:1.7.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>SPRING_DATASOURCE_URL=jdbc:postgresql://postgresql:5432/flowable</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>SPRING_DATASOURCE_USERNAME=flowable</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>SPRING_DATASOURCE_PASSWORD=flowable_password</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>SPRING_DATASOURCE_DRIVER_CLASS_NAME=org.postgresql.Driver</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8080:8080&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>postgresql</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>condition</span><span class=p>:</span><span class=w> </span><span class=l>service_healthy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>flowable_postgres_data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Start with:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker compose up -d
+</span></span></code></pre></td></tr></table></div></div><p>Access the Flowable UI at <code>http://localhost:8080</code> with default credentials <code>admin/test</code>.</p><h3 id=defining-a-workflow-1>Defining a Workflow</h3><p>Flowable uses BPMN 2.0 like Camunda. The Flowable UI includes a built-in modeler for creating workflows visually. Here&rsquo;s the REST API approach to deploy and start a workflow:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Deploy a BPMN process definition</span>
+</span></span><span class=line><span class=cl>curl -X POST http://localhost:8080/flowable-ui/modeling/api/models <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -H <span class=s2>&#34;Content-Type: application/json&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -u admin:test <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -d <span class=s1>&#39;{
+</span></span></span><span class=line><span class=cl><span class=s1>    &#34;name&#34;: &#34;Order Fulfillment Process&#34;,
+</span></span></span><span class=line><span class=cl><span class=s1>    &#34;key&#34;: &#34;orderFulfillment&#34;,
+</span></span></span><span class=line><span class=cl><span class=s1>    &#34;modelType&#34;: 0
+</span></span></span><span class=line><span class=cl><span class=s1>  }&#39;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Start a workflow instance via REST API</span>
+</span></span><span class=line><span class=cl>curl -X POST http://localhost:8080/flowable-rest/service/runtime/process-instances <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -H <span class=s2>&#34;Content-Type: application/json&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -u admin:test <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -d <span class=s1>&#39;{
+</span></span></span><span class=line><span class=cl><span class=s1>    &#34;processDefinitionKey&#34;: &#34;orderFulfillment&#34;,
+</span></span></span><span class=line><span class=cl><span class=s1>    &#34;variables&#34;: [
+</span></span></span><span class=line><span class=cl><span class=s1>      {&#34;name&#34;: &#34;orderId&#34;, &#34;value&#34;: &#34;ORD-001&#34;, &#34;type&#34;: &#34;string&#34;},
+</span></span></span><span class=line><span class=cl><span class=s1>      {&#34;name&#34;: &#34;amount&#34;, &#34;value&#34;: 149.99, &#34;type&#34;: &#34;double&#34;},
+</span></span></span><span class=line><span class=cl><span class=s1>      {&#34;name&#34;: &#34;customerEmail&#34;, &#34;value&#34;: &#34;customer@example.com&#34;, &#34;type&#34;: &#34;string&#34;}
+</span></span></span><span class=line><span class=cl><span class=s1>    ]
+</span></span></span><span class=line><span class=cl><span class=s1>  }&#39;</span>
+</span></span></code></pre></td></tr></table></div></div><p>For Java developers, embedding Flowable in your application is straightforward:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-java data-lang=java><span class=line><span class=cl><span class=nd>@Configuration</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=kd>public</span><span class=w> </span><span class=kd>class</span> <span class=nc>FlowableConfig</span><span class=w> </span><span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nd>@Bean</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=kd>public</span><span class=w> </span><span class=n>ProcessEngine</span><span class=w> </span><span class=nf>processEngine</span><span class=p>(</span><span class=n>DataSource</span><span class=w> </span><span class=n>dataSource</span><span class=p>)</span><span class=w> </span><span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=k>return</span><span class=w> </span><span class=n>ProcessEngineConfiguration</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=p>.</span><span class=na>createStandaloneProcessEngineConfiguration</span><span class=p>()</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=p>.</span><span class=na>setJdbcUrl</span><span class=p>(</span><span class=s>&#34;jdbc:postgresql://localhost:5432/flowable&#34;</span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=p>.</span><span class=na>setJdbcUsername</span><span class=p>(</span><span class=s>&#34;flowable&#34;</span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=p>.</span><span class=na>setJdbcPassword</span><span class=p>(</span><span class=s>&#34;flowable_password&#34;</span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=p>.</span><span class=na>setDatabaseSchemaUpdate</span><span class=p>(</span><span class=n>ProcessEngineConfiguration</span><span class=p>.</span><span class=na>DB_SCHEMA_UPDATE_TRUE</span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=p>.</span><span class=na>buildProcessEngine</span><span class=p>();</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=p>}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nd>@Service</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=kd>public</span><span class=w> </span><span class=kd>class</span> <span class=nc>OrderService</span><span class=w> </span><span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nd>@Autowired</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=kd>private</span><span class=w> </span><span class=n>RuntimeService</span><span class=w> </span><span class=n>runtimeService</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=kd>public</span><span class=w> </span><span class=kt>void</span><span class=w> </span><span class=nf>startOrderFulfillment</span><span class=p>(</span><span class=n>Order</span><span class=w> </span><span class=n>order</span><span class=p>)</span><span class=w> </span><span class=p>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=n>Map</span><span class=o>&lt;</span><span class=n>String</span><span class=p>,</span><span class=w> </span><span class=n>Object</span><span class=o>&gt;</span><span class=w> </span><span class=n>variables</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=k>new</span><span class=w> </span><span class=n>HashMap</span><span class=o>&lt;&gt;</span><span class=p>();</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=n>variables</span><span class=p>.</span><span class=na>put</span><span class=p>(</span><span class=s>&#34;orderId&#34;</span><span class=p>,</span><span class=w> </span><span class=n>order</span><span class=p>.</span><span class=na>getId</span><span class=p>());</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=n>variables</span><span class=p>.</span><span class=na>put</span><span class=p>(</span><span class=s>&#34;amount&#34;</span><span class=p>,</span><span class=w> </span><span class=n>order</span><span class=p>.</span><span class=na>getTotal</span><span class=p>());</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=n>runtimeService</span><span class=p>.</span><span class=na>startProcessInstanceByKey</span><span class=p>(</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=s>&#34;orderFulfillment&#34;</span><span class=p>,</span><span class=w> </span><span class=n>variables</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=p>);</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=p>}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>}</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=key-strengths-2>Key Strengths</h3><ul><li><strong>Lightweight footprint</strong> — runs on a single PostgreSQL instance; no Elasticsearch or message brokers needed</li><li><strong>Embeddable</strong> — integrate the engine directly into your Java application as a library</li><li><strong>Three modeling standards</strong> — BPMN (processes), CMMN (case management), and DMN (decision tables) in one engine</li><li><strong>Simple deployment</strong> — just a database and the Flowable JAR/UI; much simpler than Zeebe&rsquo;s distributed architecture</li><li><strong>REST API completeness</strong> — every engine operation is available via REST, making it easy to integrate from any language</li><li><strong>Spring Boot integration</strong> — first-class Spring Boot support with auto-configuration and starter modules</li><li><strong>Active development</strong> — regular releases with new features and improvements</li></ul><h3 id=limitations-2>Limitations</h3><ul><li><strong>Java-only engine</strong> — while the REST API allows any language to interact, the engine itself runs on the JVM</li><li><strong>No native Python/TypeScript SDKs</strong> — you interact via REST or build your own client library</li><li><strong>Single-node by default</strong> — while clustering is possible, Flowable doesn&rsquo;t have the same horizontal scaling story as Zeebe</li><li><strong>Smaller community</strong> — less active than Temporal or Camunda, though still well-maintained</li></ul><h2 id=comparison-table>Comparison Table</h2><table><thead><tr><th>Feature</th><th>Temporal</th><th>Camunda 8 (Zeebe)</th><th>Flowable</th></tr></thead><tbody><tr><td><strong>Workflow Definition</strong></td><td>Code (Go, Java, Python, TS, .NET)</td><td>BPMN 2.0 (visual + XML)</td><td>BPMN 2.0, CMMN, DMN</td></tr><tr><td><strong>Persistence</strong></td><td>PostgreSQL / Cassandra</td><td>Elasticsearch</td><td>PostgreSQL / MySQL / any RDBMS</td></tr><tr><td><strong>Language Support</strong></td><td>5 official SDKs</td><td>Java (primary), Python (community)</td><td>Java (engine), REST API (any)</td></tr><tr><td><strong>Distributed Architecture</strong></td><td>Yes (history/matching/frontend)</td><td>Yes (partitioned brokers)</td><td>Single-node (clustering optional)</td></tr><tr><td><strong>Human Tasks</strong></td><td>Via activity polling</td><td>Built-in Tasklist UI</td><td>Built-in Task UI</td></tr><tr><td><strong>Visual Designer</strong></td><td>No (code-first)</td><td>Camunda Modeler (excellent)</td><td>Flowable UI Modeler (good)</td></tr><tr><td><strong>Min RAM Requirement</strong></td><td>~2 GB</td><td>~8 GB</td><td>~1 GB</td></tr><tr><td><strong>Retry Policies</strong></td><td>Built-in, highly configurable</td><td>Via BPMN retry time cycle</td><td>Built-in, configurable</td></tr><tr><td><strong>Timer/Delay Support</strong></td><td>Native <code>workflow.sleep()</code></td><td>BPMN timer events</td><td>BPMN timer events</td></tr><tr><td><strong>Cron Scheduling</strong></td><td>Built-in</td><td>Via separate scheduler</td><td>Via Timer start events</td></tr><tr><td><strong>API Style</strong></td><td>gRPC (SDKs)</td><td>gRPC (REST via connectors)</td><td>REST API</td></tr><tr><td><strong>License</strong></td><td>MIT</td><td>Apache 2.0 (source-available for enterprise features)</td><td>Apache 2.0</td></tr><tr><td><strong>Best For</strong></td><td>Engineering teams, code-first workflows</td><td>Enterprise, BPM-driven organizations</td><td>Java/Spring shops, lightweight needs</td></tr></tbody></table><h2 id=which-one-should-you-choose>Which One Should You Choose?</h2><p><strong>Choose Temporal if:</strong> Your team prefers writing workflows in code rather than drawing diagrams. You want the strongest guarantees around workflow durability and replay. You&rsquo;re building microservice-heavy architectures and need SDKs in multiple languages. Temporal&rsquo;s approach feels like writing a normal program that happens to be fault-tolerant.</p><p><strong>Choose Camunda 8 if:</strong> Your organization already uses BPMN or has business analysts who need to design and modify workflows. You need built-in human task management with a polished interface. You want the most mature visual tooling ecosystem and process analytics. You&rsquo;re willing to invest in the infrastructure complexity for horizontal scalability.</p><p><strong>Choose Flowable if:</strong> You&rsquo;re a Java/Spring Boot shop that wants an embeddable engine. You need a lightweight solution that runs on modest hardware. You want all three modeling standards (BPMN, CMMN, DMN) in one package. You prefer a simple architecture with a relational database over distributed systems.</p><h2 id=performance-considerations>Performance Considerations</h2><p>All three engines can handle thousands of workflow instances, but their performance characteristics differ:</p><ul><li><p><strong>Temporal</strong> excels at high-frequency, short-duration workflows because of its efficient history event log and replay mechanism. The matching service uses long-polling to distribute tasks to workers with minimal latency.</p></li><li><p><strong>Camunda 8</strong> is designed for massive scale with partitioning. A single Zeebe broker can handle tens of thousands of workflow instances, and adding brokers increases throughput linearly. However, the Elasticsearch dependency adds operational overhead.</p></li><li><p><strong>Flowable</strong> is optimized for moderate-scale deployments with complex process models. Its relational database approach means queries are fast and familiar, but write throughput is bounded by database performance rather than horizontal scaling.</p></li></ul><h2 id=making-the-decision>Making the Decision</h2><p>The choice between these engines ultimately comes down to three factors:</p><ol><li><strong>How do you want to define workflows?</strong> Code (Temporal) or diagrams (Camunda/Flowable)?</li><li><strong>What infrastructure are you comfortable managing?</strong> A distributed system (Temporal/Camunda 8) or a simple database-backed service (Flowable)?</li><li><strong>What languages does your team use?</strong> Multi-language SDKs (Temporal) or Java-first with REST (Camunda/Flowable)?</li></ol><p>None of these engines is objectively better than the others. They represent three valid approaches to the same problem, each optimized for different organizational contexts and technical preferences. The good news is that all three are open-source and can be evaluated locally with Docker before committing to a production deployment.</p></div><div id=frame style=width:100%;margin:auto;position:relative;z-index:99998><iframe data-aa=2433958 src='//acceptable.a-ads.com/2433958/?size=Adaptive' style=border:0;padding:0;width:70%;height:auto;overflow:hidden;display:block;margin:auto></iframe></div></article></main><footer class=site-footer><p>Built with <a href=https://gohugo.io>Hugo</a> · <a href=/openswap-guide/index.xml>RSS</a> · <a href=https://github.com/hopkdj>GitHub</a></p><p style=margin-top:8px>&copy; 2026 OpenSwap Guide. All rights reserved.</p></footer></body></html>
