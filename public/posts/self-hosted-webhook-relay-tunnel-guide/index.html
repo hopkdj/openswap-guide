@@ -1,0 +1,332 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Best Self-Hosted ngrok Alternatives 2026: frp, Bore & Cloudflare Tunnel | OpenSwap Guide</title>
+<meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, and local AI deployment."><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/openswap-guide/css/main.min.777dc111b5207bf5336e5799477da0b31fb9080306bf98a82d6eceb979cf9737.css><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://hopkdj.github.io/openswap-guide/ class=logo><div class=logo-icon>H</div>OpenSwap Guide</a><nav><ul class=nav-links><li><a href=/openswap-guide/>Home</a></li><li><a href=/openswap-guide/tags/comparison/>Comparisons</a></li><li><a href=/openswap-guide/tags/guide/>Guides</a></li><li><a href=/openswap-guide/tags/ai/>Local AI</a></li><li><a href=/openswap-guide/index.xml class=nav-rss>Subscribe RSS</a></li></ul></nav></div></header><main><article class=post-single><a href=https://hopkdj.github.io/openswap-guide/ class=back-link>&larr; Back to posts</a><header class=post-single-header><div class=post-single-meta><span class="tag tag-purple">comparison</span>
+<span class="tag tag-green">guide</span>
+<span class="tag tag-blue">self-hosted</span>
+<span>·</span>
+<span>April 14, 2026</span>
+<span>·</span>
+<span>10 min read</span></div><h1 class=post-single-title>Best Self-Hosted ngrok Alternatives 2026: frp, Bore & Cloudflare Tunnel</h1></header><div class=post-single-content><p>Developers constantly need to expose local services to the internet — for testing webhooks, demonstrating work-in-progress to clients, collaborating on APIs, or debugging integrations with external platforms. ngrok became the default solution for this, but its free tier comes with limitations: random URLs, session timeouts, connection caps, and an opaque middleman seeing all your traffic.</p><p>In 2026, the landscape of tunnel and relay tools is richer than ever. Open-source alternatives let you self-host your own relay server, use free infrastructure like Cloudflare&rsquo;s global network, or set up lightweight peer-to-peer tunnels. This guide covers three of the most practical options — <strong>frp</strong>, <strong>Bore</strong>, and <strong>Cloudflare Tunnel</strong> — with complete Docker-based setup instructions and a head-to-head comparison.</p><h2 id=why-self-host-your-tunnel--webhook-relay>Why Self-Host Your Tunnel / Webhook Relay</h2><p>Running your own relay infrastructure instead of depending on a third-party tunneling service delivers several tangible advantages:</p><p><strong>No middleman inspecting your traffic.</strong> When you route through a commercial tunnel provider, all HTTP and TCP traffic passes through their servers. Even with TLS, the relay operator can see metadata, connection patterns, and in some configurations, decrypted content. Self-hosting means the traffic path is entirely under your control.</p><p><strong>Permanent, predictable URLs.</strong> Free tiers of tunneling services typically assign a new random URL each session. Paid plans lock in subdomains at $10–25/month. With a self-hosted relay, you define your own domain and subdomain structure once and reuse it indefinitely.</p><p><strong>No connection or bandwidth limits.</strong> Self-hosted solutions are limited only by your server&rsquo;s bandwidth and CPU. A $5 VPS with a 1 Gbps uplink can handle far more throughput than any free-tier tunnel service.</p><p><strong>Support for any protocol.</strong> Many commercial tunnel services only support HTTP/HTTPS and limited TCP forwarding. Open-source alternatives can forward raw TCP, UDP, gRPC, and even custom protocols without restriction.</p><p><strong>Cost transparency.</strong> Once you have a VPS or home server with a public IP, tunneling costs nothing extra. There are no subscription tiers, per-connection fees, or surprise overage charges.</p><h2 id=frp-fast-reverse-proxy-the-battle-tested-relayer>frp (Fast Reverse Proxy): The Battle-Tested Relayer</h2><p><strong>frp</strong> is one of the oldest and most widely deployed open-source reverse proxy solutions. Written in Go, it supports TCP, UDP, HTTP, HTTPS, and STCP (Secret TCP) modes. The project has been actively maintained since 2016 and is used in production environments ranging from IoT deployments to enterprise staging infrastructure.</p><h3 id=architecture>Architecture</h3><p>frp uses a simple server-agent model:</p><ul><li><strong>frps</strong> (server) — runs on a machine with a public IP address; accepts incoming connections and routes them to the appropriate client</li><li><strong>frpc</strong> (client) — runs on your local machine; establishes an outbound connection to frps and registers tunnel rules</li></ul><p>The key insight: frpc initiates the connection to frps, so no inbound firewall rules are needed on the client side. This works behind NAT, corporate firewalls, and restrictive network policies.</p><h3 id=docker-setup-for-frps-server>Docker Setup for frps (Server)</h3><p>Create a Docker Compose file on your public-facing server:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose.yml — frps server</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>frps</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>snowdreamtech/frps:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>frps</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>network_mode</span><span class=p>:</span><span class=w> </span><span class=l>host</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./frps.ini:/etc/frp/frps.ini:ro</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Configuration file for the server:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=c1># frps.ini</span>
+</span></span><span class=line><span class=cl><span class=k>[common]</span>
+</span></span><span class=line><span class=cl><span class=na>bind_port</span> <span class=o>=</span> <span class=s>7000</span>
+</span></span><span class=line><span class=cl><span class=na>bind_udp_port</span> <span class=o>=</span> <span class=s>7001</span>
+</span></span><span class=line><span class=cl><span class=na>kcp_bind_port</span> <span class=o>=</span> <span class=s>7000</span>
+</span></span><span class=line><span class=cl><span class=na>vhost_http_port</span> <span class=o>=</span> <span class=s>8080</span>
+</span></span><span class=line><span class=cl><span class=na>vhost_https_port</span> <span class=o>=</span> <span class=s>8443</span>
+</span></span><span class=line><span class=cl><span class=na>dashboard_port</span> <span class=o>=</span> <span class=s>7500</span>
+</span></span><span class=line><span class=cl><span class=na>dashboard_user</span> <span class=o>=</span> <span class=s>admin</span>
+</span></span><span class=line><span class=cl><span class=na>dashboard_pwd</span> <span class=o>=</span> <span class=s>YOUR_DASHBOARD_PASSWORD</span>
+</span></span><span class=line><span class=cl><span class=na>token</span> <span class=o>=</span> <span class=s>YOUR_AUTH_TOKEN</span>
+</span></span><span class=line><span class=cl><span class=na>log_level</span> <span class=o>=</span> <span class=s>info</span>
+</span></span><span class=line><span class=cl><span class=na>max_ports_per_client</span> <span class=o>=</span> <span class=s>0</span>
+</span></span></code></pre></td></tr></table></div></div><p>Start the server:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker compose up -d
+</span></span></code></pre></td></tr></table></div></div><p>Open <code>http://your-server-ip:7500</code> to access the built-in dashboard showing active tunnels, traffic stats, and connection logs.</p><h3 id=docker-setup-for-frpc-client>Docker Setup for frpc (Client)</h3><p>On your local development machine:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose.yml — frpc client</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>frpc</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>snowdreamtech/frpc:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>frpc</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>network_mode</span><span class=p>:</span><span class=w> </span><span class=l>host</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./frpc.ini:/etc/frp/frpc.ini:ro</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=c1># frpc.ini</span>
+</span></span><span class=line><span class=cl><span class=k>[common]</span>
+</span></span><span class=line><span class=cl><span class=na>server_addr</span> <span class=o>=</span> <span class=s>your-server-ip</span>
+</span></span><span class=line><span class=cl><span class=na>server_port</span> <span class=o>=</span> <span class=s>7000</span>
+</span></span><span class=line><span class=cl><span class=na>token</span> <span class=o>=</span> <span class=s>YOUR_AUTH_TOKEN</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>[web-app]</span>
+</span></span><span class=line><span class=cl><span class=na>type</span> <span class=o>=</span> <span class=s>http</span>
+</span></span><span class=line><span class=cl><span class=na>local_port</span> <span class=o>=</span> <span class=s>3000</span>
+</span></span><span class=line><span class=cl><span class=na>custom_domains</span> <span class=o>=</span> <span class=s>dev.yourdomain.com</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>[ssh-access]</span>
+</span></span><span class=line><span class=cl><span class=na>type</span> <span class=o>=</span> <span class=s>tcp</span>
+</span></span><span class=line><span class=cl><span class=na>local_ip</span> <span class=o>=</span> <span class=s>127.0.0.1</span>
+</span></span><span class=line><span class=cl><span class=na>local_port</span> <span class=o>=</span> <span class=s>22</span>
+</span></span><span class=line><span class=cl><span class=na>remote_port</span> <span class=o>=</span> <span class=s>6000</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>[dns-server]</span>
+</span></span><span class=line><span class=cl><span class=na>type</span> <span class=o>=</span> <span class=s>udp</span>
+</span></span><span class=line><span class=cl><span class=na>local_port</span> <span class=o>=</span> <span class=s>53</span>
+</span></span><span class=line><span class=cl><span class=na>remote_port</span> <span class=o>=</span> <span class=s>6053</span>
+</span></span></code></pre></td></tr></table></div></div><p>Start the client:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker compose up -d
+</span></span></code></pre></td></tr></table></div></div><p>After starting, your local app on port 3000 is accessible at <code>http://dev.yourdomain.com:8080</code>, SSH is reachable via <code>your-server-ip:6000</code>, and DNS is forwarded through UDP on port 6053.</p><h3 id=production-tips>Production Tips</h3><p>For production use, put frps behind a reverse proxy with TLS:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>caddy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>caddy:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;80:80&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;443:443&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./Caddyfile:/etc/caddy/Caddyfile</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>caddy_data:/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>caddy_config:/config</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>frps</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>snowdreamtech/frps:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./frps.ini:/etc/frp/frps.ini:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>caddy_data</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>caddy_config</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-caddyfile data-lang=caddyfile><span class=line><span class=cl><span class=c1># Caddyfile
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=gh>dev.yourdomain.com</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>reverse_proxy</span> <span class=n>frps</span><span class=p>:</span><span class=mi>8080</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>Caddy automatically provisions and renews TLS certificates via Let&rsquo;s Encrypt, giving you HTTPS without manual certificate management.</p><h2 id=bore-the-minimalist-tunnel>Bore: The Minimalist Tunnel</h2><p><strong>Bore</strong> (written in Rust) takes a radically different approach. Where frp offers a Swiss Army knife of features, Bore does one thing extremely well: expose a single local TCP port through a public relay with minimal configuration. The entire client is a single binary with no configuration file needed.</p><h3 id=why-choose-bore>Why Choose Bore</h3><ul><li><strong>Simplicity</strong> — a single command starts a tunnel</li><li><strong>Rust performance</strong> — low memory footprint and fast connection handling</li><li><strong>Authentication</strong> — token-based auth prevents unauthorized use of your relay</li><li><strong>CLI-first</strong> — no dashboard, no YAML, no complex configuration</li></ul><h3 id=server-setup>Server Setup</h3><p>Install Bore on your public server:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>curl -sL https://github.com/ekzhang/bore/releases/latest/download/bore-x86_64-unknown-linux-musl.tar.gz <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  <span class=p>|</span> tar xz -C /usr/local/bin bore
+</span></span></code></pre></td></tr></table></div></div><p>Or use Docker:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>bore-server</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>ekzhang/bore:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>bore-server</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=l>bore-server</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;7835:7835&#34;</span><span class=w>     </span><span class=c># control port</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8000-8100:8000-8100&#34;</span><span class=w>  </span><span class=c># tunnel port range</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>BORE_SECRET=YOUR_SECRET_TOKEN</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>The port range <code>8000-8100</code> defines which remote ports clients can be assigned. Each active tunnel consumes one port from this range.</p><h3 id=client-usage>Client Usage</h3><p>On your local machine, expose port 3000:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>bore <span class=nb>local</span> <span class=m>3000</span> --to your-server-ip --port <span class=m>8000</span> --secret YOUR_SECRET_TOKEN
+</span></span></code></pre></td></tr></table></div></div><p>That&rsquo;s it. The command prints the public URL and forwards all traffic from <code>your-server-ip:8000</code> to <code>localhost:3000</code>. No configuration files, no daemon management.</p><p>For HTTP-specific use with automatic HTTPS via Caddy:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose.yml on the server</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>bore-server</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>ekzhang/bore:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=l>bore-server</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;7835:7835&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8000-8100:8000-8100&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>BORE_SECRET=YOUR_SECRET_TOKEN</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>caddy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>caddy:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;80:80&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;443:443&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./Caddyfile:/etc/caddy/Caddyfile</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>caddy_data:/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>caddy_data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-caddyfile data-lang=caddyfile><span class=line><span class=cl><span class=gh>dev.yourdomain.com</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>reverse_proxy</span> <span class=n>bore-server</span><span class=p>:</span><span class=mi>8000</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=when-bore-falls-short>When Bore Falls Short</h3><p>Bore&rsquo;s minimalism is its strength and its limitation. It only supports TCP forwarding — no HTTP virtual hosting, no UDP, no STCP mode, no built-in dashboard. If you need multiple services behind a single relay with domain-based routing, frp is the better choice.</p><h2 id=cloudflare-tunnel-the-zero-cost-global-option>Cloudflare Tunnel: The Zero-Cost Global Option</h2><p><strong>Cloudflare Tunnel</strong> (cloudflared) is not fully open source, but it is free to use and leverages Cloudflare&rsquo;s global edge network. Unlike frp or Bore, you don&rsquo;t need your own public server — Cloudflare&rsquo;s infrastructure acts as the relay. Traffic is encrypted end-to-end, and you get automatic TLS, DDoS protection, and CDN caching as bonuses.</p><h3 id=architecture-1>Architecture</h3><p>Cloudflare Tunnel works by running a lightweight daemon (<code>cloudflared</code>) on your local machine. This daemon establishes outbound-only connections to the nearest Cloudflare edge location. When a request hits your domain, Cloudflare routes it through the existing tunnel — no inbound ports required.</p><h3 id=installation>Installation</h3><p>Install cloudflared on your local machine:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Linux (amd64)</span>
+</span></span><span class=line><span class=cl>curl -sL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -o /usr/local/bin/cloudflared
+</span></span><span class=line><span class=cl>chmod +x /usr/local/bin/cloudflared
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># macOS</span>
+</span></span><span class=line><span class=cl>brew install cloudflared
+</span></span></code></pre></td></tr></table></div></div><p>Or use Docker:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>cloudflared</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>cloudflare/cloudflared:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>cloudflared</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=l>tunnel --no-autoupdate run --token YOUR_TUNNEL_TOKEN</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=c># or use: command: tunnel run --url http://host.docker.internal:3000</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=quick-setup-via-cli>Quick Setup via CLI</h3><ol><li><strong>Authenticate:</strong></li></ol><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>cloudflared tunnel login
+</span></span></code></pre></td></tr></table></div></div><p>This opens a browser to authorize cloudflared to access your Cloudflare account and creates <code>~/.cloudflared/cert.pem</code>.</p><ol start=2><li><strong>Create a tunnel:</strong></li></ol><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>cloudflared tunnel create dev-tunnel
+</span></span></code></pre></td></tr></table></div></div><p>This outputs a tunnel ID (UUID) and stores credentials in <code>~/.cloudflared/&lt;TUNNEL_ID>.json</code>.</p><ol start=3><li><strong>Route your domain:</strong></li></ol><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>cloudflared tunnel route dns dev-tunnel dev.yourdomain.com
+</span></span></code></pre></td></tr></table></div></div><p>This creates a CNAME record in your Cloudflare DNS zone pointing <code>dev.yourdomain.com</code> to the tunnel.</p><ol start=4><li><strong>Run the tunnel:</strong></li></ol><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>cloudflared tunnel run --url http://localhost:3000 dev-tunnel
+</span></span></code></pre></td></tr></table></div></div><p>Your local application on port 3000 is now accessible at <code>https://dev.yourdomain.com</code> with automatic HTTPS.</p><h3 id=persistent-configuration>Persistent Configuration</h3><p>For a production setup, create a YAML config:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># ~/.cloudflared/config.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>tunnel</span><span class=p>:</span><span class=w> </span><span class=l>YOUR_TUNNEL_ID</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>credentials-file</span><span class=p>:</span><span class=w> </span><span class=l>/root/.cloudflared/YOUR_TUNNEL_ID.json</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>ingress</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=nt>hostname</span><span class=p>:</span><span class=w> </span><span class=l>dev.yourdomain.com</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>service</span><span class=p>:</span><span class=w> </span><span class=l>http://localhost:3000</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=nt>hostname</span><span class=p>:</span><span class=w> </span><span class=l>api.yourdomain.com</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>service</span><span class=p>:</span><span class=w> </span><span class=l>http://localhost:8080</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=nt>hostname</span><span class=p>:</span><span class=w> </span><span class=l>admin.yourdomain.com</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>service</span><span class=p>:</span><span class=w> </span><span class=l>http://localhost:9000</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=c># Optional: add Cloudflare Access authentication</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>access</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>required</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>allow</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span>- <span class=nt>email</span><span class=p>:</span><span class=w> </span><span class=l>admin@yourdomain.com</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=nt>service</span><span class=p>:</span><span class=w> </span><span class=l>http_status:404 </span><span class=w> </span><span class=c># catch-all rule</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Run as a system service:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>sudo cloudflared --config ~/.cloudflared/config.yml service install
+</span></span><span class=line><span class=cl>sudo systemctl <span class=nb>enable</span> --now cloudflared
+</span></span></code></pre></td></tr></table></div></div><h3 id=cloudflare-access-integration>Cloudflare Access Integration</h3><p>One unique advantage: you can add authentication without modifying your application. Cloudflare Access sits in front of your service and requires visitors to authenticate via email, SSO, or one-time PIN:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=w>  </span>- <span class=nt>hostname</span><span class=p>:</span><span class=w> </span><span class=l>admin.yourdomain.com</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>service</span><span class=p>:</span><span class=w> </span><span class=l>http://localhost:9000</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>access</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>required</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>allow</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span>- <span class=nt>email</span><span class=p>:</span><span class=w> </span><span class=l>admin@yourdomain.com</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span>- <span class=nt>email</span><span class=p>:</span><span class=w> </span><span class=l>dev@yourdomain.com</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>No code changes, no OAuth setup — just configuration.</p><h2 id=head-to-head-comparison>Head-to-Head Comparison</h2><table><thead><tr><th>Feature</th><th>frp</th><th>Bore</th><th>Cloudflare Tunnel</th></tr></thead><tbody><tr><td><strong>Open source</strong></td><td>Yes (MIT)</td><td>Yes (MIT)</td><td>No (binary only)</td></tr><tr><td><strong>Language</strong></td><td>Go</td><td>Rust</td><td>Go</td></tr><tr><td><strong>HTTP support</strong></td><td>Yes, with virtual hosting</td><td>TCP only</td><td>Yes, with virtual hosting</td></tr><tr><td><strong>TCP support</strong></td><td>Yes</td><td>Yes</td><td>Yes (via TCP ingress)</td></tr><tr><td><strong>UDP support</strong></td><td>Yes</td><td>No</td><td>No</td></tr><tr><td><strong>STCP mode</strong></td><td>Yes</td><td>No</td><td>No</td></tr><tr><td><strong>Built-in dashboard</strong></td><td>Yes</td><td>No</td><td>No (Cloudflare dashboard)</td></tr><tr><td><strong>TLS / HTTPS</strong></td><td>Via reverse proxy</td><td>Via reverse proxy</td><td>Automatic</td></tr><tr><td><strong>Own server required</strong></td><td>Yes</td><td>Yes</td><td>No</td></tr><tr><td><strong>Cost</strong></td><td>Server cost only</td><td>Server cost only</td><td>Free</td></tr><tr><td><strong>Global edge network</strong></td><td>No</td><td>No</td><td>Yes (300+ locations)</td></tr><tr><td><strong>DDoS protection</strong></td><td>No</td><td>No</td><td>Yes (built into Cloudflare)</td></tr><tr><td><strong>Authentication</strong></td><td>Token-based</td><td>Secret token</td><td>Cloudflare Access (SSO, email)</td></tr><tr><td><strong>Multiple services</strong></td><td>Unlimited per client</td><td>One per connection</td><td>Unlimited via ingress rules</td></tr><tr><td><strong>Setup complexity</strong></td><td>Medium</td><td>Low</td><td>Low</td></tr><tr><td><strong>Docker image</strong></td><td>Official</td><td>Official</td><td>Official</td></tr></tbody></table><h2 id=choosing-the-right-tool>Choosing the Right Tool</h2><p><strong>Use frp when</strong> you need a fully open-source, self-hosted solution with maximum protocol support. It handles HTTP, HTTPS, TCP, UDP, and STCP tunnels simultaneously, has a built-in dashboard for monitoring, and is battle-tested in production environments. The configuration is more involved, but the flexibility is unmatched.</p><p><strong>Use Bore when</strong> you want the simplest possible setup for a quick TCP tunnel. A single command exposes any local port, and the Rust binary has a tiny memory footprint. It&rsquo;s perfect for ad-hoc debugging sessions, temporary demo sharing, or environments where you want minimal infrastructure. The trade-off is no HTTP virtual hosting and no UDP support.</p><p><strong>Use Cloudflare Tunnel when</strong> you want a free, zero-maintenance solution with automatic HTTPS and global edge routing. It eliminates the need for a public server entirely and adds DDoS protection and CDN benefits. The main limitation is the dependency on Cloudflare&rsquo;s infrastructure — if Cloudflare experiences an outage, your tunnel goes down with it.</p><h2 id=security-best-practices>Security Best Practices</h2><p>Regardless of which tool you choose, follow these security guidelines:</p><ol><li><strong>Never tunnel production services</strong> without authentication. Tunnel endpoints are internet-facing by design and will be discovered by automated scanners within minutes.</li><li><strong>Use strong tokens.</strong> The shared secret or token should be at least 32 characters and stored securely — not committed to version control.</li><li><strong>Limit exposed ports.</strong> Only forward the specific ports you need. Do not use wide port ranges unless necessary.</li><li><strong>Add authentication layers.</strong> Use HTTP Basic Auth, Cloudflare Access, or your application&rsquo;s own auth — do not rely on obscurity.</li><li><strong>Monitor connections.</strong> All three tools provide logging. Review connection logs regularly for unexpected access patterns.</li><li><strong>Rotate tokens periodically.</strong> If you suspect a token has been compromised, regenerate it immediately. frp requires updating both <code>frps.ini</code> and all <code>frpc.ini</code> clients; Bore requires restarting the server with a new secret; Cloudflare requires regenerating the tunnel credentials.</li></ol><h2 id=conclusion>Conclusion</h2><p>The days of being locked into ngrok&rsquo;s pricing and limitations are over. Whether you need a fully self-hosted reverse proxy with protocol flexibility (frp), a minimalist one-command tunnel (Bore), or a free global-edge solution with zero infrastructure (Cloudflare Tunnel), there is a mature, well-maintained option available in 2026.</p><p>For most development teams, <strong>frp</strong> provides the best balance of features, transparency, and control. For quick debugging and demos, <strong>Bore</strong> cannot be beaten for simplicity. And for projects already on Cloudflare, <strong>Cloudflare Tunnel</strong> adds tunneling at zero marginal cost with enterprise-grade edge security.</p></div><div id=frame style=width:100%;margin:auto;position:relative;z-index:99998><iframe data-aa=2433958 src='//acceptable.a-ads.com/2433958/?size=Adaptive' style=border:0;padding:0;width:70%;height:auto;overflow:hidden;display:block;margin:auto></iframe></div></article></main><footer class=site-footer><p>Built with <a href=https://gohugo.io>Hugo</a> · <a href=/openswap-guide/index.xml>RSS</a> · <a href=https://github.com/hopkdj>GitHub</a></p><p style=margin-top:8px>&copy; 2026 OpenSwap Guide. All rights reserved.</p></footer></body></html>
