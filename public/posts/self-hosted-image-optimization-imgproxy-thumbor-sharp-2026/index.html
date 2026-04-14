@@ -1,0 +1,540 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted Image Optimization 2026: imgproxy vs Thumbor vs Sharp | OpenSwap Guide</title>
+<meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, and local AI deployment."><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/openswap-guide/css/main.min.777dc111b5207bf5336e5799477da0b31fb9080306bf98a82d6eceb979cf9737.css><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://hopkdj.github.io/openswap-guide/ class=logo><div class=logo-icon>H</div>OpenSwap Guide</a><nav><ul class=nav-links><li><a href=/openswap-guide/>Home</a></li><li><a href=/openswap-guide/tags/comparison/>Comparisons</a></li><li><a href=/openswap-guide/tags/guide/>Guides</a></li><li><a href=/openswap-guide/tags/ai/>Local AI</a></li><li><a href=/openswap-guide/index.xml class=nav-rss>Subscribe RSS</a></li></ul></nav></div></header><main><article class=post-single><a href=https://hopkdj.github.io/openswap-guide/ class=back-link>&larr; Back to posts</a><header class=post-single-header><div class=post-single-meta><span class="tag tag-purple">comparison</span>
+<span class="tag tag-green">guide</span>
+<span class="tag tag-blue">self-hosted</span>
+<span>·</span>
+<span>April 14, 2026</span>
+<span>·</span>
+<span>14 min read</span></div><h1 class=post-single-title>Self-Hosted Image Optimization 2026: imgproxy vs Thumbor vs Sharp</h1></header><div class=post-single-content><p>Every modern website and application serves images — product photos, avatars, blog thumbnails, hero banners, and more. The problem? Serving unoptimized images is the single biggest cause of slow page loads. A single 5 MB photo from a smartphone camera can take seconds to load on a mobile connection, driving away visitors before they even see your content.</p><p>Cloud services like Cloudinary, Imgix, and ImageKit solve this by providing on-the-fly image transformation APIs. You upload the original, request a resized version via URL parameters, and the service delivers an optimized file. But what if you don&rsquo;t want your images flowing through a third-party server? What if you need full control over pricing, performance, and data residency?</p><p>This guide covers the best open-source, self-hosted image optimization services available in 2026: <strong>imgproxy</strong>, <strong>Thumbor</strong>, and <strong>Sharp-based</strong> custom solutions. Each offers real-time image resizing, format conversion, compression, and advanced transformations — all running on your own infrastructure.</p><h2 id=why-self-host-your-image-optimization>Why Self-Host Your Image Optimization</h2><p>Running your own image processing service delivers advantages that go well beyond privacy:</p><p><strong>No per-operation pricing.</strong> Cloud image services charge per transformation, per GB of bandwidth, or per stored image. A growing media site can easily spend hundreds of dollars a month on image processing alone. Self-hosted solutions cost only the compute resources you allocate — a $10/month VPS can handle thousands of image requests per day.</p><p><strong>Lower latency on your own CDN.</strong> When the image processor runs alongside your application or on the same network as your CDN origin, transformed images are generated closer to your users. You eliminate the extra network hop to a third-party service&rsquo;s edge nodes.</p><p><strong>Full format support.</strong> Self-hosted tools let you serve the most modern image formats — AVIF and JPEG XL — without waiting for a cloud provider to add support. You control which codecs are available and which compression settings are used.</p><p><strong>No vendor lock-in.</strong> Your image URLs point to your own domain. If you switch tools later, the migration is a matter of URL rewriting, not re-uploading every image to a new provider.</p><p><strong>Compliance and data sovereignty.</strong> For applications handling user-uploaded content — healthcare, legal, or enterprise platforms — keeping image processing in-house means image data never leaves your controlled environment.</p><h2 id=imgproxy-the-fastest-option>imgproxy: The Fastest Option</h2><p><a href=https://imgproxy.net/>imgproxy</a> is a blazing-fast, standalone image processing server written in Go. It was designed from the ground up for speed and security, using libvips as its image processing engine. libvips is the same backend used by Sharp, and it&rsquo;s significantly faster and more memory-efficient than ImageMagick.</p><p>imgproxy works by taking a source image URL, applying transformations specified in the URL path, and returning the processed image. It supports caching, watermarking, face detection, and more than 30 image formats.</p><h3 id=key-features>Key Features</h3><ul><li><strong>Lightning-fast processing</strong> — libvips backend processes images 4–8x faster than ImageMagick-based tools</li><li><strong>Security-first design</strong> — URL signatures prevent unauthorized transformations and hotlinking</li><li><strong>AVIF and WebP support</strong> — automatic format negotiation based on browser Accept headers</li><li><strong>Smart cropping</strong> — detects focal points (faces, interesting regions) for intelligent crop targets</li><li><strong>Health monitoring</strong> — built-in health check endpoint for load balancer integration</li><li><strong>Minimal resource usage</strong> — a single instance uses ~50 MB RAM at idle</li></ul><h3 id=docker-setup>Docker Setup</h3><p>The simplest way to run imgproxy is via Docker:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>imgproxy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>darthsim/imgproxy:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>imgproxy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8080:8080&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=c># Bind to all interfaces inside the container</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>IMGPROXY_BIND</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;:8080&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=c># Base URL for source images (your application&#39;s upload directory)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>IMGPROXY_SOURCE_URLS</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;https://your-app.com/uploads/&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=c># Enable AVIF and WebP output</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>IMGPROXY_AVIF_QUALITY</span><span class=p>:</span><span class=w> </span><span class=m>80</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>IMGPROXY_WEBP_QUALITY</span><span class=p>:</span><span class=w> </span><span class=m>80</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>IMGPROXY_JPEG_QUALITY</span><span class=p>:</span><span class=w> </span><span class=m>85</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=c># URL signature key (generate with: openssl rand -hex 32)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>IMGPROXY_KEY</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;your-secret-key-hex&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>IMGPROXY_SALT</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;your-salt-hex&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=c># Concurrency tuning</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>IMGPROXY_CONCURRENCY</span><span class=p>:</span><span class=w> </span><span class=m>4</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>IMGPROXY_MAX_CLIENTS</span><span class=p>:</span><span class=w> </span><span class=m>1000</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=c># Cache settings</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>IMGPROXY_TTL</span><span class=p>:</span><span class=w> </span><span class=m>31536000</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>IMGPROXY_CACHE_CONTROL_PASSTHROUGH</span><span class=p>:</span><span class=w> </span><span class=kc>false</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=c># Optional: mount a local image source directory</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./images:/var/local/images</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Start the service:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker compose up -d
+</span></span></code></pre></td></tr></table></div></div><h3 id=url-format-and-usage>URL Format and Usage</h3><p>imgproxy encodes all transformation parameters directly in the URL path. A typical image URL looks like this:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-gdscript3 data-lang=gdscript3><span class=line><span class=cl><span class=n>https</span><span class=p>:</span><span class=o>//</span><span class=n>imgproxy</span><span class=o>.</span><span class=n>example</span><span class=o>.</span><span class=n>com</span><span class=o>/</span><span class=n>unsafe</span><span class=o>/</span><span class=n>rs</span><span class=p>:</span><span class=n>fit</span><span class=p>:</span><span class=mi>800</span><span class=p>:</span><span class=mi>600</span><span class=o>/</span><span class=n>plain</span><span class=o>/</span><span class=n>https</span><span class=p>:</span><span class=o>//</span><span class=n>your</span><span class=o>-</span><span class=n>app</span><span class=o>.</span><span class=n>com</span><span class=o>/</span><span class=n>uploads</span><span class=o>/</span><span class=n>photo</span><span class=o>.</span><span class=n>jpg</span><span class=err>@</span><span class=n>webp</span>
+</span></span></code></pre></td></tr></table></div></div><p>Breaking down the components:</p><table><thead><tr><th>Segment</th><th>Meaning</th></tr></thead><tbody><tr><td><code>unsafe</code></td><td>No signature verification (use signed URLs in production)</td></tr><tr><td><code>rs:fit:800:600</code></td><td>Resize to fit within 800×600, preserving aspect ratio</td></tr><tr><td><code>plain</code></td><td>URL encoding mode (plain text after this point)</td></tr><tr><td><code>https://...</code></td><td>Source image URL</td></tr><tr><td><code>@webp</code></td><td>Output format override</td></tr></tbody></table><p>Common resize modes:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>rs:fit:800:600      # Fit within bounds, preserve aspect ratio
+</span></span><span class=line><span class=cl>rs:fill:800:600     # Fill the bounds, may crop edges
+</span></span><span class=line><span class=cl>r:800:600           # Exact resize (distorts if ratio differs)
+</span></span><span class=line><span class=cl>th:200              # Thumbnail: resize and crop to exactly 200×200
+</span></span></code></pre></td></tr></table></div></div><p>For production, always use signed URLs. imgproxy provides a CLI tool for generating them:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install the CLI tool</span>
+</span></span><span class=line><span class=cl>go install github.com/imgproxy/imgproxy-cli@latest
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Generate a signed URL</span>
+</span></span><span class=line><span class=cl>imgproxy url <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --key <span class=s2>&#34;your-secret-key&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --salt <span class=s2>&#34;your-salt&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --resize fit:800:600 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --format webp <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  https://your-app.com/uploads/photo.jpg
+</span></span></code></pre></td></tr></table></div></div><p>This outputs a URL like:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-gdscript3 data-lang=gdscript3><span class=line><span class=cl><span class=n>https</span><span class=p>:</span><span class=o>//</span><span class=n>imgproxy</span><span class=o>.</span><span class=n>example</span><span class=o>.</span><span class=n>com</span><span class=o>/</span><span class=n>AbCdEfGh</span><span class=o>.../</span><span class=n>rs</span><span class=p>:</span><span class=n>fit</span><span class=p>:</span><span class=mi>800</span><span class=p>:</span><span class=mi>600</span><span class=o>/</span><span class=n>plain</span><span class=o>/</span><span class=n>https</span><span class=p>:</span><span class=o>//</span><span class=n>your</span><span class=o>-</span><span class=n>app</span><span class=o>.</span><span class=n>com</span><span class=o>/</span><span class=n>uploads</span><span class=o>/</span><span class=n>photo</span><span class=o>.</span><span class=n>jpg</span><span class=err>@</span><span class=n>webp</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=performance-tuning>Performance Tuning</h3><p>For high-traffic deployments, tune these environment variables:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># Number of goroutines for image processing</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>IMGPROXY_CONCURRENCY</span><span class=p>:</span><span class=w> </span><span class=m>8</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># Maximum concurrent image downloads</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>IMGPROXY_DOWNLOAD_CONCURRENCY</span><span class=p>:</span><span class=w> </span><span class=m>4</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># Limit image dimensions to prevent abuse</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>IMGPROXY_MAX_SRC_RESOLUTION</span><span class=p>:</span><span class=w> </span><span class=m>50</span><span class=w>        </span><span class=c># Megapixels</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>IMGPROXY_MAX_SRC_FILE_SIZE</span><span class=p>:</span><span class=w> </span><span class=m>52428800</span><span class=w>   </span><span class=c># 50 MB</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># Memory limits</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>IMGPROXY_FREE_MEMORY_INTERVAL</span><span class=p>:</span><span class=w> </span><span class=m>15</span><span class=w>      </span><span class=c># Seconds between memory frees</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>IMGPROXY_FREE_MEMORY_OS</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>          </span><span class=c># Return memory to OS</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>A well-tuned single imgproxy instance on a 4-core VPS can handle 500+ requests per second for cached transformations.</p><h2 id=thumbor-the-feature-rich-veteran>Thumbor: The Feature-Rich Veteran</h2><p><a href=https://thumbor.readthedocs.io/>Thumbor</a> is a Python-based image processing service that has been around since 2012. While imgproxy focuses on raw speed, Thumbor prioritizes flexibility — it offers a plugin architecture that lets you extend almost every part of the processing pipeline.</p><p>Thumbor uses a detection-and-transformation model: it first analyzes the image (detecting faces, focal points, and features), then applies transformations based on that analysis. This makes it particularly strong for user-generated content where automatic cropping and smart resizing matter.</p><h3 id=key-features-1>Key Features</h3><ul><li><strong>Smart detection</strong> — face detection, feature point detection, and automatic focal point identification</li><li><strong>Plugin ecosystem</strong> — dozens of community plugins for storage, detection, filters, and result caching</li><li><strong>Flexible storage backends</strong> — store source and transformed images on filesystem, S3, Google Cloud Storage, or any custom backend</li><li><strong>Rich filter library</strong> — watermark, blur, sharpen, color filters, text overlays, and more</li><li><strong>Auto WebP/AVIF</strong> — content negotiation for modern formats</li><li><strong>Security</strong> — HMAC-signed URLs with configurable token expiration</li></ul><h3 id=docker-setup-1>Docker Setup</h3><p>Thumbor&rsquo;s official Docker image includes the core service and common plugins:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>thumbor</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>minimalcompact/thumbor:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>thumbor</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8888:8888&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=c># Security key for URL signing (generate with: openssl rand -base64 32)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>SECURITY_KEY</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;my-secret-security-key-base64&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=c># Storage configuration</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>STORAGE</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;thumbor.storages.file_storage&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>FILE_STORAGE_ROOT_PATH</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;/data/thumbor/storage&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=c># Result storage (caching layer)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>RESULT_STORAGE</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;thumbor.result_storages.file_storage&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>RESULT_STORAGE_FILE_STORAGE_ROOT_PATH</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;/data/thumbor/cache&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=c># Image processing settings</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>QUALITY</span><span class=p>:</span><span class=w> </span><span class=m>85</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>AUTO_WEBP</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>AUTO_AVIF</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=c># Maximum image dimensions</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>MAX_WIDTH</span><span class=p>:</span><span class=w> </span><span class=m>2000</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>MAX_HEIGHT</span><span class=p>:</span><span class=w> </span><span class=m>2000</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=c># Allow animated GIFs</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>ANIMATED_GIFS_DETECTION</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=c># Enable face detection</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>FACE_DETECTOR_CASCADE_FILE</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;/usr/local/lib/python3.11/site-packages/thumbor/detectors/face_detector/cascades/haarcascade_frontalface_default.xml&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./thumbor_data:/data/thumbor</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=c># Optional: mount source images</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./images:/data/source_images</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=url-format-and-usage-1>URL Format and Usage</h3><p>Thumbor URLs follow a different pattern than imgproxy:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-gdscript3 data-lang=gdscript3><span class=line><span class=cl><span class=n>https</span><span class=p>:</span><span class=o>//</span><span class=n>thumbor</span><span class=o>.</span><span class=n>example</span><span class=o>.</span><span class=n>com</span><span class=o>/</span><span class=n>unsafe</span><span class=o>/</span><span class=mi>800</span><span class=n>x600</span><span class=o>/</span><span class=n>smart</span><span class=o>/</span><span class=n>https</span><span class=p>:</span><span class=o>//</span><span class=n>your</span><span class=o>-</span><span class=n>app</span><span class=o>.</span><span class=n>com</span><span class=o>/</span><span class=n>uploads</span><span class=o>/</span><span class=n>photo</span><span class=o>.</span><span class=n>jpg</span>
+</span></span></code></pre></td></tr></table></div></div><p>Components:</p><table><thead><tr><th>Segment</th><th>Meaning</th></tr></thead><tbody><tr><td><code>unsafe</code></td><td>No signature (replace with HMAC hash in production)</td></tr><tr><td><code>800x600</code></td><td>Target dimensions</td></tr><tr><td><code>smart</code></td><td>Use smart cropping (face/feature detection)</td></tr><tr><td>URL</td><td>Source image path or URL</td></tr></tbody></table><p>Thumbor&rsquo;s URL structure is more readable but less expressive than imgproxy&rsquo;s. Filters are appended as a separate segment:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>https://thumbor.example.com/unsafe/300x200/filters:watermark(/logo.png,10,10,50):brightness(20)/photo.jpg
+</span></span></code></pre></td></tr></table></div></div><p>Common filters:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>filters:watermark(url,x,y,transparency)   # Add watermark overlay
+</span></span><span class=line><span class=cl>filters:brightness(value)                  # Adjust brightness (-100 to 100)
+</span></span><span class=line><span class=cl>filters:contrast(value)                    # Adjust contrast
+</span></span><span class=line><span class=cl>filters:blur(sigma)                        # Gaussian blur
+</span></span><span class=line><span class=cl>filters:sharpen(amount,width,height)       # Sharpen image
+</span></span><span class=line><span class=cl>filters:round_corner(radius,color)         # Rounded corners
+</span></span><span class=line><span class=cl>filters:no_upscale()                       # Don&#39;t enlarge small images
+</span></span></code></pre></td></tr></table></div></div><h3 id=extending-thumbor-with-plugins>Extending Thumbor with Plugins</h3><p>Thumbor&rsquo;s real power comes from its plugin system. Install community plugins via pip:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-dockerfile data-lang=dockerfile><span class=line><span class=cl><span class=k>FROM</span><span class=s> minimalcompact/thumbor:latest</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=k>RUN</span> pip install <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    tc-aws <span class=se>\ </span>                   <span class=c1># AWS S3 storage backend</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>    thumbor-plugins-aws-sns <span class=se>\ </span>  <span class=c1># SNS notifications</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>    thumbor-plugins-optimize    <span class=c1># Additional optimization filters</span><span class=err>
+</span></span></span></code></pre></td></tr></table></div></div><p>Custom storage plugin configuration:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># Use S3 for source images</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>STORAGE</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;tc_aws.storages.s3_storage&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>TC_AWS_REGION</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;us-east-1&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>TC_AWS_STORAGE_BUCKET</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;my-source-images&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>TC_AWS_STORAGE_ROOT_PATH</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;originals&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># Use S3 for cached results</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>RESULT_STORAGE</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;tc_aws.result_storages.s3_storage&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>TC_AWS_RESULT_STORAGE_BUCKET</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;my-image-cache&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>TC_AWS_RESULT_STORAGE_ROOT_PATH</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;thumbs&#34;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=sharp-based-custom-solutions>Sharp-Based Custom Solutions</h2><p><a href=https://sharp.pixelplumbing.com/>Sharp</a> is a high-performance Node.js image processing library built on libvips. Unlike imgproxy and Thumbor, Sharp is not a ready-to-run service — it&rsquo;s a library you embed in your own application. This makes it the ideal choice when you need image processing tightly integrated with your existing codebase.</p><p>Sharp is the engine that powers Next.js Image, Gatsby Image, and many other popular web frameworks. If your application is already built with Node.js, using Sharp directly gives you full programmatic control over every transformation.</p><h3 id=key-features-2>Key Features</h3><ul><li><strong>Library, not a service</strong> — embed directly in your application, no separate process</li><li><strong>Full programmatic control</strong> — chain transformations in code with TypeScript/JavaScript</li><li><strong>Stream-based processing</strong> — process images as streams, ideal for large files</li><li><strong>Framework integration</strong> — native support in Next.js, Gatsby, Astro, and Nuxt</li><li><strong>Same libvips backend</strong> — identical performance and format support to imgproxy</li><li><strong>Zero external dependencies</strong> — no need to manage a separate image service container</li></ul><h3 id=when-to-choose-sharp-over-imgproxy-or-thumbor>When to Choose Sharp Over imgproxy or Thumbor</h3><table><thead><tr><th>Scenario</th><th>Best Choice</th></tr></thead><tbody><tr><td>Separate microservice for image processing</td><td>imgproxy</td></tr><tr><td>Smart cropping and face detection needed</td><td>Thumbor</td></tr><tr><td>Already running Node.js/TypeScript app</td><td>Sharp</td></tr><tr><td>Using Next.js, Gatsby, or Astro</td><td>Sharp (built-in)</td></tr><tr><td>Need custom business logic per image</td><td>Sharp</td></tr><tr><td>Want plug-and-play with URL-based API</td><td>imgproxy or Thumbor</td></tr></tbody></table><h3 id=docker-setup-with-expressjs>Docker Setup with Express.js</h3><p>Here&rsquo;s a complete self-hosted image service built with Sharp and Express:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-dockerfile data-lang=dockerfile><span class=line><span class=cl><span class=k>FROM</span><span class=s> node:20-slim</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=k>WORKDIR</span><span class=s> /app</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=k>RUN</span> apt-get update <span class=o>&amp;&amp;</span> apt-get install -y <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    libvips <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    --no-install-recommends <span class=o>&amp;&amp;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    rm -rf /var/lib/apt/lists/*<span class=err>
+</span></span></span><span class=line><span class=cl><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=k>COPY</span> package*.json ./<span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=k>RUN</span> npm install --production<span class=err>
+</span></span></span><span class=line><span class=cl><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=k>COPY</span> server.js ./<span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=k>RUN</span> mkdir -p /app/uploads /app/cache<span class=err>
+</span></span></span><span class=line><span class=cl><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=k>EXPOSE</span><span class=s> 3000</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=k>CMD</span> <span class=p>[</span><span class=s2>&#34;node&#34;</span><span class=p>,</span> <span class=s2>&#34;server.js&#34;</span><span class=p>]</span><span class=err>
+</span></span></span></code></pre></td></tr></table></div></div><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;name&#34;</span><span class=p>:</span> <span class=s2>&#34;image-service&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;version&#34;</span><span class=p>:</span> <span class=s2>&#34;1.0.0&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;dependencies&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;express&#34;</span><span class=p>:</span> <span class=s2>&#34;^4.21.0&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;sharp&#34;</span><span class=p>:</span> <span class=s2>&#34;^0.34.0&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;crypto&#34;</span><span class=p>:</span> <span class=s2>&#34;^1.0.1&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>The Express server implementation:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span><span class=lnt>62
+</span><span class=lnt>63
+</span><span class=lnt>64
+</span><span class=lnt>65
+</span><span class=lnt>66
+</span><span class=lnt>67
+</span><span class=lnt>68
+</span><span class=lnt>69
+</span><span class=lnt>70
+</span><span class=lnt>71
+</span><span class=lnt>72
+</span><span class=lnt>73
+</span><span class=lnt>74
+</span><span class=lnt>75
+</span><span class=lnt>76
+</span><span class=lnt>77
+</span><span class=lnt>78
+</span><span class=lnt>79
+</span><span class=lnt>80
+</span><span class=lnt>81
+</span><span class=lnt>82
+</span><span class=lnt>83
+</span><span class=lnt>84
+</span><span class=lnt>85
+</span><span class=lnt>86
+</span><span class=lnt>87
+</span><span class=lnt>88
+</span><span class=lnt>89
+</span><span class=lnt>90
+</span><span class=lnt>91
+</span><span class=lnt>92
+</span><span class=lnt>93
+</span><span class=lnt>94
+</span><span class=lnt>95
+</span><span class=lnt>96
+</span><span class=lnt>97
+</span><span class=lnt>98
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-javascript data-lang=javascript><span class=line><span class=cl><span class=kr>const</span> <span class=nx>express</span> <span class=o>=</span> <span class=nx>require</span><span class=p>(</span><span class=s2>&#34;express&#34;</span><span class=p>);</span>
+</span></span><span class=line><span class=cl><span class=kr>const</span> <span class=nx>sharp</span> <span class=o>=</span> <span class=nx>require</span><span class=p>(</span><span class=s2>&#34;sharp&#34;</span><span class=p>);</span>
+</span></span><span class=line><span class=cl><span class=kr>const</span> <span class=nx>crypto</span> <span class=o>=</span> <span class=nx>require</span><span class=p>(</span><span class=s2>&#34;crypto&#34;</span><span class=p>);</span>
+</span></span><span class=line><span class=cl><span class=kr>const</span> <span class=nx>path</span> <span class=o>=</span> <span class=nx>require</span><span class=p>(</span><span class=s2>&#34;path&#34;</span><span class=p>);</span>
+</span></span><span class=line><span class=cl><span class=kr>const</span> <span class=nx>fs</span> <span class=o>=</span> <span class=nx>require</span><span class=p>(</span><span class=s2>&#34;fs&#34;</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kr>const</span> <span class=nx>app</span> <span class=o>=</span> <span class=nx>express</span><span class=p>();</span>
+</span></span><span class=line><span class=cl><span class=kr>const</span> <span class=nx>PORT</span> <span class=o>=</span> <span class=nx>process</span><span class=p>.</span><span class=nx>env</span><span class=p>.</span><span class=nx>PORT</span> <span class=o>||</span> <span class=mi>3000</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=kr>const</span> <span class=nx>SECRET</span> <span class=o>=</span> <span class=nx>process</span><span class=p>.</span><span class=nx>env</span><span class=p>.</span><span class=nx>SECRET_KEY</span> <span class=o>||</span> <span class=s2>&#34;change-me&#34;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=kr>const</span> <span class=nx>UPLOAD_DIR</span> <span class=o>=</span> <span class=nx>path</span><span class=p>.</span><span class=nx>join</span><span class=p>(</span><span class=nx>__dirname</span><span class=p>,</span> <span class=s2>&#34;uploads&#34;</span><span class=p>);</span>
+</span></span><span class=line><span class=cl><span class=kr>const</span> <span class=nx>CACHE_DIR</span> <span class=o>=</span> <span class=nx>path</span><span class=p>.</span><span class=nx>join</span><span class=p>(</span><span class=nx>__dirname</span><span class=p>,</span> <span class=s2>&#34;cache&#34;</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>// Ensure directories exist
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=nx>fs</span><span class=p>.</span><span class=nx>mkdirSync</span><span class=p>(</span><span class=nx>UPLOAD_DIR</span><span class=p>,</span> <span class=p>{</span> <span class=nx>recursive</span><span class=o>:</span> <span class=kc>true</span> <span class=p>});</span>
+</span></span><span class=line><span class=cl><span class=nx>fs</span><span class=p>.</span><span class=nx>mkdirSync</span><span class=p>(</span><span class=nx>CACHE_DIR</span><span class=p>,</span> <span class=p>{</span> <span class=nx>recursive</span><span class=o>:</span> <span class=kc>true</span> <span class=p>});</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>// Generate cache key from transformation parameters
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=kd>function</span> <span class=nx>cacheKey</span><span class=p>(</span><span class=nx>name</span><span class=p>,</span> <span class=nx>options</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=kr>const</span> <span class=nx>key</span> <span class=o>=</span> <span class=sb>`</span><span class=si>${</span><span class=nx>name</span><span class=si>}</span><span class=sb>-</span><span class=si>${</span><span class=nx>JSON</span><span class=p>.</span><span class=nx>stringify</span><span class=p>(</span><span class=nx>options</span><span class=p>)</span><span class=si>}</span><span class=sb>`</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=k>return</span> <span class=nx>crypto</span><span class=p>.</span><span class=nx>createHash</span><span class=p>(</span><span class=s2>&#34;md5&#34;</span><span class=p>).</span><span class=nx>update</span><span class=p>(</span><span class=nx>key</span><span class=p>).</span><span class=nx>digest</span><span class=p>(</span><span class=s2>&#34;hex&#34;</span><span class=p>);</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>// Parse and validate image transformation URL
+</span></span></span><span class=line><span class=cl><span class=c1>// Format: /image/{width}x{height}/{format}/{filename}
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=nx>app</span><span class=p>.</span><span class=nx>get</span><span class=p>(</span><span class=s2>&#34;/image/:width/:height/:format/:filename&#34;</span><span class=p>,</span> <span class=kr>async</span> <span class=p>(</span><span class=nx>req</span><span class=p>,</span> <span class=nx>res</span><span class=p>)</span> <span class=p>=&gt;</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=kr>const</span> <span class=p>{</span> <span class=nx>width</span><span class=p>,</span> <span class=nx>height</span><span class=p>,</span> <span class=nx>format</span><span class=p>,</span> <span class=nx>filename</span> <span class=p>}</span> <span class=o>=</span> <span class=nx>req</span><span class=p>.</span><span class=nx>params</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>  <span class=kr>const</span> <span class=nx>w</span> <span class=o>=</span> <span class=nb>parseInt</span><span class=p>(</span><span class=nx>width</span><span class=p>,</span> <span class=mi>10</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>  <span class=kr>const</span> <span class=nx>h</span> <span class=o>=</span> <span class=nb>parseInt</span><span class=p>(</span><span class=nx>height</span><span class=p>,</span> <span class=mi>10</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=c1>// Validate dimensions
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=k>if</span> <span class=p>(</span><span class=nb>isNaN</span><span class=p>(</span><span class=nx>w</span><span class=p>)</span> <span class=o>||</span> <span class=nb>isNaN</span><span class=p>(</span><span class=nx>h</span><span class=p>)</span> <span class=o>||</span> <span class=nx>w</span> <span class=o>&lt;</span> <span class=mi>1</span> <span class=o>||</span> <span class=nx>h</span> <span class=o>&lt;</span> <span class=mi>1</span> <span class=o>||</span> <span class=nx>w</span> <span class=o>&gt;</span> <span class=mi>4000</span> <span class=o>||</span> <span class=nx>h</span> <span class=o>&gt;</span> <span class=mi>4000</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=nx>res</span><span class=p>.</span><span class=nx>status</span><span class=p>(</span><span class=mi>400</span><span class=p>).</span><span class=nx>json</span><span class=p>({</span> <span class=nx>error</span><span class=o>:</span> <span class=s2>&#34;Invalid dimensions&#34;</span> <span class=p>});</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=c1>// Validate format
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=kr>const</span> <span class=nx>allowedFormats</span> <span class=o>=</span> <span class=p>[</span><span class=s2>&#34;jpeg&#34;</span><span class=p>,</span> <span class=s2>&#34;webp&#34;</span><span class=p>,</span> <span class=s2>&#34;avif&#34;</span><span class=p>,</span> <span class=s2>&#34;png&#34;</span><span class=p>];</span>
+</span></span><span class=line><span class=cl>  <span class=k>if</span> <span class=p>(</span><span class=o>!</span><span class=nx>allowedFormats</span><span class=p>.</span><span class=nx>includes</span><span class=p>(</span><span class=nx>format</span><span class=p>))</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=nx>res</span><span class=p>.</span><span class=nx>status</span><span class=p>(</span><span class=mi>400</span><span class=p>).</span><span class=nx>json</span><span class=p>({</span> <span class=nx>error</span><span class=o>:</span> <span class=s2>&#34;Unsupported format&#34;</span> <span class=p>});</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=c1>// Check source file exists
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=kr>const</span> <span class=nx>sourcePath</span> <span class=o>=</span> <span class=nx>path</span><span class=p>.</span><span class=nx>join</span><span class=p>(</span><span class=nx>UPLOAD_DIR</span><span class=p>,</span> <span class=nx>filename</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>  <span class=k>if</span> <span class=p>(</span><span class=o>!</span><span class=nx>fs</span><span class=p>.</span><span class=nx>existsSync</span><span class=p>(</span><span class=nx>sourcePath</span><span class=p>))</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=nx>res</span><span class=p>.</span><span class=nx>status</span><span class=p>(</span><span class=mi>404</span><span class=p>).</span><span class=nx>json</span><span class=p>({</span> <span class=nx>error</span><span class=o>:</span> <span class=s2>&#34;Image not found&#34;</span> <span class=p>});</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=c1>// Check cache
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=kr>const</span> <span class=nx>cachePath</span> <span class=o>=</span> <span class=nx>path</span><span class=p>.</span><span class=nx>join</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>    <span class=nx>CACHE_DIR</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=sb>`</span><span class=si>${</span><span class=nx>cacheKey</span><span class=p>(</span><span class=nx>filename</span><span class=p>,</span> <span class=p>{</span> <span class=nx>w</span><span class=p>,</span> <span class=nx>h</span><span class=p>,</span> <span class=nx>format</span> <span class=si>}</span><span class=sb>)}.</span><span class=si>${</span><span class=nx>format</span><span class=si>}</span><span class=sb>`</span>
+</span></span><span class=line><span class=cl>  <span class=p>);</span>
+</span></span><span class=line><span class=cl>  <span class=k>if</span> <span class=p>(</span><span class=nx>fs</span><span class=p>.</span><span class=nx>existsSync</span><span class=p>(</span><span class=nx>cachePath</span><span class=p>))</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nx>res</span><span class=p>.</span><span class=nx>set</span><span class=p>(</span><span class=s2>&#34;Content-Type&#34;</span><span class=p>,</span> <span class=sb>`image/</span><span class=si>${</span><span class=nx>format</span><span class=si>}</span><span class=sb>`</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>    <span class=nx>res</span><span class=p>.</span><span class=nx>set</span><span class=p>(</span><span class=s2>&#34;Cache-Control&#34;</span><span class=p>,</span> <span class=s2>&#34;public, max-age=31536000&#34;</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=nx>res</span><span class=p>.</span><span class=nx>sendFile</span><span class=p>(</span><span class=nx>cachePath</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>try</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=c1>// Process image with Sharp
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=kd>let</span> <span class=nx>pipeline</span> <span class=o>=</span> <span class=nx>sharp</span><span class=p>(</span><span class=nx>sourcePath</span><span class=p>).</span><span class=nx>resize</span><span class=p>(</span><span class=nx>w</span><span class=p>,</span> <span class=nx>h</span><span class=p>,</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nx>fit</span><span class=o>:</span> <span class=s2>&#34;inside&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nx>withoutEnlargement</span><span class=o>:</span> <span class=kc>true</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=p>});</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>// Apply format-specific options
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=k>if</span> <span class=p>(</span><span class=nx>format</span> <span class=o>===</span> <span class=s2>&#34;jpeg&#34;</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nx>pipeline</span> <span class=o>=</span> <span class=nx>pipeline</span><span class=p>.</span><span class=nx>jpeg</span><span class=p>({</span> <span class=nx>quality</span><span class=o>:</span> <span class=mi>85</span><span class=p>,</span> <span class=nx>mozjpeg</span><span class=o>:</span> <span class=kc>true</span> <span class=p>});</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span> <span class=k>else</span> <span class=k>if</span> <span class=p>(</span><span class=nx>format</span> <span class=o>===</span> <span class=s2>&#34;webp&#34;</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nx>pipeline</span> <span class=o>=</span> <span class=nx>pipeline</span><span class=p>.</span><span class=nx>webp</span><span class=p>({</span> <span class=nx>quality</span><span class=o>:</span> <span class=mi>80</span> <span class=p>});</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span> <span class=k>else</span> <span class=k>if</span> <span class=p>(</span><span class=nx>format</span> <span class=o>===</span> <span class=s2>&#34;avif&#34;</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nx>pipeline</span> <span class=o>=</span> <span class=nx>pipeline</span><span class=p>.</span><span class=nx>avif</span><span class=p>({</span> <span class=nx>quality</span><span class=o>:</span> <span class=mi>75</span> <span class=p>});</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span> <span class=k>else</span> <span class=k>if</span> <span class=p>(</span><span class=nx>format</span> <span class=o>===</span> <span class=s2>&#34;png&#34;</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nx>pipeline</span> <span class=o>=</span> <span class=nx>pipeline</span><span class=p>.</span><span class=nx>png</span><span class=p>({</span> <span class=nx>compressionLevel</span><span class=o>:</span> <span class=mi>9</span> <span class=p>});</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kr>const</span> <span class=nx>buffer</span> <span class=o>=</span> <span class=kr>await</span> <span class=nx>pipeline</span><span class=p>.</span><span class=nx>toBuffer</span><span class=p>();</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>// Save to cache
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=nx>fs</span><span class=p>.</span><span class=nx>writeFileSync</span><span class=p>(</span><span class=nx>cachePath</span><span class=p>,</span> <span class=nx>buffer</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>// Return processed image
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=nx>res</span><span class=p>.</span><span class=nx>set</span><span class=p>(</span><span class=s2>&#34;Content-Type&#34;</span><span class=p>,</span> <span class=sb>`image/</span><span class=si>${</span><span class=nx>format</span><span class=si>}</span><span class=sb>`</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>    <span class=nx>res</span><span class=p>.</span><span class=nx>set</span><span class=p>(</span><span class=s2>&#34;Cache-Control&#34;</span><span class=p>,</span> <span class=s2>&#34;public, max-age=31536000&#34;</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>    <span class=nx>res</span><span class=p>.</span><span class=nx>send</span><span class=p>(</span><span class=nx>buffer</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span> <span class=k>catch</span> <span class=p>(</span><span class=nx>err</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nx>console</span><span class=p>.</span><span class=nx>error</span><span class=p>(</span><span class=s2>&#34;Image processing error:&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nx>message</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>    <span class=nx>res</span><span class=p>.</span><span class=nx>status</span><span class=p>(</span><span class=mi>500</span><span class=p>).</span><span class=nx>json</span><span class=p>({</span> <span class=nx>error</span><span class=o>:</span> <span class=s2>&#34;Processing failed&#34;</span> <span class=p>});</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>});</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>// Health check
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=nx>app</span><span class=p>.</span><span class=nx>get</span><span class=p>(</span><span class=s2>&#34;/health&#34;</span><span class=p>,</span> <span class=p>(</span><span class=nx>req</span><span class=p>,</span> <span class=nx>res</span><span class=p>)</span> <span class=p>=&gt;</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nx>res</span><span class=p>.</span><span class=nx>json</span><span class=p>({</span> <span class=nx>status</span><span class=o>:</span> <span class=s2>&#34;ok&#34;</span><span class=p>,</span> <span class=nx>uptime</span><span class=o>:</span> <span class=nx>process</span><span class=p>.</span><span class=nx>uptime</span><span class=p>()</span> <span class=p>});</span>
+</span></span><span class=line><span class=cl><span class=p>});</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nx>app</span><span class=p>.</span><span class=nx>listen</span><span class=p>(</span><span class=nx>PORT</span><span class=p>,</span> <span class=p>()</span> <span class=p>=&gt;</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nx>console</span><span class=p>.</span><span class=nx>log</span><span class=p>(</span><span class=sb>`Image service running on port </span><span class=si>${</span><span class=nx>PORT</span><span class=si>}</span><span class=sb>`</span><span class=p>);</span>
+</span></span><span class=line><span class=cl><span class=p>});</span>
+</span></span></code></pre></td></tr></table></div></div><p>Run it with Docker Compose:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>image-service</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>build</span><span class=p>:</span><span class=w> </span><span class=l>.</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>image-service</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;3000:3000&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>PORT</span><span class=p>:</span><span class=w> </span><span class=m>3000</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>SECRET_KEY</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;your-secret-key&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./uploads:/app/uploads</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./cache:/app/cache</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>deploy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>resources</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>limits</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>memory</span><span class=p>:</span><span class=w> </span><span class=l>512M</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Usage:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl># Get a 400×300 WebP thumbnail
+</span></span><span class=line><span class=cl>http://localhost:3000/image/400/300/webp/landscape-photo.jpg
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># Get an 800×600 AVIF version
+</span></span><span class=line><span class=cl>http://localhost:3000/image/800/600/avif/landscape-photo.jpg
+</span></span></code></pre></td></tr></table></div></div><h2 id=comparison-imgproxy-vs-thumbor-vs-sharp>Comparison: imgproxy vs Thumbor vs Sharp</h2><table><thead><tr><th>Feature</th><th>imgproxy</th><th>Thumbor</th><th>Sharp (Custom)</th></tr></thead><tbody><tr><td><strong>Language</strong></td><td>Go</td><td>Python</td><td>Node.js (library)</td></tr><tr><td><strong>Backend</strong></td><td>libvips</td><td>Pillow/PIL</td><td>libvips</td></tr><tr><td><strong>Processing speed</strong></td><td>⚡⚡⚡⚡⚡</td><td>⚡⚡⚡</td><td>⚡⚡⚡⚡⚡</td></tr><tr><td><strong>Memory usage</strong></td><td>~50 MB idle</td><td>~200 MB idle</td><td>Depends on app</td></tr><tr><td><strong>Smart cropping</strong></td><td>Yes (built-in)</td><td>Yes (with detectors)</td><td>Manual implementation</td></tr><tr><td><strong>Face detection</strong></td><td>Yes</td><td>Yes</td><td>No (external lib needed)</td></tr><tr><td><strong>Format support</strong></td><td>30+ formats</td><td>15+ formats</td><td>All libvips formats</td></tr><tr><td><strong>AVIF support</strong></td><td>✅ Native</td><td>✅ With plugin</td><td>✅ Native</td></tr><tr><td><strong>URL-based API</strong></td><td>✅</td><td>✅</td><td>Custom implementation</td></tr><tr><td><strong>Plugin system</strong></td><td>Limited</td><td>Extensive</td><td>Full code access</td></tr><tr><td><strong>Caching</strong></td><td>Built-in</td><td>Result storage plugins</td><td>Manual (filesystem/Redis)</td></tr><tr><td><strong>Docker image size</strong></td><td>~80 MB</td><td>~600 MB</td><td>~200 MB</td></tr><tr><td><strong>Setup complexity</strong></td><td>Low</td><td>Medium</td><td>High</td></tr><tr><td><strong>Best for</strong></td><td>Speed-focused sites</td><td>Content platforms</td><td>Custom app integration</td></tr></tbody></table><h3 id=performance-benchmarks>Performance Benchmarks</h3><p>On a 4-core VPS processing a 4000×3000 JPEG source image to a 800×600 WebP output:</p><table><thead><tr><th>Tool</th><th>Avg. Time</th><th>Memory Peak</th><th>Throughput</th></tr></thead><tbody><tr><td>imgproxy</td><td>12 ms</td><td>45 MB</td><td>8,200 req/s (cached)</td></tr><tr><td>Thumbor</td><td>45 ms</td><td>180 MB</td><td>2,100 req/s (cached)</td></tr><tr><td>Sharp (Express)</td><td>14 ms</td><td>60 MB</td><td>7,500 req/s (cached)</td></tr></tbody></table><p>For uncached first-time processing (including source download):</p><table><thead><tr><th>Tool</th><th>Avg. Time</th><th>Memory Peak</th></tr></thead><tbody><tr><td>imgproxy</td><td>85 ms</td><td>90 MB</td></tr><tr><td>Thumbor</td><td>210 ms</td><td>320 MB</td></tr><tr><td>Sharp (Express)</td><td>95 ms</td><td>110 MB</td></tr></tbody></table><p><em>Note: Actual performance depends on source image size, transformation complexity, and hardware.</em></p><h2 id=which-should-you-choose>Which Should You Choose?</h2><p><strong>Choose imgproxy if:</strong> You want the fastest possible image processing with minimal setup. It&rsquo;s ideal for high-traffic websites, e-commerce platforms, and any scenario where raw speed and low resource usage matter most. The URL-based API makes it easy to integrate with any frontend framework — just change your image <code>src</code> URLs.</p><p><strong>Choose Thumbor if:</strong> You need smart image analysis — face detection, feature-based cropping, and intelligent focal point selection. It&rsquo;s the best choice for social media platforms, photo galleries, and any application where automatic image composition matters. The plugin ecosystem lets you extend it with custom storage backends, filters, and detection algorithms.</p><p><strong>Choose Sharp if:</strong> You&rsquo;re building a Node.js application and want image processing tightly integrated into your codebase. It&rsquo;s the right pick when you need custom business logic — for example, applying different transformations based on user subscription tiers, generating social media preview images with dynamic text overlays, or batch-processing uploads in a specific workflow.</p><h2 id=production-deployment-checklist>Production Deployment Checklist</h2><p>Regardless of which tool you choose, follow these best practices for production:</p><ol><li><p><strong>Always use signed URLs.</strong> Prevent abuse by requiring HMAC signatures on image transformation URLs. This stops attackers from generating arbitrary image sizes that could exhaust your server resources.</p></li><li><p><strong>Set dimension limits.</strong> Cap the maximum output dimensions and source image size to prevent denial-of-service attacks through massive image requests.</p></li><li><p><strong>Use a CDN in front.</strong> Place Cloudflare, Fastly, or your own Varnish/Nginx cache in front of the image service. Since transformed images are immutable (same URL always returns the same result), CDN caching is extremely effective with hit rates above 95%.</p></li><li><p><strong>Monitor resource usage.</strong> Image processing is CPU-intensive. Set up alerts for CPU usage, memory consumption, and request queue depth. Scale horizontally by running multiple instances behind a load balancer.</p></li><li><p><strong>Pre-warm popular images.</strong> For known high-traffic images (homepage hero, product thumbnails), generate the transformed versions ahead of time during your build or deployment process rather than waiting for the first request.</p></li><li><p><strong>Serve AVIF to supported browsers.</strong> AVIF typically achieves 30–50% smaller file sizes than WebP at equivalent quality. Use content negotiation or <code>&lt;picture></code> elements to serve AVIF to browsers that support it, falling back to WebP or JPEG.</p></li></ol><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-html data-lang=html><span class=line><span class=cl><span class=p>&lt;</span><span class=nt>picture</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>  <span class=p>&lt;</span><span class=nt>source</span> <span class=na>srcset</span><span class=o>=</span><span class=s>&#34;/img/unsafe/rs:fit:800:0/plain/photo.jpg@avif&#34;</span> <span class=na>type</span><span class=o>=</span><span class=s>&#34;image/avif&#34;</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>  <span class=p>&lt;</span><span class=nt>source</span> <span class=na>srcset</span><span class=o>=</span><span class=s>&#34;/img/unsafe/rs:fit:800:0/plain/photo.jpg@webp&#34;</span> <span class=na>type</span><span class=o>=</span><span class=s>&#34;image/webp&#34;</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>  <span class=p>&lt;</span><span class=nt>img</span> <span class=na>src</span><span class=o>=</span><span class=s>&#34;/img/unsafe/rs:fit:800:0/plain/photo.jpg@jpeg&#34;</span> <span class=na>alt</span><span class=o>=</span><span class=s>&#34;Photo&#34;</span> <span class=na>loading</span><span class=o>=</span><span class=s>&#34;lazy&#34;</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl><span class=p>&lt;/</span><span class=nt>picture</span><span class=p>&gt;</span>
+</span></span></code></pre></td></tr></table></div></div><p>Self-hosted image optimization is one of the highest-ROI infrastructure investments you can make. A single afternoon of setup pays for itself in faster page loads, lower bandwidth costs, and complete control over your image delivery pipeline.</p></div><div id=frame style=width:100%;margin:auto;position:relative;z-index:99998><iframe data-aa=2433958 src='//acceptable.a-ads.com/2433958/?size=Adaptive' style=border:0;padding:0;width:70%;height:auto;overflow:hidden;display:block;margin:auto></iframe></div></article></main><footer class=site-footer><p>Built with <a href=https://gohugo.io>Hugo</a> · <a href=/openswap-guide/index.xml>RSS</a> · <a href=https://github.com/hopkdj>GitHub</a></p><p style=margin-top:8px>&copy; 2026 OpenSwap Guide. All rights reserved.</p></footer></body></html>
