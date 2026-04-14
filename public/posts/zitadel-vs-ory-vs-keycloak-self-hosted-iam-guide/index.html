@@ -1,0 +1,516 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted Identity & Access Management 2026: Zitadel vs Ory vs Keycloak | OpenSwap Guide</title>
+<meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, and local AI deployment."><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/openswap-guide/css/main.min.777dc111b5207bf5336e5799477da0b31fb9080306bf98a82d6eceb979cf9737.css><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://hopkdj.github.io/openswap-guide/ class=logo><div class=logo-icon>H</div>OpenSwap Guide</a><nav><ul class=nav-links><li><a href=/openswap-guide/>Home</a></li><li><a href=/openswap-guide/tags/comparison/>Comparisons</a></li><li><a href=/openswap-guide/tags/guide/>Guides</a></li><li><a href=/openswap-guide/tags/ai/>Local AI</a></li><li><a href=/openswap-guide/index.xml class=nav-rss>Subscribe RSS</a></li></ul></nav></div></header><main><article class=post-single><a href=https://hopkdj.github.io/openswap-guide/ class=back-link>&larr; Back to posts</a><header class=post-single-header><div class=post-single-meta><span class="tag tag-purple">comparison</span>
+<span class="tag tag-green">guide</span>
+<span class="tag tag-blue">self-hosted</span>
+<span>·</span>
+<span>April 14, 2026</span>
+<span>·</span>
+<span>15 min read</span></div><h1 class=post-single-title>Self-Hosted Identity & Access Management 2026: Zitadel vs Ory vs Keycloak</h1></header><div class=post-single-content><h2 id=why-self-host-your-identity--access-management-platform>Why Self-Host Your Identity & Access Management Platform?</h2><p>Every organization — from a two-person startup to a multinational enterprise — faces the same fundamental challenge: who gets access to what, and how do you prove it? Identity and Access Management (IAM) is the backbone of security infrastructure. It handles authentication (verifying identity), authorization (determining permissions), user lifecycle management (onboarding, role changes, offboarding), and audit compliance.</p><p>Cloud-hosted IAM solutions like Okta, Auth0, and Microsoft Entra ID have become expensive at scale. Pricing models charge per active user, per authentication event, or per integration — costs that compound rapidly as your team and service count grow. Beyond pricing, there are structural risks: vendor lock-in, unpredictable price increases, data residency constraints under GDPR and SOC 2 requirements, and single points of failure when your identity provider goes down.</p><p>Self-hosting an IAM platform gives you complete ownership of user data, unlimited user scaling without per-seat fees, full control over security policies, and the ability to integrate with any internal system — HR databases, directory services, custom applications — without waiting for a vendor to build a connector. The trade-off is operational responsibility: you manage the infrastructure, handle upgrades, and ensure availability. For teams that already run Docker and manage a handful of services, this overhead is minimal compared to the long-term savings and autonomy.</p><p>This guide compares three of the most capable self-hosted IAM platforms available in 2026: <strong>Zitadel</strong>, <strong>Ory</strong>, and <strong>Keycloak</strong>. Each takes a fundamentally different architectural approach, from cloud-native multi-tenancy to modular microservices to monolithic enterprise maturity.</p><hr><h2 id=the-contenders-at-a-glance>The Contenders at a Glance</h2><table><thead><tr><th>Feature</th><th>Zitadel</th><th>Ory</th><th>Keycloak</th></tr></thead><tbody><tr><td><strong>Language / Stack</strong></td><td>Go</td><td>Go</td><td>Java (Quarkus)</td></tr><tr><td><strong>Database</strong></td><td>PostgreSQL, CockroachDB</td><td>PostgreSQL, SQLite, MySQL (per component)</td><td>PostgreSQL, MySQL/MariaDB, MSSQL</td></tr><tr><td><strong>License</strong></td><td>Apache 2.0 (core), BSL for cloud features</td><td>Apache 2.0</td><td>Apache 2.0</td></tr><tr><td><strong>Architecture</strong></td><td>Monolithic binary, multi-tenant by design</td><td>Modular microservices (one binary per function)</td><td>Monolithic (Quarkus runtime)</td></tr><tr><td><strong>OIDC / OAuth2</strong></td><td>Full (all flows)</td><td>Full (via Ory Hydra)</td><td>Full (all flows)</td></tr><tr><td><strong>SAML 2.0</strong></td><td>Yes (Enterprise)</td><td>Via Ory Kratos + custom integration</td><td>Yes (native)</td></tr><tr><td><strong>User Management</strong></td><td>Built-in with org-scoped users</td><td>Via Ory Kratos (configurable identity schema)</td><td>Built-in with realm-scoped users</td></tr><tr><td><strong>API-First</strong></td><td>Yes — everything accessible via gRPC + REST API</td><td>Yes — every component exposes REST + OpenAPI</td><td>Partial — admin console primary, REST API secondary</td></tr><tr><td><strong>Machine / Service Accounts</strong></td><td>Native (PATs, service keys, JWT profiles)</td><td>Via Ory Hydra (OAuth2 client credentials)</td><td>Via service accounts + client credentials</td></tr><tr><td><strong>Audit Trail</strong></td><td>Immutable event-sourced ledger</td><td>Manual audit logging setup</td><td>Admin events log (configurable)</td></tr><tr><td><strong>Multi-Tenancy</strong></td><td>First-class (organizations as tenants)</td><td>Custom implementation via identity schema</td><td>Via realms (logical separation)</td></tr><tr><td><strong>Resource Footprint</strong></td><td>~150–300 MB RAM</td><td>~50–150 MB RAM per component</td><td>~800 MB – 2 GB RAM</td></tr><tr><td><strong>Best For</strong></td><td>Startups, SaaS products, multi-tenant apps</td><td>Teams wanting modular composable auth</td><td>Enterprises, legacy integrations, compliance-heavy environments</td></tr></tbody></table><hr><h2 id=zitadel-cloud-native-iam-with-event-sourcing>Zitadel: Cloud-Native IAM with Event Sourcing</h2><p>Zitadel was designed from the ground up as a cloud-native identity platform. Its defining architectural choice is <strong>event sourcing</strong>: every action (user creation, login, role assignment, password change) is stored as an immutable event in the database. This provides a complete, tamper-proof audit trail without any additional configuration.</p><h3 id=architecture-and-design>Architecture and Design</h3><p>Zitadel runs as a single Go binary that handles all IAM functions — user management, authentication, API, and administration. Behind the scenes, it uses an event store pattern where the current state is derived by replaying events. This approach means you can reconstruct the state of any user, organization, or permission at any point in time, which is invaluable for compliance audits and incident investigations.</p><p>The platform organizes users into <strong>organizations</strong>, making it naturally multi-tenant. Each organization has its own settings, branding, identity providers, and user base. This is particularly powerful for B2B SaaS products where each customer needs isolated identity management with custom branding and policies.</p><h3 id=deployment-with-docker-compose>Deployment with Docker Compose</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>zitadel</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>ghcr.io/zitadel/zitadel:v2.67.2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=l>start-from-init --masterkey &#34;MasterkeyNeeds32CharsMinimum&#34; --tlsMode disabled</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8080:8080&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>ZITADEL_DATABASE_POSTGRES_HOST</span><span class=p>:</span><span class=w> </span><span class=l>db</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>ZITADEL_DATABASE_POSTGRES_PORT</span><span class=p>:</span><span class=w> </span><span class=m>5432</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>ZITADEL_DATABASE_POSTGRES_DATABASE</span><span class=p>:</span><span class=w> </span><span class=l>zitadel</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>ZITADEL_DATABASE_POSTGRES_USER_USERNAME</span><span class=p>:</span><span class=w> </span><span class=l>zitadel</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>ZITADEL_DATABASE_POSTGRES_USER_PASSWORD</span><span class=p>:</span><span class=w> </span><span class=l>zitadel_secret</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>ZITADEL_DATABASE_POSTGRES_ADMIN_USERNAME</span><span class=p>:</span><span class=w> </span><span class=l>postgres</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>ZITADEL_DATABASE_POSTGRES_ADMIN_PASSWORD</span><span class=p>:</span><span class=w> </span><span class=l>postgres_secret</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>ZITADEL_EXTERNALSECURE</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;false&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>db</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>condition</span><span class=p>:</span><span class=w> </span><span class=l>service_healthy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>db</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>postgres:17-alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_USER</span><span class=p>:</span><span class=w> </span><span class=l>postgres</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_PASSWORD</span><span class=p>:</span><span class=w> </span><span class=l>postgres_secret</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>zitadel-data:/var/lib/postgresql/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>healthcheck</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>test</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;CMD-SHELL&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;pg_isready -U postgres&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>interval</span><span class=p>:</span><span class=w> </span><span class=l>5s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>timeout</span><span class=p>:</span><span class=w> </span><span class=l>5s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>retries</span><span class=p>:</span><span class=w> </span><span class=m>5</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>zitadel-data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>After starting the stack, Zitadel initializes its database schema automatically. The admin console becomes available at <code>http://localhost:8080/ui/console</code>. The first login uses the default instance administrator credentials shown in the startup logs.</p><h3 id=key-features>Key Features</h3><p><strong>Machine authentication.</strong> Zitadel treats service-to-service communication as a first-class concern. You can create machine users that authenticate via Personal Access Tokens (PATs), service keys, or JWT profiles. This eliminates the need for API keys scattered across configuration files — each service gets its own identity with scoped permissions.</p><p><strong>Custom branding per organization.</strong> Each organization in Zitadel can define its own login page appearance, including logo, color scheme, fonts, and custom behavior settings. When you are running a multi-tenant application, each of your customers sees a login experience that matches their brand, without any code changes on your end.</p><p><strong>Login policy controls.</strong> Granular policies govern password complexity, MFA enforcement, session lifetime, lockout behavior, and allowed external identity providers. These can be set at the instance level (global defaults) or overridden per organization.</p><p><strong>gRPC and REST API.</strong> Zitadel exposes every operation through both gRPC and REST APIs. The gRPC interface is ideal for high-throughput internal services, while the REST API with OpenAPI specification simplifies integration with existing tooling and third-party platforms.</p><p><strong>OIDC and SAML integration.</strong> Zitadel supports both OIDC and SAML 2.0, making it compatible with virtually any application. The OIDC implementation covers all standard flows (authorization code, implicit, client credentials, device code, PKCE). SAML 2.0 support enables integration with legacy enterprise systems and government applications.</p><h3 id=when-to-choose-zitadel>When to Choose Zitadel</h3><p>Pick Zitadel when you are building a multi-tenant SaaS product, need strong audit compliance with minimal effort, want API-first identity management, or are building cloud-native services that benefit from event-sourced architecture. Its organization model maps directly to customer isolation, and the audit trail requires zero configuration.</p><hr><h2 id=ory-modular-composable-identity-infrastructure>Ory: Modular, Composable Identity Infrastructure</h2><p>Ory takes a fundamentally different approach. Instead of a monolithic platform, Ory provides a suite of independent, purpose-built components that you compose together. This gives you surgical control over which capabilities you deploy, but requires more integration work upfront.</p><h3 id=component-architecture>Component Architecture</h3><p>The Ory ecosystem consists of several independent projects, each addressing a specific aspect of identity and access management:</p><ul><li><strong>Ory Kratos</strong> — User identity management and self-service flows (registration, login, account recovery, profile management). It is API-only with no built-in UI, giving you complete control over the user experience.</li><li><strong>Ory Hydra</strong> — OAuth 2.0 and OpenID Connect provider. It issues tokens and manages consent flows, but does not manage user identities directly. It delegates authentication to Kratos or any external system.</li><li><strong>Ory Keto</strong> — Relationship-based authorization engine implementing Google&rsquo;s Zanzibar model. It answers questions like &ldquo;can user X read document Y?&rdquo; based on defined relationships and namespaces.</li><li><strong>Ory Oathkeeper</strong> — Identity and access proxy that enforces authentication and authorization rules before requests reach your backend services. It acts as a sidecar or reverse proxy middleware.</li><li><strong>Oathkeeper Access Rules</strong> — JSON-based rules defining which authentication methods and authorization checks apply to which routes.</li></ul><h3 id=deployment-with-docker-compose-1>Deployment with Docker Compose</h3><p>Deploying a complete Ory stack requires orchestrating multiple services. Here is a production-oriented setup with Kratos and Hydra:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span><span class=lnt>62
+</span><span class=lnt>63
+</span><span class=lnt>64
+</span><span class=lnt>65
+</span><span class=lnt>66
+</span><span class=lnt>67
+</span><span class=lnt>68
+</span><span class=lnt>69
+</span><span class=lnt>70
+</span><span class=lnt>71
+</span><span class=lnt>72
+</span><span class=lnt>73
+</span><span class=lnt>74
+</span><span class=lnt>75
+</span><span class=lnt>76
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>kratos</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>oryd/kratos:v1.2.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=l>serve -c /etc/config/kratos/kratos.yml --dev --watch-courier</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;4433:4433&#34;</span><span class=w>  </span><span class=c># Public API</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;4434:4434&#34;</span><span class=w>  </span><span class=c># Admin API</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./kratos-config:/etc/config/kratos</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>DSN</span><span class=p>:</span><span class=w> </span><span class=l>postgres://kratos:kratos_secret@db:5432/kratos?sslmode=disable</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>db</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>condition</span><span class=p>:</span><span class=w> </span><span class=l>service_healthy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>kratos-migrate</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>oryd/kratos:v1.2.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=l>migrate sql -e -c /etc/config/kratos/kratos.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./kratos-config:/etc/config/kratos</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>DSN</span><span class=p>:</span><span class=w> </span><span class=l>postgres://kratos:kratos_secret@db:5432/kratos?sslmode=disable</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>db</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>condition</span><span class=p>:</span><span class=w> </span><span class=l>service_healthy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;no&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>hydra</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>oryd/hydra:v2.2.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=l>serve all -c /etc/config/hydra/hydra.yml --dev</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;4444:4444&#34;</span><span class=w>  </span><span class=c># Public API</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;4445:4445&#34;</span><span class=w>  </span><span class=c># Admin API</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;5555:5555&#34;</span><span class=w>  </span><span class=c># OAuth2 consent callback</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./hydra-config:/etc/config/hydra</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>DSN</span><span class=p>:</span><span class=w> </span><span class=l>postgres://hydra:hydra_secret@db:5432/hydra?sslmode=disable</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>SECRETS_SYSTEM</span><span class=p>:</span><span class=w> </span><span class=l>system-secret-minimum-32-chars</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>db</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>condition</span><span class=p>:</span><span class=w> </span><span class=l>service_healthy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>hydra-migrate</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>oryd/hydra:v2.2.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=l>migrate sql -e --yes -c /etc/config/hydra/hydra.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./hydra-config:/etc/config/hydra</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>DSN</span><span class=p>:</span><span class=w> </span><span class=l>postgres://hydra:hydra_secret@db:5432/hydra?sslmode=disable</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>db</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>condition</span><span class=p>:</span><span class=w> </span><span class=l>service_healthy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;no&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>db</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>postgres:17-alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_USER</span><span class=p>:</span><span class=w> </span><span class=l>postgres</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_PASSWORD</span><span class=p>:</span><span class=w> </span><span class=l>postgres_secret</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_DB</span><span class=p>:</span><span class=w> </span><span class=l>kratos</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>ory-data:/var/lib/postgresql/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>healthcheck</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>test</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;CMD-SHELL&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;pg_isready -U postgres&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>interval</span><span class=p>:</span><span class=w> </span><span class=l>5s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>timeout</span><span class=p>:</span><span class=w> </span><span class=l>5s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>retries</span><span class=p>:</span><span class=w> </span><span class=m>5</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>ory-data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Kratos configuration requires a YAML file defining identity schemas, self-service flows, and hooks. A minimal <code>kratos.yml</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>serve</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>public</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>base_url</span><span class=p>:</span><span class=w> </span><span class=l>http://localhost:4433/</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>cors</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>enabled</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>admin</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>base_url</span><span class=p>:</span><span class=w> </span><span class=l>http://localhost:4434/</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>selfservice</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>default_browser_return_url</span><span class=p>:</span><span class=w> </span><span class=l>http://localhost:3000/</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>allowed_return_urls</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=l>http://localhost:3000</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>methods</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>password</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>enabled</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>config</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>haveibeenpwned_enabled</span><span class=p>:</span><span class=w> </span><span class=kc>false</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>totp</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>enabled</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>webauthn</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>enabled</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>flows</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>error</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>ui_url</span><span class=p>:</span><span class=w> </span><span class=l>http://localhost:3000/error</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>login</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>ui_url</span><span class=p>:</span><span class=w> </span><span class=l>http://localhost:3000/login</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>lifespan</span><span class=p>:</span><span class=w> </span><span class=l>10m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>registration</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>ui_url</span><span class=p>:</span><span class=w> </span><span class=l>http://localhost:3000/registration</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>lifespan</span><span class=p>:</span><span class=w> </span><span class=l>10m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>after</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>password</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>hooks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>hook</span><span class=p>:</span><span class=w> </span><span class=l>session</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>identity</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>default_schema_id</span><span class=p>:</span><span class=w> </span><span class=l>default</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>schemas</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>id</span><span class=p>:</span><span class=w> </span><span class=l>default</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>url</span><span class=p>:</span><span class=w> </span><span class=l>file:///etc/config/kratos/identity.schema.json</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=key-features-1>Key Features</h3><p><strong>Separation of concerns.</strong> Hydra handles OAuth2/OIDC token issuance and consent. Kratos handles user identity lifecycle and self-service flows. Keto handles authorization. Oathkeeper enforces access policies at the edge. You can deploy only the components you need.</p><p><strong>Zanzibar-style authorization.</strong> Ory Keto implements Google&rsquo;s Zanzibar relationship-based access control model. You define namespaces (e.g., <code>document</code>, <code>project</code>) and relationships (e.g., <code>viewer</code>, <code>editor</code>, <code>owner</code>), then query whether a subject has a specific relation to an object. This is significantly more expressive than role-based access control (RBAC) for complex permission scenarios.</p><p><strong>API-first, UI-agnostic.</strong> Ory Kratos has no built-in user interface. All self-service flows (login, registration, account recovery) are driven through API endpoints that your frontend calls. This gives you pixel-perfect control over the login experience but requires building the UI yourself or using Ory&rsquo;s managed cloud offering.</p><p><strong>Extensible identity schemas.</strong> Kratos allows you to define arbitrary identity schemas in JSON Schema format. Users can have custom attributes — department, role, subscription tier, geographic region — without waiting for the platform to support them natively.</p><h3 id=when-to-choose-ory>When to Choose Ory</h3><p>Pick Ory when you want fine-grained control over every aspect of your identity stack, need Zanzibar-style relationship-based authorization, are building a custom user-facing authentication experience, or prefer a composable architecture where you only deploy the components your application actually uses.</p><hr><h2 id=keycloak-the-enterprise-standard>Keycloak: The Enterprise Standard</h2><p>Keycloak is the most mature and widely deployed open-source IAM platform. Originally created by Red Hat in 2014, it has over a decade of development, a massive community, and deep integration with the Java enterprise ecosystem. The migration to Quarkus runtime significantly improved startup time and memory footprint.</p><h3 id=architecture>Architecture</h3><p>Keycloak runs as a single Quarkus application backed by a relational database. It organizes resources into <strong>realms</strong> — isolated namespaces that each contain their own users, groups, roles, clients, and identity providers. A single Keycloak instance can serve multiple independent organizations through realm isolation.</p><p>The admin console provides a comprehensive web interface for managing every aspect of the platform. Most operations can also be performed through the REST API, though the API was designed primarily to support the admin console rather than as a developer-facing interface.</p><h3 id=deployment-with-docker-compose-2>Deployment with Docker Compose</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>keycloak</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>quay.io/keycloak/keycloak:26.1.2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=l>start --optimized</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8080:8080&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>KC_HEALTH_ENABLED</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;true&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>KC_DB</span><span class=p>:</span><span class=w> </span><span class=l>postgres</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>KC_DB_URL</span><span class=p>:</span><span class=w> </span><span class=l>jdbc:postgresql://db:5432/keycloak</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>KC_DB_USERNAME</span><span class=p>:</span><span class=w> </span><span class=l>keycloak</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>KC_DB_PASSWORD</span><span class=p>:</span><span class=w> </span><span class=l>keycloak_secret</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>KEYCLOAK_ADMIN</span><span class=p>:</span><span class=w> </span><span class=l>admin</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>KEYCLOAK_ADMIN_PASSWORD</span><span class=p>:</span><span class=w> </span><span class=l>admin_password</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>KC_HOSTNAME</span><span class=p>:</span><span class=w> </span><span class=l>localhost</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>KC_HOSTNAME_STRICT</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;false&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>KC_PROXY</span><span class=p>:</span><span class=w> </span><span class=l>edge</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>db</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>condition</span><span class=p>:</span><span class=w> </span><span class=l>service_healthy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./keycloak-themes:/opt/keycloak/themes</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./keycloak-providers:/opt/keycloak/providers</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>db</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>postgres:17-alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_USER</span><span class=p>:</span><span class=w> </span><span class=l>keycloak</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_PASSWORD</span><span class=p>:</span><span class=w> </span><span class=l>keycloak_secret</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_DB</span><span class=p>:</span><span class=w> </span><span class=l>keycloak</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>keycloak-data:/var/lib/postgresql/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>healthcheck</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>test</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;CMD-SHELL&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;pg_isready -U keycloak&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>interval</span><span class=p>:</span><span class=w> </span><span class=l>5s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>timeout</span><span class=p>:</span><span class=w> </span><span class=l>5s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>retries</span><span class=p>:</span><span class=w> </span><span class=m>5</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>keycloak-data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>After initial startup, access the admin console at <code>http://localhost:8080/admin</code> using the <code>KEYCLOAK_ADMIN</code> credentials. The first configuration step should be creating a realm and defining identity providers, clients, and user federation.</p><h3 id=key-features-2>Key Features</h3><p><strong>User federation.</strong> Keycloak can connect to existing LDAP or Active Directory servers, allowing users to authenticate with their existing corporate credentials. It supports full synchronization (importing all users) or on-demand authentication (verifying against the external directory without importing). This is critical for enterprises migrating from legacy identity systems.</p><p><strong>Fine-grained authorization.</strong> Keycloak&rsquo;s authorization services go beyond simple role-based access control. You define resources, scopes, policies (role-based, time-based, JavaScript-based, user-based), and permissions that combine them. This allows complex access rules like &ldquo;only managers from the finance department can approve transactions over $10,000 during business hours.&rdquo;</p><p><strong>Extensive identity provider support.</strong> Keycloak supports OIDC, SAML 2.0, OAuth 2.0, LDAP, Kerberos, and social login providers (Google, GitHub, Facebook, Twitter, Microsoft, LinkedIn, GitLab, Bitbucket, StackOverflow). You can also connect to any custom OIDC or SAML provider.</p><p><strong>Theming system.</strong> Keycloak&rsquo;s theme engine allows complete customization of login pages, account consoles, email templates, and admin console appearance. Themes can inherit from the base theme and override specific elements — logos, CSS, FreeMarker templates.</p><p><strong>Client scopes and protocol mappers.</strong> Keycloak provides granular control over what information is included in tokens. Protocol mappers transform user attributes, group memberships, and roles into token claims. Client scopes define which mappers apply to which clients, enabling different applications to receive different token contents from the same user session.</p><p><strong>Clustering and high availability.</strong> Keycloak supports horizontal scaling through Infinispan-based clustering. Multiple Keycloak instances share session state, cache user data, and distribute load. Combined with a load balancer, this provides high availability for production deployments.</p><h3 id=when-to-choose-keycloak>When to Choose Keycloak</h3><p>Pick Keycloak when you need LDAP/Active Directory integration, have existing Java infrastructure, require SAML 2.0 for enterprise applications, need fine-grained authorization policies, or want the most battle-tested open-source IAM platform with the largest community and ecosystem.</p><hr><h2 id=detailed-feature-comparison>Detailed Feature Comparison</h2><h3 id=authentication-methods>Authentication Methods</h3><table><thead><tr><th>Method</th><th>Zitadel</th><th>Ory Kratos</th><th>Keycloak</th></tr></thead><tbody><tr><td>Username / Password</td><td>Yes</td><td>Yes</td><td>Yes</td></tr><tr><td>Email / Password</td><td>Yes</td><td>Yes</td><td>Yes</td></tr><tr><td>Passkeys / WebAuthn</td><td>Yes</td><td>Yes</td><td>Yes</td></tr><tr><td>TOTP (Authenticator Apps)</td><td>Yes</td><td>Yes</td><td>Yes</td></tr><tr><td>SMS OTP</td><td>Yes</td><td>Via hook</td><td>Yes</td></tr><tr><td>Social Login</td><td>Yes (built-in)</td><td>Via configuration</td><td>Yes (built-in)</td></tr><tr><td>LDAP / AD</td><td>No</td><td>Via hook</td><td>Yes (native)</td></tr><tr><td>SAML IdP</td><td>Yes</td><td>Via integration</td><td>Yes (native)</td></tr><tr><td>Device Authorization</td><td>Yes</td><td>Manual</td><td>Yes</td></tr></tbody></table><h3 id=authorization-models>Authorization Models</h3><table><thead><tr><th>Model</th><th>Zitadel</th><th>Ory</th><th>Keycloak</th></tr></thead><tbody><tr><td>RBAC (Role-Based)</td><td>Yes</td><td>Via Keto policies</td><td>Yes (native)</td></tr><tr><td>ABAC (Attribute-Based)</td><td>Via policies</td><td>Via Keto engine</td><td>Yes (policy engine)</td></tr><tr><td>ReBAC (Relationship-Based)</td><td>No</td><td>Yes (Zanzibar)</td><td>No</td></tr><tr><td>Project / Org scoping</td><td>Yes (organizations)</td><td>Manual</td><td>Yes (realms)</td></tr><tr><td>Machine accounts</td><td>Yes (native)</td><td>Via Hydra client credentials</td><td>Yes (service accounts)</td></tr><tr><td>API keys / PATs</td><td>Yes (native)</td><td>Manual</td><td>Via client secrets</td></tr></tbody></table><h3 id=developer-experience>Developer Experience</h3><table><thead><tr><th>Aspect</th><th>Zitadel</th><th>Ory</th><th>Keycloak</th></tr></thead><tbody><tr><td>API Design</td><td>gRPC + REST, well-documented</td><td>REST per component, OpenAPI specs</td><td>REST, partially documented</td></tr><tr><td>SDKs</td><td>Go, JavaScript/TypeScript, Dart</td><td>Go, JavaScript, Python</td><td>Java, Node.js, JavaScript</td></tr><tr><td>CLI</td><td><code>zitadel</code> for administration</td><td><code>ory</code> for all components</td><td><code>kcadm.sh</code> (shell-based)</td></tr><tr><td>Terraform Provider</td><td>Official, actively maintained</td><td>Official</td><td>Community-maintained</td></tr><tr><td>Getting Started</td><td>5 minutes with Docker Compose</td><td>30+ minutes with full stack</td><td>10 minutes with Docker Compose</td></tr><tr><td>Local Development</td><td>Excellent (single binary)</td><td>Good (requires multiple binaries)</td><td>Fair (heavy JVM, slower startup)</td></tr></tbody></table><hr><h2 id=migration-and-integration-patterns>Migration and Integration Patterns</h2><h3 id=from-auth0-to-self-hosted>From Auth0 to Self-Hosted</h3><p>Migrating from Auth0 requires exporting user data and reconfiguring your applications. Most platforms support user import through bulk APIs:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Export users from Auth0 using the Management API</span>
+</span></span><span class=line><span class=cl>curl -H <span class=s2>&#34;Authorization: Bearer </span><span class=nv>$AUTH0_TOKEN</span><span class=s2>&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  <span class=s2>&#34;https://YOUR_DOMAIN.auth0.com/api/v2/users-by-email?email=test@example.com&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Import users into Zitadel via the gRPC API</span>
+</span></span><span class=line><span class=cl>zitadel action user import <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --file users.csv <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --org-id YOUR_ORG_ID
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># For Keycloak, use the partial import feature</span>
+</span></span><span class=line><span class=cl>curl -X POST <span class=s2>&#34;http://localhost:8080/admin/realms/master/partialImport&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -H <span class=s2>&#34;Authorization: Bearer </span><span class=nv>$TOKEN</span><span class=s2>&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -H <span class=s2>&#34;Content-Type: application/json&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -d @realm-export.json
+</span></span></code></pre></td></tr></table></div></div><h3 id=adding-self-hosted-iam-to-an-existing-application>Adding Self-Hosted IAM to an Existing Application</h3><p>For a typical web application, integrating any of these platforms follows the same OIDC authorization code flow:</p><ol><li>Register your application as a client in the IAM platform</li><li>Configure the redirect URI (e.g., <code>https://yourapp.com/callback</code>)</li><li>Use an OIDC library in your application framework</li><li>Handle the callback, exchange the authorization code for tokens</li><li>Validate the ID token and create a local session</li></ol><p>For Go applications using the Zitadel OIDC library:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kn>package</span> <span class=nx>main</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=p>(</span>
+</span></span><span class=line><span class=cl>    <span class=s>&#34;github.com/zitadel/oidc/v3/pkg/client/rp&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=s>&#34;github.com/zitadel/oidc/v3/pkg/oidc&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=s>&#34;net/http&#34;</span>
+</span></span><span class=line><span class=cl><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>var</span> <span class=p>(</span>
+</span></span><span class=line><span class=cl>    <span class=nx>clientID</span>     <span class=p>=</span> <span class=s>&#34;your-client-id&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=nx>clientSecret</span> <span class=p>=</span> <span class=s>&#34;your-client-secret&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=nx>key</span>          <span class=p>=</span> <span class=p>[]</span><span class=nb>byte</span><span class=p>(</span><span class=s>&#34;secure-random-key-32-chars!!&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=nx>redirectURI</span>  <span class=p>=</span> <span class=s>&#34;http://localhost:8080/callback&#34;</span>
+</span></span><span class=line><span class=cl><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>func</span> <span class=nf>main</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nx>provider</span><span class=p>,</span> <span class=nx>_</span> <span class=o>:=</span> <span class=nx>rp</span><span class=p>.</span><span class=nf>NewRelyingPartyOIDC</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>        <span class=s>&#34;http://localhost:8080&#34;</span><span class=p>,</span>  <span class=c1>// Zitadel issuer URL</span>
+</span></span><span class=line><span class=cl>        <span class=nx>clientID</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=nx>clientSecret</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=nx>redirectURI</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=p>[]</span><span class=kt>string</span><span class=p>{</span><span class=nx>oidc</span><span class=p>.</span><span class=nx>ScopeOpenID</span><span class=p>,</span> <span class=nx>oidc</span><span class=p>.</span><span class=nx>ScopeProfile</span><span class=p>,</span> <span class=nx>oidc</span><span class=p>.</span><span class=nx>ScopeEmail</span><span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=nx>http</span><span class=p>.</span><span class=nf>Handle</span><span class=p>(</span><span class=s>&#34;/login&#34;</span><span class=p>,</span> <span class=nx>rp</span><span class=p>.</span><span class=nf>AuthURLHandler</span><span class=p>(</span><span class=kd>func</span><span class=p>()</span> <span class=kt>string</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=k>return</span> <span class=nx>rp</span><span class=p>.</span><span class=nf>GenerateRandomState</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>    <span class=p>},</span> <span class=nx>provider</span><span class=p>))</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=nx>http</span><span class=p>.</span><span class=nf>HandleFunc</span><span class=p>(</span><span class=s>&#34;/callback&#34;</span><span class=p>,</span> <span class=kd>func</span><span class=p>(</span><span class=nx>w</span> <span class=nx>http</span><span class=p>.</span><span class=nx>ResponseWriter</span><span class=p>,</span> <span class=nx>r</span> <span class=o>*</span><span class=nx>http</span><span class=p>.</span><span class=nx>Request</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=nx>userInfo</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>rp</span><span class=p>.</span><span class=nx>CodeExchange</span><span class=p>[</span><span class=o>*</span><span class=nx>oidc</span><span class=p>.</span><span class=nx>IDTokenClaims</span><span class=p>](</span><span class=nx>r</span><span class=p>,</span> <span class=nx>provider</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>            <span class=nx>http</span><span class=p>.</span><span class=nf>Error</span><span class=p>(</span><span class=nx>w</span><span class=p>,</span> <span class=nx>err</span><span class=p>.</span><span class=nf>Error</span><span class=p>(),</span> <span class=nx>http</span><span class=p>.</span><span class=nx>StatusBadRequest</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>            <span class=k>return</span>
+</span></span><span class=line><span class=cl>        <span class=p>}</span>
+</span></span><span class=line><span class=cl>        <span class=c1>// userInfo contains authenticated user claims</span>
+</span></span><span class=line><span class=cl>        <span class=nx>http</span><span class=p>.</span><span class=nf>Redirect</span><span class=p>(</span><span class=nx>w</span><span class=p>,</span> <span class=nx>r</span><span class=p>,</span> <span class=s>&#34;/dashboard&#34;</span><span class=p>,</span> <span class=nx>http</span><span class=p>.</span><span class=nx>StatusFound</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=p>})</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=nx>http</span><span class=p>.</span><span class=nf>ListenAndServe</span><span class=p>(</span><span class=s>&#34;:8080&#34;</span><span class=p>,</span> <span class=kc>nil</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><hr><h2 id=decision-framework>Decision Framework</h2><p>Choose <strong>Zitadel</strong> when:</p><ul><li>You are building a multi-tenant application and need organization-level isolation</li><li>Audit compliance is a requirement (event sourcing gives you this automatically)</li><li>You want a modern API-first platform with excellent developer tooling</li><li>You need machine-to-machine authentication with native PAT support</li><li>You prefer Go-based infrastructure with lower memory footprint</li></ul><p>Choose <strong>Ory</strong> when:</p><ul><li>You want surgical control over which identity components you deploy</li><li>You need relationship-based authorization (Zanzibar model via Keto)</li><li>You are building a completely custom authentication UI from scratch</li><li>You prefer composable microservices over monolithic platforms</li><li>You need extensible identity schemas with arbitrary user attributes</li></ul><p>Choose <strong>Keycloak</strong> when:</p><ul><li>You need LDAP or Active Directory integration</li><li>You require SAML 2.0 for enterprise or government applications</li><li>You have existing Java infrastructure and want native JVM integration</li><li>You need fine-grained authorization policies with a visual policy editor</li><li>You want the most mature platform with the largest community and documentation base</li></ul><hr><h2 id=conclusion>Conclusion</h2><p>The self-hosted IAM landscape in 2026 offers three distinct approaches to identity management. Zitadel brings cloud-native event-sourced architecture with excellent multi-tenant support. Ory provides modular composable components for teams that want maximum flexibility. Keycloak delivers enterprise maturity with deep integration capabilities and a proven track record across thousands of organizations.</p><p>The right choice depends on your constraints: team size, existing infrastructure, compliance requirements, and whether you prioritize developer experience or feature completeness. All three are production-ready, actively maintained, and available under permissive open-source licenses. The common thread is that self-hosting your identity infrastructure pays for itself through eliminated per-user licensing costs, complete data ownership, and the freedom to integrate with any system without vendor approval.</p><p>Start with a proof-of-deployment using the Docker Compose configurations above. Test the authentication flows, integrate one application, and evaluate the developer experience. The investment in self-hosted IAM compounds over time as your organization grows and your integration needs expand.</p></div><div id=frame style=width:100%;margin:auto;position:relative;z-index:99998><iframe data-aa=2433958 src='//acceptable.a-ads.com/2433958/?size=Adaptive' style=border:0;padding:0;width:70%;height:auto;overflow:hidden;display:block;margin:auto></iframe></div></article></main><footer class=site-footer><p>Built with <a href=https://gohugo.io>Hugo</a> · <a href=/openswap-guide/index.xml>RSS</a> · <a href=https://github.com/hopkdj>GitHub</a></p><p style=margin-top:8px>&copy; 2026 OpenSwap Guide. All rights reserved.</p></footer></body></html>
