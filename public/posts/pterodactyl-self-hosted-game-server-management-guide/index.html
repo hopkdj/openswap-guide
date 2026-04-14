@@ -1,0 +1,614 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Pterodactyl Panel: Complete Self-Hosted Game Server Management Guide 2026 | OpenSwap Guide</title>
+<meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, and local AI deployment."><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/openswap-guide/css/main.min.777dc111b5207bf5336e5799477da0b31fb9080306bf98a82d6eceb979cf9737.css><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://hopkdj.github.io/openswap-guide/ class=logo><div class=logo-icon>H</div>OpenSwap Guide</a><nav><ul class=nav-links><li><a href=/openswap-guide/>Home</a></li><li><a href=/openswap-guide/tags/comparison/>Comparisons</a></li><li><a href=/openswap-guide/tags/guide/>Guides</a></li><li><a href=/openswap-guide/tags/ai/>Local AI</a></li><li><a href=/openswap-guide/index.xml class=nav-rss>Subscribe RSS</a></li></ul></nav></div></header><main><article class=post-single><a href=https://hopkdj.github.io/openswap-guide/ class=back-link>&larr; Back to posts</a><header class=post-single-header><div class=post-single-meta><span class="tag tag-purple">comparison</span>
+<span class="tag tag-green">guide</span>
+<span class="tag tag-blue">self-hosted</span>
+<span>·</span>
+<span>April 14, 2026</span>
+<span>·</span>
+<span>15 min read</span></div><h1 class=post-single-title>Pterodactyl Panel: Complete Self-Hosted Game Server Management Guide 2026</h1></header><div class=post-single-content><h2 id=why-self-host-your-game-server-management-panel>Why Self-Host Your Game Server Management Panel?</h2><p>Running game servers — whether for a Minecraft community, a private Palworld world, or competitive Rust matches — quickly becomes a logistics nightmare. Each game demands its own binary, specific Java or runtime version, unique port allocations, and careful resource monitoring. Without a management layer, you&rsquo;re SSHing into multiple machines, manually starting processes, and guessing which server is consuming all your RAM.</p><p>Commercial hosting panels charge premium prices per slot, lock you into their infrastructure, and often oversell their hardware until performance degrades. Self-hosting a game server management panel flips this model:</p><ul><li><strong>Zero per-server fees</strong> — run one game or one hundred, the software doesn&rsquo;t care</li><li><strong>Full hardware control</strong> — allocate CPU, RAM, and disk exactly how you want across any number of nodes</li><li><strong>Multi-game support</strong> — manage Minecraft, Rust, Palworld, Valheim, Terraria, CS2, and dozens more from a single dashboard</li><li><strong>User self-service</strong> — give friends or community members their own server instances with configurable resource limits</li><li><strong>Automated backups and scheduling</strong> — schedule restarts, backups, and updates without manual intervention</li><li><strong>Real-time monitoring</strong> — watch CPU, memory, disk I/O, and network usage per server from one interface</li><li><strong>No vendor lock-in</strong> — your servers, your hardware, your rules. Move nodes or migrate data on your own terms</li></ul><p>Pterodactyl Panel is the gold standard for open-source game server management. It powers thousands of private homelab setups, community gaming networks, and even some commercial hosting providers. This guide walks you through a complete production deployment — panel, Wings daemon, Docker isolation, database setup, and multi-node configuration.</p><h2 id=architecture-overview>Architecture Overview</h2><p>Pterodactyl uses a two-component architecture:</p><table><thead><tr><th>Component</th><th>Role</th><th>Technology</th></tr></thead><tbody><tr><td><strong>Panel</strong></td><td>Web UI, API, user management, database, scheduling</td><td>Laravel (PHP) + MySQL/MariaDB + Redis</td></tr><tr><td><strong>Wings</strong></td><td>Game server execution, Docker container management, resource enforcement</td><td>Go binary running on each game server node</td></tr></tbody></table><p>The Panel handles authentication, the web dashboard, the REST API, and stores all configuration data. Wings runs on every machine that hosts actual game servers. It receives instructions from the Panel via an authenticated WebSocket connection, spins up Docker containers for each game server, and streams console output and resource metrics back to the Panel.</p><p>This separation means you can run the Panel on a small VPS while Wings daemons run on powerful dedicated servers, and everything communicates securely over HTTPS.</p><h2 id=prerequisites>Prerequisites</h2><p>Before starting the installation, ensure your server(s) meet these requirements:</p><ul><li><strong>Panel server</strong>: Linux (Ubuntu 22.04+ or Debian 12+ recommended), 2 GB RAM minimum, PHP 8.2+, MySQL 8.0+ or MariaDB 10.6+, Redis</li><li><strong>Wings node(s)</strong>: Linux, Docker 20.10+, 4 GB RAM minimum (more for heavy games), dedicated IP or port range available</li><li><strong>Domain name</strong> with DNS pointing to your Panel server&rsquo;s IP</li><li><strong>SSL certificates</strong> (Let&rsquo;s Encrypt via Certbot)</li><li><strong>Firewall</strong> configured to allow ports 80, 443 (Panel), and 2022 (Wings SFTP)</li></ul><h2 id=step-1-install-panel-dependencies>Step 1: Install Panel Dependencies</h2><p>Start by installing the required system packages on your Panel server:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Update system packages</span>
+</span></span><span class=line><span class=cl>sudo apt update <span class=o>&amp;&amp;</span> sudo apt upgrade -y
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Install core dependencies</span>
+</span></span><span class=line><span class=cl>sudo apt install -y <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    ca-certificates curl gnupg <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    php8.2 php8.2-<span class=o>{</span>cli,common,gd,mysql,mbstring,bcmath,xml,fpm,curl,zip<span class=o>}</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    mariadb-server nginx certbot python3-certbot-nginx <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    redis-server unzip tar
+</span></span></code></pre></td></tr></table></div></div><p>Configure and start the services:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Enable and start MariaDB</span>
+</span></span><span class=line><span class=cl>sudo systemctl <span class=nb>enable</span> --now mariadb
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Enable and start Redis</span>
+</span></span><span class=line><span class=cl>sudo systemctl <span class=nb>enable</span> --now redis-server
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Secure MariaDB installation (follow prompts, set root password)</span>
+</span></span><span class=line><span class=cl>sudo mariadb-secure-installation
+</span></span></code></pre></td></tr></table></div></div><p>Create the database and user for Pterodactyl:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>sudo mariadb -u root -p
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>CREATE DATABASE pterodactyl<span class=p>;</span>
+</span></span><span class=line><span class=cl>CREATE USER <span class=s1>&#39;pterodactyl&#39;</span>@<span class=s1>&#39;127.0.0.1&#39;</span> IDENTIFIED BY <span class=s1>&#39;your_secure_database_password&#39;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>GRANT ALL PRIVILEGES ON pterodactyl.* TO <span class=s1>&#39;pterodactyl&#39;</span>@<span class=s1>&#39;127.0.0.1&#39;</span> WITH GRANT OPTION<span class=p>;</span>
+</span></span><span class=line><span class=cl>FLUSH PRIVILEGES<span class=p>;</span>
+</span></span><span class=line><span class=cl>EXIT<span class=p>;</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=step-2-install-the-pterodactyl-panel>Step 2: Install the Pterodactyl Panel</h2><p>Download and extract the Panel files:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Create the Panel directory and download</span>
+</span></span><span class=line><span class=cl>sudo mkdir -p /var/www/pterodactyl
+</span></span><span class=line><span class=cl><span class=nb>cd</span> /var/www/pterodactyl
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>sudo curl -Lo panel.tar.gz https://github.com/pterodactyl/panel/releases/latest/download/panel.tar.gz
+</span></span><span class=line><span class=cl>sudo tar -xzvf panel.tar.gz
+</span></span><span class=line><span class=cl>sudo chmod -R <span class=m>755</span> storage/* bootstrap/cache/
+</span></span></code></pre></td></tr></table></div></div><p>Install PHP dependencies via Composer:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install Composer if not already present</span>
+</span></span><span class=line><span class=cl>curl -sS https://getcomposer.org/installer <span class=p>|</span> sudo php -- --install-dir<span class=o>=</span>/usr/local/bin --filename<span class=o>=</span>composer
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Install dependencies (this takes a few minutes)</span>
+</span></span><span class=line><span class=cl>sudo composer install --no-dev --optimize-autoloader
+</span></span></code></pre></td></tr></table></div></div><p>Set up the Panel&rsquo;s environment configuration:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Copy the example environment file</span>
+</span></span><span class=line><span class=cl>sudo cp .env.example .env
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Generate the application encryption key</span>
+</span></span><span class=line><span class=cl>sudo php artisan key:generate --force
+</span></span></code></pre></td></tr></table></div></div><p>Configure environment variables by editing the <code>.env</code> file:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>sudo nano /var/www/pterodactyl/.env
+</span></span></code></pre></td></tr></table></div></div><p>Update these critical values:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=na>APP_ENV</span><span class=o>=</span><span class=s>production</span>
+</span></span><span class=line><span class=cl><span class=na>APP_DEBUG</span><span class=o>=</span><span class=s>false</span>
+</span></span><span class=line><span class=cl><span class=na>APP_URL</span><span class=o>=</span><span class=s>https://panel.yourdomain.com</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=na>DB_HOST</span><span class=o>=</span><span class=s>127.0.0.1</span>
+</span></span><span class=line><span class=cl><span class=na>DB_PORT</span><span class=o>=</span><span class=s>3306</span>
+</span></span><span class=line><span class=cl><span class=na>DB_DATABASE</span><span class=o>=</span><span class=s>pterodactyl</span>
+</span></span><span class=line><span class=cl><span class=na>DB_USERNAME</span><span class=o>=</span><span class=s>pterodactyl</span>
+</span></span><span class=line><span class=cl><span class=na>DB_PASSWORD</span><span class=o>=</span><span class=s>your_secure_database_password</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=na>REDIS_HOST</span><span class=o>=</span><span class=s>127.0.0.1</span>
+</span></span><span class=line><span class=cl><span class=na>REDIS_PASSWORD</span><span class=o>=</span><span class=s>null</span>
+</span></span><span class=line><span class=cl><span class=na>REDIS_PORT</span><span class=o>=</span><span class=s>6379</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=na>SESSION_SECURE_COOKIE</span><span class=o>=</span><span class=s>true</span>
+</span></span><span class=line><span class=cl><span class=na>MAIL_FROM</span><span class=o>=</span><span class=s>noreply@yourdomain.com</span>
+</span></span><span class=line><span class=cl><span class=na>MAIL_DRIVER</span><span class=o>=</span><span class=s>smtp</span>
+</span></span><span class=line><span class=cl><span class=na>MAIL_HOST</span><span class=o>=</span><span class=s>smtp.yourdomain.com</span>
+</span></span><span class=line><span class=cl><span class=na>MAIL_PORT</span><span class=o>=</span><span class=s>587</span>
+</span></span><span class=line><span class=cl><span class=na>MAIL_USERNAME</span><span class=o>=</span><span class=s>your_smtp_user</span>
+</span></span><span class=line><span class=cl><span class=na>MAIL_PASSWORD</span><span class=o>=</span><span class=s>your_smtp_password</span>
+</span></span><span class=line><span class=cl><span class=na>MAIL_ENCRYPTION</span><span class=o>=</span><span class=s>tls</span>
+</span></span></code></pre></td></tr></table></div></div><p>Run the database migrations and seed the initial data:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>sudo php artisan migrate --seed --force
+</span></span></code></pre></td></tr></table></div></div><p>Create an administrative user:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>sudo php artisan p:user:make <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    --email<span class=o>=</span>admin@yourdomain.com <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    --username<span class=o>=</span>admin <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    --name-first<span class=o>=</span>Admin <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    --name-last<span class=o>=</span>User <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    --password<span class=o>=</span>your_admin_password <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    --admin<span class=o>=</span><span class=m>1</span>
+</span></span></code></pre></td></tr></table></div></div><p>Set correct file permissions:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>sudo chown -R www-data:www-data /var/www/pterodactyl/*
+</span></span></code></pre></td></tr></table></div></div><h2 id=step-3-configure-nginx-and-ssl>Step 3: Configure Nginx and SSL</h2><p>Create the Nginx virtual host configuration:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>sudo nano /etc/nginx/sites-available/pterodactyl.conf
+</span></span></code></pre></td></tr></table></div></div><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-nginx data-lang=nginx><span class=line><span class=cl><span class=k>server</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=kn>listen</span> <span class=mi>80</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=kn>server_name</span> <span class=s>panel.yourdomain.com</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=kn>return</span> <span class=mi>301</span> <span class=s>https://</span><span class=nv>$server_name$request_uri</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>server</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=kn>listen</span> <span class=mi>443</span> <span class=s>ssl</span> <span class=s>http2</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=kn>server_name</span> <span class=s>panel.yourdomain.com</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kn>ssl_certificate</span> <span class=s>/etc/letsencrypt/live/panel.yourdomain.com/fullchain.pem</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=kn>ssl_certificate_key</span> <span class=s>/etc/letsencrypt/live/panel.yourdomain.com/privkey.pem</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kn>ssl_protocols</span> <span class=s>TLSv1.2</span> <span class=s>TLSv1.3</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=kn>ssl_ciphers</span> <span class=s>HIGH:!aNULL:!MD5</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=kn>ssl_prefer_server_ciphers</span> <span class=no>on</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kn>root</span> <span class=s>/var/www/pterodactyl/public</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=kn>index</span> <span class=s>index.php</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kn>client_max_body_size</span> <span class=s>100M</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=kn>client_body_timeout</span> <span class=s>120s</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kn>add_header</span> <span class=s>X-Content-Type-Options</span> <span class=s>&#34;nosniff&#34;</span> <span class=s>always</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=kn>add_header</span> <span class=s>X-Frame-Options</span> <span class=s>&#34;SAMEORIGIN&#34;</span> <span class=s>always</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=kn>add_header</span> <span class=s>X-XSS-Protection</span> <span class=s>&#34;1</span><span class=p>;</span> <span class=kn>mode=block&#34;</span> <span class=s>always</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=kn>add_header</span> <span class=s>Referrer-Policy</span> <span class=s>&#34;strict-origin-when-cross-origin&#34;</span> <span class=s>always</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kn>location</span> <span class=s>/</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=kn>try_files</span> <span class=nv>$uri</span> <span class=nv>$uri/</span> <span class=s>/index.php?</span><span class=nv>$query_string</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kn>location</span> <span class=p>~</span> <span class=sr>\.php$</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=kn>fastcgi_split_path_info</span> <span class=s>^(.+\.php)(/.+)</span>$<span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>fastcgi_pass</span> <span class=s>unix:/run/php/php8.2-fpm.sock</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>fastcgi_index</span> <span class=s>index.php</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>include</span> <span class=s>fastcgi_params</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>fastcgi_param</span> <span class=s>PHP_VALUE</span> <span class=s>&#34;upload_max_filesize</span> <span class=p>=</span> <span class=s>100M</span> <span class=s>\n</span> <span class=s>post_max_size=100M&#34;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>fastcgi_param</span> <span class=s>SCRIPT_FILENAME</span> <span class=nv>$document_root$fastcgi_script_name</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>fastcgi_buffer_size</span> <span class=mi>16k</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>fastcgi_buffers</span> <span class=mi>4</span> <span class=mi>16k</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>fastcgi_connect_timeout</span> <span class=mi>300</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>fastcgi_send_timeout</span> <span class=mi>300</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>fastcgi_read_timeout</span> <span class=mi>300</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kn>location</span> <span class=p>~</span> <span class=sr>/\.ht</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=kn>deny</span> <span class=s>all</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>Enable the site and obtain SSL certificates:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>sudo ln -s /etc/nginx/sites-available/pterodactyl.conf /etc/nginx/sites-enabled/
+</span></span><span class=line><span class=cl>sudo nginx -t <span class=o>&amp;&amp;</span> sudo systemctl reload nginx
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Obtain Let&#39;s Encrypt certificate</span>
+</span></span><span class=line><span class=cl>sudo certbot certonly --nginx -d panel.yourdomain.com --non-interactive --agree-tos --email admin@yourdomain.com
+</span></span></code></pre></td></tr></table></div></div><h2 id=step-4-create-the-panel-systemd-service>Step 4: Create the Panel Systemd Service</h2><p>Running the Panel&rsquo;s queue worker as a systemd service ensures scheduled tasks, email notifications, and background jobs run reliably:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>sudo nano /etc/systemd/system/pteroq.service
+</span></span></code></pre></td></tr></table></div></div><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=k>[Unit]</span>
+</span></span><span class=line><span class=cl><span class=na>Description</span><span class=o>=</span><span class=s>Pterodactyl Queue Worker</span>
+</span></span><span class=line><span class=cl><span class=na>After</span><span class=o>=</span><span class=s>redis-server.service</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>[Service]</span>
+</span></span><span class=line><span class=cl><span class=na>User</span><span class=o>=</span><span class=s>www-data</span>
+</span></span><span class=line><span class=cl><span class=na>Group</span><span class=o>=</span><span class=s>www-data</span>
+</span></span><span class=line><span class=cl><span class=na>Restart</span><span class=o>=</span><span class=s>always</span>
+</span></span><span class=line><span class=cl><span class=na>ExecStart</span><span class=o>=</span><span class=s>/usr/bin/php /var/www/pterodactyl/artisan queue:work --queue=high,standard,low --sleep=3 --tries=3</span>
+</span></span><span class=line><span class=cl><span class=na>WorkingDirectory</span><span class=o>=</span><span class=s>/var/www/pterodactyl</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>[Install]</span>
+</span></span><span class=line><span class=cl><span class=na>WantedBy</span><span class=o>=</span><span class=s>multi-user.target</span>
+</span></span></code></pre></td></tr></table></div></div><p>Enable and start the service:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>sudo systemctl daemon-reload
+</span></span><span class=line><span class=cl>sudo systemctl <span class=nb>enable</span> --now pteroq
+</span></span></code></pre></td></tr></table></div></div><h2 id=step-5-install-wings-on-game-server-nodes>Step 5: Install Wings on Game Server Nodes</h2><p>Wings runs on the machines that will actually host game server processes. This can be the same machine as the Panel or a completely separate server (recommended for production).</p><p>Install Docker on each Wings node:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install Docker</span>
+</span></span><span class=line><span class=cl>curl -fsSL https://get.docker.com <span class=p>|</span> sudo sh
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Add your user to the docker group</span>
+</span></span><span class=line><span class=cl>sudo usermod -aG docker <span class=nv>$USER</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Create the Wings directory</span>
+</span></span><span class=line><span class=cl>sudo mkdir -p /etc/pterodactyl /var/lib/pterodactyl
+</span></span></code></pre></td></tr></table></div></div><p>Download and install the Wings binary:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>sudo curl -L -o /usr/local/bin/wings https://github.com/pterodactyl/panel/releases/latest/download/wings_linux_amd64
+</span></span><span class=line><span class=cl>sudo chmod +x /usr/local/bin/wings
+</span></span></code></pre></td></tr></table></div></div><h2 id=step-6-configure-wings-and-connect-to-the-panel>Step 6: Configure Wings and Connect to the Panel</h2><p>After installing Wings, you need to configure it. The easiest way is through the Panel&rsquo;s web interface:</p><ol><li>Log into the Panel admin area at <code>https://panel.yourdomain.com</code></li><li>Navigate to <strong>Admin → Nodes → Create New</strong></li><li>Fill in your node details:<ul><li><strong>Name</strong>: A descriptive name (e.g., &ldquo;US-East-01&rdquo;)</li><li><strong>FQDN</strong>: The domain or IP of the Wings node</li><li><strong>Behind Proxy</strong>: Yes if using a reverse proxy, No otherwise</li><li><strong>Use SSL</strong>: Yes (strongly recommended)</li><li><strong>Memory Overallocate</strong>: 10% (allows temporary bursts above the limit)</li><li><strong>Disk Overallocate</strong>: 10%</li></ul></li><li>Set the <strong>Default Location</strong> and save</li></ol><p>After creating the node, the Panel displays an <strong>Auto-Deploy</strong> command. Copy it and run it on your Wings node:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Example auto-deploy command from the Panel</span>
+</span></span><span class=line><span class=cl>sudo wings configure <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    --panel-url https://panel.yourdomain.com <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    --token your_node_token_from_panel <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    --node-id <span class=m>1</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    --allow-invalid-certificate
+</span></span></code></pre></td></tr></table></div></div><p>This generates <code>/etc/pterodactyl/config.yml</code> with the correct connection settings. You can also edit it manually:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>debug</span><span class=p>:</span><span class=w> </span><span class=kc>false</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>uuid</span><span class=p>:</span><span class=w> </span><span class=l>node-uuid-from-panel</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>token_id</span><span class=p>:</span><span class=w> </span><span class=l>your_token_id</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>token</span><span class=p>:</span><span class=w> </span><span class=l>your_token_secret</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>api</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>host</span><span class=p>:</span><span class=w> </span><span class=m>0.0.0.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>port</span><span class=p>:</span><span class=w> </span><span class=m>443</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>ssl</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>enabled</span><span class=p>:</span><span class=w> </span><span class=kc>false</span><span class=w>  </span><span class=c># Set true if you have SSL certs for the node</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>upload_limit</span><span class=p>:</span><span class=w> </span><span class=m>100</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>system</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>data</span><span class=p>:</span><span class=w> </span><span class=l>/var/lib/pterodactyl</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>sftp</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>bind_port</span><span class=p>:</span><span class=w> </span><span class=m>2022</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>allowed_mounts</span><span class=p>:</span><span class=w> </span><span class=p>[]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>remote</span><span class=p>:</span><span class=w> </span><span class=s1>&#39;https://panel.yourdomain.com&#39;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Create the Wings systemd service on each node:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>sudo nano /etc/systemd/system/wings.service
+</span></span></code></pre></td></tr></table></div></div><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=k>[Unit]</span>
+</span></span><span class=line><span class=cl><span class=na>Description</span><span class=o>=</span><span class=s>Pterodactyl Wings Daemon</span>
+</span></span><span class=line><span class=cl><span class=na>After</span><span class=o>=</span><span class=s>docker.service</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>[Service]</span>
+</span></span><span class=line><span class=cl><span class=na>User</span><span class=o>=</span><span class=s>root</span>
+</span></span><span class=line><span class=cl><span class=na>Group</span><span class=o>=</span><span class=s>root</span>
+</span></span><span class=line><span class=cl><span class=na>NotifyAccess</span><span class=o>=</span><span class=s>all</span>
+</span></span><span class=line><span class=cl><span class=na>Restart</span><span class=o>=</span><span class=s>always</span>
+</span></span><span class=line><span class=cl><span class=na>RestartSec</span><span class=o>=</span><span class=s>5</span>
+</span></span><span class=line><span class=cl><span class=na>StartLimitBurst</span><span class=o>=</span><span class=s>10</span>
+</span></span><span class=line><span class=cl><span class=na>StartLimitInterval</span><span class=o>=</span><span class=s>60</span>
+</span></span><span class=line><span class=cl><span class=na>LimitNOFILE</span><span class=o>=</span><span class=s>4096</span>
+</span></span><span class=line><span class=cl><span class=na>PIDFile</span><span class=o>=</span><span class=s>/var/run/wings.pid</span>
+</span></span><span class=line><span class=cl><span class=na>ExecStart</span><span class=o>=</span><span class=s>/usr/local/bin/wings --config /etc/pterodactyl/config.yml</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>[Install]</span>
+</span></span><span class=line><span class=cl><span class=na>WantedBy</span><span class=o>=</span><span class=s>multi-user.target</span>
+</span></span></code></pre></td></tr></table></div></div><p>Enable and start Wings:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>sudo systemctl daemon-reload
+</span></span><span class=line><span class=cl>sudo systemctl <span class=nb>enable</span> --now wings
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Verify it&#39;s running and connected</span>
+</span></span><span class=line><span class=cl>sudo systemctl status wings
+</span></span><span class=line><span class=cl>journalctl -u wings --no-pager -n <span class=m>50</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=step-7-configure-firewall-rules>Step 7: Configure Firewall Rules</h2><p>Open the required ports on your firewall:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Panel server</span>
+</span></span><span class=line><span class=cl>sudo ufw allow 80/tcp    <span class=c1># HTTP (redirects to HTTPS)</span>
+</span></span><span class=line><span class=cl>sudo ufw allow 443/tcp   <span class=c1># HTTPS (Panel web interface)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Wings node(s)</span>
+</span></span><span class=line><span class=cl>sudo ufw allow 2022/tcp  <span class=c1># SFTP file transfers</span>
+</span></span><span class=line><span class=cl>sudo ufw allow 8080:8100/tcp  <span class=c1># Game server port range (adjust as needed)</span>
+</span></span><span class=line><span class=cl>sudo ufw allow 25565:25600/tcp  <span class=c1># Default Minecraft port range</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># If your Panel and Wings are on the same machine, combine the rules</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=step-8-install-game-server-eggs>Step 8: Install Game Server Eggs</h2><p>Eggs are Pterodactyl&rsquo;s term for game server templates. Each egg defines the Docker image, startup command, configuration files, and variable mapping for a specific game.</p><p>The community maintains a massive collection of eggs at <a href=https://github.com/parkervcp/eggs>github.com/parkervcp/eggs</a>. Install them using the Panel CLI:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=nb>cd</span> /var/www/pterodactyl
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Import the Minecraft: Paper egg</span>
+</span></span><span class=line><span class=cl>php artisan p:egg:import https://raw.githubusercontent.com/parkervcp/eggs/master/minecraft/java/egg-paper.json
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Import the Rust Dedicated egg</span>
+</span></span><span class=line><span class=cl>php artisan p:egg:import https://raw.githubusercontent.com/parkervcp/eggs/master/source_servers/rust/egg-rust-dedicated.json
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Import the Palworld egg</span>
+</span></span><span class=line><span class=cl>php artisan p:egg:import https://raw.githubusercontent.com/parkervcp/eggs/master/steamcmd_servers/palworld/egg-palworld.json
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Import all eggs from a category at once</span>
+</span></span><span class=line><span class=cl><span class=c1># Browse https://github.com/parkervcp/eggs and import as needed</span>
+</span></span></code></pre></td></tr></table></div></div><p>After importing eggs, they appear in the Panel admin area under <strong>Admin → Nests → [Game]</strong>. You can customize startup variables, Docker images, and resource limits per egg.</p><h2 id=step-9-create-your-first-game-server>Step 9: Create Your First Game Server</h2><p>With Wings connected and eggs imported, you&rsquo;re ready to create a server:</p><ol><li><p><strong>Create a Nest</strong> (if not already created during egg import) — this groups related games</p></li><li><p><strong>Create an Egg</strong> — the game template with Docker image and startup commands</p></li><li><p><strong>Create a Server</strong> from the Panel admin:</p><ul><li><strong>Name</strong>: &ldquo;Survival World 01&rdquo;</li><li><strong>Owner</strong>: Select a user</li><li><strong>Node</strong>: Choose your Wings node</li><li><strong>Egg</strong>: Select the game (e.g., Minecraft Paper)</li><li><strong>Docker Image</strong>: <code>ghcr.io/parkervcp/yolks:java_21</code> (auto-filled from egg)</li><li><strong>Memory</strong>: 4096 MB</li><li><strong>Swap</strong>: 0 MB</li><li><strong>Disk</strong>: 10240 MB (10 GB)</li><li><strong>CPU Limit</strong>: 200% (2 full cores)</li><li><strong>Database</strong>: Create a MySQL database if the game needs one</li><li><strong>Allocation</strong>: Assign a port from your node&rsquo;s available pool</li></ul></li><li><p>The server starts building — Wings pulls the Docker image, creates the container, and starts the game process</p></li><li><p>Access the server console directly from the Panel&rsquo;s web UI</p></li></ol><h2 id=supported-games>Supported Games</h2><p>Pterodactyl supports an enormous range of games through its egg system. Here&rsquo;s a sampling:</p><table><thead><tr><th>Game</th><th>Docker Image</th><th>Typical RAM</th><th>Typical CPU</th></tr></thead><tbody><tr><td>Minecraft (Paper/Spigot)</td><td>yolks:java_21</td><td>2-8 GB</td><td>1-2 cores</td></tr><tr><td>Minecraft (Fabric/Forge)</td><td>yolks:java_21</td><td>4-12 GB</td><td>2-4 cores</td></tr><tr><td>Palworld</td><td>steamcmd</td><td>8-16 GB</td><td>2-4 cores</td></tr><tr><td>Rust</td><td>steamcmd</td><td>8-16 GB</td><td>4+ cores</td></tr><tr><td>Valheim</td><td>steamcmd</td><td>2-4 GB</td><td>1-2 cores</td></tr><tr><td>Terraria (tModLoader)</td><td>yolks:dotnet</td><td>1-2 GB</td><td>1 core</td></tr><tr><td>CS2</td><td>steamcmd</td><td>4-8 GB</td><td>2-4 cores</td></tr><tr><td>ARK: Survival Ascended</td><td>steamcmd</td><td>16-32 GB</td><td>4-8 cores</td></tr><tr><td>Unturned</td><td>steamcmd</td><td>2-4 GB</td><td>1-2 cores</td></tr><tr><td>Team Fortress 2</td><td>steamcmd</td><td>1-2 GB</td><td>1 core</td></tr><tr><td>Discord Bot (Node.js)</td><td>yolks:nodejs_20</td><td>256-512 MB</td><td>0.5 cores</td></tr><tr><td>Generic Python App</td><td>yolks:python_3.12</td><td>256 MB</td><td>0.5 cores</td></tr></tbody></table><h2 id=multi-node-production-setup>Multi-Node Production Setup</h2><p>For serious deployments, separate your Panel from your game server nodes. Here&rsquo;s a typical architecture:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>                    ┌─────────────────────┐
+</span></span><span class=line><span class=cl>                    │   Panel Server      │
+</span></span><span class=line><span class=cl>                    │   (Small VPS)       │
+</span></span><span class=line><span class=cl>                    │   2 vCPU / 4GB RAM  │
+</span></span><span class=line><span class=cl>                    │   MariaDB + Redis   │
+</span></span><span class=line><span class=cl>                    └──────────┬──────────┘
+</span></span><span class=line><span class=cl>                               │ HTTPS
+</span></span><span class=line><span class=cl>              ┌────────────────┼────────────────┐
+</span></span><span class=line><span class=cl>              │                │                │
+</span></span><span class=line><span class=cl>    ┌─────────▼────────┐ ┌───▼────────────┐ ┌─▼──────────────┐
+</span></span><span class=line><span class=cl>    │  Node 01          │ │  Node 02       │ │  Node 03       │
+</span></span><span class=line><span class=cl>    │  Dedicated Server │ │  Dedicated      │ │  Dedicated     │
+</span></span><span class=line><span class=cl>    │  16 vCPU / 64GB   │ │  8 vCPU / 32GB │ │  32 vCPU / 128GB│
+</span></span><span class=line><span class=cl>    │  Wings Daemon     │ │  Wings Daemon  │ │  Wings Daemon  │
+</span></span><span class=line><span class=cl>    │  20+ servers      │ │  10+ servers   │ │  40+ servers   │
+</span></span><span class=line><span class=cl>    └───────────────────┘ └────────────────┘ └────────────────┘
+</span></span></code></pre></td></tr></table></div></div><p>Each Wings node independently manages its own Docker containers. The Panel orchestrates configuration and displays aggregated status. If one node goes offline, servers on other nodes continue running unaffected.</p><p>To add a new node, simply repeat the Wings installation steps and create a new node entry in the Panel. The auto-deploy token securely pairs them.</p><h2 id=docker-network-configuration-for-wings>Docker Network Configuration for Wings</h2><p>Wings creates isolated Docker networks for each server, preventing cross-container communication by default. If you need servers to communicate (e.g., a game server connecting to a separate database container), configure custom Docker networks:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># On the Wings node, create a shared network</span>
+</span></span><span class=line><span class=cl>docker network create pterodactyl_shared
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># In the Panel, edit the egg&#39;s Docker tab</span>
+</span></span><span class=line><span class=cl><span class=c1># Add &#34;pterodactyl_shared&#34; to the Additional Containers section</span>
+</span></span><span class=line><span class=cl><span class=c1># Or set the egg to use a specific network</span>
+</span></span></code></pre></td></tr></table></div></div><p>For database servers that multiple game servers need to access, run them as separate allocations on the Wings node and configure the game servers to connect via the node&rsquo;s internal Docker network gateway.</p><h2 id=backup-and-disaster-recovery>Backup and Disaster Recovery</h2><p>Pterodactyl includes built-in backup functionality, but you should also protect the Panel&rsquo;s database:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Database backup (run on Panel server)</span>
+</span></span><span class=line><span class=cl>mysqldump -u pterodactyl -p pterodactyl <span class=p>|</span> gzip &gt; /backups/pterodactyl-db-<span class=k>$(</span>date +%Y%m%d<span class=k>)</span>.sql.gz
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Panel files backup</span>
+</span></span><span class=line><span class=cl>tar czf /backups/pterodactyl-files-<span class=k>$(</span>date +%Y%m%d<span class=k>)</span>.tar.gz /var/www/pterodactyl
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Wings server data backup (per server, via Panel UI or API)</span>
+</span></span><span class=line><span class=cl><span class=c1># The Panel&#39;s built-in backup system creates tar.gz archives of server directories</span>
+</span></span></code></pre></td></tr></table></div></div><p>Schedule automatic database backups with cron:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Edit crontab</span>
+</span></span><span class=line><span class=cl>crontab -e
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Add daily backup at 3 AM</span>
+</span></span><span class=line><span class=cl><span class=m>0</span> <span class=m>3</span> * * * mysqldump -u pterodactyl -p<span class=s1>&#39;your_password&#39;</span> pterodactyl <span class=p>|</span> gzip &gt; /backups/pterodactyl-db-<span class=k>$(</span>date +<span class=se>\%</span>Y<span class=se>\%</span>m<span class=se>\%</span>d<span class=k>)</span>.sql.gz <span class=o>&amp;&amp;</span> find /backups -name <span class=s2>&#34;pterodactyl-db-*.sql.gz&#34;</span> -mtime +30 -delete
+</span></span></code></pre></td></tr></table></div></div><p>The built-in server backups can be configured per-server in the Panel&rsquo;s Backup tab. Set retention limits to prevent disk exhaustion.</p><h2 id=monitoring-and-maintenance>Monitoring and Maintenance</h2><p>Keep your Pterodactyl installation healthy with regular maintenance:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Update the Panel (run from /var/www/pterodactyl)</span>
+</span></span><span class=line><span class=cl><span class=nb>cd</span> /var/www/pterodactyl
+</span></span><span class=line><span class=cl>sudo curl -Lo panel.tar.gz https://github.com/pterodactyl/panel/releases/latest/download/panel.tar.gz
+</span></span><span class=line><span class=cl>sudo tar -xzvf panel.tar.gz
+</span></span><span class=line><span class=cl>sudo composer install --no-dev --optimize-autoloader
+</span></span><span class=line><span class=cl>sudo php artisan migrate --seed --force
+</span></span><span class=line><span class=cl>sudo php artisan view:cache
+</span></span><span class=line><span class=cl>sudo systemctl restart pteroq php8.2-fpm
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Update Wings (run on each node)</span>
+</span></span><span class=line><span class=cl>sudo curl -L -o /usr/local/bin/wings https://github.com/pterodactyl/panel/releases/latest/download/wings_linux_amd64
+</span></span><span class=line><span class=cl>sudo chmod +x /usr/local/bin/wings
+</span></span><span class=line><span class=cl>sudo systemctl restart wings
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Clean up unused Docker images on Wings nodes</span>
+</span></span><span class=line><span class=cl>docker image prune -af --filter <span class=s2>&#34;until=720h&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=api-automation>API Automation</h2><p>Pterodactyl exposes a comprehensive REST API for programmatic server management. Generate API keys in the Panel admin area:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># List all servers via API</span>
+</span></span><span class=line><span class=cl>curl -s https://panel.yourdomain.com/api/application/servers <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    -H <span class=s2>&#34;Authorization: Bearer ptla_your_application_api_key&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    -H <span class=s2>&#34;Accept: Application/vnd.Pterodactyl.v1+json&#34;</span> <span class=p>|</span> jq <span class=s1>&#39;.data[].attributes&#39;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Create a server via API</span>
+</span></span><span class=line><span class=cl>curl -s -X POST https://panel.yourdomain.com/api/application/servers <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    -H <span class=s2>&#34;Authorization: Bearer ptla_your_application_api_key&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    -H <span class=s2>&#34;Accept: Application/vnd.Pterodactyl.v1+json&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    -H <span class=s2>&#34;Content-Type: application/json&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    -d <span class=s1>&#39;{
+</span></span></span><span class=line><span class=cl><span class=s1>        &#34;name&#34;: &#34;API-Created Server&#34;,
+</span></span></span><span class=line><span class=cl><span class=s1>        &#34;user&#34;: 1,
+</span></span></span><span class=line><span class=cl><span class=s1>        &#34;egg&#34;: 1,
+</span></span></span><span class=line><span class=cl><span class=s1>        &#34;docker_image&#34;: &#34;ghcr.io/parkervcp/yolks:java_21&#34;,
+</span></span></span><span class=line><span class=cl><span class=s1>        &#34;startup&#34;: &#34;java -Xms128M -Xmx{{SERVER_MEMORY}}M -jar server.jar&#34;,
+</span></span></span><span class=line><span class=cl><span class=s1>        &#34;environment&#34;: {&#34;SERVER_JARFILE&#34;: &#34;server.jar&#34;, &#34;BUILD_NUMBER&#34;: &#34;latest&#34;},
+</span></span></span><span class=line><span class=cl><span class=s1>        &#34;limits&#34;: {&#34;memory&#34;: 2048, &#34;swap&#34;: 0, &#34;disk&#34;: 5120, &#34;io&#34;: 500, &#34;cpu&#34;: 100},
+</span></span></span><span class=line><span class=cl><span class=s1>        &#34;feature_limits&#34;: {&#34;databases&#34;: 1, &#34;allocations&#34;: 2, &#34;backups&#34;: 3},
+</span></span></span><span class=line><span class=cl><span class=s1>        &#34;allocation&#34;: {&#34;default&#34;: 1}
+</span></span></span><span class=line><span class=cl><span class=s1>    }&#39;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Start/stop/restart a server via client API</span>
+</span></span><span class=line><span class=cl>curl -s -X POST https://panel.yourdomain.com/api/client/servers/server-uuid/power <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    -H <span class=s2>&#34;Authorization: Bearer ptlc_your_client_api_key&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    -H <span class=s2>&#34;Content-Type: application/json&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    -d <span class=s1>&#39;{&#34;signal&#34;: &#34;start&#34;}&#39;</span>
+</span></span></code></pre></td></tr></table></div></div><p>The API supports full CRUD operations on servers, users, nodes, nests, eggs, and allocations. Combined with webhooks, you can integrate Pterodactyl into existing automation pipelines, Discord bots, or custom dashboards.</p><h2 id=security-best-practices>Security Best Practices</h2><p>Running a game server panel exposes infrastructure to the internet. Follow these security practices:</p><ul><li><strong>Enable two-factor authentication</strong> for all Panel accounts, especially administrators</li><li><strong>Use application API keys</strong> for automation instead of sharing admin credentials</li><li><strong>Restrict Wings node access</strong> — only the Panel server should communicate with Wings on port 443</li><li><strong>Run Wings as root</strong> (required for Docker management) but keep game processes containerized and unprivileged</li><li><strong>Set resource limits</strong> on every server to prevent a single game from consuming all node resources</li><li><strong>Enable DDoS protection</strong> — game servers are frequent targets. Consider Cloudflare Spectrum or a similar service for the Panel</li><li><strong>Regularly update</strong> the Panel, Wings, and all Docker images to patch security vulnerabilities</li><li><strong>Audit SFTP access</strong> — Wings provides SFTP for file uploads. Review user access periodically</li><li><strong>Use strong database passwords</strong> and bind MariaDB to <code>127.0.0.1</code> only</li></ul><h2 id=alternatives-comparison>Alternatives Comparison</h2><p>While Pterodactyl is the most feature-complete option, other game server management tools exist:</p><table><thead><tr><th>Feature</th><th>Pterodactyl</th><th>LinuxGSM</th><th>AMP</th><th>MCSManager</th></tr></thead><tbody><tr><td><strong>License</strong></td><td>MIT</td><td>MIT</td><td>Commercial</td><td>MIT</td></tr><tr><td><strong>Cost</strong></td><td>Free</td><td>Free</td><td>$3.50+/module</td><td>Free</td></tr><tr><td><strong>Web UI</strong></td><td>✅ Full dashboard</td><td>❌ CLI only</td><td>✅ Full dashboard</td><td>✅ Dashboard</td></tr><tr><td><strong>Multi-node</strong></td><td>✅ Native</td><td>❌ Single server</td><td>✅</td><td>✅</td></tr><tr><td><strong>Docker isolation</strong></td><td>✅ Per-server</td><td>❌</td><td>⚠️ Optional</td><td>✅</td></tr><tr><td><strong>Game count</strong></td><td>100+ (eggs)</td><td>120+ (scripts)</td><td>30+</td><td>40+</td></tr><tr><td><strong>API</strong></td><td>✅ REST + WebSocket</td><td>❌</td><td>✅ REST</td><td>✅ REST</td></tr><tr><td><strong>User management</strong></td><td>✅ Multi-user, roles</td><td>❌ Single user</td><td>✅</td><td>✅</td></tr><tr><td><strong>SFTP access</strong></td><td>✅ Per-server</td><td>❌</td><td>✅</td><td>✅</td></tr><tr><td><strong>Auto-updates</strong></td><td>✅ Via eggs</td><td>✅ Via scripts</td><td>✅</td><td>✅</td></tr><tr><td><strong>Backup system</strong></td><td>✅ Built-in</td><td>⚠️ Manual</td><td>✅</td><td>✅</td></tr><tr><td><strong>Resource limits</strong></td><td>✅ CPU/RAM/Disk</td><td>❌</td><td>✅</td><td>✅</td></tr><tr><td><strong>Setup complexity</strong></td><td>Moderate</td><td>Low</td><td>Low</td><td>Low</td></tr></tbody></table><p><strong>Choose Pterodactyl</strong> if you need multi-user management, Docker isolation, and a polished web dashboard for multiple game servers across multiple machines.</p><p><strong>Choose LinuxGSM</strong> if you&rsquo;re running a single server, prefer CLI management, and want the simplest possible setup with no dependencies beyond bash.</p><p><strong>Choose AMP</strong> if you want commercial support, a streamlined installation experience, and don&rsquo;t mind the licensing cost.</p><p><strong>Choose MCSManager</strong> if you want a lightweight web panel with Docker support but Pterodactyl&rsquo;s setup complexity is a barrier.</p><p>With a fully deployed Pterodactyl Panel, you have complete control over your game server infrastructure — from a single private Minecraft world to a multi-node hosting operation serving hundreds of concurrent players. The investment in setup pays for itself quickly compared to commercial hosting, and the flexibility to run any supported game on any hardware configuration makes it the definitive open-source choice for game server management in 2026.</p></div><div id=frame style=width:100%;margin:auto;position:relative;z-index:99998><iframe data-aa=2433958 src='//acceptable.a-ads.com/2433958/?size=Adaptive' style=border:0;padding:0;width:70%;height:auto;overflow:hidden;display:block;margin:auto></iframe></div></article></main><footer class=site-footer><p>Built with <a href=https://gohugo.io>Hugo</a> · <a href=/openswap-guide/index.xml>RSS</a> · <a href=https://github.com/hopkdj>GitHub</a></p><p style=margin-top:8px>&copy; 2026 OpenSwap Guide. All rights reserved.</p></footer></body></html>
