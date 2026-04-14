@@ -1,0 +1,602 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Complete Guide to Self-Hosted JupyterHub for Multi-User Data Science 2026 | OpenSwap Guide</title>
+<meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, and local AI deployment."><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/openswap-guide/css/main.min.777dc111b5207bf5336e5799477da0b31fb9080306bf98a82d6eceb979cf9737.css><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://hopkdj.github.io/openswap-guide/ class=logo><div class=logo-icon>H</div>OpenSwap Guide</a><nav><ul class=nav-links><li><a href=/openswap-guide/>Home</a></li><li><a href=/openswap-guide/tags/comparison/>Comparisons</a></li><li><a href=/openswap-guide/tags/guide/>Guides</a></li><li><a href=/openswap-guide/tags/ai/>Local AI</a></li><li><a href=/openswap-guide/index.xml class=nav-rss>Subscribe RSS</a></li></ul></nav></div></header><main><article class=post-single><a href=https://hopkdj.github.io/openswap-guide/ class=back-link>&larr; Back to posts</a><header class=post-single-header><div class=post-single-meta><span class="tag tag-purple">comparison</span>
+<span class="tag tag-green">guide</span>
+<span class="tag tag-blue">self-hosted</span>
+<span>·</span>
+<span>April 14, 2026</span>
+<span>·</span>
+<span>13 min read</span></div><h1 class=post-single-title>Complete Guide to Self-Hosted JupyterHub for Multi-User Data Science 2026</h1></header><div class=post-single-content><p>Jupyter notebooks have become the de facto standard for data science, machine learning, and scientific computing. But running individual Jupyter Notebook servers for every team member is a maintenance nightmare. <strong>JupyterHub</strong> solves this by providing a multi-user server that spawns, manages, and proxies individual notebook instances — all from a single deployment you control.</p><p>This guide walks you through setting up JupyterHub on your own infrastructure, choosing the right authenticator and spawner, configuring resource limits, and comparing it to hosted alternatives.</p><h2 id=why-self-host-your-notebook-platform>Why Self-Host Your Notebook Platform</h2><p>When you hand your data team access to a notebook environment, you&rsquo;re giving them access to arbitrary code execution. Here&rsquo;s why running your own JupyterHub instance beats paying for a hosted service:</p><h3 id=data-stays-on-your-infrastructure>Data Stays On Your Infrastructure</h3><p>Notebook work often involves proprietary datasets, customer data, or unreleased research. Self-hosting ensures raw data, intermediate results, and trained models never leave your network. There are no third-party data processing agreements to negotiate, no audit trails pointing to external servers, and no risk of a vendor breach exposing your data.</p><h3 id=full-control-over-the-environment>Full Control Over the Environment</h3><p>Hosted notebook platforms lock you into specific Python versions, pre-installed libraries, and resource tiers. With a self-hosted JupyterHub, you decide:</p><ul><li>Which Python versions and package repositories are available</li><li>Whether users get GPU access and which GPU models</li><li>How much RAM and CPU each user can consume</li><li>Which system-level tools ( compilers, database clients, system libraries) are installed</li><li>Network policies — can notebooks reach the internet, internal databases, or both</li></ul><h3 id=cost-efficiency-at-scale>Cost Efficiency at Scale</h3><p>Hosted notebook services charge per compute hour or per user seat. At small scale this seems affordable, but costs compound quickly:</p><table><thead><tr><th>Team Size</th><th>Hosted (est. monthly)</th><th>Self-Hosted (VPS)</th></tr></thead><tbody><tr><td>5 users</td><td>$150 – $300</td><td>$40 – $80</td></tr><tr><td>20 users</td><td>$600 – $1,500</td><td>$80 – $200</td></tr><tr><td>50 users</td><td>$1,500 – $4,000</td><td>$150 – $400</td></tr></tbody></table><p>Self-hosting requires upfront configuration effort, but the marginal cost per additional user is near zero. A single 8-core, 32 GB RAM VPS at ~$80/month comfortably handles 20–30 concurrent notebook users with reasonable resource limits.</p><h3 id=compliance-and-auditing>Compliance and Auditing</h3><p>If your organization operates under GDPR, HIPAA, SOC 2, or similar frameworks, self-hosting gives you direct control over:</p><ul><li>Access logs and authentication records</li><li>Data encryption at rest and in transit</li><li>Backup and retention policies</li><li>Network segmentation and firewall rules</li></ul><h2 id=what-is-jupyterhub>What Is JupyterHub?</h2><p>JupyterHub is a multi-user hub that manages and proxies multiple instances of the single-user Jupyter Notebook server. It was originally developed by the Jupyter Project team (Project Jupyter) and is open source under a modified BSD license.</p><h3 id=architecture>Architecture</h3><p>JupyterHub consists of three main components:</p><ol><li><p><strong>Hub</strong> — The central management server. Handles authentication, spawns user servers, and tracks running instances. Built with Python using Tornado as the async web framework.</p></li><li><p><strong>Proxy</strong> — Routes HTTP requests between users and their individual notebook servers. The default proxy is <code>configurable-http-proxy</code> (CHP), a Node.js-based reverse proxy.</p></li><li><p><strong>Single-User Notebook Servers</strong> — One per authenticated user. Each runs in its own process or container with isolated filesystem, environment variables, and resource limits.</p></li></ol><p>The flow works like this: a user visits your JupyterHub URL → authenticates → the Hub spawns a single-user server → the proxy routes all subsequent requests to that server.</p><h3 id=spawners-how-servers-are-launched>Spawners: How Servers Are Launched</h3><p>The <strong>spawner</strong> is the most important configuration decision. It determines how individual notebook servers are launched and isolated:</p><table><thead><tr><th>Spawner</th><th>Isolation</th><th>Best For</th><th>Resource Overhead</th></tr></thead><tbody><tr><td><code>LocalProcessSpawner</code></td><td>None (same OS user or separate Unix users)</td><td>Single-server development</td><td>Minimal</td></tr><tr><td><code>DockerSpawner</code></td><td>Docker containers</td><td>Teams sharing one host</td><td>Low–Medium</td></tr><tr><td><code>KubeSpawner</code></td><td>Kubernetes pods</td><td>Large teams, multi-node</td><td>Medium–High</td></tr><tr><td><code>SystemdSpawner</code></td><td>systemd services</td><td>Linux servers with systemd</td><td>Low</td></tr><tr><td><code>SSHSpawner</code></td><td>SSH to remote hosts</td><td>Distributed compute clusters</td><td>Variable</td></tr></tbody></table><p>For most teams starting out, <strong>DockerSpawner</strong> is the sweet spot — it gives container isolation without the complexity of Kubernetes.</p><h3 id=authenticators-how-users-log-in>Authenticators: How Users Log In</h3><p>The <strong>authenticator</strong> controls who can access your JupyterHub:</p><table><thead><tr><th>Authenticator</th><th>Use Case</th><th>Setup Complexity</th></tr></thead><tbody><tr><td><code>DummyAuthenticator</code></td><td>Testing only</td><td>Trivial</td></tr><tr><td><code>FirstUseAuthenticator</code></td><td>Simple self-signup</td><td>Low</td></tr><tr><td><code>OAuthenticator</code> (GitHub, Google, GitLab)</td><td>Organizations with SSO</td><td>Medium</td></tr><tr><td><code>LDAPAuthenticator</code></td><td>Corporate LDAP/Active Directory</td><td>Medium–High</td></tr><tr><td><code>NativeAuthenticator</code></td><td>Self-managed user database</td><td>Low</td></tr><tr><td><code>PAMAuthenticator</code> (default)</td><td>System user accounts</td><td>Low</td></tr></tbody></table><h2 id=docker-compose-deployment-guide>Docker Compose Deployment Guide</h2><p>The fastest way to get JupyterHub running is with Docker Compose. This setup uses <code>DockerSpawner</code> for container isolation and <code>FirstUseAuthenticator</code> for simple user management.</p><h3 id=prerequisites>Prerequisites</h3><ul><li>A Linux server (Ubuntu 22.04+, Debian 12+, or equivalent)</li><li>Docker Engine and Docker Compose installed</li><li>A domain name pointing to your server (for TLS)</li><li>At least 4 GB RAM (8 GB recommended for 5+ concurrent users)</li></ul><h3 id=step-1-create-the-project-directory>Step 1: Create the Project Directory</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>mkdir -p ~/jupyterhub/data
+</span></span><span class=line><span class=cl><span class=nb>cd</span> ~/jupyterhub
+</span></span></code></pre></td></tr></table></div></div><h3 id=step-2-write-the-docker-compose-file>Step 2: Write the Docker Compose File</h3><p>Create <code>docker-compose.yml</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>jupyterhub</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>jupyterhub/jupyterhub:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>jupyterhub</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8000:8000&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./jupyterhub_config.py:/srv/jupyterhub/jupyterhub_config.py:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/var/run/docker.sock:/var/run/docker.sock:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./data:/srv/jupyterhub/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DOCKER_NETWORK_NAME=jupyterhub-network</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>jupyterhub-network</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>jupyterhub-network</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>jupyterhub-network</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>bridge</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=step-3-write-the-jupyterhub-configuration>Step 3: Write the JupyterHub Configuration</h3><p>Create <code>jupyterhub_config.py</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=kn>import</span> <span class=nn>os</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># --- Networking ---</span>
+</span></span><span class=line><span class=cl><span class=n>c</span><span class=o>.</span><span class=n>JupyterHub</span><span class=o>.</span><span class=n>ip</span> <span class=o>=</span> <span class=s2>&#34;0.0.0.0&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>c</span><span class=o>.</span><span class=n>JupyterHub</span><span class=o>.</span><span class=n>port</span> <span class=o>=</span> <span class=mi>8000</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># --- Authenticator: FirstUse (users set password on first login) ---</span>
+</span></span><span class=line><span class=cl><span class=n>c</span><span class=o>.</span><span class=n>JupyterHub</span><span class=o>.</span><span class=n>authenticator_class</span> <span class=o>=</span> <span class=s2>&#34;firstuseauthenticator.FirstUseAuthenticator&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>c</span><span class=o>.</span><span class=n>FirstUseAuthenticator</span><span class=o>.</span><span class=n>create_users</span> <span class=o>=</span> <span class=kc>False</span>  <span class=c1># Admin must pre-create users</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># --- Spawner: Docker ---</span>
+</span></span><span class=line><span class=cl><span class=n>c</span><span class=o>.</span><span class=n>JupyterHub</span><span class=o>.</span><span class=n>spawner_class</span> <span class=o>=</span> <span class=s2>&#34;dockerspawner.DockerSpawner&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>c</span><span class=o>.</span><span class=n>DockerSpawner</span><span class=o>.</span><span class=n>image</span> <span class=o>=</span> <span class=s2>&#34;jupyter/scipy-notebook:latest&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>c</span><span class=o>.</span><span class=n>DockerSpawner</span><span class=o>.</span><span class=n>network_name</span> <span class=o>=</span> <span class=n>os</span><span class=o>.</span><span class=n>environ</span><span class=p>[</span><span class=s2>&#34;DOCKER_NETWORK_NAME&#34;</span><span class=p>]</span>
+</span></span><span class=line><span class=cl><span class=n>c</span><span class=o>.</span><span class=n>DockerSpawner</span><span class=o>.</span><span class=n>remove</span> <span class=o>=</span> <span class=kc>True</span>  <span class=c1># Delete container on stop (data persists in volumes)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># --- Per-User Volumes ---</span>
+</span></span><span class=line><span class=cl><span class=n>c</span><span class=o>.</span><span class=n>DockerSpawner</span><span class=o>.</span><span class=n>volumes</span> <span class=o>=</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;jupyterhub-user-</span><span class=si>{username}</span><span class=s2>&#34;</span><span class=p>:</span> <span class=s2>&#34;/home/jovyan/work&#34;</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># --- Resource Limits ---</span>
+</span></span><span class=line><span class=cl><span class=n>c</span><span class=o>.</span><span class=n>DockerSpawner</span><span class=o>.</span><span class=n>mem_limit</span> <span class=o>=</span> <span class=s2>&#34;2G&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>c</span><span class=o>.</span><span class=n>DockerSpawner</span><span class=o>.</span><span class=n>cpu_limit</span> <span class=o>=</span> <span class=mf>2.0</span>
+</span></span><span class=line><span class=cl><span class=n>c</span><span class=o>.</span><span class=n>DockerSpawner</span><span class=o>.</span><span class=n>extra_host_config</span> <span class=o>=</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;memswap_limit&#34;</span><span class=p>:</span> <span class=s2>&#34;2G&#34;</span><span class=p>,</span>  <span class=c1># Prevent swap usage beyond RAM limit</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># --- Admin Users ---</span>
+</span></span><span class=line><span class=cl><span class=n>c</span><span class=o>.</span><span class=n>Authenticator</span><span class=o>.</span><span class=n>admin_users</span> <span class=o>=</span> <span class=p>{</span><span class=s2>&#34;admin&#34;</span><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># --- Pre-Spawn Hook: Pull image before spawning ---</span>
+</span></span><span class=line><span class=cl><span class=n>c</span><span class=o>.</span><span class=n>DockerSpawner</span><span class=o>.</span><span class=n>pull_policy</span> <span class=o>=</span> <span class=s2>&#34;always&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><p>This configuration creates a production-ready setup with:</p><ul><li><strong>Container isolation</strong>: Each user gets their own Docker container</li><li><strong>Persistent storage</strong>: User notebooks survive container recreation via Docker volumes</li><li><strong>Resource limits</strong>: 2 GB RAM and 2 CPU cores per user</li><li><strong>No swap</strong>: Prevents a single user from consuming swap and starving others</li><li><strong>Automatic image pulls</strong>: Always uses the latest notebook image</li></ul><h3 id=step-4-install-required-python-packages-in-the-hub>Step 4: Install Required Python Packages in the Hub</h3><p>The Hub container needs <code>dockerspawner</code> and <code>firstuseauthenticator</code>. Create a <code>Dockerfile</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-dockerfile data-lang=dockerfile><span class=line><span class=cl><span class=k>FROM</span><span class=s> jupyterhub/jupyterhub:latest</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=k>RUN</span> pip install --no-cache-dir <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    dockerspawner <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    firstuseauthenticator<span class=err>
+</span></span></span></code></pre></td></tr></table></div></div><p>Update the compose service to use this Dockerfile:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>jupyterhub</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>build</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>context</span><span class=p>:</span><span class=w> </span><span class=l>.</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>dockerfile</span><span class=p>:</span><span class=w> </span><span class=l>Dockerfile</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=c># ... rest stays the same</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=step-5-create-admin-user>Step 5: Create Admin User</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker compose run jupyterhub bash -c <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  <span class=s2>&#34;python -c \&#34;from firstuseauthenticator import FirstUseAuthenticator; \
+</span></span></span><span class=line><span class=cl><span class=s2>  a = FirstUseAuthenticator(); \
+</span></span></span><span class=line><span class=cl><span class=s2>  a.add_user(&#39;admin&#39;)\&#34;&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=step-6-launch>Step 6: Launch</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker compose up -d
+</span></span></code></pre></td></tr></table></div></div><p>Visit <code>http://your-server-ip:8000</code> and log in as <code>admin</code> with a password of your choice.</p><h3 id=step-7-add-tls-with-a-reverse-proxy>Step 7: Add TLS with a Reverse Proxy</h3><p>For production, put JupyterHub behind a reverse proxy with TLS termination. Here&rsquo;s an Nginx configuration:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-nginx data-lang=nginx><span class=line><span class=cl><span class=k>server</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=kn>listen</span> <span class=mi>443</span> <span class=s>ssl</span> <span class=s>http2</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=kn>server_name</span> <span class=s>notebooks.yourdomain.com</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kn>ssl_certificate</span> <span class=s>/etc/letsencrypt/live/notebooks.yourdomain.com/fullchain.pem</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=kn>ssl_certificate_key</span> <span class=s>/etc/letsencrypt/live/notebooks.yourdomain.com/privkey.pem</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kn>location</span> <span class=s>/</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_pass</span> <span class=s>http://127.0.0.1:8000</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_set_header</span> <span class=s>Host</span> <span class=nv>$host</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_set_header</span> <span class=s>X-Real-IP</span> <span class=nv>$remote_addr</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_set_header</span> <span class=s>X-Forwarded-For</span> <span class=nv>$proxy_add_x_forwarded_for</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_set_header</span> <span class=s>X-Forwarded-Proto</span> <span class=nv>$scheme</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=c1># WebSocket support (required for Jupyter kernel communication)
+</span></span></span><span class=line><span class=cl><span class=c1></span>        <span class=kn>proxy_http_version</span> <span class=mi>1</span><span class=s>.1</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_set_header</span> <span class=s>Upgrade</span> <span class=nv>$http_upgrade</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_set_header</span> <span class=s>Connection</span> <span class=s>&#34;upgrade&#34;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=c1># Increase timeouts for long-running notebook operations
+</span></span></span><span class=line><span class=cl><span class=c1></span>        <span class=kn>proxy_read_timeout</span> <span class=s>86400s</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_send_timeout</span> <span class=s>86400s</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>Update <code>jupyterhub_config.py</code> to be aware of the proxy:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=n>c</span><span class=o>.</span><span class=n>JupyterHub</span><span class=o>.</span><span class=n>bind_url</span> <span class=o>=</span> <span class=s2>&#34;https://notebooks.yourdomain.com/&#34;</span>
+</span></span><span class=line><span class=cl><span class=n>c</span><span class=o>.</span><span class=n>JupyterHub</span><span class=o>.</span><span class=n>port</span> <span class=o>=</span> <span class=mi>8000</span>
+</span></span><span class=line><span class=cl><span class=n>c</span><span class=o>.</span><span class=n>JupyterHub</span><span class=o>.</span><span class=n>ip</span> <span class=o>=</span> <span class=s2>&#34;127.0.0.1&#34;</span>  <span class=c1># Only listen on localhost</span>
+</span></span></code></pre></td></tr></table></div></div><p>Restart JupyterHub after updating the configuration:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker compose restart
+</span></span></code></pre></td></tr></table></div></div><h2 id=managing-users-and-environments>Managing Users and Environments</h2><h3 id=creating-and-removing-users>Creating and Removing Users</h3><p>With <code>FirstUseAuthenticator</code>, you can pre-create user accounts:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=c1># In jupyterhub_config.py</span>
+</span></span><span class=line><span class=cl><span class=n>c</span><span class=o>.</span><span class=n>Authenticator</span><span class=o>.</span><span class=n>allowed_users</span> <span class=o>=</span> <span class=p>{</span><span class=s2>&#34;alice&#34;</span><span class=p>,</span> <span class=s2>&#34;bob&#34;</span><span class=p>,</span> <span class=s2>&#34;charlie&#34;</span><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>Users in this set can log in. Users not in this set will be rejected, even if they guess a valid username/password pair.</p><p>To manage users at runtime, use the JupyterHub admin panel at <code>/hub/admin</code>, or the REST API:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># List all users</span>
+</span></span><span class=line><span class=cl>curl -H <span class=s2>&#34;Authorization: token </span><span class=nv>$JUPYTERHUB_API_TOKEN</span><span class=s2>&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  https://notebooks.yourdomain.com/hub/api/users
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Create a user</span>
+</span></span><span class=line><span class=cl>curl -X POST <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -H <span class=s2>&#34;Authorization: token </span><span class=nv>$JUPYTERHUB_API_TOKEN</span><span class=s2>&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -H <span class=s2>&#34;Content-Type: application/json&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -d <span class=s1>&#39;{&#34;name&#34;: &#34;newuser&#34;}&#39;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  https://notebooks.yourdomain.com/hub/api/users/newuser
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Delete a user</span>
+</span></span><span class=line><span class=cl>curl -X DELETE <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -H <span class=s2>&#34;Authorization: token </span><span class=nv>$JUPYTERHUB_API_TOKEN</span><span class=s2>&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  https://notebooks.yourdomain.com/hub/api/users/olduser
+</span></span></code></pre></td></tr></table></div></div><h3 id=providing-custom-notebook-environments>Providing Custom Notebook Environments</h3><p>Different teams need different software stacks. You can offer multiple notebook images and let users choose:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=c1># In jupyterhub_config.py</span>
+</span></span><span class=line><span class=cl><span class=n>c</span><span class=o>.</span><span class=n>DockerSpawner</span><span class=o>.</span><span class=n>image</span> <span class=o>=</span> <span class=s2>&#34;jupyter/scipy-notebook:latest&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>c</span><span class=o>.</span><span class=n>DockerSpawner</span><span class=o>.</span><span class=n>extra_create_kwargs</span> <span class=o>=</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;environment&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;GRANT_SUDO&#34;</span><span class=p>:</span> <span class=s2>&#34;yes&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Alternative: let users pick from a profile list</span>
+</span></span><span class=line><span class=cl><span class=n>c</span><span class=o>.</span><span class=n>KubeSpawner</span><span class=o>.</span><span class=n>profile_list</span> <span class=o>=</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>    <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;display_name&#34;</span><span class=p>:</span> <span class=s2>&#34;Python (SciPy Stack)&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;slug&#34;</span><span class=p>:</span> <span class=s2>&#34;scipy&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;default&#34;</span><span class=p>:</span> <span class=kc>True</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;kubespawner_override&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>            <span class=s2>&#34;image&#34;</span><span class=p>:</span> <span class=s2>&#34;jupyter/scipy-notebook:latest&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;display_name&#34;</span><span class=p>:</span> <span class=s2>&#34;R (IRKernel)&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;slug&#34;</span><span class=p>:</span> <span class=s2>&#34;r&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;kubespawner_override&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>            <span class=s2>&#34;image&#34;</span><span class=p>:</span> <span class=s2>&#34;jupyter/r-notebook:latest&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;display_name&#34;</span><span class=p>:</span> <span class=s2>&#34;GPU-enabled (PyTorch)&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;slug&#34;</span><span class=p>:</span> <span class=s2>&#34;gpu&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;kubespawner_override&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>            <span class=s2>&#34;image&#34;</span><span class=p>:</span> <span class=s2>&#34;jupyter/pytorch-notebook:latest&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>            <span class=s2>&#34;extra_resource_limits&#34;</span><span class=p>:</span> <span class=p>{</span><span class=s2>&#34;nvidia.com/gpu&#34;</span><span class=p>:</span> <span class=s2>&#34;1&#34;</span><span class=p>},</span>
+</span></span><span class=line><span class=cl>        <span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=p>},</span>
+</span></span><span class=line><span class=cl><span class=p>]</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=building-a-custom-notebook-image>Building a Custom Notebook Image</h3><p>For teams with specific requirements, build your own image:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-dockerfile data-lang=dockerfile><span class=line><span class=cl><span class=k>FROM</span><span class=s> jupyter/scipy-notebook:latest</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=c># Install system dependencies</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=k>USER</span><span class=s> root</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=k>RUN</span> apt-get update <span class=o>&amp;&amp;</span> apt-get install -y --no-install-recommends <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    libpq-dev <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    build-essential <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    <span class=o>&amp;&amp;</span> rm -rf /var/lib/apt/lists/*<span class=err>
+</span></span></span><span class=line><span class=cl><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=c># Install Python packages</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=k>USER</span><span class=s> $NB_USER</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=k>RUN</span> pip install --no-cache-dir <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    psycopg2-binary <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    sqlalchemy <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    pandas-gbq <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    plotly <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    seaborn <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    scikit-learn <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    xgboost <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    lightgbm<span class=err>
+</span></span></span><span class=line><span class=cl><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=c># Pre-download a large dataset</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=k>RUN</span> mkdir -p /home/<span class=nv>$NB_USER</span>/data<span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=k>COPY</span> datasets/ /home/<span class=nv>$NB_USER</span>/data/<span class=err>
+</span></span></span></code></pre></td></tr></table></div></div><p>Build and reference it in your config:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker build -t myorg/notebook:2026.04 .
+</span></span></code></pre></td></tr></table></div></div><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=n>c</span><span class=o>.</span><span class=n>DockerSpawner</span><span class=o>.</span><span class=n>image</span> <span class=o>=</span> <span class=s2>&#34;myorg/notebook:2026.04&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=scaling-beyond-a-single-server>Scaling Beyond a Single Server</h2><p>Docker Compose works great for teams up to ~30 users. Beyond that, you need Kubernetes.</p><h3 id=kubernetes-deployment-with-kubespawner>Kubernetes Deployment with KubeSpawner</h3><p>First, install JupyterHub on Kubernetes using the official Helm chart:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Add the JupyterHub Helm repository</span>
+</span></span><span class=line><span class=cl>helm repo add jupyterhub https://hub.jupyter.org/helm-chart/
+</span></span><span class=line><span class=cl>helm repo update
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Create a values file (config.yaml)</span>
+</span></span><span class=line><span class=cl>cat &gt; config.yaml <span class=s>&lt;&lt; &#39;EOF&#39;
+</span></span></span><span class=line><span class=cl><span class=s>hub:
+</span></span></span><span class=line><span class=cl><span class=s>  config:
+</span></span></span><span class=line><span class=cl><span class=s>    Authenticator:
+</span></span></span><span class=line><span class=cl><span class=s>      admin_users:
+</span></span></span><span class=line><span class=cl><span class=s>        - admin
+</span></span></span><span class=line><span class=cl><span class=s>      allowed_users:
+</span></span></span><span class=line><span class=cl><span class=s>        - alice
+</span></span></span><span class=line><span class=cl><span class=s>        - bob
+</span></span></span><span class=line><span class=cl><span class=s>    JupyterHub:
+</span></span></span><span class=line><span class=cl><span class=s>      authenticator_class: oauthenticator.github.GitHubOAuthenticator
+</span></span></span><span class=line><span class=cl><span class=s>    GitHubOAuthenticator:
+</span></span></span><span class=line><span class=cl><span class=s>      client_id: &#34;YOUR_GITHUB_CLIENT_ID&#34;
+</span></span></span><span class=line><span class=cl><span class=s>      client_secret: &#34;YOUR_GITHUB_CLIENT_SECRET&#34;
+</span></span></span><span class=line><span class=cl><span class=s>      oauth_callback_url: &#34;https://notebooks.yourdomain.com/hub/oauth_callback&#34;
+</span></span></span><span class=line><span class=cl><span class=s>
+</span></span></span><span class=line><span class=cl><span class=s>singleuser:
+</span></span></span><span class=line><span class=cl><span class=s>  image:
+</span></span></span><span class=line><span class=cl><span class=s>    name: jupyter/scipy-notebook
+</span></span></span><span class=line><span class=cl><span class=s>    tag: latest
+</span></span></span><span class=line><span class=cl><span class=s>  memory:
+</span></span></span><span class=line><span class=cl><span class=s>    limit: 4G
+</span></span></span><span class=line><span class=cl><span class=s>    guarantee: 1G
+</span></span></span><span class=line><span class=cl><span class=s>  cpu:
+</span></span></span><span class=line><span class=cl><span class=s>    limit: 2
+</span></span></span><span class=line><span class=cl><span class=s>    guarantee: 0.5
+</span></span></span><span class=line><span class=cl><span class=s>  storage:
+</span></span></span><span class=line><span class=cl><span class=s>    dynamic:
+</span></span></span><span class=line><span class=cl><span class=s>      storageClass: standard
+</span></span></span><span class=line><span class=cl><span class=s>    capacity: 10Gi
+</span></span></span><span class=line><span class=cl><span class=s>
+</span></span></span><span class=line><span class=cl><span class=s>proxy:
+</span></span></span><span class=line><span class=cl><span class=s>  service:
+</span></span></span><span class=line><span class=cl><span class=s>    type: LoadBalancer
+</span></span></span><span class=line><span class=cl><span class=s>EOF</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Deploy</span>
+</span></span><span class=line><span class=cl>helm install jhub jupyterhub/jupyterhub <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --namespace jupyterhub <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --create-namespace <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -f config.yaml
+</span></span></code></pre></td></tr></table></div></div><p>KubeSpawner gives you:</p><ul><li><strong>Horizontal pod autoscaling</strong> — spawn pods across multiple nodes</li><li><strong>Node selectors and tolerations</strong> — route GPU workloads to GPU nodes</li><li><strong>Resource quotas</strong> — enforce team-level budgets</li><li><strong>Persistent volume claims</strong> — per-user storage that survives pod restarts</li></ul><h2 id=jupyterhub-vs-alternatives>JupyterHub vs Alternatives</h2><table><thead><tr><th>Feature</th><th>JupyterHub (self-hosted)</th><th>Google Colab</th><th>Databricks Community</th><th>SageMaker Studio</th></tr></thead><tbody><tr><td>Cost</td><td>Server cost only</td><td>Free tier / $10+/mo</td><td>Free tier / $0.40+/DBU</td><td>Pay per usage</td></tr><tr><td>Data location</td><td>Your server</td><td>Google Cloud</td><td>Databricks cloud</td><td>AWS</td></tr><tr><td>Multi-user</td><td>Yes</td><td>Shared notebooks</td><td>Workspace-based</td><td>Studio domains</td></tr><tr><td>Custom environments</td><td>Full control</td><td>Limited</td><td>Limited</td><td>Moderate</td></tr><tr><td>GPU access</td><td>Your hardware</td><td>Free tier limited</td><td>Paid</td><td>Paid</td></tr><tr><td>Offline access</td><td>Yes</td><td>No</td><td>No</td><td>No</td></tr><tr><td>API access</td><td>Full REST API</td><td>Limited REST API</td><td>REST API</td><td>AWS SDK</td></tr><tr><td>Persistent storage</td><td>Unlimited (disk space)</td><td>12 GB (ephemeral)</td><td>Workspace storage</td><td>EFS / S3</td></tr><tr><td>Auth integration</td><td>OAuth, LDAP, PAM, custom</td><td>Google account</td><td>Databricks account</td><td>AWS IAM</td></tr><tr><td>Kubernetes native</td><td>Yes (KubeSpawner)</td><td>No</td><td>No</td><td>Managed EKS</td></tr></tbody></table><h3 id=when-to-choose-jupyterhub>When to Choose JupyterHub</h3><ul><li>Your team has 5+ regular notebook users</li><li>Data cannot leave your infrastructure (compliance, privacy, IP)</li><li>You need custom software stacks that hosted platforms don&rsquo;t support</li><li>You want to manage costs predictably rather than per-seat or per-hour</li><li>You need integration with existing identity providers (LDAP, GitHub, GitLab)</li></ul><h3 id=when-a-hosted-service-makes-sense>When a Hosted Service Makes Sense</h3><ul><li>You&rsquo;re a solo researcher or student with occasional needs</li><li>You need instant access to high-end GPUs without hardware investment</li><li>Your team is geographically distributed and you don&rsquo;t want to manage infrastructure</li><li>You want zero-maintenance setup and don&rsquo;t mind vendor lock-in</li></ul><h2 id=advanced-configuration-tips>Advanced Configuration Tips</h2><h3 id=pre-pull-images-across-the-cluster>Pre-Pull Images Across the Cluster</h3><p>When using multiple nodes, pulling large notebook images on first spawn causes delays. Use the image-puller daemonset:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Enable continuous image pulling with Helm</span>
+</span></span><span class=line><span class=cl>helm upgrade jhub jupyterhub/jupyterhub <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --namespace jupyterhub <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -f config.yaml <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --set prePuller.hook.enabled<span class=o>=</span><span class=nb>true</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --set prePuller.continuous.enabled<span class=o>=</span><span class=nb>true</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=automatic-idle-culling>Automatic Idle Culling</h3><p>Save resources by stopping idle servers:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=c1># In jupyterhub_config.py</span>
+</span></span><span class=line><span class=cl><span class=n>c</span><span class=o>.</span><span class=n>JupyterHub</span><span class=o>.</span><span class=n>services</span> <span class=o>=</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>    <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;name&#34;</span><span class=p>:</span> <span class=s2>&#34;cull-idle&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;admin&#34;</span><span class=p>:</span> <span class=kc>True</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;command&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>            <span class=s2>&#34;python&#34;</span><span class=p>,</span> <span class=s2>&#34;-m&#34;</span><span class=p>,</span> <span class=s2>&#34;jupyterhub_idle_culler&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>            <span class=s2>&#34;--timeout=3600&#34;</span><span class=p>,</span>       <span class=c1># 1 hour idle timeout</span>
+</span></span><span class=line><span class=cl>            <span class=s2>&#34;--cull-every=300&#34;</span><span class=p>,</span>     <span class=c1># Check every 5 minutes</span>
+</span></span><span class=line><span class=cl>            <span class=s2>&#34;--concurrency=10&#34;</span><span class=p>,</span>     <span class=c1># Process up to 10 at once</span>
+</span></span><span class=line><span class=cl>        <span class=p>],</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>]</span>
+</span></span></code></pre></td></tr></table></div></div><p>Install the culler package:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-dockerfile data-lang=dockerfile><span class=line><span class=cl><span class=k>RUN</span> pip install --no-cache-dir jupyterhub-idle-culler<span class=err>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=shared-project-directories>Shared Project Directories</h3><p>For team collaboration, mount a shared volume:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=n>c</span><span class=o>.</span><span class=n>DockerSpawner</span><span class=o>.</span><span class=n>volumes</span> <span class=o>=</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;jupyterhub-user-</span><span class=si>{username}</span><span class=s2>&#34;</span><span class=p>:</span> <span class=s2>&#34;/home/jovyan/work&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;jupyterhub-shared&#34;</span><span class=p>:</span> <span class=s2>&#34;/home/jovyan/shared&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>Create the shared volume:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker volume create jupyterhub-shared
+</span></span></code></pre></td></tr></table></div></div><p>Set permissions so all users can read and write:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker run --rm -v jupyterhub-shared:/data alpine <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  sh -c <span class=s2>&#34;chmod 777 /data&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=backup-and-disaster-recovery>Backup and Disaster Recovery</h2><p>Your JupyterHub data lives in Docker volumes. Back them up regularly:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=cp>#!/bin/bash
+</span></span></span><span class=line><span class=cl><span class=cp></span><span class=c1># backup.sh — Run via cron: 0 2 * * * /opt/jupyterhub/backup.sh</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nv>BACKUP_DIR</span><span class=o>=</span><span class=s2>&#34;/backup/jupyterhub/</span><span class=k>$(</span>date +%Y-%m-%d<span class=k>)</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl>mkdir -p <span class=s2>&#34;</span><span class=nv>$BACKUP_DIR</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Backup the hub database</span>
+</span></span><span class=line><span class=cl>docker run --rm <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -v jupyterhub-data:/data:ro <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -v <span class=s2>&#34;</span><span class=nv>$BACKUP_DIR</span><span class=s2>:/backup&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  alpine tar czf /backup/hub-data.tar.gz -C /data .
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Backup all user volumes</span>
+</span></span><span class=line><span class=cl><span class=k>for</span> vol in <span class=k>$(</span>docker volume ls -q --filter <span class=s2>&#34;name=jupyterhub-user-&#34;</span><span class=k>)</span><span class=p>;</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>  docker run --rm <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    -v <span class=s2>&#34;</span><span class=nv>$vol</span><span class=s2>:/data:ro&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    -v <span class=s2>&#34;</span><span class=nv>$BACKUP_DIR</span><span class=s2>:/backup&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>    alpine tar czf <span class=s2>&#34;/backup/</span><span class=si>${</span><span class=nv>vol</span><span class=si>}</span><span class=s2>.tar.gz&#34;</span> -C /data .
+</span></span><span class=line><span class=cl><span class=k>done</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Backup the shared volume</span>
+</span></span><span class=line><span class=cl>docker run --rm <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -v jupyterhub-shared:/data:ro <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -v <span class=s2>&#34;</span><span class=nv>$BACKUP_DIR</span><span class=s2>:/backup&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  alpine tar czf /backup/jupyterhub-shared.tar.gz -C /data .
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Keep only the last 7 days of backups</span>
+</span></span><span class=line><span class=cl>find /backup/jupyterhub -maxdepth <span class=m>1</span> -mtime +7 -type d -exec rm -rf <span class=o>{}</span> +
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;Backup completed: </span><span class=nv>$BACKUP_DIR</span><span class=s2>&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><p>To restore a user&rsquo;s data:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker volume create jupyterhub-user-alice
+</span></span><span class=line><span class=cl>docker run --rm <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -v jupyterhub-user-alice:/data <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -v /backup/jupyterhub/2026-04-14:/source:ro <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  alpine tar xzf /source/jupyterhub-user-alice.tar.gz -C /data
+</span></span></code></pre></td></tr></table></div></div><h2 id=monitoring-and-health-checks>Monitoring and Health Checks</h2><p>JupyterHub exposes a Prometheus-compatible metrics endpoint. Enable it in your config:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=c1># In jupyterhub_config.py</span>
+</span></span><span class=line><span class=cl><span class=n>c</span><span class=o>.</span><span class=n>JupyterHub</span><span class=o>.</span><span class=n>load_roles</span> <span class=o>=</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>    <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;name&#34;</span><span class=p>:</span> <span class=s2>&#34;prometheus&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;scopes&#34;</span><span class=p>:</span> <span class=p>[</span><span class=s2>&#34;read:users&#34;</span><span class=p>,</span> <span class=s2>&#34;read:servers&#34;</span><span class=p>,</span> <span class=s2>&#34;read:services&#34;</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;services&#34;</span><span class=p>:</span> <span class=p>[</span><span class=s2>&#34;prometheus&#34;</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>]</span>
+</span></span></code></pre></td></tr></table></div></div><p>Query the metrics at <code>/hub/metrics</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>curl -H <span class=s2>&#34;Authorization: token </span><span class=nv>$PROMETHEUS_TOKEN</span><span class=s2>&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  https://notebooks.yourdomain.com/hub/metrics
+</span></span></code></pre></td></tr></table></div></div><p>Key metrics to monitor:</p><table><thead><tr><th>Metric</th><th>What It Tells You</th><th>Alert Threshold</th></tr></thead><tbody><tr><td><code>jupyterhub_running_servers</code></td><td>Active notebook instances</td><td>> 80% of max capacity</td></tr><tr><td><code>jupyterhub_spawn_fails_total</code></td><td>Failed server spawns</td><td>> 5 in 10 minutes</td></tr><tr><td><code>jupyterhub_auth_failures_total</code></td><td>Failed login attempts</td><td>> 20 in 5 minutes</td></tr><tr><td><code>jupyterhub_cull_requests_total</code></td><td>Idle servers stopped</td><td>Informational</td></tr></tbody></table><h2 id=conclusion>Conclusion</h2><p>JupyterHub gives you enterprise-grade notebook infrastructure without the enterprise price tag. A single afternoon of setup gives your team persistent, isolated, and fully customizable computational environments — backed by your own storage, your own auth, and your own network policies.</p><p>The Docker Compose approach in this guide gets you from zero to running in under an hour. When you&rsquo;re ready to scale, the Helm chart and KubeSpawner handle the transition to Kubernetes seamlessly. The investment you make in self-hosting pays dividends in data control, cost predictability, and environment flexibility that hosted platforms simply cannot match.</p></div><div id=frame style=width:100%;margin:auto;position:relative;z-index:99998><iframe data-aa=2433958 src='//acceptable.a-ads.com/2433958/?size=Adaptive' style=border:0;padding:0;width:70%;height:auto;overflow:hidden;display:block;margin:auto></iframe></div></article></main><footer class=site-footer><p>Built with <a href=https://gohugo.io>Hugo</a> · <a href=/openswap-guide/index.xml>RSS</a> · <a href=https://github.com/hopkdj>GitHub</a></p><p style=margin-top:8px>&copy; 2026 OpenSwap Guide. All rights reserved.</p></footer></body></html>
