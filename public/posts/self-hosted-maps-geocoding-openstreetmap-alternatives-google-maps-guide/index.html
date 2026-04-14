@@ -1,0 +1,926 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted Maps & Geocoding: OpenStreetMap Alternatives to Google Maps API 2026 | OpenSwap Guide</title>
+<meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, and local AI deployment."><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/openswap-guide/css/main.min.777dc111b5207bf5336e5799477da0b31fb9080306bf98a82d6eceb979cf9737.css><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://hopkdj.github.io/openswap-guide/ class=logo><div class=logo-icon>H</div>OpenSwap Guide</a><nav><ul class=nav-links><li><a href=/openswap-guide/>Home</a></li><li><a href=/openswap-guide/tags/comparison/>Comparisons</a></li><li><a href=/openswap-guide/tags/guide/>Guides</a></li><li><a href=/openswap-guide/tags/ai/>Local AI</a></li><li><a href=/openswap-guide/index.xml class=nav-rss>Subscribe RSS</a></li></ul></nav></div></header><main><article class=post-single><a href=https://hopkdj.github.io/openswap-guide/ class=back-link>&larr; Back to posts</a><header class=post-single-header><div class=post-single-meta><span class="tag tag-purple">comparison</span>
+<span class="tag tag-green">guide</span>
+<span class="tag tag-blue">self-hosted</span>
+<span>·</span>
+<span>April 14, 2026</span>
+<span>·</span>
+<span>15 min read</span></div><h1 class=post-single-title>Self-Hosted Maps & Geocoding: OpenStreetMap Alternatives to Google Maps API 2026</h1></header><div class=post-single-content><p>Google Maps is the default choice for anything involving maps, geocoding, or routing. But when you self-host, scale up, or care about privacy, that default gets expensive fast. Google&rsquo;s pricing model charges per API call, and those costs compound quickly — $7 per 1,000 geocoding requests, $5 per 1,000 route calculations, and unlimited free tiers that disappear the moment your app goes live.</p><p>The open-source alternative is the <strong>OpenStreetMap (OSM) ecosystem</strong>: a complete stack of self-hosted services for geocoding, routing, tile rendering, and spatial analysis that costs nothing in API fees and keeps all your data under your control.</p><p>This guide covers the entire self-hosted geospatial stack — what you can replace, what tools to use, and exactly how to deploy them with Docker.</p><h2 id=why-self-host-maps-and-geocoding-services>Why Self-Host Maps and Geocoding Services</h2><p>There are four compelling reasons to move away from managed geospatial APIs:</p><h3 id=eliminate-per-request-costs>Eliminate Per-Request Costs</h3><p>Google Maps charges $7 per 1,000 requests for geocoding, $5 per 1,000 for directions, and $7 per 1,000 for places lookups. An app with 100,000 monthly active users making just 10 geocoding calls each would cost $7,000 per month. Self-hosting the same services costs only your server bill — typically $20–50/month for the entire stack.</p><h3 id=full-data-privacy>Full Data Privacy</h3><p>Every geocoding request to Google or Mapbox includes the user&rsquo;s query, approximate location, and IP address. For applications handling sensitive location data — healthcare, law enforcement, personal tracking — sending that data to third parties may violate compliance requirements. Self-hosting keeps every query on your own infrastructure.</p><h3 id=no-rate-limits-or-quotas>No Rate Limits or Quotas</h3><p>Managed APIs throttle your requests. Google&rsquo;s standard tier limits geocoding to 50 requests per second. Mapbox free tiers cap at 100,000 requests per month. When your traffic spikes during an event or your batch processing job runs, you hit walls. Self-hosted services scale with your hardware.</p><h3 id=offline-capability-and-reliability>Offline Capability and Reliability</h3><p>When you self-host, your maps and routing work even when the internet goes down. This matters for field operations, maritime navigation, disaster response, and any application that needs to function in areas with poor connectivity. You control the update cycle and are never at the mercy of an upstream outage.</p><h2 id=the-self-hosted-geospatial-stack>The Self-Hosted Geospatial Stack</h2><p>The OpenStreetMap ecosystem is modular. Each service handles one piece of the puzzle, and you can mix and match based on your needs:</p><table><thead><tr><th>Service Type</th><th>Self-Hosted Tool</th><th>Google Maps Equivalent</th><th>Protocol</th></tr></thead><tbody><tr><td>Map Tiles (raster)</td><td>TileServer GL / OpenTileServer</td><td>Maps JavaScript API (tiles)</td><td>WMTS / XYZ</td></tr><tr><td>Map Tiles (vector)</td><td>TileServer GL (MapLibre)</td><td>Maps JavaScript API (vector)</td><td>Mapbox Style Spec</td></tr><tr><td>Geocoding (search)</td><td>Nominatim</td><td>Geocoding API / Places API</td><td>REST (JSON)</td></tr><tr><td>Reverse Geocoding</td><td>Nominatim</td><td>Reverse Geocoding API</td><td>REST (JSON)</td></tr><tr><td>Routing (driving)</td><td>OSRM / Valhalla</td><td>Directions API</td><td>REST (JSON)</td></tr><tr><td>Routing (multi-modal)</td><td>Valhalla</td><td>Directions API (transit)</td><td>REST (JSON)</td></tr><tr><td>Routing (cycling/walking)</td><td>Valhalla / GraphHopper</td><td>Directions API (bike/walk)</td><td>REST (JSON)</td></tr><tr><td>Isochrones</td><td>Valhalla / ORS</td><td>Not directly available</td><td>REST (JSON)</td></tr><tr><td>Static Map Images</td><td>TileServer GL (rendered)</td><td>Static Maps API</td><td>HTTP (PNG/SVG)</td></tr><tr><td>Geospatial Database</td><td>PostGIS</td><td>Not directly available</td><td>SQL</td></tr></tbody></table><p>You rarely need all of these. A typical deployment runs 2–3 services depending on what your application requires.</p><h2 id=deploy-tileserver-gl-for-map-tiles>Deploy TileServer GL for Map Tiles</h2><p><a href=https://tileserver.readthedocs.io/>TileServer GL</a> renders and serves map tiles from OpenStreetMap data. It supports both raster (PNG) and vector (PBF) tile formats, can apply custom map styles, and handles caching automatically.</p><h3 id=prerequisites>Prerequisites</h3><ul><li>A server with at least 4 GB RAM and 50 GB SSD storage</li><li>Docker and Docker Compose installed</li><li>OpenStreetMap data extract (PBF file) for your region</li></ul><h3 id=step-1-download-regional-osm-data>Step 1: Download Regional OSM Data</h3><p>Start with a regional extract rather than the full planet file (70+ GB). The <a href=https://download.geofabrik.de/>Geofabrik download server</a> provides free extracts for every country and region.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>mkdir -p ~/self-hosted-maps/data
+</span></span><span class=line><span class=cl><span class=nb>cd</span> ~/self-hosted-maps/data
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Download a country extract (example: Germany)</span>
+</span></span><span class=line><span class=cl>wget https://download.geofabrik.de/europe/germany-latest.osm.pbf
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># For the full planet file (requires 64GB+ RAM to process):</span>
+</span></span><span class=line><span class=cl><span class=c1># wget https://planet.openstreetmap.org/pbf/planet-latest.osm.pbf</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=step-2-generate-tiles-with-openmaptiles>Step 2: Generate Tiles with OpenMapTiles</h3><p>TileServer GL needs pre-generated tiles. The <a href=https://github.com/openmaptiles/openmaptiles>OpenMapTiles</a> project provides the tooling to convert OSM data into tile sets.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=nb>cd</span> ~/self-hosted-maps
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Clone the OpenMapTiles quickstart repo</span>
+</span></span><span class=line><span class=cl>git clone https://github.com/openmaptiles/openmaptiles.git
+</span></span><span class=line><span class=cl><span class=nb>cd</span> openmaptiles
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Generate tiles for your region</span>
+</span></span><span class=line><span class=cl><span class=c1># This creates tiles in MBTiles format</span>
+</span></span><span class=line><span class=cl>./quickstart.sh europe/germany
+</span></span></code></pre></td></tr></table></div></div><p>The quickstart script handles the entire pipeline: extracting OSM data, running imposm3 for database import, generating tiles with generate-osmborder and generate-tiles, and outputting an <code>.mbtiles</code> file.</p><h3 id=step-3-run-tileserver-gl-with-docker>Step 3: Run TileServer GL with Docker</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=nb>cd</span> ~/self-hosted-maps
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Create docker-compose.yml</span>
+</span></span><span class=line><span class=cl>cat &gt; docker-compose.yml <span class=s>&lt;&lt; &#39;EOF&#39;
+</span></span></span><span class=line><span class=cl><span class=s>version: &#34;3&#34;
+</span></span></span><span class=line><span class=cl><span class=s>services:
+</span></span></span><span class=line><span class=cl><span class=s>  tileserver:
+</span></span></span><span class=line><span class=cl><span class=s>    image: maptiler/tileserver-gl:latest
+</span></span></span><span class=line><span class=cl><span class=s>    ports:
+</span></span></span><span class=line><span class=cl><span class=s>      - &#34;8080:80&#34;
+</span></span></span><span class=line><span class=cl><span class=s>    volumes:
+</span></span></span><span class=line><span class=cl><span class=s>      - ./data:/data
+</span></span></span><span class=line><span class=cl><span class=s>      - ./config.json:/usr/src/app/config.json
+</span></span></span><span class=line><span class=cl><span class=s>    restart: unless-stopped
+</span></span></span><span class=line><span class=cl><span class=s>    deploy:
+</span></span></span><span class=line><span class=cl><span class=s>      resources:
+</span></span></span><span class=line><span class=cl><span class=s>        limits:
+</span></span></span><span class=line><span class=cl><span class=s>          memory: 4G
+</span></span></span><span class=line><span class=cl><span class=s>EOF</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Create TileServer GL configuration</span>
+</span></span><span class=line><span class=cl>cat &gt; config.json <span class=s>&lt;&lt; &#39;EOF&#39;
+</span></span></span><span class=line><span class=cl><span class=s>{
+</span></span></span><span class=line><span class=cl><span class=s>  &#34;options&#34;: {
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;paths&#34;: {
+</span></span></span><span class=line><span class=cl><span class=s>      &#34;root&#34;: &#34;/data&#34;,
+</span></span></span><span class=line><span class=cl><span class=s>      &#34;fonts&#34;: &#34;/data/fonts&#34;,
+</span></span></span><span class=line><span class=cl><span class=s>      &#34;styles&#34;: &#34;/data/styles&#34;
+</span></span></span><span class=line><span class=cl><span class=s>    },
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;formatQuality&#34;: {
+</span></span></span><span class=line><span class=cl><span class=s>      &#34;jpeg&#34;: 80,
+</span></span></span><span class=line><span class=cl><span class=s>      &#34;webp&#34;: 90
+</span></span></span><span class=line><span class=cl><span class=s>    },
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;maxScaleFactor&#34;: 3,
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;maxSize&#34;: 2048,
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;serveStaticMaps&#34;: true
+</span></span></span><span class=line><span class=cl><span class=s>  },
+</span></span></span><span class=line><span class=cl><span class=s>  &#34;styles&#34;: {},
+</span></span></span><span class=line><span class=cl><span class=s>  &#34;data&#34;: {
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;germany&#34;: {
+</span></span></span><span class=line><span class=cl><span class=s>      &#34;mbtiles&#34;: &#34;germany.mbtiles&#34;
+</span></span></span><span class=line><span class=cl><span class=s>    }
+</span></span></span><span class=line><span class=cl><span class=s>  }
+</span></span></span><span class=line><span class=cl><span class=s>}
+</span></span></span><span class=line><span class=cl><span class=s>EOF</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>docker compose up -d
+</span></span></code></pre></td></tr></table></div></div><p>Your tile server is now running at <code>http://localhost:8080</code>. The viewer interface shows all available tile layers, and you can test individual tiles at URLs like:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>http://localhost:8080/germany/{z}/{x}/{y}.png
+</span></span><span class=line><span class=cl>http://localhost:8080/germany/{z}/{x}/{y}@2x.png
+</span></span></code></pre></td></tr></table></div></div><h3 id=custom-map-styles>Custom Map Styles</h3><p>TileServer GL supports custom styles using the Mapbox Style Specification. You can create dark themes, satellite-like views, or minimal maps by downloading free style JSON files and placing them in the <code>/data/styles</code> directory:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;version&#34;</span><span class=p>:</span> <span class=mi>8</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;name&#34;</span><span class=p>:</span> <span class=s2>&#34;Dark Matter&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;sources&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;germany&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;type&#34;</span><span class=p>:</span> <span class=s2>&#34;vector&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;url&#34;</span><span class=p>:</span> <span class=s2>&#34;mbtiles://germany.mbtiles&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=p>},</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;layers&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>    <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;id&#34;</span><span class=p>:</span> <span class=s2>&#34;background&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;type&#34;</span><span class=p>:</span> <span class=s2>&#34;background&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;paint&#34;</span><span class=p>:</span> <span class=p>{</span> <span class=nt>&#34;background-color&#34;</span><span class=p>:</span> <span class=s2>&#34;#1a1a2e&#34;</span> <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=p>]</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>Reference popular open styles like <a href=https://github.com/openmaptiles/osm-bright-gl-style>OpenMapTiles&rsquo; free styles</a> or the <a href=https://github.com/maptiler>MapTiler community styles repository</a>.</p><h2 id=deploy-nominatim-for-geocoding>Deploy Nominatim for Geocoding</h2><p><a href=https://nominatim.org/>Nominatim</a> is the standard self-hosted geocoding engine used by OpenStreetMap.org itself. It converts addresses into coordinates (forward geocoding) and coordinates back into addresses (reverse geocoding).</p><h3 id=system-requirements>System Requirements</h3><p>Nominatim is resource-intensive. For a country-level dataset:</p><table><thead><tr><th>Region</th><th>RAM Required</th><th>Disk Space</th><th>Import Time</th></tr></thead><tbody><tr><td>Small country (&lt; 1 GB PBF)</td><td>4 GB</td><td>20 GB</td><td>30 min</td></tr><tr><td>Medium country (1–5 GB PBF)</td><td>8 GB</td><td>50 GB</td><td>2 hours</td></tr><tr><td>Large country (5–10 GB PBF)</td><td>16 GB</td><td>100 GB</td><td>4 hours</td></tr><tr><td>Full planet</td><td>64 GB+</td><td>1 TB+</td><td>24+ hours</td></tr></tbody></table><h3 id=step-1-docker-deployment>Step 1: Docker Deployment</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>mkdir -p ~/self-hosted-maps/nominatim/data
+</span></span><span class=line><span class=cl><span class=nb>cd</span> ~/self-hosted-maps/nominatim
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>cat &gt; docker-compose.yml <span class=s>&lt;&lt; &#39;EOF&#39;
+</span></span></span><span class=line><span class=cl><span class=s>version: &#34;3&#34;
+</span></span></span><span class=line><span class=cl><span class=s>services:
+</span></span></span><span class=line><span class=cl><span class=s>  nominatim:
+</span></span></span><span class=line><span class=cl><span class=s>    image: mediagis/nominatim:4.4
+</span></span></span><span class=line><span class=cl><span class=s>    ports:
+</span></span></span><span class=line><span class=cl><span class=s>      - &#34;8081:8080&#34;
+</span></span></span><span class=line><span class=cl><span class=s>    environment:
+</span></span></span><span class=line><span class=cl><span class=s>      # PBF file path inside the container
+</span></span></span><span class=line><span class=cl><span class=s>      - PBF_FILE=/data/germany-latest.osm.pbf
+</span></span></span><span class=line><span class=cl><span class=s>      # Replication update interval (daily, hourly, or minutes)
+</span></span></span><span class=line><span class=cl><span class=s>      - REPLICATION_URL=https://download.geofabrik.de/europe/germany-updates/
+</span></span></span><span class=line><span class=cl><span class=s>      # Performance tuning
+</span></span></span><span class=line><span class=cl><span class=s>      - THREADS=4
+</span></span></span><span class=line><span class=cl><span class=s>      - IMPORT_STYLE=full
+</span></span></span><span class=line><span class=cl><span class=s>    volumes:
+</span></span></span><span class=line><span class=cl><span class=s>      - ../data:/data
+</span></span></span><span class=line><span class=cl><span class=s>      - nominatim-data:/var/lib/postgresql/14/main
+</span></span></span><span class=line><span class=cl><span class=s>    shm_size: &#34;2g&#34;
+</span></span></span><span class=line><span class=cl><span class=s>    restart: unless-stopped
+</span></span></span><span class=line><span class=cl><span class=s>
+</span></span></span><span class=line><span class=cl><span class=s>volumes:
+</span></span></span><span class=line><span class=cl><span class=s>  nominatim-data:
+</span></span></span><span class=line><span class=cl><span class=s>EOF</span>
+</span></span></code></pre></td></tr></table></div></div><p>The <code>mediagis/nominatim</code> Docker image is the recommended community distribution. It includes PostgreSQL with PostGIS, the Nominatim import tools, and automatic update support.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker compose up -d
+</span></span></code></pre></td></tr></table></div></div><p>The first startup triggers the import process automatically. Monitor progress with:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker compose logs -f nominatim
+</span></span></code></pre></td></tr></table></div></div><h3 id=step-2-test-geocoding-queries>Step 2: Test Geocoding Queries</h3><p>Once the import completes (check logs for &ldquo;Import complete&rdquo;), test the API:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Forward geocoding — find coordinates for an address</span>
+</span></span><span class=line><span class=cl>curl <span class=s2>&#34;http://localhost:8081/search?q=Brandenburg+Gate,+Berlin&amp;format=json&amp;limit=1&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Response:</span>
+</span></span><span class=line><span class=cl><span class=c1># [{&#34;place_id&#34;:12345,&#34;licence&#34;:&#34;Data © OpenStreetMap contributors&#34;,</span>
+</span></span><span class=line><span class=cl><span class=c1>#   &#34;osm_type&#34;:&#34;way&#34;,&#34;osm_id&#34;:123456789,&#34;boundingbox&#34;:[&#34;...&#34;],</span>
+</span></span><span class=line><span class=cl><span class=c1>#   &#34;lat&#34;:&#34;52.5162746&#34;,&#34;lon&#34;:&#34;13.3777041&#34;,</span>
+</span></span><span class=line><span class=cl><span class=c1>#   &#34;display_name&#34;:&#34;Brandenburg Gate, Pariser Platz, Mitte, ...&#34;,</span>
+</span></span><span class=line><span class=cl><span class=c1>#   &#34;class&#34;:&#34;tourism&#34;,&#34;type&#34;:&#34;attraction&#34;,</span>
+</span></span><span class=line><span class=cl><span class=c1>#   &#34;importance&#34;:0.9,&#34;icon&#34;:&#34;https://...&#34;}]</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Reverse geocoding — find address from coordinates</span>
+</span></span><span class=line><span class=cl>curl <span class=s2>&#34;http://localhost:8081/reverse?lat=52.5162746&amp;lon=13.3777041&amp;format=json&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Structured search with specific fields</span>
+</span></span><span class=line><span class=cl>curl <span class=s2>&#34;http://localhost:8081/search?street=Potsdamer+Platz&amp;city=Berlin&amp;country=Germany&amp;format=json&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=step-3-performance-tuning>Step 3: Performance Tuning</h3><p>For production workloads, tune PostgreSQL and Nominatim:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># Add to docker-compose.yml environment:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=l>PBF_FILE=/data/germany-latest.osm.pbf</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=l>THREADS=4</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># Flatnode file for faster imports on large datasets</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=l>FLATNODE_FILE=/data/flatnode.file</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># Custom PostgreSQL config</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=l>POSTGRES_SHARED_BUFFERS=2GB</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=l>POSTGRES_MAINTENANCE_WORK_MEM=4GB</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=l>POSTGRES_AUTOVACUUM=on</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Add a flatnode file volume for datasets larger than a small country:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=l>../data:/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=l>nominatim-data:/var/lib/postgresql/14/main</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=l>../data/flatnode.file:/data/flatnode.file</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=rate-limiting-and-usage-policy>Rate Limiting and Usage Policy</h3><p>Nominatim&rsquo;s usage policy requires a maximum of 1 request per second for public instances. For your self-hosted private instance, you control the limits — but be aware that Nominatim is optimized for accuracy, not throughput. For high-throughput geocoding (100+ requests/second), consider <a href=https://github.com/pelias/pelias>Pelias</a> as an alternative.</p><h2 id=deploy-osrm-for-routing>Deploy OSRM for Routing</h2><p><a href=http://project-osrm.org/>OSRM (Open Source Routing Machine)</a> provides fast driving directions, distance matrices, and trip optimization. It powers the routing on openstreetmap.org&rsquo;s main website.</p><h3 id=step-1-prepare-osm-data-and-build-routing-graph>Step 1: Prepare OSM Data and Build Routing Graph</h3><p>OSRM requires a preprocessing step to build a routing graph from OSM data. This can be done with the OSRM Docker image:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>mkdir -p ~/self-hosted-maps/osrm
+</span></span><span class=line><span class=cl><span class=nb>cd</span> ~/self-hosted-maps/osrm
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Copy the OSM PBF file</span>
+</span></span><span class=line><span class=cl>cp ../data/germany-latest.osm.pbf .
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Extract the routing graph (car profile)</span>
+</span></span><span class=line><span class=cl>docker run -t -v <span class=s2>&#34;</span><span class=si>${</span><span class=nv>PWD</span><span class=si>}</span><span class=s2>:/data&#34;</span> ghcr.io/project-osrm/osrm:v1.3.0 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  osrm-extract -p /opt/car.lua /data/germany-latest.osm.pbf
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Contract the graph (builds shortcuts for fast queries)</span>
+</span></span><span class=line><span class=cl>docker run -t -v <span class=s2>&#34;</span><span class=si>${</span><span class=nv>PWD</span><span class=si>}</span><span class=s2>:/data&#34;</span> ghcr.io/project-osrm/osrm:v1.3.0 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  osrm-contract /data/germany-latest.osm.pbf
+</span></span></code></pre></td></tr></table></div></div><p>OSRM supports multiple routing profiles out of the box:</p><table><thead><tr><th>Profile</th><th>Use Case</th></tr></thead><tbody><tr><td><code>car.lua</code></td><td>Driving directions, fastest route by car</td></tr><tr><td><code>bicycle.lua</code></td><td>Cycling routes, bike-friendly paths</td></tr><tr><td><code>foot.lua</code></td><td>Walking routes, pedestrian paths</td></tr><tr><td><code>truck.lua</code></td><td>Commercial vehicle routing</td></tr></tbody></table><h3 id=step-2-run-the-osrm-server>Step 2: Run the OSRM Server</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># In the same directory with the .osrm files</span>
+</span></span><span class=line><span class=cl>docker run -t -i -p 5000:5000 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -v <span class=s2>&#34;</span><span class=si>${</span><span class=nv>PWD</span><span class=si>}</span><span class=s2>:/data&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  ghcr.io/project-osrm/osrm:v1.3.0 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  osrm-routed --algorithm mld /data/germany-latest.osrm
+</span></span></code></pre></td></tr></table></div></div><p>Or with Docker Compose for persistent deployment:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># Add to your docker-compose.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>osrm</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>ghcr.io/project-osrm/osrm:v1.3.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;5000:5000&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./osrm:/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=l>osrm-routed --algorithm mld --max-table-size 1000 --max-viaroute-size 1000 /data/germany-latest.osrm</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>deploy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>resources</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>limits</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>memory</span><span class=p>:</span><span class=w> </span><span class=l>8G</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=step-3-test-routing-queries>Step 3: Test Routing Queries</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Route between two points (Berlin Brandenburg Gate to Alexanderplatz)</span>
+</span></span><span class=line><span class=cl>curl <span class=s2>&#34;http://localhost:5000/route/v1/driving/13.3777041,52.5162746;13.4132148,52.5219184?overview=full&amp;geometries=json&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Distance matrix (3x3)</span>
+</span></span><span class=line><span class=cl>curl <span class=s2>&#34;http://localhost:5000/table/v1/driving/13.377,52.516;13.413,52.522;13.405,52.520?annotations=duration,distance&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Nearest point on road</span>
+</span></span><span class=line><span class=cl>curl <span class=s2>&#34;http://localhost:5000/nearest/v1/driving/13.388860,52.517037&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Isochrone (reachable area within X seconds)</span>
+</span></span><span class=line><span class=cl>curl <span class=s2>&#34;http://localhost:5000/isochrone/v1/driving/13.377,52.516?durations=600,1200,1800&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><p>The <code>--algorithm mld</code> flag uses Multi-Level Dijkstra, which is faster for large graphs. The <code>--max-table-size</code> parameter controls the maximum size of distance matrix queries (useful for fleet optimization).</p><h2 id=deploy-valhalla-for-multi-modal-routing>Deploy Valhalla for Multi-Modal Routing</h2><p>While OSRM excels at driving directions, <a href=https://github.com/valhalla/valhalla>Valhalla</a> supports driving, cycling, walking, public transit, and even truck routing with height/weight restrictions — all from a single engine.</p><h3 id=docker-deployment>Docker Deployment</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span><span class=lnt>62
+</span><span class=lnt>63
+</span><span class=lnt>64
+</span><span class=lnt>65
+</span><span class=lnt>66
+</span><span class=lnt>67
+</span><span class=lnt>68
+</span><span class=lnt>69
+</span><span class=lnt>70
+</span><span class=lnt>71
+</span><span class=lnt>72
+</span><span class=lnt>73
+</span><span class=lnt>74
+</span><span class=lnt>75
+</span><span class=lnt>76
+</span><span class=lnt>77
+</span><span class=lnt>78
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>mkdir -p ~/self-hosted-maps/valhalla
+</span></span><span class=line><span class=cl><span class=nb>cd</span> ~/self-hosted-maps/valhalla
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Download OSM data</span>
+</span></span><span class=line><span class=cl>cp ../data/germany-latest.osm.pbf .
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Create valhalla configuration</span>
+</span></span><span class=line><span class=cl>cat &gt; valhalla.json <span class=s>&lt;&lt; &#39;EOF&#39;
+</span></span></span><span class=line><span class=cl><span class=s>{
+</span></span></span><span class=line><span class=cl><span class=s>  &#34;additional&#34;: {
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;elevators&#34;: 4,
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;service_threads&#34;: 4,
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;use_luks&#34;: false,
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;logging&#34;: {
+</span></span></span><span class=line><span class=cl><span class=s>      &#34;color&#34;: true,
+</span></span></span><span class=line><span class=cl><span class=s>      &#34;file_name&#34;: &#34;valhalla.log&#34;,
+</span></span></span><span class=line><span class=cl><span class=s>      &#34;long_request&#34;: 100.0
+</span></span></span><span class=line><span class=cl><span class=s>    }
+</span></span></span><span class=line><span class=cl><span class=s>  },
+</span></span></span><span class=line><span class=cl><span class=s>  &#34;loki&#34;: {
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;actions&#34;: [&#34;locate&#34;,&#34;route&#34;,&#34;isochrone&#34;,&#34;sources_to_targets&#34;,&#34;trace_route&#34;,&#34;trace_attributes&#34;,&#34;transit_available&#34;,&#34;expansion&#34;,&#34;centroid&#34;,&#34;status&#34;],
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;logging&#34;: {&#34;long_request&#34;: 100},
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;service&#34;: {
+</span></span></span><span class=line><span class=cl><span class=s>      &#34;proxy&#34;: &#34;&#34;,
+</span></span></span><span class=line><span class=cl><span class=s>      &#34;listen&#34;: &#34;0.0.0.0:8002&#34;
+</span></span></span><span class=line><span class=cl><span class=s>    }
+</span></span></span><span class=line><span class=cl><span class=s>  },
+</span></span></span><span class=line><span class=cl><span class=s>  &#34;meili&#34;: {
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;auto&#34;: {&#34;search_radius&#34;: 50, &#34;gps_accuracy&#34;: 5, &#34;breakage_distance&#34;: 2000, &#34;search_radius&#34;: 50},
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;bicycle&#34;: {&#34;search_radius&#34;: 50, &#34;gps_accuracy&#34;: 5, &#34;breakage_distance&#34;: 2000},
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;pedestrian&#34;: {&#34;search_radius&#34;: 50, &#34;gps_accuracy&#34;: 5, &#34;breakage_distance&#34;: 2000, &#34;search_radius&#34;: 50},
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;customizable&#34;: [&#34;grid_size&#34;,&#34;breakage_distance&#34;,&#34;search_radius&#34;,&#34;gps_accuracy&#34;]
+</span></span></span><span class=line><span class=cl><span class=s>  },
+</span></span></span><span class=line><span class=cl><span class=s>  &#34;mjolnir&#34;: {
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;tile_dir&#34;: &#34;/valhalla/valhalla_tiles&#34;,
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;tile_extract&#34;: &#34;/valhalla/valhalla_tiles.tar&#34;,
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;admin&#34;: &#34;/valhalla/admin_data.sqlite&#34;,
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;timezone&#34;: &#34;/valhalla/tar/timezone.sqlite&#34;,
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;use_luks&#34;: false,
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;data_processing&#34;: {
+</span></span></span><span class=line><span class=cl><span class=s>      &#34;allow_alt_name&#34;: true,
+</span></span></span><span class=line><span class=cl><span class=s>      &#34;infer_internal_intersections&#34;: true,
+</span></span></span><span class=line><span class=cl><span class=s>      &#34;infer_turn_channels&#34;: true,
+</span></span></span><span class=line><span class=cl><span class=s>      &#34;apply_country_overrides&#34;: true,
+</span></span></span><span class=line><span class=cl><span class=s>      &#34;use_admin_db&#34;: true,
+</span></span></span><span class=line><span class=cl><span class=s>      &#34;use_direction_on_ways&#34;: true,
+</span></span></span><span class=line><span class=cl><span class=s>      &#34;use_rest_area&#34;: false,
+</span></span></span><span class=line><span class=cl><span class=s>      &#34;internal_speed&#34;: 5.0,
+</span></span></span><span class=line><span class=cl><span class=s>      &#34;exit_speed&#34;: 25.0,
+</span></span></span><span class=line><span class=cl><span class=s>      &#34;roundabout_speed&#34;: 15.0
+</span></span></span><span class=line><span class=cl><span class=s>    },
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;global_synchronized_cache&#34;: false,
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;tile_index_cache_size&#34;: 100,
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;data_processing_cache_size&#34;: 1000,
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;max_cache_size&#34;: 10000,
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;concurrency&#34;: 4,
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;generate_grid&#34;: true
+</span></span></span><span class=line><span class=cl><span class=s>  },
+</span></span></span><span class=line><span class=cl><span class=s>  &#34;odin&#34;: {
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;use_admin_db&#34;: true,
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;service&#34;: {&#34;verbose&#34;: false},
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;logging&#34;: {&#34;long_request&#34;: 100}
+</span></span></span><span class=line><span class=cl><span class=s>  },
+</span></span></span><span class=line><span class=cl><span class=s>  &#34;thor&#34;: {
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;costmatrix_allow_second_pass&#34;: false,
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;clear_reserved_memory&#34;: false,
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;log_location&#34;: &#34;&#34;,
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;max_reserved_labels_count&#34;: {
+</span></span></span><span class=line><span class=cl><span class=s>      &#34;auto_default&#34;: 200000,
+</span></span></span><span class=line><span class=cl><span class=s>      &#34;bicycle_default&#34;: 200000,
+</span></span></span><span class=line><span class=cl><span class=s>      &#34;pedestrian_default&#34;: 200000
+</span></span></span><span class=line><span class=cl><span class=s>    },
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;max_reserved_time&#34;: 10.0,
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;log_threshold&#34;: 0.0,
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;extend_routes&#34;: true
+</span></span></span><span class=line><span class=cl><span class=s>  }
+</span></span></span><span class=line><span class=cl><span class=s>}
+</span></span></span><span class=line><span class=cl><span class=s>EOF</span>
+</span></span></code></pre></td></tr></table></div></div><p>Run Valhalla with Docker Compose:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=w>  </span><span class=nt>valhalla</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>ghcr.io/gis-ops/docker-valhalla/valhalla:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8002:8002&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./valhalla_tiles:/custom_files</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./germany-latest.osm.pbf:/custom_files/germany-latest.osm.pbf</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>tile_urls=https://download.geofabrik.de/europe/germany-latest.osm.pbf</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>use_tiles_ignore_pbf=False</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>force_rebuild=True</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>force_rebuild_elevation=False</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>build_elevation=False</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>build_admins=True</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>build_time_zones=True</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=valhalla-api-examples>Valhalla API Examples</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Driving route</span>
+</span></span><span class=line><span class=cl>curl <span class=s2>&#34;http://localhost:8002/route&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -H <span class=s2>&#34;Content-Type: application/json&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -d <span class=s1>&#39;{
+</span></span></span><span class=line><span class=cl><span class=s1>    &#34;locations&#34;: [
+</span></span></span><span class=line><span class=cl><span class=s1>      {&#34;lat&#34;: 52.5162746, &#34;lon&#34;: 13.3777041},
+</span></span></span><span class=line><span class=cl><span class=s1>      {&#34;lat&#34;: 52.5219184, &#34;lon&#34;: 13.4132148}
+</span></span></span><span class=line><span class=cl><span class=s1>    ],
+</span></span></span><span class=line><span class=cl><span class=s1>    &#34;costing&#34;: &#34;auto&#34;,
+</span></span></span><span class=line><span class=cl><span class=s1>    &#34;directions_options&#34;: {&#34;units&#34;: &#34;kilometers&#34;}
+</span></span></span><span class=line><span class=cl><span class=s1>  }&#39;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Cycling route</span>
+</span></span><span class=line><span class=cl>curl <span class=s2>&#34;http://localhost:8002/route&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -H <span class=s2>&#34;Content-Type: application/json&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -d <span class=s1>&#39;{
+</span></span></span><span class=line><span class=cl><span class=s1>    &#34;locations&#34;: [
+</span></span></span><span class=line><span class=cl><span class=s1>      {&#34;lat&#34;: 52.516, &#34;lon&#34;: 13.377},
+</span></span></span><span class=line><span class=cl><span class=s1>      {&#34;lat&#34;: 52.522, &#34;lon&#34;: 13.413}
+</span></span></span><span class=line><span class=cl><span class=s1>    ],
+</span></span></span><span class=line><span class=cl><span class=s1>    &#34;costing&#34;: &#34;bicycle&#34;
+</span></span></span><span class=line><span class=cl><span class=s1>  }&#39;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Isochrone (reachable area in 15 minutes by car)</span>
+</span></span><span class=line><span class=cl>curl <span class=s2>&#34;http://localhost:8002/isochrone&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -H <span class=s2>&#34;Content-Type: application/json&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -d <span class=s1>&#39;{
+</span></span></span><span class=line><span class=cl><span class=s1>    &#34;locations&#34;: [{&#34;lat&#34;: 52.516, &#34;lon&#34;: 13.377}],
+</span></span></span><span class=line><span class=cl><span class=s1>    &#34;costing&#34;: &#34;auto&#34;,
+</span></span></span><span class=line><span class=cl><span class=s1>    &#34;contours&#34;: [{&#34;time&#34;: 15, &#34;color&#34;: &#34;ff0000&#34;}]
+</span></span></span><span class=line><span class=cl><span class=s1>  }&#39;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Public transit routing (requires transit data)</span>
+</span></span><span class=line><span class=cl>curl <span class=s2>&#34;http://localhost:8002/route&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -H <span class=s2>&#34;Content-Type: application/json&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -d <span class=s1>&#39;{
+</span></span></span><span class=line><span class=cl><span class=s1>    &#34;locations&#34;: [
+</span></span></span><span class=line><span class=cl><span class=s1>      {&#34;lat&#34;: 52.520, &#34;lon&#34;: 13.405},
+</span></span></span><span class=line><span class=cl><span class=s1>      {&#34;lat&#34;: 52.508, &#34;lon&#34;: 13.376}
+</span></span></span><span class=line><span class=cl><span class=s1>    ],
+</span></span></span><span class=line><span class=cl><span class=s1>    &#34;costing&#34;: &#34;transit&#34;
+</span></span></span><span class=line><span class=cl><span class=s1>  }&#39;</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=complete-stack-unified-docker-compose>Complete Stack: Unified Docker Compose</h2><p>Here&rsquo;s a production-ready Docker Compose that runs the full stack — tiles, geocoding, and routing — behind a unified reverse proxy:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># Map tiles</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>tileserver</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>maptiler/tileserver-gl:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8080:80&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./data:/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># Geocoding</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>nominatim</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>mediagis/nominatim:4.4</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8081:8080&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PBF_FILE=/data/germany-latest.osm.pbf</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>REPLICATION_URL=https://download.geofabrik.de/europe/germany-updates/</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>THREADS=4</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./data:/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>nominatim-data:/var/lib/postgresql/14/main</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>shm_size</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;2g&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># Routing (OSRM for driving)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>osrm</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>ghcr.io/project-osrm/osrm:v1.3.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;5000:5000&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./osrm:/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=l>osrm-routed --algorithm mld --max-table-size 1000 /data/germany-latest.osrm</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># Multi-modal routing (Valhalla)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>valhalla</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>ghcr.io/gis-ops/docker-valhalla/valhalla:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8002:8002&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./valhalla_tiles:/custom_files</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./data/germany-latest.osm.pbf:/custom_files/germany-latest.osm.pbf</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>tile_urls=https://download.geofabrik.de/europe/germany-latest.osm.pbf</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>force_rebuild=True</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>build_admins=True</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>nominatim-data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=integrating-with-leaflet-and-maplibre>Integrating with Leaflet and MapLibre</h2><p>Once your services are running, connect them to your frontend. Here&rsquo;s how to use your self-hosted tiles with <a href=https://leafletjs.com/>Leaflet</a>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-html data-lang=html><span class=line><span class=cl><span class=cp>&lt;!DOCTYPE html&gt;</span>
+</span></span><span class=line><span class=cl><span class=p>&lt;</span><span class=nt>html</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl><span class=p>&lt;</span><span class=nt>head</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>  <span class=p>&lt;</span><span class=nt>link</span> <span class=na>rel</span><span class=o>=</span><span class=s>&#34;stylesheet&#34;</span> <span class=na>href</span><span class=o>=</span><span class=s>&#34;https://unpkg.com/leaflet@1.9.4/dist/leaflet.css&#34;</span> <span class=p>/&gt;</span>
+</span></span><span class=line><span class=cl>  <span class=p>&lt;</span><span class=nt>script</span> <span class=na>src</span><span class=o>=</span><span class=s>&#34;https://unpkg.com/leaflet@1.9.4/dist/leaflet.js&#34;</span><span class=p>&gt;&lt;/</span><span class=nt>script</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>  <span class=p>&lt;</span><span class=nt>style</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=p>#</span><span class=nn>map</span> <span class=p>{</span> <span class=k>height</span><span class=p>:</span> <span class=mi>600</span><span class=kt>px</span><span class=p>;</span> <span class=k>width</span><span class=p>:</span> <span class=mi>100</span><span class=kt>%</span><span class=p>;</span> <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=p>&lt;/</span><span class=nt>style</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl><span class=p>&lt;/</span><span class=nt>head</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl><span class=p>&lt;</span><span class=nt>body</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>  <span class=p>&lt;</span><span class=nt>div</span> <span class=na>id</span><span class=o>=</span><span class=s>&#34;map&#34;</span><span class=p>&gt;&lt;/</span><span class=nt>div</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>  <span class=p>&lt;</span><span class=nt>script</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=kr>const</span> <span class=nx>map</span> <span class=o>=</span> <span class=nx>L</span><span class=p>.</span><span class=nx>map</span><span class=p>(</span><span class=s1>&#39;map&#39;</span><span class=p>).</span><span class=nx>setView</span><span class=p>([</span><span class=mf>52.516</span><span class=p>,</span> <span class=mf>13.377</span><span class=p>],</span> <span class=mi>12</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>// Use your self-hosted tile server
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=nx>L</span><span class=p>.</span><span class=nx>tileLayer</span><span class=p>(</span><span class=s1>&#39;http://your-server:8080/germany/{z}/{x}/{y}.png&#39;</span><span class=p>,</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nx>attribution</span><span class=o>:</span> <span class=s1>&#39;© OpenStreetMap contributors&#39;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nx>maxZoom</span><span class=o>:</span> <span class=mi>18</span>
+</span></span><span class=line><span class=cl>    <span class=p>}).</span><span class=nx>addTo</span><span class=p>(</span><span class=nx>map</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>// Geocode with your self-hosted Nominatim
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=kr>async</span> <span class=kd>function</span> <span class=nx>geocode</span><span class=p>(</span><span class=nx>query</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=kr>const</span> <span class=nx>res</span> <span class=o>=</span> <span class=kr>await</span> <span class=nx>fetch</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>        <span class=sb>`http://your-server:8081/search?q=</span><span class=si>${</span><span class=nb>encodeURIComponent</span><span class=p>(</span><span class=nx>query</span><span class=p>)</span><span class=si>}</span><span class=sb>&amp;format=json&amp;limit=5`</span>
+</span></span><span class=line><span class=cl>      <span class=p>);</span>
+</span></span><span class=line><span class=cl>      <span class=k>return</span> <span class=nx>res</span><span class=p>.</span><span class=nx>json</span><span class=p>();</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>// Route with your self-hosted OSRM
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=kr>async</span> <span class=kd>function</span> <span class=nx>route</span><span class=p>(</span><span class=nx>from</span><span class=p>,</span> <span class=nx>to</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=kr>const</span> <span class=nx>res</span> <span class=o>=</span> <span class=kr>await</span> <span class=nx>fetch</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>        <span class=sb>`http://your-server:5000/route/v1/driving/</span><span class=si>${</span><span class=nx>from</span><span class=p>.</span><span class=nx>lon</span><span class=si>}</span><span class=sb>,</span><span class=si>${</span><span class=nx>from</span><span class=p>.</span><span class=nx>lat</span><span class=si>}</span><span class=sb>;</span><span class=si>${</span><span class=nx>to</span><span class=p>.</span><span class=nx>lon</span><span class=si>}</span><span class=sb>,</span><span class=si>${</span><span class=nx>to</span><span class=p>.</span><span class=nx>lat</span><span class=si>}</span><span class=sb>?overview=full&amp;geometries=geojson`</span>
+</span></span><span class=line><span class=cl>      <span class=p>);</span>
+</span></span><span class=line><span class=cl>      <span class=k>return</span> <span class=nx>res</span><span class=p>.</span><span class=nx>json</span><span class=p>();</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>// Add geocoded marker
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=nx>geocode</span><span class=p>(</span><span class=s1>&#39;Brandenburg Gate, Berlin&#39;</span><span class=p>).</span><span class=nx>then</span><span class=p>(</span><span class=nx>results</span> <span class=p>=&gt;</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=k>if</span> <span class=p>(</span><span class=nx>results</span><span class=p>.</span><span class=nx>length</span> <span class=o>&gt;</span> <span class=mi>0</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=kr>const</span> <span class=nx>r</span> <span class=o>=</span> <span class=nx>results</span><span class=p>[</span><span class=mi>0</span><span class=p>];</span>
+</span></span><span class=line><span class=cl>        <span class=nx>L</span><span class=p>.</span><span class=nx>marker</span><span class=p>([</span><span class=nx>r</span><span class=p>.</span><span class=nx>lat</span><span class=p>,</span> <span class=nx>r</span><span class=p>.</span><span class=nx>lon</span><span class=p>]).</span><span class=nx>addTo</span><span class=p>(</span><span class=nx>map</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>          <span class=p>.</span><span class=nx>bindPopup</span><span class=p>(</span><span class=nx>r</span><span class=p>.</span><span class=nx>display_name</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>        <span class=nx>map</span><span class=p>.</span><span class=nx>setView</span><span class=p>([</span><span class=nx>r</span><span class=p>.</span><span class=nx>lat</span><span class=p>,</span> <span class=nx>r</span><span class=p>.</span><span class=nx>lon</span><span class=p>],</span> <span class=mi>15</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>      <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=p>});</span>
+</span></span><span class=line><span class=cl>  <span class=p>&lt;/</span><span class=nt>script</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl><span class=p>&lt;/</span><span class=nt>body</span><span class=p>&gt;</span>
+</span></span><span class=line><span class=cl><span class=p>&lt;/</span><span class=nt>html</span><span class=p>&gt;</span>
+</span></span></code></pre></td></tr></table></div></div><p>For vector tiles with <a href=https://maplibre.org/maplibre-gl-js/docs/>MapLibre GL JS</a>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-javascript data-lang=javascript><span class=line><span class=cl><span class=kr>const</span> <span class=nx>map</span> <span class=o>=</span> <span class=k>new</span> <span class=nx>maplibregl</span><span class=p>.</span><span class=nx>Map</span><span class=p>({</span>
+</span></span><span class=line><span class=cl>  <span class=nx>container</span><span class=o>:</span> <span class=s1>&#39;map&#39;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=nx>style</span><span class=o>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nx>version</span><span class=o>:</span> <span class=mi>8</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=nx>sources</span><span class=o>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=s1>&#39;self-hosted&#39;</span><span class=o>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=nx>type</span><span class=o>:</span> <span class=s1>&#39;vector&#39;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=nx>tiles</span><span class=o>:</span> <span class=p>[</span><span class=s1>&#39;http://your-server:8080/germany/{z}/{x}/{y}.pbf&#39;</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>        <span class=nx>minzoom</span><span class=o>:</span> <span class=mi>0</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=nx>maxzoom</span><span class=o>:</span> <span class=mi>14</span>
+</span></span><span class=line><span class=cl>      <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=nx>layers</span><span class=o>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>      <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=nx>id</span><span class=o>:</span> <span class=s1>&#39;background&#39;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=nx>type</span><span class=o>:</span> <span class=s1>&#39;background&#39;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=nx>paint</span><span class=o>:</span> <span class=p>{</span> <span class=s1>&#39;background-color&#39;</span><span class=o>:</span> <span class=s1>&#39;#1a1a2e&#39;</span> <span class=p>}</span>
+</span></span><span class=line><span class=cl>      <span class=p>}</span>
+</span></span><span class=line><span class=cl>      <span class=c1>// Add more layers from your tile data
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=p>]</span>
+</span></span><span class=line><span class=cl>  <span class=p>},</span>
+</span></span><span class=line><span class=cl>  <span class=nx>center</span><span class=o>:</span> <span class=p>[</span><span class=mf>13.377</span><span class=p>,</span> <span class=mf>52.516</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>  <span class=nx>zoom</span><span class=o>:</span> <span class=mi>12</span>
+</span></span><span class=line><span class=cl><span class=p>});</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=keeping-data-fresh>Keeping Data Fresh</h2><p>OpenStreetMap data updates constantly. Here&rsquo;s how to keep your services current:</p><p><strong>Nominatim</strong> handles updates automatically when you set <code>REPLICATION_URL</code>. The mediagis image runs the update process in the background at the interval specified by your Geofabrik feed (daily for most countries).</p><p><strong>OSRM</strong> requires manual re-import for data updates:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Download updated PBF</span>
+</span></span><span class=line><span class=cl>wget -O germany-latest.osm.pbf https://download.geofabrik.de/europe/germany-latest.osm.pbf
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Rebuild routing graph</span>
+</span></span><span class=line><span class=cl>docker run -t -v <span class=s2>&#34;</span><span class=si>${</span><span class=nv>PWD</span><span class=si>}</span><span class=s2>:/data&#34;</span> ghcr.io/project-osrm/osrm:v1.3.0 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  osrm-extract -p /opt/car.lua /data/germany-latest.osm.pbf
+</span></span><span class=line><span class=cl>docker run -t -v <span class=s2>&#34;</span><span class=si>${</span><span class=nv>PWD</span><span class=si>}</span><span class=s2>:/data&#34;</span> ghcr.io/project-osrm/osrm:v1.3.0 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  osrm-contract /data/germany-latest.osrm
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Restart OSRM to load new graph</span>
+</span></span><span class=line><span class=cl>docker compose restart osrm
+</span></span></code></pre></td></tr></table></div></div><p><strong>TileServer GL</strong> needs tile regeneration. Automate this with a cron job:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Weekly tile update</span>
+</span></span><span class=line><span class=cl><span class=m>0</span> <span class=m>3</span> * * <span class=m>0</span> <span class=nb>cd</span> /opt/openmaptiles <span class=o>&amp;&amp;</span> ./quickstart.sh europe/germany <span class=o>&amp;&amp;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  docker compose -f /opt/self-hosted-maps/docker-compose.yml restart tileserver
+</span></span></code></pre></td></tr></table></div></div><h2 id=comparison-self-hosted-vs-managed-apis>Comparison: Self-Hosted vs Managed APIs</h2><table><thead><tr><th>Feature</th><th>Google Maps</th><th>Self-Hosted OSM Stack</th></tr></thead><tbody><tr><td>Geocoding cost</td><td>$7 / 1,000 requests</td><td>$0</td></tr><tr><td>Routing cost</td><td>$5 / 1,000 requests</td><td>$0</td></tr><tr><td>Static Maps</td><td>$2 / 1,000 loads</td><td>$0</td></tr><tr><td>Rate limiting</td><td>50 req/s standard</td><td>Unlimited (hardware-bound)</td></tr><tr><td>Data privacy</td><td>Data sent to Google</td><td>Fully on-premise</td></tr><tr><td>Offline support</td><td>No</td><td>Yes</td></tr><tr><td>Custom styling</td><td>Limited</td><td>Full control</td></tr><tr><td>Transit routing</td><td>Yes</td><td>Valhalla (with GTFS data)</td></tr><tr><td>Global coverage</td><td>Complete</td><td>Complete (OSM planet)</td></tr><tr><td>Initial setup effort</td><td>Minutes</td><td>1–4 hours</td></tr><tr><td>Monthly cost at 1M requests</td><td>~$5,000–12,000</td><td>~$30–80 (server)</td></tr></tbody></table><h2 id=when-self-hosting-makes-sense>When Self-Hosting Makes Sense</h2><p>Self-hosting the OSM geospatial stack is the right choice when:</p><ul><li>Your monthly API costs exceed your server costs (typically at ~10,000+ geocoding requests/month)</li><li>You need to process large batch geocoding jobs (address databases, log analysis)</li><li>Privacy or compliance requirements forbid sending location data to third parties</li><li>You need offline map and routing capability</li><li>You want full control over map styling and data freshness</li><li>You&rsquo;re building a fleet management, logistics, or delivery platform that makes thousands of routing calls daily</li></ul><p>For small projects with occasional map display needs, managed APIs may still be more convenient. But as soon as your application scales, the self-hosted OSM stack becomes the more economical and powerful option.</p></div><div id=frame style=width:100%;margin:auto;position:relative;z-index:99998><iframe data-aa=2433958 src='//acceptable.a-ads.com/2433958/?size=Adaptive' style=border:0;padding:0;width:70%;height:auto;overflow:hidden;display:block;margin:auto></iframe></div></article></main><footer class=site-footer><p>Built with <a href=https://gohugo.io>Hugo</a> · <a href=/openswap-guide/index.xml>RSS</a> · <a href=https://github.com/hopkdj>GitHub</a></p><p style=margin-top:8px>&copy; 2026 OpenSwap Guide. All rights reserved.</p></footer></body></html>
