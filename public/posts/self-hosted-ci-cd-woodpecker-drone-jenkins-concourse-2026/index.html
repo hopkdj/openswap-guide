@@ -1,0 +1,670 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Best Self-Hosted CI/CD Platforms: Woodpecker vs Drone vs Jenkins vs Concourse 2026 | OpenSwap Guide</title>
+<meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, and local AI deployment."><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/openswap-guide/css/main.min.777dc111b5207bf5336e5799477da0b31fb9080306bf98a82d6eceb979cf9737.css><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://hopkdj.github.io/openswap-guide/ class=logo><div class=logo-icon>H</div>OpenSwap Guide</a><nav><ul class=nav-links><li><a href=/openswap-guide/>Home</a></li><li><a href=/openswap-guide/tags/comparison/>Comparisons</a></li><li><a href=/openswap-guide/tags/guide/>Guides</a></li><li><a href=/openswap-guide/tags/ai/>Local AI</a></li><li><a href=/openswap-guide/index.xml class=nav-rss>Subscribe RSS</a></li></ul></nav></div></header><main><article class=post-single><a href=https://hopkdj.github.io/openswap-guide/ class=back-link>&larr; Back to posts</a><header class=post-single-header><div class=post-single-meta><span class="tag tag-purple">comparison</span>
+<span class="tag tag-green">guide</span>
+<span class="tag tag-blue">self-hosted</span>
+<span>·</span>
+<span>April 14, 2026</span>
+<span>·</span>
+<span>15 min read</span></div><h1 class=post-single-title>Best Self-Hosted CI/CD Platforms: Woodpecker vs Drone vs Jenkins vs Concourse 2026</h1></header><div class=post-single-content><p>Continuous Integration and Continuous Deployment (CI/CD) pipelines are the backbone of modern software delivery. While cloud-hosted solutions like GitHub Actions and GitLab CI are convenient, many organizations need full control over their build infrastructure — whether for compliance, cost optimization, air-gapped environments, or avoiding vendor lock-in.</p><p>Self-hosted CI/CD platforms give you complete ownership of your build infrastructure. You choose where builds run, how secrets are managed, and who has access to your pipeline data. In this guide, we compare four mature open-source CI/CD platforms: <strong>Woodpecker CI</strong>, <strong>Drone</strong>, <strong>Jenkins</strong>, and <strong>Concourse CI</strong>.</p><h2 id=why-self-host-your-cicd-platform>Why Self-Host Your CI/CD Platform?</h2><p>Running your own CI/CD infrastructure offers several concrete advantages over cloud-hosted alternatives:</p><ul><li><strong>Cost predictability</strong>: Cloud CI/CD charges per-minute of build time. With self-hosted runners on your own hardware or cheap spot instances, your cost per build drops dramatically as volume scales. Teams running thousands of builds per month often save 60-80% compared to cloud alternatives.</li><li><strong>Data sovereignty</strong>: Build logs, artifact caches, and environment variables often contain sensitive information. Self-hosting keeps everything within your network boundary, simplifying compliance with SOC 2, HIPAA, and GDPR requirements.</li><li><strong>No vendor lock-in</strong>: Cloud CI/CD platforms gradually entrench you with proprietary syntax, marketplace dependencies, and platform-specific features. Self-hosted tools based on open standards (Docker containers, YAML pipelines) let you migrate between code forges freely.</li><li><strong>Custom infrastructure</strong>: Need GPUs for ML model training? Specialized hardware for embedded compilation? GPU passthrough in self-hosted runners is straightforward, while cloud CI/CD either lacks support or charges premium rates.</li><li><strong>Offline and air-gapped builds</strong>: Some environments cannot connect to external services. Self-hosted CI/CD works entirely on-premises with zero external dependencies.</li><li><strong>Fine-grained access control</strong>: Control exactly who can trigger builds, approve deployments, and access secrets — integrated with your existing LDAP, OIDC, or SAML infrastructure.</li></ul><h2 id=1-woodpecker-ci--lightweight-and-modern>1. Woodpecker CI — Lightweight and Modern</h2><p>Woodpecker CI is a community-driven fork of Drone CI that emphasizes simplicity, container-native pipelines, and active development. It has become one of the fastest-growing self-hosted CI/CD platforms thanks to its clean architecture and straightforward configuration.</p><h3 id=architecture>Architecture</h3><p>Woodpecker uses a server-agent model. The server handles Git webhooks, UI, and pipeline scheduling. Workers (agents) execute pipeline steps inside Docker containers. A single server can distribute work across multiple agents, enabling horizontal scaling.</p><p>Key architectural decisions:</p><ul><li>Pipeline definitions live in <code>.woodpecker.yaml</code> at the repository root</li><li>Each pipeline step runs in an isolated Docker container</li><li>Shared state between steps uses workspace volumes</li><li>Native integration with Gitea, Forgejo, GitHub, GitLab, Bitbucket, and Gogs</li></ul><h3 id=installation>Installation</h3><p>The fastest way to get Woodpecker running is with Docker Compose. Here is a production-ready setup with a single worker:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>woodpecker-server</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>woodpeckerci/woodpecker-server:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8000:8000&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>woodpecker-data:/var/lib/woodpecker</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>WOODPECKER_OPEN=true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>WOODPECKER_HOST=http://ci.example.com:8000</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>WOODPECKER_GITEA=true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>WOODPECKER_GITEA_URL=https://gitea.example.com</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>WOODPECKER_GITEA_CLIENT=your-client-id</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>WOODPECKER_GITEA_SECRET=your-client-secret</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>WOODPECKER_AGENT_SECRET=your-agent-secret</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>woodpecker-agent</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>woodpeckerci/woodpecker-agent:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=l>agent</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>woodpecker-server</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/var/run/docker.sock:/var/run/docker.sock</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>WOODPECKER_SERVER=woodpecker-server:9000</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>WOODPECKER_AGENT_SECRET=your-agent-secret</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>woodpecker-data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>After starting the stack with <code>docker compose up -d</code>, create an OAuth application in your Git forge pointing to <code>http://ci.example.com:8000/authorize</code> and fill in the client credentials.</p><h3 id=pipeline-example>Pipeline Example</h3><p>A typical <code>.woodpecker.yaml</code> for a Go project with testing and Docker image publishing:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>steps</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>test</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>golang:1.22</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>commands</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>go mod download</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>go vet ./...</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>go test -race -coverprofile=coverage.out ./...</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>lint</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>golangci/golangci-lint:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>commands</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>golangci-lint run</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>build</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>plugins/docker</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>settings</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>repo</span><span class=p>:</span><span class=w> </span><span class=l>registry.example.com/myapp</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>tags</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=l>latest, &#34;${CI_COMMIT_TAG}&#34;]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>registry</span><span class=p>:</span><span class=w> </span><span class=l>registry.example.com</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>username</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>from_secret</span><span class=p>:</span><span class=w> </span><span class=l>registry_user</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>password</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>from_secret</span><span class=p>:</span><span class=w> </span><span class=l>registry_pass</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>when</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>branch</span><span class=p>:</span><span class=w> </span><span class=l>main</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>event</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=l>push, tag]</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=strengths-and-weaknesses>Strengths and Weaknesses</h3><p><strong>Strengths:</strong></p><ul><li>Extremely fast startup — server and agent each under 50 MB</li><li>Active community with regular releases and responsive maintainers</li><li>Clean, modern web UI with real-time build logs</li><li>Kubernetes agent support for running steps as pods instead of Docker containers</li><li>Matrix builds for testing across multiple environments in parallel</li><li>Built-in approval gates for production deployments</li><li>Supports both Docker-in-Docker and rootless execution modes</li></ul><p><strong>Weaknesses:</strong></p><ul><li>Smaller plugin ecosystem compared to Jenkins</li><li>No built-in artifact storage — requires external S3 or similar backend</li><li>Less mature for complex multi-repository pipeline orchestration</li><li>Limited built-in reporting dashboards</li></ul><h2 id=2-drone--the-original-container-native-ci>2. Drone — The Original Container-Native CI</h2><p>Drone pioneered the container-first CI/CD approach and remains a popular choice, especially in enterprise environments that value stability and long-term support.</p><h3 id=architecture-1>Architecture</h3><p>Drone shares conceptual DNA with Woodpecker (since Woodpecker was forked from it) but has evolved along a different path. Drone uses a similar server-runner architecture with YAML-defined pipelines. Each step executes in an isolated container, and the platform emphasizes a plugin marketplace for extensibility.</p><p>Drone&rsquo;s plugin system is particularly well-developed. Plugins are simply Docker containers with defined input/output contracts, making them easy to write in any language. The official plugin repository includes integrations for Slack, email, S3, Kubernetes, Helm, SSH deploy, and dozens more.</p><h3 id=installation-1>Installation</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>drone-server</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>drone/drone:2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8000:80&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>drone-data:/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/var/lib/drone:/var/lib/drone</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DRONE_SERVER_HOST=ci.example.com</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DRONE_SERVER_PROTO=https</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DRONE_RPC_SECRET=super-duper-secret</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DRONE_GITHUB_CLIENT_ID=your-client-id</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DRONE_GITHUB_CLIENT_SECRET=your-client-secret</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DRONE_GIT_ALWAYS_AUTH=false</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>drone-runner</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>drone/drone-runner-docker:1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;3000:3000&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/var/run/docker.sock:/var/run/docker.sock</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DRONE_RPC_PROTO=http</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DRONE_RPC_HOST=drone-server</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DRONE_RPC_SECRET=super-duper-secret</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DRONE_RUNNER_CAPACITY=2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DRONE_RUNNER_NAME=runner-1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>drone-data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=pipeline-example-1>Pipeline Example</h3><p>Drone pipelines use a slightly different YAML structure with a top-level <code>kind: pipeline</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>pipeline</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>type</span><span class=p>:</span><span class=w> </span><span class=l>docker</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>default</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>steps</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>test</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>node:20</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>commands</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>npm ci</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>npm test</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>npm run build</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>deploy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>appleboy/drone-ssh</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>settings</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>host</span><span class=p>:</span><span class=w> </span><span class=l>production.example.com</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>username</span><span class=p>:</span><span class=w> </span><span class=l>deploy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>key</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>from_secret</span><span class=p>:</span><span class=w> </span><span class=l>ssh_key</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>script</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=l>cd /opt/app</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=l>docker compose pull</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=l>docker compose up -d</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>when</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>branch</span><span class=p>:</span><span class=w> </span><span class=l>main</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>status</span><span class=p>:</span><span class=w> </span><span class=l>success</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=strengths-and-weaknesses-1>Strengths and Weaknesses</h3><p><strong>Strengths:</strong></p><ul><li>Mature, battle-tested platform used by thousands of organizations</li><li>Rich plugin marketplace with hundreds of pre-built integrations</li><li>Enterprise support available through Harness (commercial backing)</li><li>Multi-runner types: Docker, Kubernetes, Exec (bare metal)</li><li>Built-in secret management with per-repository and global scopes</li><li>Pipeline cloning and templating for reusing common steps across repos</li><li>Strong security model with signed RPC communication between server and runners</li></ul><p><strong>Weaknesses:</strong></p><ul><li>Development pace has slowed since the Harness acquisition</li><li>Community fork (Woodpecker) has more momentum for open-source features</li><li>Free tier limited to 5 concurrent pipelines for the commercial version</li><li>YAML syntax is less intuitive than Woodpecker&rsquo;s step-based approach</li><li>Web UI is functional but feels dated compared to modern alternatives</li></ul><h2 id=3-jenkins--the-veteran-powerhouse>3. Jenkins — The Veteran Powerhouse</h2><p>Jenkins has been the dominant self-hosted CI/CD platform for nearly two decades. With over 1,800 plugins and a massive ecosystem, Jenkins can handle virtually any build workflow imaginable.</p><h3 id=architecture-2>Architecture</h3><p>Jenkins uses a controller-agent architecture. The controller (formerly &ldquo;master&rdquo;) manages job configuration, scheduling, and the web UI. Agents (formerly &ldquo;slaves&rdquo;) execute build steps and can run on any platform — Linux, Windows, macOS, or inside containers.</p><p>Unlike Woodpecker and Drone, Jenkins is not container-native by design. Pipeline steps can run on any connected agent, giving you the flexibility to mix bare metal, VMs, and containers in a single pipeline. This flexibility comes at the cost of complexity — Jenkins requires more infrastructure knowledge to operate effectively.</p><h3 id=installation-2>Installation</h3><p>Running Jenkins with Docker is straightforward, but a production setup typically includes a reverse proxy, persistent storage, and dedicated agents:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>jenkins</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>jenkins/jenkins:lts-jdk17</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8080:8080&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;50000:50000&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>jenkins-home:/var/jenkins_home</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/var/run/docker.sock:/var/run/docker.sock</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>JAVA_OPTS=-Djenkins.install.runSetupWizard=false</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>JENKINS_ADMIN_ID=admin</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>JENKINS_ADMIN_PASSWORD=change-me</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>jenkins-home</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>After initial startup, Jenkins presents a setup wizard. For automated provisioning, pre-configure the <code>jenkins-home</code> volume with:</p><ul><li><code>plugins.txt</code> listing required plugins</li><li><code>init.groovy.d/</code> scripts for security realm configuration</li><li><code>jobs/</code> directory with pre-configured pipeline definitions</li></ul><h3 id=pipeline-example-2>Pipeline Example</h3><p>Jenkins uses its own Groovy-based Pipeline DSL (Declarative or Scripted syntax):</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span><span class=lnt>62
+</span><span class=lnt>63
+</span><span class=lnt>64
+</span><span class=lnt>65
+</span><span class=lnt>66
+</span><span class=lnt>67
+</span><span class=lnt>68
+</span><span class=lnt>69
+</span><span class=lnt>70
+</span><span class=lnt>71
+</span><span class=lnt>72
+</span><span class=lnt>73
+</span><span class=lnt>74
+</span><span class=lnt>75
+</span><span class=lnt>76
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-groovy data-lang=groovy><span class=line><span class=cl><span class=n>pipeline</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>agent</span> <span class=n>any</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=n>environment</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>REGISTRY</span> <span class=o>=</span> <span class=n>credentials</span><span class=o>(</span><span class=s1>&#39;docker-registry&#39;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=n>stages</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>stage</span><span class=o>(</span><span class=s1>&#39;Checkout&#39;</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>            <span class=n>steps</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>                <span class=n>checkout</span> <span class=n>scm</span>
+</span></span><span class=line><span class=cl>            <span class=o>}</span>
+</span></span><span class=line><span class=cl>        <span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=n>stage</span><span class=o>(</span><span class=s1>&#39;Test&#39;</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>            <span class=n>parallel</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>                <span class=n>stage</span><span class=o>(</span><span class=s1>&#39;Unit Tests&#39;</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>                    <span class=n>agent</span> <span class=o>{</span> <span class=n>docker</span> <span class=s1>&#39;node:20&#39;</span> <span class=o>}</span>
+</span></span><span class=line><span class=cl>                    <span class=n>steps</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>                        <span class=n>sh</span> <span class=s1>&#39;npm ci &amp;&amp; npm test&#39;</span>
+</span></span><span class=line><span class=cl>                    <span class=o>}</span>
+</span></span><span class=line><span class=cl>                <span class=o>}</span>
+</span></span><span class=line><span class=cl>                <span class=n>stage</span><span class=o>(</span><span class=s1>&#39;Lint&#39;</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>                    <span class=n>agent</span> <span class=o>{</span> <span class=n>docker</span> <span class=s1>&#39;node:20&#39;</span> <span class=o>}</span>
+</span></span><span class=line><span class=cl>                    <span class=n>steps</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>                        <span class=n>sh</span> <span class=s1>&#39;npm ci &amp;&amp; npm run lint&#39;</span>
+</span></span><span class=line><span class=cl>                    <span class=o>}</span>
+</span></span><span class=line><span class=cl>                <span class=o>}</span>
+</span></span><span class=line><span class=cl>            <span class=o>}</span>
+</span></span><span class=line><span class=cl>        <span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=n>stage</span><span class=o>(</span><span class=s1>&#39;Build Image&#39;</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>            <span class=n>agent</span> <span class=n>any</span>
+</span></span><span class=line><span class=cl>            <span class=n>steps</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>                <span class=n>script</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>                    <span class=n>docker</span><span class=o>.</span><span class=na>build</span><span class=o>(</span><span class=s2>&#34;myapp:${env.BUILD_NUMBER}&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>                <span class=o>}</span>
+</span></span><span class=line><span class=cl>            <span class=o>}</span>
+</span></span><span class=line><span class=cl>        <span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=n>stage</span><span class=o>(</span><span class=s1>&#39;Push&#39;</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>            <span class=n>when</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>                <span class=n>branch</span> <span class=s1>&#39;main&#39;</span>
+</span></span><span class=line><span class=cl>            <span class=o>}</span>
+</span></span><span class=line><span class=cl>            <span class=n>steps</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>                <span class=n>script</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>                    <span class=n>docker</span><span class=o>.</span><span class=na>withRegistry</span><span class=o>(</span><span class=s1>&#39;https://registry.example.com&#39;</span><span class=o>,</span> <span class=s1>&#39;docker-registry&#39;</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>                        <span class=n>docker</span><span class=o>.</span><span class=na>image</span><span class=o>(</span><span class=s2>&#34;myapp:${env.BUILD_NUMBER}&#34;</span><span class=o>).</span><span class=na>push</span><span class=o>()</span>
+</span></span><span class=line><span class=cl>                        <span class=n>docker</span><span class=o>.</span><span class=na>image</span><span class=o>(</span><span class=s2>&#34;myapp:${env.BUILD_NUMBER}&#34;</span><span class=o>).</span><span class=na>push</span><span class=o>(</span><span class=s1>&#39;latest&#39;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>                    <span class=o>}</span>
+</span></span><span class=line><span class=cl>                <span class=o>}</span>
+</span></span><span class=line><span class=cl>            <span class=o>}</span>
+</span></span><span class=line><span class=cl>        <span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=n>stage</span><span class=o>(</span><span class=s1>&#39;Deploy&#39;</span><span class=o>)</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>            <span class=n>when</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>                <span class=n>branch</span> <span class=s1>&#39;main&#39;</span>
+</span></span><span class=line><span class=cl>            <span class=o>}</span>
+</span></span><span class=line><span class=cl>            <span class=n>steps</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>                <span class=n>input</span> <span class=nl>message:</span> <span class=s1>&#39;Deploy to production?&#39;</span><span class=o>,</span> <span class=nl>ok:</span> <span class=s1>&#39;Deploy&#39;</span>
+</span></span><span class=line><span class=cl>                <span class=n>sh</span> <span class=s1>&#39;kubectl apply -f k8s/production/&#39;</span>
+</span></span><span class=line><span class=cl>            <span class=o>}</span>
+</span></span><span class=line><span class=cl>        <span class=o>}</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=n>post</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>always</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>            <span class=n>cleanWs</span><span class=o>()</span>
+</span></span><span class=line><span class=cl>        <span class=o>}</span>
+</span></span><span class=line><span class=cl>        <span class=n>failure</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>            <span class=n>mail</span> <span class=nl>to:</span> <span class=s1>&#39;team@example.com&#39;</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>                 <span class=nl>subject:</span> <span class=s2>&#34;Build Failed: ${env.JOB_NAME} #${env.BUILD_NUMBER}&#34;</span><span class=o>,</span>
+</span></span><span class=line><span class=cl>                 <span class=nl>body:</span> <span class=s2>&#34;Check ${env.BUILD_URL}&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=o>}</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=strengths-and-weaknesses-2>Strengths and Weaknesses</h3><p><strong>Strengths:</strong></p><ul><li>Largest plugin ecosystem of any CI/CD platform — 1,800+ plugins</li><li>Supports every programming language, build system, and deployment target</li><li>Declarative and Scripted pipeline DSL with full Groovy power</li><li>Shared Libraries enable reusable pipeline code across hundreds of repositories</li><li>Extremely flexible agent configuration — Docker, SSH, JNLP, Kubernetes, cloud APIs</li><li>Blue Ocean UI provides a modern pipeline visualization layer</li><li>Massive community — virtually every problem has a documented solution</li><li>Backwards compatibility ensures pipelines written years ago still work</li></ul><p><strong>Weaknesses:</strong></p><ul><li>Significant operational overhead — plugin updates frequently cause conflicts</li><li>Groovy pipeline syntax has a steep learning curve compared to YAML</li><li>Resource-heavy — the controller requires 4+ GB RAM for moderate workloads</li><li>Plugin dependency chains can become unmaintained or incompatible</li><li>Security surface area is large — each plugin is a potential vulnerability</li><li>Build performance degrades without careful tuning of executors and workspaces</li><li>Migration between Jenkins versions occasionally requires manual intervention</li></ul><h2 id=4-concourse-ci--pipeline-as-code-purist>4. Concourse CI — Pipeline-as-Code Purist</h2><p>Concourse CI takes a radically different approach to CI/CD. Built by Pivotal (now VMware) and now maintained by the open-source community, Concourse treats pipelines as first-class resources with a focus on reproducibility and immutability.</p><h3 id=architecture-3>Architecture</h3><p>Concourse uses a three-component architecture:</p><ol><li><strong>ATC (Air Traffic Control)</strong>: The central coordinator — handles the web UI, API, scheduling, and build tracking</li><li><strong>Workers</strong>: Execute tasks in isolated containers using Garden (a container runtime)</li><li><strong>PostgreSQL</strong>: Stores all pipeline state, build history, and resource versions</li></ol><p>Concourse&rsquo;s key innovation is its <strong>resource</strong> abstraction. Resources represent external systems — Git repositories, S3 buckets, Docker images, SemVer version trackers. Pipeline steps consume and produce resources, creating a declarative graph of dependencies. Every build is fully reproducible because Concourse tracks the exact version of every input resource.</p><h3 id=installation-3>Installation</h3><p>Concourse requires PostgreSQL and uses Docker Compose for the simplest deployment:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>db</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>postgres:16</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_DB</span><span class=p>:</span><span class=w> </span><span class=l>concourse</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_PASSWORD</span><span class=p>:</span><span class=w> </span><span class=l>concourse_pass</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>db-data:/var/lib/postgresql/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>concourse</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>concourse/concourse:7.11</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=l>quickstart</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>db</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8080:8080&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>CONCOURSE_POSTGRES_HOST</span><span class=p>:</span><span class=w> </span><span class=l>db</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>CONCOURSE_POSTGRES_USER</span><span class=p>:</span><span class=w> </span><span class=l>postgres</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>CONCOURSE_POSTGRES_PASSWORD</span><span class=p>:</span><span class=w> </span><span class=l>concourse_pass</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>CONCOURSE_POSTGRES_DATABASE</span><span class=p>:</span><span class=w> </span><span class=l>concourse</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>CONCOURSE_EXTERNAL_URL</span><span class=p>:</span><span class=w> </span><span class=l>http://ci.example.com:8080</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>CONCOURSE_ADD_LOCAL_USER</span><span class=p>:</span><span class=w> </span><span class=l>admin:admin</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>CONCOURSE_MAIN_TEAM</span><span class=p>:</span><span class=w> </span><span class=l>local-user:admin</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>CONCOURSE_WORKER_BAGGAGECLAIM_DRIVER</span><span class=p>:</span><span class=w> </span><span class=l>overlay</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>CONCOURSE_CLIENT_SECRET</span><span class=p>:</span><span class=w> </span><span class=l>Y29uY291cnNlLXdlYgo=</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>CONCOURSE_TSA_CLIENT_SECRET</span><span class=p>:</span><span class=w> </span><span class=l>Y29uY291cnNlLXdvcmtlcgo=</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>CONCOURSE_X_FRAME_OPTIONS</span><span class=p>:</span><span class=w> </span><span class=l>allow</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>CONCOURSE_CONTENT_SECURITY_POLICY</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;*&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/var/run/docker.sock:/var/run/docker.sock</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>privileged</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>db-data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=pipeline-example-3>Pipeline Example</h3><p>Concourse pipelines are defined in YAML and applied via the <code>fly</code> CLI:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>resources</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>source-code</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>type</span><span class=p>:</span><span class=w> </span><span class=l>git</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>source</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>uri</span><span class=p>:</span><span class=w> </span><span class=l>https://github.com/example/myapp.git</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>branch</span><span class=p>:</span><span class=w> </span><span class=l>main</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>app-image</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>type</span><span class=p>:</span><span class=w> </span><span class=l>docker-image</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>source</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>repository</span><span class=p>:</span><span class=w> </span><span class=l>registry.example.com/myapp</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>username</span><span class=p>:</span><span class=w> </span><span class=l>((registry-user))</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>password</span><span class=p>:</span><span class=w> </span><span class=l>((registry-pass))</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>jobs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>test-and-build</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>plan</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>get</span><span class=p>:</span><span class=w> </span><span class=l>source-code</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>trigger</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>task</span><span class=p>:</span><span class=w> </span><span class=l>run-tests</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>config</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>platform</span><span class=p>:</span><span class=w> </span><span class=l>linux</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>image_resource</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>type</span><span class=p>:</span><span class=w> </span><span class=l>docker-image</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>source</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>repository</span><span class=p>:</span><span class=w> </span><span class=l>node</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>tag</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;20&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>inputs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>source-code</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>run</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>path</span><span class=p>:</span><span class=w> </span><span class=l>sh</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>args</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span>- -<span class=l>c</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span>- <span class=p>|</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>                cd source-code
+</span></span></span><span class=line><span class=cl><span class=sd>                npm ci
+</span></span></span><span class=line><span class=cl><span class=sd>                npm test
+</span></span></span><span class=line><span class=cl><span class=sd>                npm run build</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>put</span><span class=p>:</span><span class=w> </span><span class=l>app-image</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>params</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>build</span><span class=p>:</span><span class=w> </span><span class=l>source-code</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>build_args</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>NODE_ENV</span><span class=p>:</span><span class=w> </span><span class=l>production</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>To deploy and trigger the pipeline:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Login to Concourse</span>
+</span></span><span class=line><span class=cl>fly -t main login -c http://ci.example.com:8080
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Set (create or update) the pipeline</span>
+</span></span><span class=line><span class=cl>fly -t main set-pipeline -p myapp -c pipeline.yml
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Unpause to enable automatic triggers</span>
+</span></span><span class=line><span class=cl>fly -t main unpause-pipeline -p myapp
+</span></span></code></pre></td></tr></table></div></div><h3 id=strengths-and-weaknesses-3>Strengths and Weaknesses</h3><p><strong>Strengths:</strong></p><ul><li>Pure pipeline-as-code — no UI-based job configuration, everything is versioned YAML</li><li>Full build reproducibility through resource versioning</li><li>Clean separation of resource fetching, task execution, and output production</li><li>Excellent for GitOps workflows — pipeline definitions live in Git alongside application code</li><li><code>fly</code> CLI enables programmatic pipeline management and CI/CD of your CI/CD</li><li>Built-in support for time-triggered jobs, manual gates, and serial job execution</li><li>Immutable build containers — no shared state between runs</li><li>Strong multi-tenancy with team-based isolation</li></ul><p><strong>Weaknesses:</strong></p><ul><li>Steep learning curve — resource and job concepts are abstract and take time to master</li><li>No native Docker-in-Docker support — building images requires workarounds</li><li>Smaller community means fewer tutorials and third-party resources</li><li>Web UI is minimalistic and lacks advanced build visualization</li><li>PostgreSQL dependency adds operational complexity compared to SQLite-based alternatives</li><li>Resource types must be pre-registered or loaded as custom types</li><li>Less suitable for simple projects — the abstraction overhead is significant</li></ul><h2 id=feature-comparison>Feature Comparison</h2><table><thead><tr><th>Feature</th><th style=text-align:center>Woodpecker CI</th><th style=text-align:center>Drone</th><th style=text-align:center>Jenkins</th><th style=text-align:center>Concourse CI</th></tr></thead><tbody><tr><td><strong>Pipeline Syntax</strong></td><td style=text-align:center>YAML</td><td style=text-align:center>YAML</td><td style=text-align:center>Groovy DSL</td><td style=text-align:center>YAML + fly CLI</td></tr><tr><td><strong>Container-Native</strong></td><td style=text-align:center>Yes</td><td style=text-align:center>Yes</td><td style=text-align:center>Via plugins</td><td style=text-align:center>Yes (Garden)</td></tr><tr><td><strong>Setup Complexity</strong></td><td style=text-align:center>Low</td><td style=text-align:center>Low</td><td style=text-align:center>High</td><td style=text-align:center>Medium</td></tr><tr><td><strong>Plugin Ecosystem</strong></td><td style=text-align:center>Small</td><td style=text-align:center>Medium</td><td style=text-align:center>Massive (1800+)</td><td style=text-align:center>Small</td></tr><tr><td><strong>Kubernetes Support</strong></td><td style=text-align:center>Native agent</td><td style=text-align:center>Via runner</td><td style=text-align:center>Via plugin</td><td style=text-align:center>Native</td></tr><tr><td><strong>Matrix Builds</strong></td><td style=text-align:center>Yes</td><td style=text-align:center>Limited</td><td style=text-align:center>Yes</td><td style=text-align:center>Via plan config</td></tr><tr><td><strong>Secret Management</strong></td><td style=text-align:center>Built-in + external</td><td style=text-align:center>Built-in + Vault</td><td style=text-align:center>Credentials plugin</td><td style=text-align:center>Credential manager</td></tr><tr><td><strong>Multi-Tenancy</strong></td><td style=text-align:center>Teams/Orgs</td><td style=text-align:center>Teams/Orgs</td><td style=text-align:center>Folders + RBAC</td><td style=text-align:center>Teams</td></tr><tr><td><strong>Resource Usage</strong></td><td style=text-align:center>~50 MB/server</td><td style=text-align:center>~50 MB/server</td><td style=text-align:center>~4 GB+ controller</td><td style=text-align:center>~500 MB+ ATC</td></tr><tr><td><strong>Artifact Storage</strong></td><td style=text-align:center>External (S3)</td><td style=text-align:center>External (S3)</td><td style=text-align:center>Built-in + plugins</td><td style=text-align:center>External only</td></tr><tr><td><strong>Build Caching</strong></td><td style=text-align:center>Workspace volumes</td><td style=text-align:center>Workspace volumes</td><td style=text-align:center>Workspace + plugins</td><td style=text-align:center>Resource caching</td></tr><tr><td><strong>Web UI Quality</strong></td><td style=text-align:center>Modern, clean</td><td style=text-align:center>Functional</td><td style=text-align:center>Blue Ocean available</td><td style=text-align:center>Minimalist</td></tr><tr><td><strong>Active Development</strong></td><td style=text-align:center>Very active</td><td style=text-align:center>Moderate</td><td style=text-align:center>Very active</td><td style=text-align:center>Moderate</td></tr><tr><td><strong>Learning Curve</strong></td><td style=text-align:center>Low</td><td style=text-align:center>Low</td><td style=text-align:center>High</td><td style=text-align:center>High</td></tr><tr><td><strong>License</strong></td><td style=text-align:center>Apache 2.0</td><td style=text-align:center>Apache 2.0</td><td style=text-align:center>MIT</td><td style=text-align:center>Apache 2.0</td></tr></tbody></table><h2 id=which-platform-should-you-choose>Which Platform Should You Choose?</h2><h3 id=choose-woodpecker-ci-if>Choose Woodpecker CI if:</h3><ul><li>You want the simplest setup with modern defaults</li><li>You use Gitea or Forgejo (first-class integration)</li><li>You prefer active open-source community development</li><li>Your team values clean YAML syntax over complex DSLs</li><li>You need Kubernetes-native execution for steps</li></ul><h3 id=choose-drone-if>Choose Drone if:</h3><ul><li>You want a proven, stable platform with enterprise backing</li><li>You need a rich plugin marketplace out of the box</li><li>Your team is already familiar with Drone from previous roles</li><li>You require signed RPC communication between server and runners</li><li>You need multi-runner type support (Docker, Kubernetes, Exec)</li></ul><h3 id=choose-jenkins-if>Choose Jenkins if:</h3><ul><li>You have complex, multi-language build requirements</li><li>You need the largest possible plugin ecosystem</li><li>Your team has existing Jenkins expertise</li><li>You require Windows or macOS build agents alongside Linux</li><li>You need Shared Libraries for cross-repository pipeline reuse</li><li>Backwards compatibility with legacy build systems is critical</li></ul><h3 id=choose-concourse-ci-if>Choose Concourse CI if:</h3><ul><li>You practice GitOps and want everything version-controlled</li><li>Build reproducibility is a hard requirement</li><li>You value immutability and clean resource abstractions</li><li>Your team is comfortable with YAML + CLI workflows</li><li>You are already in the VMware/Tanzu ecosystem</li><li>You need strong multi-tenant isolation between teams</li></ul><h2 id=production-deployment-recommendations>Production Deployment Recommendations</h2><p>Regardless of which platform you choose, follow these production best practices:</p><p><strong>1. Use HTTPS everywhere.</strong> Place a reverse proxy (Nginx, Traefik, or Caddy) in front of your CI/CD server with TLS termination:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-nginx data-lang=nginx><span class=line><span class=cl><span class=k>server</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=kn>listen</span> <span class=mi>443</span> <span class=s>ssl</span> <span class=s>http2</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=kn>server_name</span> <span class=s>ci.example.com</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kn>ssl_certificate</span> <span class=s>/etc/ssl/certs/ci.example.com.crt</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=kn>ssl_certificate_key</span> <span class=s>/etc/ssl/private/ci.example.com.key</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kn>location</span> <span class=s>/</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_pass</span> <span class=s>http://127.0.0.1:8000</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_set_header</span> <span class=s>Host</span> <span class=nv>$host</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_set_header</span> <span class=s>X-Real-IP</span> <span class=nv>$remote_addr</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_set_header</span> <span class=s>X-Forwarded-For</span> <span class=nv>$proxy_add_x_forwarded_for</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_set_header</span> <span class=s>X-Forwarded-Proto</span> <span class=nv>$scheme</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1># WebSocket support for live build logs
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=kn>location</span> <span class=s>/ws</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_pass</span> <span class=s>http://127.0.0.1:8000</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_http_version</span> <span class=mi>1</span><span class=s>.1</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_set_header</span> <span class=s>Upgrade</span> <span class=nv>$http_upgrade</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_set_header</span> <span class=s>Connection</span> <span class=s>&#34;upgrade&#34;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p><strong>2. Separate build workloads from the controller.</strong> Never run build steps on the same machine as your CI/CD server. Use dedicated agent/worker nodes — this prevents a rogue build from compromising your server and enables horizontal scaling.</p><p><strong>3. Automate agent provisioning.</strong> Use cloud-init scripts or Terraform to spin up CI/CD agents on demand. For Kubernetes-based platforms, configure Horizontal Pod Autoscaler rules based on pending build queue depth.</p><p><strong>4. Back up pipeline definitions.</strong> Store all pipeline YAML or Groovy files in Git alongside your application code. Treat your CI/CD configuration as application code — review, test, and version it.</p><p><strong>5. Implement resource limits.</strong> Docker and Kubernetes both support CPU and memory limits per build container. Without limits, a single misconfigured build can exhaust your worker node&rsquo;s resources and block all other pipelines:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># Docker resource constraints for build agents</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c># Add to your docker-compose or docker run command</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=l>docker run --cpus=4 --memory=8g --memory-swap=8g ...</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p><strong>6. Rotate secrets regularly.</strong> Use your platform&rsquo;s built-in secret rotation or integrate with HashiCorp Vault. Never store plaintext secrets in pipeline files. Most platforms support secret references like <code>from_secret</code> or <code>((credential-name))</code> that resolve at runtime.</p><p><strong>7. Monitor build performance.</strong> Track metrics like average build duration, queue wait time, and failure rate. Set up alerts when builds exceed expected durations or failure rates spike — these are early indicators of infrastructure problems.</p><h2 id=conclusion>Conclusion</h2><p>The self-hosted CI/CD landscape in 2026 offers mature options for every scenario. <strong>Woodpecker CI</strong> leads in simplicity and community momentum, making it the best choice for new deployments. <strong>Drone</strong> provides enterprise stability with a rich plugin ecosystem. <strong>Jenkins</strong> remains unmatched for complex, heterogeneous build environments despite its operational overhead. <strong>Concourse CI</strong> excels for teams practicing GitOps who prioritize reproducibility and immutability above all else.</p><p>For most teams starting a new self-hosted CI/CD deployment in 2026, Woodpecker CI offers the best balance of features, simplicity, and active development. Its clean YAML syntax, low resource footprint, and strong Gitea/Forgejo integration make it the natural choice for organizations that value developer experience alongside infrastructure control.</p></div><div id=frame style=width:100%;margin:auto;position:relative;z-index:99998><iframe data-aa=2433958 src='//acceptable.a-ads.com/2433958/?size=Adaptive' style=border:0;padding:0;width:70%;height:auto;overflow:hidden;display:block;margin:auto></iframe></div></article></main><footer class=site-footer><p>Built with <a href=https://gohugo.io>Hugo</a> · <a href=/openswap-guide/index.xml>RSS</a> · <a href=https://github.com/hopkdj>GitHub</a></p><p style=margin-top:8px>&copy; 2026 OpenSwap Guide. All rights reserved.</p></footer></body></html>
