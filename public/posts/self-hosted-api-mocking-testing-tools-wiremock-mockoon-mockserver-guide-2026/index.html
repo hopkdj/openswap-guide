@@ -1,0 +1,394 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted API Mocking Tools: WireMock vs Mockoon vs MockServer (2026) | OpenSwap Guide</title>
+<meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, and local AI deployment."><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/openswap-guide/css/main.min.777dc111b5207bf5336e5799477da0b31fb9080306bf98a82d6eceb979cf9737.css><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://hopkdj.github.io/openswap-guide/ class=logo><div class=logo-icon>H</div>OpenSwap Guide</a><nav><ul class=nav-links><li><a href=/openswap-guide/>Home</a></li><li><a href=/openswap-guide/tags/comparison/>Comparisons</a></li><li><a href=/openswap-guide/tags/guide/>Guides</a></li><li><a href=/openswap-guide/tags/ai/>Local AI</a></li><li><a href=/openswap-guide/index.xml class=nav-rss>Subscribe RSS</a></li></ul></nav></div></header><main><article class=post-single><a href=https://hopkdj.github.io/openswap-guide/ class=back-link>&larr; Back to posts</a><header class=post-single-header><div class=post-single-meta><span class="tag tag-purple">comparison</span>
+<span class="tag tag-green">guide</span>
+<span class="tag tag-blue">self-hosted</span>
+<span>·</span>
+<span>April 14, 2026</span>
+<span>·</span>
+<span>12 min read</span></div><h1 class=post-single-title>Self-Hosted API Mocking Tools: WireMock vs Mockoon vs MockServer (2026)</h1></header><div class=post-single-content><p>Building and testing applications often requires talking to external APIs — payment gateways, weather services, third-party data providers, or internal microservices that are not yet ready. Waiting for these services to be available slows down development. Relying on production APIs in tests makes your test suite flaky and unpredictable. The solution is API mocking: simulating API responses locally so your development and testing can proceed independently of external dependencies.</p><p>In this guide, we will explore the three most popular open-source, self-hosted API mocking tools available in 2026: <strong>WireMock</strong>, <strong>Mockoon</strong>, and <strong>MockServer</strong>. We will cover what each tool does, how to install and configure them, and how they compare so you can pick the right one for your workflow.</p><h2 id=why-self-host-your-api-mocking-infrastructure>Why Self-Host Your API Mocking Infrastructure</h2><p>Before comparing tools, it is worth understanding why self-hosting API mocks matters.</p><p><strong>Eliminate external dependencies in tests.</strong> When your tests hit real external APIs, they become slow, brittle, and dependent on network availability. A self-hosted mock server responds instantly and consistently every time, turning a five-second HTTP call into a two-millisecond local request.</p><p><strong>Test edge cases that are hard to reproduce.</strong> How do you test what happens when a payment gateway returns a 503 error? Or when an API rate-limits you? Or when a response payload is malformed? With a mock server, you define these scenarios explicitly. No need to hope an external service misbehaves at the right moment.</p><p><strong>Develop against APIs that do not exist yet.</strong> In microservice architectures, your service might need to call another team&rsquo;s API that is still in development. A mock server lets both teams agree on a contract and start building immediately, without waiting for each other.</p><p><strong>Avoid costs and rate limits.</strong> Many APIs charge per request or impose strict rate limits. Running a mock server during development and testing means you only hit the real API when you absolutely need to — typically during integration tests or production deployment verification.</p><p><strong>Keep sensitive data local.</strong> Mock servers can be configured with realistic but fake response data. No real customer data, API keys, or credentials ever leave your environment. This is especially valuable when developing against APIs that handle personal or financial information.</p><p><strong>Offline development.</strong> A self-hosted mock server works on a laptop in an airplane, a development VM with no internet access, or an isolated CI/CD environment. Your development workflow should not depend on network connectivity.</p><h2 id=wiremock-the-industry-standard>WireMock: The Industry Standard</h2><p>WireMock is the most widely used API mocking tool in the Java and broader software development ecosystem. Created by Tom Akehurst and now maintained as an open-source project, it supports HTTP/HTTPS mocking, request matching, response templating, request recording, and fault simulation.</p><h3 id=key-features>Key Features</h3><ul><li><strong>Request matching.</strong> Match incoming requests by URL, method, headers, query parameters, body content (JSON, XML, plain text), and even custom matchers using regular expressions or JSONPath.</li><li><strong>Response templating.</strong> Use Handlebars templates to generate dynamic responses that adapt to the incoming request — different status codes based on headers, parameterized JSON bodies, or time-dependent responses.</li><li><strong>Record and playback.</strong> Point WireMock at a real API, let it record the interactions, and then replay them as stubs. This is the fastest way to create mocks for existing APIs.</li><li><strong>Fault simulation.</strong> Inject connection timeouts, malformed responses, random delays, and HTTP error codes to test your application&rsquo;s resilience.</li><li><strong>Admin API.</strong> Configure stubs programmatically via a REST API, making it easy to set up and tear down mock state in automated test suites.</li><li><strong>Extensions.</strong> A plugin system that lets you write custom request matchers, response transformers, and webhook simulators in Java.</li></ul><h3 id=installing-wiremock>Installing WireMock</h3><p>The fastest way to get WireMock running is via Docker:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>wiremock</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>wiremock/wiremock:3.5.4</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>wiremock</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8080:8080&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./mappings:/home/wiremock/mappings</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./__files:/home/wiremock/__files</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;--verbose&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;--global-response-templating&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;--root-dir=/home/wiremock&#34;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Create a stub mapping file at <code>./mappings/get-users.json</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;request&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;method&#34;</span><span class=p>:</span> <span class=s2>&#34;GET&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;urlPattern&#34;</span><span class=p>:</span> <span class=s2>&#34;/api/v1/users/[0-9]+&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=p>},</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;response&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;status&#34;</span><span class=p>:</span> <span class=mi>200</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;headers&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;Content-Type&#34;</span><span class=p>:</span> <span class=s2>&#34;application/json&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;jsonBody&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;id&#34;</span><span class=p>:</span> <span class=s2>&#34;{{request.path.[3]}}&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;name&#34;</span><span class=p>:</span> <span class=s2>&#34;John Doe&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;email&#34;</span><span class=p>:</span> <span class=s2>&#34;john@example.com&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;role&#34;</span><span class=p>:</span> <span class=s2>&#34;admin&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;transformers&#34;</span><span class=p>:</span> <span class=p>[</span><span class=s2>&#34;response-template&#34;</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>Start the server:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker compose up -d
+</span></span><span class=line><span class=cl>curl http://localhost:8080/api/v1/users/42
+</span></span><span class=line><span class=cl><span class=c1># Returns: {&#34;id&#34;:&#34;42&#34;,&#34;name&#34;:&#34;John Doe&#34;,&#34;email&#34;:&#34;john@example.com&#34;,&#34;role&#34;:&#34;admin&#34;}</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=creating-a-fault-simulation-stub>Creating a Fault Simulation Stub</h3><p>One of WireMock&rsquo;s strengths is testing failure scenarios. Here is how you simulate a slow response followed by a timeout:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;request&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;method&#34;</span><span class=p>:</span> <span class=s2>&#34;POST&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;url&#34;</span><span class=p>:</span> <span class=s2>&#34;/api/v1/payments&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=p>},</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;response&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;fixedDelayMilliseconds&#34;</span><span class=p>:</span> <span class=mi>5000</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;status&#34;</span><span class=p>:</span> <span class=mi>504</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;jsonBody&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;error&#34;</span><span class=p>:</span> <span class=s2>&#34;Gateway Timeout&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;message&#34;</span><span class=p>:</span> <span class=s2>&#34;Payment provider did not respond in time&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;headers&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;Content-Type&#34;</span><span class=p>:</span> <span class=s2>&#34;application/json&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=using-wiremock-in-cicd>Using WireMock in CI/CD</h3><p>WireMock integrates naturally into CI pipelines. You can start it as a service container, load a set of predefined stubs, run your tests against it, and then shut it down. Here is a GitHub Actions example:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>jobs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>test</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>runs-on</span><span class=p>:</span><span class=w> </span><span class=l>ubuntu-latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>wiremock</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>wiremock/wiremock:3.5.4</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span>- <span class=m>8080</span><span class=p>:</span><span class=m>8080</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span>- <span class=l>./wiremock-mappings:/home/wiremock/mappings</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>options</span><span class=p>:</span><span class=w> </span><span class=p>&gt;-</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>          --health-cmd &#34;curl -f http://localhost:8080/__admin/health&#34;
+</span></span></span><span class=line><span class=cl><span class=sd>          --health-interval 10s
+</span></span></span><span class=line><span class=cl><span class=sd>          --health-timeout 5s
+</span></span></span><span class=line><span class=cl><span class=sd>          --health-retries 5</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>steps</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>uses</span><span class=p>:</span><span class=w> </span><span class=l>actions/checkout@v4</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>Run tests</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>env</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>API_BASE_URL</span><span class=p>:</span><span class=w> </span><span class=l>http://localhost:8080</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>run</span><span class=p>:</span><span class=w> </span><span class=p>|</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>          npm install
+</span></span></span><span class=line><span class=cl><span class=sd>          npm test</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=mockoon-the-developer-friendly-gui-tool>Mockoon: The Developer-Friendly GUI Tool</h2><p>Mockoon takes a different approach. Instead of defining mocks through JSON configuration files, Mockoon provides a desktop application and a CLI tool with a visual interface. It is designed for developers who want to quickly prototype API responses without writing configuration files by hand.</p><h3 id=key-features-1>Key Features</h3><ul><li><strong>Visual interface.</strong> Create, edit, and manage mock endpoints through a graphical user interface. Click to add routes, define response bodies, set headers, and configure rules — no JSON files needed.</li><li><strong>CLI for automation.</strong> The <code>mockoon-cli</code> package lets you start, stop, and manage mock environments from the command line, making it suitable for CI/CD pipelines.</li><li><strong>Route rules and templating.</strong> Define conditions that determine which response to return based on request body, headers, or query parameters. Uses Handlebars templating for dynamic content.</li><li><strong>Proxy mode.</strong> Forward requests that do not match any stub to a real upstream API. This lets you mock only specific endpoints while letting others pass through to the real service.</li><li><strong>Data generation.</strong> Built-in Faker.js integration for generating realistic fake data — names, emails, addresses, dates, UUIDs, and more.</li><li><strong>Environment sharing.</strong> Export and import mock environments as JSON files that your team can share via version control.</li></ul><h3 id=installing-mockoon-cli>Installing Mockoon CLI</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>npm install -g @mockoon/cli
+</span></span></code></pre></td></tr></table></div></div><p>Create a mock environment file called <code>api-mock.json</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;uuid&#34;</span><span class=p>:</span> <span class=s2>&#34;a1b2c3d4-e5f6-7890-abcd-ef1234567890&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;name&#34;</span><span class=p>:</span> <span class=s2>&#34;E-commerce API&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;port&#34;</span><span class=p>:</span> <span class=mi>3000</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;routes&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>    <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;uuid&#34;</span><span class=p>:</span> <span class=s2>&#34;route-001&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;method&#34;</span><span class=p>:</span> <span class=s2>&#34;get&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;endpoint&#34;</span><span class=p>:</span> <span class=s2>&#34;products&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;responses&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>        <span class=p>{</span>
+</span></span><span class=line><span class=cl>          <span class=nt>&#34;uuid&#34;</span><span class=p>:</span> <span class=s2>&#34;resp-001&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>          <span class=nt>&#34;body&#34;</span><span class=p>:</span> <span class=s2>&#34;[{{# repeat (faker &#39;number.int&#39; 3 10) }}{\n  \&#34;id\&#34;: {{ faker &#39;number.int&#39; 1 1000 }},\n  \&#34;name\&#34;: \&#34;{{ faker &#39;commerce.productName&#39; }}\&#34;,\n  \&#34;price\&#34;: {{ faker &#39;commerce.price&#39; }},\n  \&#34;inStock\&#34;: {{ faker &#39;datatype.boolean&#39; }}\n}{{#unless @last}},{{/unless}}{{/ repeat }}]&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>          <span class=nt>&#34;latency&#34;</span><span class=p>:</span> <span class=mi>0</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>          <span class=nt>&#34;statusCode&#34;</span><span class=p>:</span> <span class=mi>200</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>          <span class=nt>&#34;headers&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>            <span class=p>{</span> <span class=nt>&#34;key&#34;</span><span class=p>:</span> <span class=s2>&#34;Content-Type&#34;</span><span class=p>,</span> <span class=nt>&#34;value&#34;</span><span class=p>:</span> <span class=s2>&#34;application/json&#34;</span> <span class=p>}</span>
+</span></span><span class=line><span class=cl>          <span class=p>]</span>
+</span></span><span class=line><span class=cl>        <span class=p>}</span>
+</span></span><span class=line><span class=cl>      <span class=p>]</span>
+</span></span><span class=line><span class=cl>    <span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;uuid&#34;</span><span class=p>:</span> <span class=s2>&#34;route-002&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;method&#34;</span><span class=p>:</span> <span class=s2>&#34;post&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;endpoint&#34;</span><span class=p>:</span> <span class=s2>&#34;orders&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;responses&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>        <span class=p>{</span>
+</span></span><span class=line><span class=cl>          <span class=nt>&#34;uuid&#34;</span><span class=p>:</span> <span class=s2>&#34;resp-002&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>          <span class=nt>&#34;body&#34;</span><span class=p>:</span> <span class=s2>&#34;{\n  \&#34;orderId\&#34;: \&#34;{{ faker &#39;string.uuid&#39; }}\&#34;,\n  \&#34;status\&#34;: \&#34;confirmed\&#34;,\n  \&#34;estimatedDelivery\&#34;: \&#34;{{ faker &#39;date.future&#39; }}\&#34;\n}&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>          <span class=nt>&#34;statusCode&#34;</span><span class=p>:</span> <span class=mi>201</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>          <span class=nt>&#34;headers&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>            <span class=p>{</span> <span class=nt>&#34;key&#34;</span><span class=p>:</span> <span class=s2>&#34;Content-Type&#34;</span><span class=p>,</span> <span class=nt>&#34;value&#34;</span><span class=p>:</span> <span class=s2>&#34;application/json&#34;</span> <span class=p>}</span>
+</span></span><span class=line><span class=cl>          <span class=p>]</span>
+</span></span><span class=line><span class=cl>        <span class=p>}</span>
+</span></span><span class=line><span class=cl>      <span class=p>]</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=p>],</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;proxyMode&#34;</span><span class=p>:</span> <span class=kc>false</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>Start the mock server:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>mockoon-cli start --data ./api-mock.json
+</span></span><span class=line><span class=cl>curl http://localhost:3000/products
+</span></span><span class=line><span class=cl><span class=c1># Returns an array of 3-10 randomly generated products with fake names and prices</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=running-mockoon-in-docker>Running Mockoon in Docker</h3><p>While Mockoon is primarily a desktop tool, the CLI can run in a container:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-dockerfile data-lang=dockerfile><span class=line><span class=cl><span class=k>FROM</span><span class=s> node:20-alpine</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=k>RUN</span> npm install -g @mockoon/cli<span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=k>COPY</span> api-mock.json /app/api-mock.json<span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=k>EXPOSE</span><span class=s> 3000</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=k>CMD</span> <span class=p>[</span><span class=s2>&#34;mockoon-cli&#34;</span><span class=p>,</span> <span class=s2>&#34;start&#34;</span><span class=p>,</span> <span class=s2>&#34;--data&#34;</span><span class=p>,</span> <span class=s2>&#34;/app/api-mock.json&#34;</span><span class=p>,</span> <span class=s2>&#34;--port&#34;</span><span class=p>,</span> <span class=s2>&#34;3000&#34;</span><span class=p>]</span><span class=err>
+</span></span></span></code></pre></td></tr></table></div></div><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker build -t my-api-mock .
+</span></span><span class=line><span class=cl>docker run -p 3000:3000 my-api-mock
+</span></span></code></pre></td></tr></table></div></div><h2 id=mockserver-the-powerful-contract-testing-tool>MockServer: The Powerful Contract Testing Tool</h2><p>MockServer (not to be confused with the <code>mock-server</code> npm package) is a Java-based tool that focuses on contract testing and complex request matching. It is particularly popular in enterprise environments where API contracts between services need to be strictly enforced.</p><h3 id=key-features-2>Key Features</h3><ul><li><strong>Expectation-based model.</strong> Instead of defining static stubs, you set &ldquo;expectations&rdquo; — rules that describe what requests to expect and what responses to return. The server tracks which expectations were matched and which were not, making it easy to verify that your application made the correct API calls.</li><li><strong>Verification.</strong> After running your tests, you can query MockServer to confirm that specific requests were made with the correct method, path, headers, and body. This is invaluable for contract testing.</li><li><strong>Request matching engine.</strong> Supports regex matching, JSON schema validation, XPath matching, and forward chaining — the ability to chain multiple responses for a single request.</li><li><strong>Port forwarding.</strong> Forward specific requests to a real upstream server while mocking others. This is useful for incremental migration from real APIs to mocks.</li><li><strong>OpenAPI integration.</strong> Generate expectations directly from an OpenAPI (Swagger) specification. If you have an API spec, MockServer can auto-generate a full mock server from it.</li><li><strong>Java, JavaScript, and REST clients.</strong> Configure expectations programmatically from your test code using the MockServer client library, or via the REST API.</li></ul><h3 id=installing-mockserver>Installing MockServer</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>mockserver</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>mockserver/mockserver:5.15.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>mockserver</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;1080:1080&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>MOCKSERVER_WATCH_INITIALIZATION_JSON</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;true&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>MOCKSERVER_PROPERTY_FILE</span><span class=p>:</span><span class=w> </span><span class=l>/config/mockserver.properties</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>MOCKSERVER_INITIALIZATION_JSON_PATH</span><span class=p>:</span><span class=w> </span><span class=l>/config/expectations.json</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./config:/config</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Create an expectations file at <code>./config/expectations.json</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=line><span class=cl><span class=p>[</span>
+</span></span><span class=line><span class=cl>  <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;httpRequest&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;method&#34;</span><span class=p>:</span> <span class=s2>&#34;GET&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;path&#34;</span><span class=p>:</span> <span class=s2>&#34;/api/v1/users/.*&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;pathParameters&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&#34;id&#34;</span><span class=p>:</span> <span class=p>[</span><span class=s2>&#34;[0-9]+&#34;</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>      <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;httpResponse&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;statusCode&#34;</span><span class=p>:</span> <span class=mi>200</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;headers&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&#34;Content-Type&#34;</span><span class=p>:</span> <span class=p>[</span><span class=s2>&#34;application/json&#34;</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>      <span class=p>},</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;body&#34;</span><span class=p>:</span> <span class=s2>&#34;{\&#34;id\&#34;: ${json.path.request.path}, \&#34;name\&#34;: \&#34;Jane Smith\&#34;, \&#34;email\&#34;: \&#34;jane@example.com\&#34;, \&#34;createdAt\&#34;: \&#34;2026-01-15T08:30:00Z\&#34;}&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=p>},</span>
+</span></span><span class=line><span class=cl>  <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;httpRequest&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;method&#34;</span><span class=p>:</span> <span class=s2>&#34;POST&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;path&#34;</span><span class=p>:</span> <span class=s2>&#34;/api/v1/users&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;body&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&#34;type&#34;</span><span class=p>:</span> <span class=s2>&#34;JSON&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&#34;matchType&#34;</span><span class=p>:</span> <span class=s2>&#34;STRICT&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&#34;json&#34;</span><span class=p>:</span> <span class=s2>&#34;{\&#34;name\&#34;: \&#34;.*\&#34;, \&#34;email\&#34;: \&#34;.*@.*\&#34;}&#34;</span>
+</span></span><span class=line><span class=cl>      <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;httpResponse&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;statusCode&#34;</span><span class=p>:</span> <span class=mi>201</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;headers&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&#34;Content-Type&#34;</span><span class=p>:</span> <span class=p>[</span><span class=s2>&#34;application/json&#34;</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&#34;Location&#34;</span><span class=p>:</span> <span class=p>[</span><span class=s2>&#34;/api/v1/users/12345&#34;</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>      <span class=p>},</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;body&#34;</span><span class=p>:</span> <span class=s2>&#34;{\&#34;id\&#34;: 12345, \&#34;status\&#34;: \&#34;created\&#34;}&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>]</span>
+</span></span></code></pre></td></tr></table></div></div><p>Start and test:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker compose up -d
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Test GET</span>
+</span></span><span class=line><span class=cl>curl http://localhost:1080/api/v1/users/99
+</span></span><span class=line><span class=cl><span class=c1># Returns: {&#34;id&#34;: 99, &#34;name&#34;: &#34;Jane Smith&#34;, ...}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Verify requests were made</span>
+</span></span><span class=line><span class=cl>curl http://localhost:1080/mockserver/retrieve?type<span class=o>=</span>REQUESTS
+</span></span></code></pre></td></tr></table></div></div><h3 id=using-mockserver-for-contract-testing>Using MockServer for Contract Testing</h3><p>The real power of MockServer shines in contract testing. Instead of just mocking responses, you verify that your application sends the right requests:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># After running your test suite, check what requests were received</span>
+</span></span><span class=line><span class=cl>curl -s http://localhost:1080/mockserver/retrieve?type<span class=o>=</span>REQUESTS <span class=p>|</span> python -m json.tool
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Verify specific expectations were matched</span>
+</span></span><span class=line><span class=cl>curl -s http://localhost:1080/mockserver/retrieve?type<span class=o>=</span>REQUEST_MATCHING_EXPECTATIONS
+</span></span></code></pre></td></tr></table></div></div><p>This lets you confirm that your application:</p><ul><li>Called the correct endpoint</li><li>Used the right HTTP method</li><li>Sent the expected headers (authentication, content type)</li><li>Included the correct request body structure</li></ul><h2 id=comparison-wiremock-vs-mockoon-vs-mockserver>Comparison: WireMock vs Mockoon vs MockServer</h2><table><thead><tr><th>Feature</th><th>WireMock</th><th>Mockoon</th><th>MockServer</th></tr></thead><tbody><tr><td><strong>Primary interface</strong></td><td>JSON files + REST API</td><td>Desktop GUI + CLI</td><td>JSON/Java client + REST API</td></tr><tr><td><strong>Learning curve</strong></td><td>Moderate</td><td>Low</td><td>Steep</td></tr><tr><td><strong>Request matching</strong></td><td>URL, headers, body, regex, JSONPath</td><td>URL, headers, body, query params</td><td>URL, headers, body, regex, JSON schema, XPath</td></tr><tr><td><strong>Response templating</strong></td><td>Handlebars</td><td>Handlebars + Faker.js</td><td>Velocity templates</td></tr><tr><td><strong>Dynamic data generation</strong></td><td>Via custom extensions</td><td>Built-in Faker.js</td><td>Via templates</td></tr><tr><td><strong>Record and playback</strong></td><td>Yes</td><td>No</td><td>No</td></tr><tr><td><strong>Fault injection</strong></td><td>Delays, timeouts, resets, malformed responses</td><td>Delays</td><td>Delays, connection resets</td></tr><tr><td><strong>Contract testing / verification</strong></td><td>Via verification API</td><td>No</td><td>Built-in expectation verification</td></tr><tr><td><strong>OpenAPI / Swagger import</strong></td><td>Via community tools</td><td>Via third-party converters</td><td>Built-in</td></tr><tr><td><strong>Docker support</strong></td><td>Official image</td><td>Community (CLI-based)</td><td>Official image</td></tr><tr><td><strong>CI/CD friendliness</strong></td><td>Excellent</td><td>Good (via CLI)</td><td>Excellent</td></tr><tr><td><strong>Multi-port support</strong></td><td>Yes (multiple instances)</td><td>Yes (multiple environments)</td><td>Yes (multiple ports per instance)</td></tr><tr><td><strong>HTTPS support</strong></td><td>Yes (built-in CA)</td><td>No (use reverse proxy)</td><td>Yes (built-in)</td></tr><tr><td><strong>Language</strong></td><td>Java</td><td>Node.js</td><td>Java</td></tr><tr><td><strong>License</strong></td><td>Apache 2.0</td><td>MIT</td><td>Apache 2.0</td></tr><tr><td><strong>Best for</strong></td><td>General-purpose API mocking</td><td>Quick prototyping and developer experience</td><td>Enterprise contract testing</td></tr></tbody></table><h2 id=choosing-the-right-tool>Choosing the Right Tool</h2><p>Your choice depends on your specific needs and team workflow:</p><p><strong>Choose WireMock if</strong> you need a battle-tested, feature-rich mocking tool that works well in CI/CD pipelines. Its record-and-playback capability makes it the fastest option for mocking existing APIs. The large ecosystem of extensions and the strong community support make it the safest long-term bet. It is the default choice for Java-based projects and works well with any language through its REST API.</p><p><strong>Choose Mockoon if</strong> you value developer experience and want to prototype APIs quickly without writing configuration files. The visual interface is a significant advantage for teams that include non-technical stakeholders who need to understand or modify mock responses. The built-in fake data generation means your mock responses look realistic out of the box. It is ideal for frontend developers who need a quick backend to test against.</p><p><strong>Choose MockServer if</strong> you need contract testing and want to verify that your application makes the correct API calls. The expectation verification system is unique among the three tools and is particularly valuable in microservice architectures where multiple teams need to agree on API contracts. The OpenAPI integration lets you generate a full mock server from your API specification in minutes.</p><h2 id=production-deployment-considerations>Production Deployment Considerations</h2><p>When deploying a mock server for shared team use or CI/CD, keep these points in mind:</p><p><strong>Resource allocation.</strong> Mock servers are lightweight. WireMock and MockServer each need about 256-512 MB of RAM. Mockoon CLI needs around 128 MB. A small VPS or container with 1 GB of RAM can easily run multiple mock instances.</p><p><strong>Persistence.</strong> Store your stub and expectation definitions in version control. This makes them reviewable, shareable, and recoverable. Use the Docker volume mount pattern shown above to keep configuration outside the container.</p><p><strong>Authentication.</strong> If your mock server is accessible over a network, protect it. Use a reverse proxy (Nginx, Caddy, or Traefik) with basic auth or token-based authentication. The mock server itself typically has no built-in auth.</p><p><strong>Monitoring.</strong> Log all requests that hit your mock server. This helps you understand which endpoints are being used, identify mismatches between your mocks and the real API, and debug test failures. WireMock and MockServer both have built-in request logging accessible via their admin APIs.</p><p><strong>Stale mocks.</strong> As the real API evolves, your mocks can become outdated. Set up a periodic review process to compare mock responses against the real API. WireMock&rsquo;s record mode is useful here — temporarily switch to recording mode, capture a few real responses, and compare them to your existing stubs.</p><h2 id=conclusion>Conclusion</h2><p>Self-hosted API mocking is one of the highest-return infrastructure investments a development team can make. It eliminates external dependencies from tests, enables offline development, and lets you test edge cases that would be impossible or expensive to reproduce against real services. WireMock, Mockoon, and MockServer each bring different strengths to the table, and any one of them will dramatically improve your development workflow compared to testing against live APIs. Start with a simple Docker setup, mock the most critical endpoints first, and expand your coverage as your confidence in the tool grows.</p></div><div id=frame style=width:100%;margin:auto;position:relative;z-index:99998><iframe data-aa=2433958 src='//acceptable.a-ads.com/2433958/?size=Adaptive' style=border:0;padding:0;width:70%;height:auto;overflow:hidden;display:block;margin:auto></iframe></div></article></main><footer class=site-footer><p>Built with <a href=https://gohugo.io>Hugo</a> · <a href=/openswap-guide/index.xml>RSS</a> · <a href=https://github.com/hopkdj>GitHub</a></p><p style=margin-top:8px>&copy; 2026 OpenSwap Guide. All rights reserved.</p></footer></body></html>
