@@ -1,0 +1,652 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>RabbitMQ vs NATS vs Apache ActiveMQ: Best Self-Hosted Message Queue 2026 | OpenSwap Guide</title>
+<meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, and local AI deployment."><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/openswap-guide/css/main.min.777dc111b5207bf5336e5799477da0b31fb9080306bf98a82d6eceb979cf9737.css><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://hopkdj.github.io/openswap-guide/ class=logo><div class=logo-icon>H</div>OpenSwap Guide</a><nav><ul class=nav-links><li><a href=/openswap-guide/>Home</a></li><li><a href=/openswap-guide/tags/comparison/>Comparisons</a></li><li><a href=/openswap-guide/tags/guide/>Guides</a></li><li><a href=/openswap-guide/tags/ai/>Local AI</a></li><li><a href=/openswap-guide/index.xml class=nav-rss>Subscribe RSS</a></li></ul></nav></div></header><main><article class=post-single><a href=https://hopkdj.github.io/openswap-guide/ class=back-link>&larr; Back to posts</a><header class=post-single-header><div class=post-single-meta><span class="tag tag-purple">comparison</span>
+<span class="tag tag-green">guide</span>
+<span class="tag tag-blue">self-hosted</span>
+<span>·</span>
+<span>April 14, 2026</span>
+<span>·</span>
+<span>15 min read</span></div><h1 class=post-single-title>RabbitMQ vs NATS vs Apache ActiveMQ: Best Self-Hosted Message Queue 2026</h1></header><div class=post-single-content><p>When your application grows beyond a single service, you need a reliable way for those services to talk to each other without being directly coupled. Message queues solve this problem by acting as an intermediary — producers send messages, consumers process them, and neither side needs to know about the other.</p><p>While managed services like AWS SQS, Google Pub/Sub, and Azure Service Bus are convenient, they come with vendor lock-in, recurring costs, and limited control over your data. Self-hosting your message queue gives you full ownership, predictable infrastructure costs, and the ability to tune every aspect of message routing, persistence, and security.</p><h2 id=why-self-host-your-message-queue>Why Self-Host Your Message Queue</h2><p>Running your own message broker is a foundational decision for any serious infrastructure. Here&rsquo;s why it matters:</p><p><strong>Data sovereignty.</strong> Messages often contain sensitive business data — user events, financial transactions, health records. When you self-host, that data never leaves your infrastructure. There&rsquo;s no third-party compliance audit to worry about, no data residency concern, and no unexpected policy change from a cloud provider.</p><p><strong>Cost predictability.</strong> Managed message queues charge per million operations. At scale, those costs compound rapidly. A self-hosted broker on a $40/month VPS can handle millions of messages daily with no per-message fees. The cost is your hardware, period.</p><p><strong>Performance control.</strong> You decide disk I/O priorities, network bandwidth allocation, and memory limits. No noisy neighbors, no throttling during peak hours, no shared-tenant performance degradation.</p><p><strong>Deep customization.</strong> Self-hosting means you can tune replication factors, adjust acknowledgment strategies, implement custom authentication backends, and integrate with your existing monitoring stack without waiting for a provider to add a feature.</p><p><strong>Resilience to outages.</strong> When a cloud provider has a regional outage, your managed message queue goes down with it. A self-hosted deployment across your own infrastructure — or even a multi-cloud setup — remains under your control.</p><h2 id=rabbitmq-the-reliable-workhorse>RabbitMQ: The Reliable Workhorse</h2><p>RabbitMQ is the most widely deployed open-source message broker. Built on Erlang/OTP, it implements the AMQP 0.9.1 protocol and has been in production use since 2007. Its longevity means you&rsquo;ll find extensive documentation, community plugins, and battle-tested deployment patterns.</p><h3 id=core-architecture>Core Architecture</h3><p>RabbitMQ uses an exchange-and-queue model. Producers publish messages to exchanges, which route them to queues based on binding rules. Consumers then pull messages from queues. This decoupling allows for flexible routing patterns:</p><ul><li><strong>Direct exchange:</strong> Exact match on routing key</li><li><strong>Fanout exchange:</strong> Broadcast to all bound queues</li><li><strong>Topic exchange:</strong> Pattern matching with wildcards (<code>orders.*.usa</code>)</li><li><strong>Headers exchange:</strong> Route based on message header attributes</li></ul><p>RabbitMQ&rsquo;s Erlang foundation gives it strong concurrency and fault tolerance. Each connection, channel, and queue runs as a lightweight Erlang process, allowing a single node to handle hundreds of thousands of concurrent connections.</p><h3 id=docker-setup>Docker Setup</h3><p>The quickest way to get RabbitMQ running locally is with Docker:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Basic single-node deployment</span>
+</span></span><span class=line><span class=cl>docker run -d --name rabbitmq <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -p 5672:5672 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -p 15672:15672 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -e <span class=nv>RABBITMQ_DEFAULT_USER</span><span class=o>=</span>admin <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -e <span class=nv>RABBITMQ_DEFAULT_PASS</span><span class=o>=</span>SecurePass123 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -v rabbitmq_data:/var/lib/rabbitmq <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  rabbitmq:4.0-management
+</span></span></code></pre></td></tr></table></div></div><p>The <code>management</code> tag includes the web UI on port 15672, which is invaluable for monitoring queue depths, connection counts, and message rates during development.</p><p>For production, you&rsquo;ll want a Docker Compose setup with persistence and clustering:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>rabbitmq</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>rabbitmq:4.0-management</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>hostname</span><span class=p>:</span><span class=w> </span><span class=l>rabbitmq-node1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>RABBITMQ_DEFAULT_USER</span><span class=p>:</span><span class=w> </span><span class=l>admin</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>RABBITMQ_DEFAULT_PASS</span><span class=p>:</span><span class=w> </span><span class=l>${RABBITMQ_PASSWORD}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>RABBITMQ_ERLANG_COOKIE</span><span class=p>:</span><span class=w> </span><span class=l>${ERLANG_COOKIE}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;5672:5672&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;15672:15672&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>rabbitmq_data:/var/lib/rabbitmq</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./definitions.json:/etc/rabbitmq/definitions.json:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>deploy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>resources</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>limits</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>memory</span><span class=p>:</span><span class=w> </span><span class=l>1G</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>cpus</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;2&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>healthcheck</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>test</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;CMD&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;rabbitmq-diagnostics&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;check_running&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>interval</span><span class=p>:</span><span class=w> </span><span class=l>30s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>timeout</span><span class=p>:</span><span class=w> </span><span class=l>10s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>retries</span><span class=p>:</span><span class=w> </span><span class=m>5</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>rabbitmq-exporter</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>kbudde/rabbitmq-exporter:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;9419:9419&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>RABBIT_URL</span><span class=p>:</span><span class=w> </span><span class=l>http://rabbitmq:15672</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>RABBIT_USER</span><span class=p>:</span><span class=w> </span><span class=l>admin</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>RABBIT_PASSWORD</span><span class=p>:</span><span class=w> </span><span class=l>${RABBITMQ_PASSWORD}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>rabbitmq_data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Production configuration file (<code>rabbitmq.conf</code>):</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=c1># Enable MQTT and STOMP plugins if needed</span>
+</span></span><span class=line><span class=cl><span class=na>plugins.expand</span> <span class=o>=</span> <span class=s>/etc/rabbitmq/enabled_plugins</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Memory thresholds</span>
+</span></span><span class=line><span class=cl><span class=na>vm_memory_high_watermark.relative</span> <span class=o>=</span> <span class=s>0.6</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Disk free limit</span>
+</span></span><span class=line><span class=cl><span class=na>disk_free_limit.absolute</span> <span class=o>=</span> <span class=s>2GB</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Connection tuning</span>
+</span></span><span class=line><span class=cl><span class=na>channel_max</span> <span class=o>=</span> <span class=s>2048</span>
+</span></span><span class=line><span class=cl><span class=na>heartbeat</span> <span class=o>=</span> <span class=s>60</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Logging</span>
+</span></span><span class=line><span class=cl><span class=na>log.file.level</span> <span class=o>=</span> <span class=s>info</span>
+</span></span><span class=line><span class=cl><span class=na>log.console</span> <span class=o>=</span> <span class=s>false</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=key-features>Key Features</h3><table><thead><tr><th>Feature</th><th>Details</th></tr></thead><tbody><tr><td>Protocol</td><td>AMQP 0.9.1, MQTT, STOMP, HTTP (via plugins)</td></tr><tr><td>Message persistence</td><td>Yes — durable queues and persistent messages</td></tr><tr><td>Clustering</td><td>Native multi-node clustering with queue mirroring</td></tr><tr><td>High availability</td><td>Quorum queues (Raft-based) or mirrored queues</td></tr><tr><td>Management UI</td><td>Built-in web UI with real-time metrics</td></tr><tr><td>Plugins</td><td>40+ official plugins for federation, sharding, OAuth2, and more</td></tr><tr><td>Language support</td><td>Client libraries for 15+ languages</td></tr><tr><td>Max throughput</td><td>~20,000–50,000 msgs/sec per node (depends on hardware)</td></tr></tbody></table><h3 id=when-to-choose-rabbitmq>When to Choose RabbitMQ</h3><p>RabbitMQ is the right choice when you need <strong>complex routing logic</strong>, <strong>guaranteed message delivery</strong>, and <strong>enterprise-grade features</strong> like dead-letter exchanges, priority queues, and message TTL. It excels in environments where message ordering matters, where you need to retry failed messages with exponential backoff, or where you&rsquo;re integrating with legacy systems that speak AMQP.</p><p>It&rsquo;s also ideal for teams that value a mature ecosystem. RabbitMQ&rsquo;s plugin architecture means you can extend it with OAuth2 authentication, Prometheus metrics, LDAP integration, and federation across data centers without modifying core code.</p><h2 id=nats-the-high-performance-contender>NATS: The High-Performance Contender</h2><p>NATS takes a fundamentally different approach. Instead of AMQP&rsquo;s exchange-and-queue model, it uses a lightweight publish-subscribe system with optional persistent streams via JetStream. The core server is written in Go and is designed for extreme performance with minimal resource usage.</p><h3 id=core-architecture-1>Core Architecture</h3><p>NATS operates on a simple subject-based model. Publishers send messages to subjects (like <code>orders.created</code> or <code>users.deleted</code>), and subscribers receive messages from subjects they&rsquo;re interested in. Wildcards are supported: <code>orders.*</code> matches <code>orders.created</code> and <code>orders.updated</code>, while <code>orders.></code> matches everything under <code>orders.</code>.</p><p>The base NATS server is &ldquo;fire-and-forget&rdquo; — it does not persist messages. However, <strong>JetStream</strong>, NATS&rsquo;s built-in persistence layer, adds durable streams, consumers, acknowledgments, and replay capabilities. JetStream is enabled by configuring storage and memory limits on the server.</p><p>NATS supports three messaging patterns natively:</p><ul><li><strong>Pub/Sub:</strong> Broadcast messages to all subscribers</li><li><strong>Request/Reply:</strong> Synchronous RPC-style communication</li><li><strong>Queue groups:</strong> Load-balance messages across competing consumers</li></ul><h3 id=docker-setup-1>Docker Setup</h3><p>NATS&rsquo;s simplicity is evident in its deployment:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Basic server with JetStream enabled</span>
+</span></span><span class=line><span class=cl>docker run -d --name nats <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -p 4222:4222 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -p 8222:8222 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -p 6222:6222 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -v nats_data:/data <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  nats:latest -js -sd /data -m <span class=m>8222</span>
+</span></span></code></pre></td></tr></table></div></div><p>The <code>-js</code> flag enables JetStream, <code>-sd</code> sets the storage directory, and <code>-m</code> enables the monitoring HTTP endpoint on port 8222.</p><p>Production Docker Compose with clustering:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>nats-1</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>nats:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      --js
+</span></span></span><span class=line><span class=cl><span class=sd>      --sd /data
+</span></span></span><span class=line><span class=cl><span class=sd>      --cluster_name NATS-CLUSTER
+</span></span></span><span class=line><span class=cl><span class=sd>      --cluster nats://0.0.0.0:6222
+</span></span></span><span class=line><span class=cl><span class=sd>      --routes nats://nats-2:6222,nats://nats-3:6222
+</span></span></span><span class=line><span class=cl><span class=sd>      --http_port 8222</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;4222:4222&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8222:8222&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>nats_data_1:/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>deploy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>resources</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>limits</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>memory</span><span class=p>:</span><span class=w> </span><span class=l>512M</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>cpus</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;1&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>nats-2</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>nats:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      --js
+</span></span></span><span class=line><span class=cl><span class=sd>      --sd /data
+</span></span></span><span class=line><span class=cl><span class=sd>      --cluster_name NATS-CLUSTER
+</span></span></span><span class=line><span class=cl><span class=sd>      --cluster nats://0.0.0.0:6222
+</span></span></span><span class=line><span class=cl><span class=sd>      --routes nats://nats-1:6222,nats://nats-3:6222
+</span></span></span><span class=line><span class=cl><span class=sd>      --http_port 8222</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>nats_data_2:/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>nats-3</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>nats:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      --js
+</span></span></span><span class=line><span class=cl><span class=sd>      --sd /data
+</span></span></span><span class=line><span class=cl><span class=sd>      --cluster_name NATS-CLUSTER
+</span></span></span><span class=line><span class=cl><span class=sd>      --cluster nats://0.0.0.0:6222
+</span></span></span><span class=line><span class=cl><span class=sd>      --routes nats://nats-1:6222,nats://nats-2:6222
+</span></span></span><span class=line><span class=cl><span class=sd>      --http_port 8222</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>nats_data_3:/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>nats_data_1</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>nats_data_2</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>nats_data_3</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>JetStream configuration file (<code>jetstream.conf</code>) for fine-tuning:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>jetstream {
+</span></span><span class=line><span class=cl>  store_dir: &#34;/data&#34;
+</span></span><span class=line><span class=cl>  max_memory: 1GB
+</span></span><span class=line><span class=cl>  max_file: 10GB
+</span></span><span class=line><span class=cl>}
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># Authentication
+</span></span><span class=line><span class=cl>accounts: {
+</span></span><span class=line><span class=cl>  APP: {
+</span></span><span class=line><span class=cl>    users: [
+</span></span><span class=line><span class=cl>      { user: &#34;app_user&#34;, password: &#34;${APP_PASSWORD}&#34; }
+</span></span><span class=line><span class=cl>    ]
+</span></span><span class=line><span class=cl>    jetstream: {
+</span></span><span class=line><span class=cl>      max_memory: 512MB
+</span></span><span class=line><span class=cl>      max_file: 5GB
+</span></span><span class=line><span class=cl>      max_streams: 10
+</span></span><span class=line><span class=cl>      max_consumers: 50
+</span></span><span class=line><span class=cl>    }
+</span></span><span class=line><span class=cl>  }
+</span></span><span class=line><span class=cl>}
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># Cluster configuration
+</span></span><span class=line><span class=cl>cluster {
+</span></span><span class=line><span class=cl>  name: &#34;NATS-CLUSTER&#34;
+</span></span><span class=line><span class=cl>  port: 6222
+</span></span><span class=line><span class=cl>  routes: [
+</span></span><span class=line><span class=cl>    &#34;nats://nats-2:6222&#34;,
+</span></span><span class=line><span class=cl>    &#34;nats://nats-3:6222&#34;
+</span></span><span class=line><span class=cl>  ]
+</span></span><span class=line><span class=cl>}
+</span></span></code></pre></td></tr></table></div></div><h3 id=key-features-1>Key Features</h3><table><thead><tr><th>Feature</th><th>Details</th></tr></thead><tbody><tr><td>Protocol</td><td>NATS (custom binary), with WebSocket support</td></tr><tr><td>Message persistence</td><td>JetStream (file-based and memory-based storage)</td></tr><tr><td>Clustering</td><td>Native Raft-based clustering, auto-scaling</td></tr><tr><td>High availability</td><td>Stream replication with configurable replica count</td></tr><tr><td>Management UI</td><td>NGS Monitor or Prometheus + Grafana dashboards</td></tr><tr><td>Plugins</td><td>Minimal — most features are built into the core</td></tr><tr><td>Language support</td><td>20+ official client libraries</td></tr><tr><td>Max throughput</td><td>~1,000,000+ msgs/sec per node (Go client benchmark)</td></tr></tbody></table><h3 id=when-to-choose-nats>When to Choose NATS</h3><p>NATS dominates when you need <strong>raw throughput</strong> and <strong>low latency</strong>. Its lightweight Go implementation processes messages in microseconds, making it ideal for real-time systems: IoT telemetry, financial trading, gaming backends, and high-frequency event processing.</p><p>The subject-based routing is simpler than RabbitMQ&rsquo;s exchange model, which is both a strength and a trade-off. You get blazing-fast routing with wildcard support, but you lose complex routing features like header-based matching or dead-letter exchanges (though JetStream consumers can approximate some of these patterns).</p><p>JetStream is the differentiator. It provides persistent streams, exactly-once delivery semantics, message deduplication, TTL, and consumer acknowledgment — all without adding significant overhead. If you need persistence with near-pubsub performance, NATS + JetStream is the sweet spot.</p><h2 id=apache-activemq-artemis-the-enterprise-choice>Apache ActiveMQ Artemis: The Enterprise Choice</h2><p>Apache ActiveMQ has two generations: the classic ActiveMQ 5.x (older, JMS-focused) and ActiveMQ Artemis (modern, high-performance). This guide focuses on Artemis, which is the current recommended version and a completely different codebase with significantly better performance and scalability.</p><h3 id=core-architecture-2>Core Architecture</h3><p>ActiveMQ Artemis implements the JMS 2.0 API and supports multiple protocols: AMQP 1.0, MQTT, STOMP, OpenWire, and HornetQ. It uses an asynchronous, non-blocking I/O architecture with a journal-based persistence layer that writes directly to disk using memory-mapped files for maximum throughput.</p><p>The core model revolves around addresses and queues. An address is a named endpoint that messages are sent to, and queues are bound to addresses. Multiple queues can bind to the same address, enabling publish-subscribe and point-to-point patterns simultaneously.</p><p>Artemis supports several high-availability strategies:</p><ul><li><strong>Replication:</strong> Synchronous or asynchronous replication to a standby node</li><li><strong>Shared store:</strong> Both primary and backup nodes share the same storage (via NFS or SAN)</li><li><strong>Scaling:</strong> Multiple live nodes with automatic redistribution of messages</li></ul><h3 id=docker-setup-2>Docker Setup</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Basic Artemis deployment</span>
+</span></span><span class=line><span class=cl>docker run -d --name activemq-artemis <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -p 61616:61616 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -p 8161:8161 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -e <span class=nv>ARTEMIS_USER</span><span class=o>=</span>admin <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -e <span class=nv>ARTEMIS_PASSWORD</span><span class=o>=</span>SecurePass123 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -v artemis_data:/var/lib/artemis-instance <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  apache/activemq-artemis:latest
+</span></span></code></pre></td></tr></table></div></div><p>The web console is available on port 8161 for monitoring and management.</p><p>Production Docker Compose with high availability:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>artemis</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>apache/activemq-artemis:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>ARTEMIS_USER</span><span class=p>:</span><span class=w> </span><span class=l>admin</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>ARTEMIS_PASSWORD</span><span class=p>:</span><span class=w> </span><span class=l>${ARTEMIS_PASSWORD}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>ARTEMIS_MIN_THREADS</span><span class=p>:</span><span class=w> </span><span class=m>10</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>ARTEMIS_MAX_THREADS</span><span class=p>:</span><span class=w> </span><span class=m>50</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>ARTEMIS_GLOBAL_MAX_SIZE</span><span class=p>:</span><span class=w> </span><span class=m>2048</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>ARTEMIS_GLOBAL_MAX_MESSAGES</span><span class=p>:</span><span class=w> </span><span class=m>5000000</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;61616:61616&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8161:8161&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;5672:5672&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>artemis_data:/var/lib/artemis-instance</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./broker.xml:/var/lib/artemis-instance/etc/broker.xml:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>deploy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>resources</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>limits</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>memory</span><span class=p>:</span><span class=w> </span><span class=l>2G</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>cpus</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;2&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>healthcheck</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>test</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;CMD&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;curl&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;-f&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;http://localhost:8161/console&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>interval</span><span class=p>:</span><span class=w> </span><span class=l>30s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>timeout</span><span class=p>:</span><span class=w> </span><span class=l>10s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>retries</span><span class=p>:</span><span class=w> </span><span class=m>3</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>artemis_data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Key <code>broker.xml</code> configuration sections:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-xml data-lang=xml><span class=line><span class=cl><span class=nt>&lt;configuration</span> <span class=na>xmlns=</span><span class=s>&#34;urn:activemq&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=na>xmlns:xsi=</span><span class=s>&#34;http://www.w3.org/2001/XMLSchema-instance&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=na>xsi:schemaLocation=</span><span class=s>&#34;urn:activemq /schema/artemis-server.xsd&#34;</span><span class=nt>&gt;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=nt>&lt;core</span> <span class=na>xmlns=</span><span class=s>&#34;urn:activemq:core&#34;</span><span class=nt>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=c>&lt;!-- Network settings --&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&lt;bindings-directory&gt;</span>/var/lib/artemis-instance/data/bindings<span class=nt>&lt;/bindings-directory&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&lt;journal-directory&gt;</span>/var/lib/artemis-instance/data/journal<span class=nt>&lt;/journal-directory&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&lt;large-messages-directory&gt;</span>/var/lib/artemis-instance/data/large-messages<span class=nt>&lt;/large-messages-directory&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&lt;paging-directory&gt;</span>/var/lib/artemis-instance/data/paging<span class=nt>&lt;/paging-directory&gt;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c>&lt;!-- Acceptors for multiple protocols --&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&lt;acceptors&gt;</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&lt;acceptor</span> <span class=na>name=</span><span class=s>&#34;artemis&#34;</span><span class=nt>&gt;</span>tcp://0.0.0.0:61616<span class=nt>&lt;/acceptor&gt;</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&lt;acceptor</span> <span class=na>name=</span><span class=s>&#34;amqp&#34;</span><span class=nt>&gt;</span>tcp://0.0.0.0:5672?protocols=AMQP<span class=nt>&lt;/acceptor&gt;</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&lt;acceptor</span> <span class=na>name=</span><span class=s>&#34;mqtt&#34;</span><span class=nt>&gt;</span>tcp://0.0.0.0:1883?protocols=MQTT<span class=nt>&lt;/acceptor&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&lt;/acceptors&gt;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c>&lt;!-- Paging and flow control --&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&lt;global-max-size&gt;</span>2048Mb<span class=nt>&lt;/global-max-size&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&lt;global-max-messages&gt;</span>5000000<span class=nt>&lt;/global-max-messages&gt;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c>&lt;!-- Address settings with dead-letter and expiry --&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&lt;address-settings&gt;</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&lt;address-setting</span> <span class=na>match=</span><span class=s>&#34;#&#34;</span><span class=nt>&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&lt;dead-letter-address&gt;</span>DLQ<span class=nt>&lt;/dead-letter-address&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&lt;expiry-address&gt;</span>ExpiryQueue<span class=nt>&lt;/expiry-address&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&lt;redelivery-delay&gt;</span>1000<span class=nt>&lt;/redelivery-delay&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&lt;max-delivery-attempts&gt;</span>5<span class=nt>&lt;/max-delivery-attempts&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&lt;max-size-bytes&gt;</span>100Mb<span class=nt>&lt;/max-size-bytes&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&lt;page-size&gt;</span>10Mb<span class=nt>&lt;/page-size&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&lt;message-counter-history-day-limit&gt;</span>7<span class=nt>&lt;/message-counter-history-day-limit&gt;</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&lt;/address-setting&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&lt;/address-settings&gt;</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&lt;/core&gt;</span>
+</span></span><span class=line><span class=cl><span class=nt>&lt;/configuration&gt;</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=key-features-2>Key Features</h3><table><thead><tr><th>Feature</th><th>Details</th></tr></thead><tbody><tr><td>Protocol</td><td>OpenWire, AMQP 1.0, MQTT, STOMP, HornetQ</td></tr><tr><td>Message persistence</td><td>Journal-based (memory-mapped file I/O)</td></tr><tr><td>Clustering</td><td>Symmetric clustering with automatic message redistribution</td></tr><tr><td>High availability</td><td>Replication or shared-store with automatic failover</td></tr><tr><td>Management UI</td><td>Web console on port 8161, JMX monitoring</td></tr><tr><td>Plugins</td><td>Broker plugins via Java SPI, Apache Camel integration</td></tr><tr><td>Language support</td><td>Java (native), plus any language with AMQP/MQTT/STOMP clients</td></tr><tr><td>Max throughput</td><td>~200,000–500,000 msgs/sec per node (depends on persistence mode)</td></tr></tbody></table><h3 id=when-to-choose-activemq-artemis>When to Choose ActiveMQ Artemis</h3><p>ActiveMQ Artemis is the right choice for <strong>Java-centric environments</strong> and <strong>enterprise integration patterns</strong>. If your team already uses the Spring ecosystem, ActiveMQ integrates seamlessly via Spring JMS templates, requiring minimal configuration to get up and running.</p><p>The multi-protocol support is a standout feature. A single Artemis broker can accept connections from AMQP 1.0 clients, MQTT IoT devices, STOMP web applications, and legacy OpenWire Java applications simultaneously. This makes it an excellent choice for organizations migrating from legacy systems — you can support old and new protocols on the same broker.</p><p>Artemis also excels at handling large messages (up to several gigabytes) through its paging mechanism, which offloads messages to disk when memory pressure increases. If your use case involves transferring large payloads — file processing, media encoding pipelines, or batch data transfers — Artemis&rsquo;s paging and large-message support gives you an edge.</p><h2 id=head-to-head-comparison>Head-to-Head Comparison</h2><table><thead><tr><th>Criteria</th><th>RabbitMQ</th><th>NATS + JetStream</th><th>ActiveMQ Artemis</th></tr></thead><tbody><tr><td><strong>Primary protocol</strong></td><td>AMQP 0.9.1</td><td>NATS (custom binary)</td><td>AMQP 1.0, OpenWire</td></tr><tr><td><strong>Language</strong></td><td>Erlang</td><td>Go</td><td>Java</td></tr><tr><td><strong>Message model</strong></td><td>Exchanges → Queues</td><td>Subjects / Streams</td><td>Addresses → Queues</td></tr><tr><td><strong>Persistence</strong></td><td>Mnesia database + disk</td><td>JetStream (file/memory)</td><td>Journal (memory-mapped)</td></tr><tr><td><strong>Peak throughput</strong></td><td>~50K msgs/sec</td><td>~1M+ msgs/sec</td><td>~500K msgs/sec</td></tr><tr><td><strong>Latency (p99)</strong></td><td>~2–5ms</td><td>~0.2–1ms</td><td>~1–3ms</td></tr><tr><td><strong>Memory footprint</strong></td><td>100–500MB</td><td>10–50MB</td><td>200–800MB</td></tr><tr><td><strong>Clustering</strong></td><td>Peer-to-peer, manual config</td><td>Raft-based, auto-discovery</td><td>Symmetric, shared store</td></tr><tr><td><strong>HA failover</strong></td><td>Quorum queues (Raft)</td><td>Stream replicas (Raft)</td><td>Replication / shared store</td></tr><tr><td><strong>Management UI</strong></td><td>Built-in web UI</td><td>External (Prometheus/Grafana)</td><td>Built-in web console</td></tr><tr><td><strong>Protocol support</strong></td><td>AMQP, MQTT, STOMP, HTTP</td><td>NATS, WebSocket</td><td>AMQP, MQTT, STOMP, OpenWire</td></tr><tr><td><strong>Dead-letter queues</strong></td><td>Native (DLX)</td><td>Via consumer config</td><td>Native (DLQ address)</td></tr><tr><td><strong>Message ordering</strong></td><td>Per-queue guarantee</td><td>Per-consumer guarantee</td><td>Per-queue guarantee</td></tr><tr><td><strong>Schema validation</strong></td><td>Via plugins</td><td>Via JetStream schema</td><td>Via broker plugins</td></tr><tr><td><strong>Docker image size</strong></td><td>~200MB</td><td>~20MB</td><td>~300MB</td></tr><tr><td><strong>Learning curve</strong></td><td>Moderate</td><td>Low (simple)</td><td>Moderate-high (JMS concepts)</td></tr><tr><td><strong>Community activity</strong></td><td>Very active</td><td>Very active</td><td>Moderate</td></tr><tr><td><strong>Best for</strong></td><td>Complex routing, enterprise</td><td>High throughput, real-time</td><td>Java ecosystems, large messages</td></tr></tbody></table><h2 id=deployment-decision-matrix>Deployment Decision Matrix</h2><p>Choose <strong>RabbitMQ</strong> when:</p><ul><li>You need complex routing (header-based, topic patterns, fanout)</li><li>Your team is familiar with AMQP or has existing AMQP integrations</li><li>You need dead-letter exchanges with retry logic and exponential backoff</li><li>You want a built-in management UI without additional setup</li><li>You&rsquo;re building microservices with varied message routing requirements</li></ul><p>Choose <strong>NATS + JetStream</strong> when:</p><ul><li>Raw throughput and sub-millisecond latency are critical</li><li>You&rsquo;re building real-time systems (IoT, trading, gaming, telemetry)</li><li>You want the simplest possible deployment with minimal resource usage</li><li>You need a lightweight pub/sub system with optional persistence</li><li>Your team values operational simplicity and auto-scaling clusters</li></ul><p>Choose <strong>ActiveMQ Artemis</strong> when:</p><ul><li>Your stack is Java/Spring-heavy and you want native JMS integration</li><li>You need multi-protocol support on a single broker</li><li>You&rsquo;re migrating from legacy ActiveMQ 5.x and need a modern upgrade path</li><li>You handle large messages that require paging to disk</li><li>Your organization requires JMS 2.0 compliance</li></ul><h2 id=production-best-practices>Production Best Practices</h2><p>Regardless of which broker you choose, follow these guidelines for production deployments:</p><h3 id=1-always-enable-persistence>1. Always Enable Persistence</h3><p>Fire-and-forget messaging is fine for development, but production systems need durable storage. Enable disk-based persistence and test recovery scenarios:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># RabbitMQ: Verify quorum queues are working</span>
+</span></span><span class=line><span class=cl>rabbitmq-diagnostics check_if_node_is_quorum_critical
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># NATS: Check JetStream stream health</span>
+</span></span><span class=line><span class=cl>nats stream info ORDERS
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Artemis: Check journal health via JMX</span>
+</span></span><span class=line><span class=cl><span class=c1># Navigate to http://localhost:8161/console → System → Journal</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=2-monitor-queue-depths-and-consumer-lag>2. Monitor Queue Depths and Consumer Lag</h3><p>Set up alerts when message backlogs grow beyond acceptable thresholds. A growing queue means your consumers can&rsquo;t keep up — either scale horizontally or investigate bottlenecks.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># Prometheus alert rule (works with RabbitMQ exporter or NATS exporter)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>groups</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>message-queue-alerts</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>rules</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>alert</span><span class=p>:</span><span class=w> </span><span class=l>HighQueueDepth</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>expr</span><span class=p>:</span><span class=w> </span><span class=l>rabbitmq_queue_messages{queue=&#34;orders&#34;} &gt; 10000</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>for</span><span class=p>:</span><span class=w> </span><span class=l>5m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>labels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>severity</span><span class=p>:</span><span class=w> </span><span class=l>warning</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>annotations</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>summary</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;Queue depth exceeds 10,000 messages&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>alert</span><span class=p>:</span><span class=w> </span><span class=l>ConsumerLag</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>expr</span><span class=p>:</span><span class=w> </span><span class=l>nats_jetstream_consumer_pending{stream=&#34;ORDERS&#34;} &gt; 50000</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>for</span><span class=p>:</span><span class=w> </span><span class=l>10m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>labels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>severity</span><span class=p>:</span><span class=w> </span><span class=l>critical</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>annotations</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>summary</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;NATS consumer lag exceeds 50,000 messages&#34;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=3-implement-circuit-breakers-on-consumers>3. Implement Circuit Breakers on Consumers</h3><p>When downstream services fail, messages can pile up and exhaust broker memory. Implement consumer-side circuit breakers that temporarily stop consuming from a queue when error rates spike:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=c1># Python example with a simple circuit breaker pattern</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>time</span>
+</span></span><span class=line><span class=cl><span class=kn>from</span> <span class=nn>collections</span> <span class=kn>import</span> <span class=n>deque</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>class</span> <span class=nc>CircuitBreaker</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>    <span class=k>def</span> <span class=fm>__init__</span><span class=p>(</span><span class=bp>self</span><span class=p>,</span> <span class=n>failure_threshold</span><span class=o>=</span><span class=mi>5</span><span class=p>,</span> <span class=n>recovery_timeout</span><span class=o>=</span><span class=mi>30</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>        <span class=bp>self</span><span class=o>.</span><span class=n>failures</span> <span class=o>=</span> <span class=n>deque</span><span class=p>(</span><span class=n>maxlen</span><span class=o>=</span><span class=mi>10</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=bp>self</span><span class=o>.</span><span class=n>threshold</span> <span class=o>=</span> <span class=n>failure_threshold</span>
+</span></span><span class=line><span class=cl>        <span class=bp>self</span><span class=o>.</span><span class=n>recovery_timeout</span> <span class=o>=</span> <span class=n>recovery_timeout</span>
+</span></span><span class=line><span class=cl>        <span class=bp>self</span><span class=o>.</span><span class=n>opened_at</span> <span class=o>=</span> <span class=kc>None</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>def</span> <span class=nf>record_failure</span><span class=p>(</span><span class=bp>self</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>        <span class=bp>self</span><span class=o>.</span><span class=n>failures</span><span class=o>.</span><span class=n>append</span><span class=p>(</span><span class=n>time</span><span class=o>.</span><span class=n>time</span><span class=p>())</span>
+</span></span><span class=line><span class=cl>        <span class=k>if</span> <span class=nb>len</span><span class=p>(</span><span class=bp>self</span><span class=o>.</span><span class=n>failures</span><span class=p>)</span> <span class=o>&gt;=</span> <span class=bp>self</span><span class=o>.</span><span class=n>threshold</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>            <span class=bp>self</span><span class=o>.</span><span class=n>opened_at</span> <span class=o>=</span> <span class=n>time</span><span class=o>.</span><span class=n>time</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>def</span> <span class=nf>is_open</span><span class=p>(</span><span class=bp>self</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>        <span class=k>if</span> <span class=bp>self</span><span class=o>.</span><span class=n>opened_at</span> <span class=ow>is</span> <span class=kc>None</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>            <span class=k>return</span> <span class=kc>False</span>
+</span></span><span class=line><span class=cl>        <span class=k>if</span> <span class=n>time</span><span class=o>.</span><span class=n>time</span><span class=p>()</span> <span class=o>-</span> <span class=bp>self</span><span class=o>.</span><span class=n>opened_at</span> <span class=o>&gt;</span> <span class=bp>self</span><span class=o>.</span><span class=n>recovery_timeout</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>            <span class=bp>self</span><span class=o>.</span><span class=n>opened_at</span> <span class=o>=</span> <span class=kc>None</span>
+</span></span><span class=line><span class=cl>            <span class=bp>self</span><span class=o>.</span><span class=n>failures</span><span class=o>.</span><span class=n>clear</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>            <span class=k>return</span> <span class=kc>False</span>
+</span></span><span class=line><span class=cl>        <span class=k>return</span> <span class=kc>True</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>def</span> <span class=nf>should_process</span><span class=p>(</span><span class=bp>self</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>        <span class=k>return</span> <span class=ow>not</span> <span class=bp>self</span><span class=o>.</span><span class=n>is_open</span><span class=p>()</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=4-use-tls-for-all-connections>4. Use TLS for All Connections</h3><p>Never transmit messages over plain text in production. All three brokers support TLS encryption for client connections:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># RabbitMQ TLS setup in rabbitmq.conf</span>
+</span></span><span class=line><span class=cl>listeners.ssl.default <span class=o>=</span> <span class=m>5671</span>
+</span></span><span class=line><span class=cl>ssl_options.cacertfile <span class=o>=</span> /etc/rabbitmq/ca_certificate.pem
+</span></span><span class=line><span class=cl>ssl_options.certfile <span class=o>=</span> /etc/rabbitmq/server_certificate.pem
+</span></span><span class=line><span class=cl>ssl_options.keyfile <span class=o>=</span> /etc/rabbitmq/server_key.pem
+</span></span><span class=line><span class=cl>ssl_options.verify <span class=o>=</span> verify_peer
+</span></span><span class=line><span class=cl>ssl_options.fail_if_no_peer_cert <span class=o>=</span> <span class=nb>true</span>
+</span></span></code></pre></td></tr></table></div></div><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># NATS TLS setup in nats.conf</span>
+</span></span><span class=line><span class=cl>tls <span class=o>{</span>
+</span></span><span class=line><span class=cl>    cert_file: <span class=s2>&#34;/etc/nats/server-cert.pem&#34;</span>
+</span></span><span class=line><span class=cl>    key_file: <span class=s2>&#34;/etc/nats/server-key.pem&#34;</span>
+</span></span><span class=line><span class=cl>    ca_file: <span class=s2>&#34;/etc/nats/ca.pem&#34;</span>
+</span></span><span class=line><span class=cl>    verify: <span class=nb>true</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=5-plan-for-horizontal-scaling-early>5. Plan for Horizontal Scaling Early</h3><p>Design your consumers to be stateless and horizontally scalable from day one. Use queue groups (NATS), competing consumers (RabbitMQ), or shared queues (Artemis) so multiple consumer instances can process messages in parallel.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=c1># NATS queue group — messages load-balanced across workers</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>nats</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>async</span> <span class=k>def</span> <span class=nf>run</span><span class=p>():</span>
+</span></span><span class=line><span class=cl>    <span class=n>nc</span> <span class=o>=</span> <span class=k>await</span> <span class=n>nats</span><span class=o>.</span><span class=n>connect</span><span class=p>(</span><span class=s2>&#34;nats://localhost:4222&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    <span class=c1># All workers in the &#34;processors&#34; group share the load</span>
+</span></span><span class=line><span class=cl>    <span class=k>await</span> <span class=n>nc</span><span class=o>.</span><span class=n>subscribe</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;orders.*&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=n>queue</span><span class=o>=</span><span class=s2>&#34;processors&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=n>cb</span><span class=o>=</span><span class=n>process_order</span>
+</span></span><span class=line><span class=cl>    <span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># RabbitMQ competing consumers — multiple consumers on same queue</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>pika</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>connection</span> <span class=o>=</span> <span class=n>pika</span><span class=o>.</span><span class=n>BlockingConnection</span><span class=p>(</span><span class=n>pika</span><span class=o>.</span><span class=n>ConnectionParameters</span><span class=p>(</span><span class=s1>&#39;localhost&#39;</span><span class=p>))</span>
+</span></span><span class=line><span class=cl><span class=n>channel</span> <span class=o>=</span> <span class=n>connection</span><span class=o>.</span><span class=n>channel</span><span class=p>()</span>
+</span></span><span class=line><span class=cl><span class=n>channel</span><span class=o>.</span><span class=n>queue_declare</span><span class=p>(</span><span class=n>queue</span><span class=o>=</span><span class=s1>&#39;orders&#39;</span><span class=p>,</span> <span class=n>durable</span><span class=o>=</span><span class=kc>True</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>callback</span><span class=p>(</span><span class=n>ch</span><span class=p>,</span> <span class=n>method</span><span class=p>,</span> <span class=n>properties</span><span class=p>,</span> <span class=n>body</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>    <span class=n>process_order</span><span class=p>(</span><span class=n>body</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>ch</span><span class=o>.</span><span class=n>basic_ack</span><span class=p>(</span><span class=n>delivery_tag</span><span class=o>=</span><span class=n>method</span><span class=o>.</span><span class=n>delivery_tag</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>channel</span><span class=o>.</span><span class=n>basic_qos</span><span class=p>(</span><span class=n>prefetch_count</span><span class=o>=</span><span class=mi>1</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=n>channel</span><span class=o>.</span><span class=n>basic_consume</span><span class=p>(</span><span class=n>queue</span><span class=o>=</span><span class=s1>&#39;orders&#39;</span><span class=p>,</span> <span class=n>on_message_callback</span><span class=o>=</span><span class=n>callback</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=n>channel</span><span class=o>.</span><span class=n>start_consuming</span><span class=p>()</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=final-verdict>Final Verdict</h2><p>There is no single &ldquo;best&rdquo; message queue — the right choice depends on your workload characteristics and team expertise. RabbitMQ remains the safest general-purpose choice with its mature ecosystem and flexible routing. NATS wins on pure performance and simplicity, making it ideal for real-time and high-throughput scenarios. ActiveMQ Artemis fills the enterprise niche with JMS compliance, multi-protocol support, and seamless Java integration.</p><p>For most self-hosted deployments starting fresh in 2026, the practical recommendation is: start with <strong>RabbitMQ</strong> if you need reliable message delivery with complex routing, or <strong>NATS + JetStream</strong> if you prioritize throughput and simplicity. Both have excellent Docker images, active communities, and straightforward paths to production-grade clustering.</p></div><div id=frame style=width:100%;margin:auto;position:relative;z-index:99998><iframe data-aa=2433958 src='//acceptable.a-ads.com/2433958/?size=Adaptive' style=border:0;padding:0;width:70%;height:auto;overflow:hidden;display:block;margin:auto></iframe></div></article></main><footer class=site-footer><p>Built with <a href=https://gohugo.io>Hugo</a> · <a href=/openswap-guide/index.xml>RSS</a> · <a href=https://github.com/hopkdj>GitHub</a></p><p style=margin-top:8px>&copy; 2026 OpenSwap Guide. All rights reserved.</p></footer></body></html>
