@@ -1,0 +1,652 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Complete Guide to Self-Hosted Certificate Management and PKI 2026 | OpenSwap Guide</title>
+<meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, and local AI deployment."><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/openswap-guide/css/main.min.777dc111b5207bf5336e5799477da0b31fb9080306bf98a82d6eceb979cf9737.css><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://hopkdj.github.io/openswap-guide/ class=logo><div class=logo-icon>H</div>OpenSwap Guide</a><nav><ul class=nav-links><li><a href=/openswap-guide/>Home</a></li><li><a href=/openswap-guide/tags/comparison/>Comparisons</a></li><li><a href=/openswap-guide/tags/guide/>Guides</a></li><li><a href=/openswap-guide/tags/ai/>Local AI</a></li><li><a href=/openswap-guide/index.xml class=nav-rss>Subscribe RSS</a></li></ul></nav></div></header><main><article class=post-single><a href=https://hopkdj.github.io/openswap-guide/ class=back-link>&larr; Back to posts</a><header class=post-single-header><div class=post-single-meta><span class="tag tag-purple">comparison</span>
+<span class="tag tag-green">guide</span>
+<span class="tag tag-blue">self-hosted</span>
+<span>·</span>
+<span>April 14, 2026</span>
+<span>·</span>
+<span>13 min read</span></div><h1 class=post-single-title>Complete Guide to Self-Hosted Certificate Management and PKI 2026</h1></header><div class=post-single-content><p>Every self-hosted infrastructure eventually runs into the same problem: TLS certificates. You set up a home lab, deploy a dozen services behind a reverse proxy, and suddenly you are wrestling with expired certs, self-signed warnings, and Let&rsquo;s Encrypt rate limits. If you manage internal services that are not publicly accessible — databases, monitoring dashboards, container registries — public CAs cannot help you at all.</p><p>This is where a self-hosted Public Key Infrastructure (PKI) becomes essential. Running your own certificate authority gives you complete control over certificate issuance, lifecycles, trust chains, and revocation — without depending on external services.</p><h2 id=why-self-host-your-certificate-authority>Why Self-Host Your Certificate Authority</h2><p>The case for running your own CA grows stronger every year:</p><ul><li><strong>Internal services need TLS too.</strong> Every service in your homelab or corporate network benefits from encrypted connections. A self-hosted CA issues certificates for services that have no public domain name.</li><li><strong>No rate limits.</strong> Let&rsquo;s Encrypt enforces strict issuance limits per domain per week. With your own CA, you can issue unlimited certificates.</li><li><strong>Short-lived certificates by default.</strong> Modern security best practices favor certificates that expire in hours or days rather than years. Your own CA can automate this without cost.</li><li><strong>Zero external dependencies.</strong> No OCSP responders calling home, no Certificate Transparency logs exposing your internal hostnames, no reliance on a third-party service staying online.</li><li><strong>Unified trust.</strong> Install one root certificate on all your devices and every internal service is trusted automatically. No more clicking &ldquo;Proceed Anyway&rdquo; in your browser.</li><li><strong>Compliance and audit.</strong> Many security frameworks (SOC 2, ISO 27001) require documented certificate management processes. A self-hosted CA gives you full audit trails.</li><li><strong>Cost savings at scale.</strong> If you manage dozens or hundreds of services, wildcard certificates from commercial CAs get expensive quickly.</li></ul><p>In 2026, three solutions stand out for self-hosted certificate management: <strong>Step CA</strong>, <strong>Caddy</strong>, and <strong>Nginx Proxy Manager</strong> with ACME integration. Each takes a fundamentally different approach.</p><h2 id=option-1-step-ca--the-dedicated-certificate-authority>Option 1: Step CA — The Dedicated Certificate Authority</h2><p><a href=https://smallstep.com/certificates>Step CA</a> by Smallstep is the most powerful and purpose-built self-hosted certificate authority available. Written in Go, it implements the full ACME protocol, supports SCEP for legacy device enrollment, and provides a CLI tool (<code>step</code>) that makes certificate management trivial.</p><h3 id=architecture>Architecture</h3><p>Step CA runs as a lightweight daemon that listens on a configurable port. It manages its own root CA key pair, intermediate CA, certificate database, and revocation list. Clients communicate with it over HTTPS using the ACME protocol or the native Step CA protocol.</p><p>Key features:</p><ul><li>Full ACME v2 support (HTTP-01, TLS-ALPN-01, DNS-01 challenges)</li><li>SCEP support for enrolling routers, switches, and IoT devices</li><li>Automatic certificate renewal via <code>step-ca</code> agent</li><li>X.509 and SSH certificate issuance from the same CA</li><li>Provisioners for OIDC, JWK, AWS IAM, Azure, GCP, and X.509 bootstrap</li><li>Certificate revocation with CRL and OCSP</li><li>Webhook-based authorization for custom policy enforcement</li><li>Runs on a Raspberry Pi with minimal resources</li></ul><h3 id=installation-and-setup>Installation and Setup</h3><p>The fastest way to deploy Step CA is with Docker:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose.yml for Step CA</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>step-ca</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>smallstep/step-ca:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>step-ca</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;9000:9000&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./step:/home/step</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./data:/home/step/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DOCKER_STEPCA_INIT_NAME=Homelab Root CA</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DOCKER_STEPCA_INIT_DNS_NAMES=ca.homelab.local,localhost</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DOCKER_STEPCA_INIT_ADDRESS=:9000</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DOCKER_STEPCA_INIT_PASSWORD_FILE=/home/step/password.txt</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>entrypoint</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      sh -c &#39;
+</span></span></span><span class=line><span class=cl><span class=sd>      echo &#34;my-secure-root-password&#34; &gt; /home/step/password.txt &amp;&amp;
+</span></span></span><span class=line><span class=cl><span class=sd>      chmod 600 /home/step/password.txt &amp;&amp;
+</span></span></span><span class=line><span class=cl><span class=sd>      /entrypoint.sh&#39;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Initialize the CA:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker compose up -d
+</span></span><span class=line><span class=cl>docker compose logs step-ca <span class=p>|</span> grep <span class=s2>&#34;fingerprint&#34;</span>
+</span></span><span class=line><span class=cl><span class=c1># Note the root CA fingerprint — you will need it to bootstrap clients</span>
+</span></span></code></pre></td></tr></table></div></div><p>Bootstrap a client machine to trust your CA:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install the step CLI</span>
+</span></span><span class=line><span class=cl>brew install smallstep/tap/step
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Bootstrap — downloads the root CA and configures trust</span>
+</span></span><span class=line><span class=cl>step ca bootstrap --ca-url https://ca.homelab.local:9000 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --fingerprint <span class=s2>&#34;a1b2c3d4e5f6...&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># The root certificate is now installed in your system trust store</span>
+</span></span></code></pre></td></tr></table></div></div><p>Issue your first certificate:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Create a one-time token for the provisioner</span>
+</span></span><span class=line><span class=cl><span class=nv>TOKEN</span><span class=o>=</span><span class=k>$(</span>step ca token app.homelab.local --provisioner admin@homelab.local<span class=k>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Request a certificate</span>
+</span></span><span class=line><span class=cl>step ca certificate app.homelab.local app.crt app.key --token <span class=nv>$TOKEN</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Verify the certificate</span>
+</span></span><span class=line><span class=cl>step certificate inspect app.crt
+</span></span></code></pre></td></tr></table></div></div><h3 id=acme-integration>ACME Integration</h3><p>Step CA fully supports ACME, which means any ACME-compatible client can use it as a drop-in replacement for Let&rsquo;s Encrypt:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Using certbot with Step CA as the ACME directory</span>
+</span></span><span class=line><span class=cl>certbot certonly <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --server https://ca.homelab.local:9000/acme/acme/directory <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -d app.homelab.local <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --standalone
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Or using Caddy&#39;s internal ACME client</span>
+</span></span><span class=line><span class=cl>caddy reverse-proxy --from app.homelab.local:443 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --to localhost:8080 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --acme-ca https://ca.homelab.local:9000/acme/acme/directory
+</span></span></code></pre></td></tr></table></div></div><h3 id=ssh-certificates>SSH Certificates</h3><p>One of Step CA&rsquo;s standout features is unified X.509 and SSH certificate management:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Issue an SSH user certificate</span>
+</span></span><span class=line><span class=cl>step ssh certificate alice@homelab alice-ssh.pub <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --principal alice --principal alice@homelab.local
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Issue an SSH host certificate</span>
+</span></span><span class=line><span class=cl>step ssh certificate app.homelab.local ssh_host_ed25519_key.pub <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --host --principal app.homelab.local
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Configure SSH server to trust Step CA host certificates</span>
+</span></span><span class=line><span class=cl><span class=c1># Add to /etc/ssh/sshd_config:</span>
+</span></span><span class=line><span class=cl><span class=c1># TrustedUserCAKeys /etc/ssh/step_ca.pub</span>
+</span></span></code></pre></td></tr></table></div></div><p>With SSH certificates, you eliminate SSH key distribution entirely. The CA signs user keys on demand, and any server that trusts the CA automatically accepts them.</p><h2 id=option-2-caddy--the-self-healing-web-server>Option 2: Caddy — The Self-Healing Web Server</h2><p><a href=https://caddyserver.com/>Caddy</a> is a web server and reverse proxy with built-in automatic TLS certificate management. While not a full CA in the traditional sense, Caddy&rsquo;s certificate automation capabilities make it an excellent choice for self-hosted environments that primarily need public-facing TLS.</p><h3 id=architecture-1>Architecture</h3><p>Caddy integrates directly with Let&rsquo;s Encrypt and ZeroSSL for public certificates, and can also use Step CA or other ACME servers for internal certificates. Its standout feature is fully automatic certificate issuance and renewal — you never need to think about certificates again.</p><p>Key features:</p><ul><li>Automatic HTTPS with zero configuration</li><li>Built-in ACME client for Let&rsquo;s Encrypt, ZeroSSL, and custom CAs</li><li>On-demand TLS — issues certificates at connection time for unknown domains</li><li>OCSP stapling enabled by default</li><li>DNS challenge support for 50+ providers (Cloudflare, Route 53, GoDaddy, etc.)</li><li>Graceful certificate reloading with zero downtime</li><li>JSON API for dynamic configuration</li><li>Written in Go, single binary deployment</li></ul><h3 id=installation-and-setup-1>Installation and Setup</h3><p>Install Caddy and configure it to issue certificates automatically:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install Caddy</span>
+</span></span><span class=line><span class=cl>sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https
+</span></span><span class=line><span class=cl>curl -1sLf <span class=s1>&#39;https://dl.cloudsmith.io/public/caddy/stable/gpg.key&#39;</span> <span class=p>|</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+</span></span><span class=line><span class=cl>curl -1sLf <span class=s1>&#39;https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt&#39;</span> <span class=p>|</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  sudo tee /etc/apt/sources.list.d/caddy-stable.list
+</span></span><span class=line><span class=cl>sudo apt update <span class=o>&amp;&amp;</span> sudo apt install caddy
+</span></span></code></pre></td></tr></table></div></div><p>Configure with a Caddyfile:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-Caddyfile data-lang=Caddyfile><span class=line><span class=cl><span class=c1># /etc/caddy/Caddyfile
+</span></span></span><span class=line><span class=cl><span class=c1>
+</span></span></span><span class=line><span class=cl><span class=c1># Public services — automatic Let&#39;s Encrypt certificates
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=gh>app.example.com</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>reverse_proxy</span> <span class=n>localhost</span><span class=p>:</span><span class=mi>8080</span><span class=c1>
+</span></span></span><span class=line><span class=cl><span class=c1>
+</span></span></span><span class=line><span class=cl><span class=c1>    # Optional: use DNS challenge for wildcard certs
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=k>tls</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=k>dns</span> <span class=s>cloudflare</span> <span class=se>{env.CLOUDFLARE_API_TOKEN}</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span><span class=c1>
+</span></span></span><span class=line><span class=cl><span class=c1>
+</span></span></span><span class=line><span class=cl><span class=c1># Internal services — use Step CA as the ACME server
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=gh>internal.homelab.local</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>reverse_proxy</span> <span class=n>localhost</span><span class=p>:</span><span class=mi>3000</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>tls</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=k>ca</span> <span class=n>https://ca.homelab.local</span><span class=p>:</span><span class=mi>9000</span><span class=n>/acme/acme/directory</span>
+</span></span><span class=line><span class=cl>        <span class=k>ca_root</span> <span class=s>/etc/ssl/certs/step-ca-root.crt</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span><span class=c1>
+</span></span></span><span class=line><span class=cl><span class=c1>
+</span></span></span><span class=line><span class=cl><span class=c1># On-demand TLS — certificates issued on first connection
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=gh>*.dynamic.homelab.local</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>reverse_proxy</span> <span class=se>{http.reverse_proxy.upstream.hostport}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>tls</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=k>on_demand</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=on-demand-tls>On-Demand TLS</h3><p>Caddy&rsquo;s on-demand TLS feature is unique — it issues certificates the first time a client connects to a new domain:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-Caddyfile data-lang=Caddyfile><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>on_demand_tls</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=k>ask</span> <span class=n>https://ca.homelab.local</span><span class=p>:</span><span class=mi>9000</span><span class=n>/check</span>
+</span></span><span class=line><span class=cl>        <span class=k>interval</span> <span class=mi>2m</span>
+</span></span><span class=line><span class=cl>        <span class=k>burst</span> <span class=mi>5</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=gh>*.services.homelab.local</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>reverse_proxy</span> <span class=se>{upstreams}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>tls</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=k>on_demand</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>This is incredibly useful for multi-tenant environments where new subdomains are created dynamically. Caddy checks with your backend whether the domain is authorized, then issues and caches the certificate automatically.</p><h3 id=docker-deployment>Docker Deployment</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>caddy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>caddy:2-alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>caddy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;80:80&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;443:443&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;443:443/udp&#34;</span><span class=w>  </span><span class=c># For HTTP/3</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./Caddyfile:/etc/caddy/Caddyfile:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>caddy_data:/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>caddy_config:/config</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>caddy_data</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>caddy_config</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=option-3-nginx-proxy-manager--the-gui-approach>Option 3: Nginx Proxy Manager — The GUI Approach</h2><p><a href=https://nginxproxymanager.com/>Nginx Proxy Manager</a> provides a web-based interface for managing Nginx reverse proxies with integrated Let&rsquo;s Encrypt certificate management. It is the most beginner-friendly option and perfect for homelab users who prefer a graphical interface over configuration files.</p><h3 id=architecture-2>Architecture</h3><p>NPM wraps Nginx with a Vue.js web UI and a SQLite/MySQL/PostgreSQL database for configuration storage. Certificate requests are handled through a built-in ACME client that talks to Let&rsquo;s Encrypt.</p><p>Key features:</p><ul><li>Web-based management interface</li><li>One-click Let&rsquo;s Encrypt certificate issuance</li><li>Automatic certificate renewal</li><li>DNS challenge support for popular providers</li><li>Access lists with basic authentication</li><li>Stream (TCP/UDP) proxy support</li><li>Custom Nginx configuration overrides</li><li>SSL certificate import for custom CA certs</li></ul><h3 id=installation-and-setup-2>Installation and Setup</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>app</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>jc21/nginx-proxy-manager:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>npm</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;80:80&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;81:81&#34;</span><span class=w>    </span><span class=c># Web UI</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;443:443&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./data:/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./letsencrypt:/etc/letsencrypt</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DB_SQLITE_FILE=/data/database.sqlite</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># Optional: Cloudflare DNS challenge support</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># NPM supports DNS providers via certbot DNS plugins</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Access the web UI at <code>http://your-server:81</code> (default credentials: <a href=mailto:admin@example.com>admin@example.com</a> / changeme).</p><h3 id=issuing-certificates-via-the-ui>Issuing Certificates via the UI</h3><ol><li>Navigate to <strong>SSL Certificates</strong> in the sidebar</li><li>Click <strong>Add SSL Certificate</strong></li><li>Choose <strong>Let&rsquo;s Encrypt</strong></li><li>Enter your domain name(s)</li><li>Select DNS challenge if the domain is not publicly accessible</li><li>Click <strong>Save</strong> — NPM handles the ACME challenge and stores the certificate</li></ol><h3 id=using-custom-ca-certificates>Using Custom CA Certificates</h3><p>For internal services, you can upload certificates issued by your own CA:</p><ol><li>Go to <strong>SSL Certificates</strong> → <strong>Add SSL Certificate</strong> → <strong>Custom</strong></li><li>Upload the certificate key, certificate, and intermediate chain</li><li>Assign the certificate to any proxy host</li></ol><p>This works well in combination with Step CA: use Step CA to issue internal certificates, then upload them to NPM for use with your reverse proxy rules.</p><h2 id=comparison-step-ca-vs-caddy-vs-nginx-proxy-manager>Comparison: Step CA vs Caddy vs Nginx Proxy Manager</h2><table><thead><tr><th>Feature</th><th>Step CA</th><th>Caddy</th><th>Nginx Proxy Manager</th></tr></thead><tbody><tr><td><strong>Type</strong></td><td>Dedicated CA</td><td>Web server + ACME client</td><td>GUI proxy manager</td></tr><tr><td><strong>Root CA</strong></td><td>Self-hosted root</td><td>Uses Let&rsquo;s Encrypt / ZeroSSL</td><td>Uses Let&rsquo;s Encrypt</td></tr><tr><td><strong>ACME Server</strong></td><td>Yes (full ACME v2)</td><td>ACME client only</td><td>ACME client only</td></tr><tr><td><strong>ACME Client</strong></td><td>Built-in <code>step</code> CLI</td><td>Built-in</td><td>Built-in (certbot)</td></tr><tr><td><strong>Internal Certs</strong></td><td>Native — primary use case</td><td>Via custom ACME CA</td><td>Manual import only</td></tr><tr><td><strong>Auto Renewal</strong></td><td>Via <code>step-ca</code> agent</td><td>Built-in (default 30 days)</td><td>Built-in (daily check)</td></tr><tr><td><strong>SSH Certificates</strong></td><td>Yes</td><td>No</td><td>No</td></tr><tr><td><strong>SCEP Support</strong></td><td>Yes</td><td>No</td><td>No</td></tr><tr><td><strong>DNS Challenges</strong></td><td>ACME DNS-01</td><td>50+ providers</td><td>Limited set</td></tr><tr><td><strong>On-Demand TLS</strong></td><td>No</td><td>Yes</td><td>No</td></tr><tr><td><strong>Web UI</strong></td><td>No (CLI only)</td><td>No (JSON API)</td><td>Yes (Vue.js)</td></tr><tr><td><strong>Beginner Friendly</strong></td><td>Moderate</td><td>Moderate</td><td>Excellent</td></tr><tr><td><strong>Resource Usage</strong></td><td>~50 MB RAM</td><td>~30 MB RAM</td><td>~100 MB RAM</td></tr><tr><td><strong>Written In</strong></td><td>Go</td><td>Go</td><td>Node.js + Nginx</td></tr><tr><td><strong>Best For</strong></td><td>Enterprise PKI, SSH</td><td>Public-facing services</td><td>Homelabs, beginners</td></tr></tbody></table><h2 id=recommended-architecture-combining-all-three>Recommended Architecture: Combining All Three</h2><p>The most robust self-hosted PKI setup combines these tools:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>                    ┌─────────────────┐
+</span></span><span class=line><span class=cl>                    │   Step CA       │
+</span></span><span class=line><span class=cl>                    │   (Internal CA) │
+</span></span><span class=line><span class=cl>                    │   :9000         │
+</span></span><span class=line><span class=cl>                    └────┬────────┬───┘
+</span></span><span class=line><span class=cl>                         │        │
+</span></span><span class=line><span class=cl>              ACME       │        │  Native step CLI
+</span></span><span class=line><span class=cl>           ┌─────────────┘        └──────────────┐
+</span></span><span class=line><span class=cl>           ▼                                     ▼
+</span></span><span class=line><span class=cl>    ┌──────────────┐                    ┌────────────────┐
+</span></span><span class=line><span class=cl>    │    Caddy     │                    │  Internal Apps │
+</span></span><span class=line><span class=cl>    │ (Public TLS) │                    │  (step client) │
+</span></span><span class=line><span class=cl>    │   :443       │                    │  with short-   │
+</span></span><span class=line><span class=cl>    └──────────────┘                    │  lived certs   │
+</span></span><span class=line><span class=cl>                                        └────────────────┘
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    External ───▶ Caddy ───▶ Backend services
+</span></span><span class=line><span class=cl>                  (Let&#39;s Encrypt for public domains,
+</span></span><span class=line><span class=cl>                   Step CA for internal domains)
+</span></span></code></pre></td></tr></table></div></div><h3 id=full-deployment-example>Full Deployment Example</h3><p>Here is a complete Docker Compose setup that ties everything together:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span><span class=lnt>62
+</span><span class=lnt>63
+</span><span class=lnt>64
+</span><span class=lnt>65
+</span><span class=lnt>66
+</span><span class=lnt>67
+</span><span class=lnt>68
+</span><span class=lnt>69
+</span><span class=lnt>70
+</span><span class=lnt>71
+</span><span class=lnt>72
+</span><span class=lnt>73
+</span><span class=lnt>74
+</span><span class=lnt>75
+</span><span class=lnt>76
+</span><span class=lnt>77
+</span><span class=lnt>78
+</span><span class=lnt>79
+</span><span class=lnt>80
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>proxy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>external</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>internal</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>bridge</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># ── Internal Certificate Authority ──</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>step-ca</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>smallstep/step-ca:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>step-ca</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>internal</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;9000:9000&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>step_data:/home/step</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DOCKER_STEPCA_INIT_NAME=Homelab Root CA</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DOCKER_STEPCA_INIT_DNS_NAMES=ca.internal,localhost</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DOCKER_STEPCA_INIT_ADDRESS=:9000</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># ── Edge Reverse Proxy with Automatic TLS ──</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>caddy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>caddy:2-alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>caddy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>proxy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>internal</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;80:80&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;443:443&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./Caddyfile:/etc/caddy/Caddyfile:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>caddy_data:/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>caddy_config:/config</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./step-root.crt:/etc/ssl/certs/step-root.crt:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>step-ca</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># ── Internal Application ──</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>app</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>your-app:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>app</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>internal</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>TLS_CERT=/certs/app.crt</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>TLS_KEY=/certs/app.key</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># ── Certificate Renewal Agent ──</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>cert-renewer</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>smallstep/step:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>cert-renewer</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>internal</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./certs:/certs</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./step:/home/step:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      sh -c &#39;
+</span></span></span><span class=line><span class=cl><span class=sd>      step ca bootstrap --ca-url https://step-ca:9000 --fingerprint $${FINGERPRINT} --no-prompt &amp;&amp;
+</span></span></span><span class=line><span class=cl><span class=sd>      while true; do
+</span></span></span><span class=line><span class=cl><span class=sd>        step ca certificate app.internal /certs/app.crt /certs/app.key \
+</span></span></span><span class=line><span class=cl><span class=sd>          --provisioner admin --password-file /home/step/password.txt \
+</span></span></span><span class=line><span class=cl><span class=sd>          --not-after 24h --force &amp;&amp;
+</span></span></span><span class=line><span class=cl><span class=sd>        echo &#34;Certificate renewed at $$(date)&#34; &amp;&amp;
+</span></span></span><span class=line><span class=cl><span class=sd>        sleep 21h
+</span></span></span><span class=line><span class=cl><span class=sd>      done&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>step_data</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>caddy_data</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>caddy_config</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Corresponding Caddyfile:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-Caddyfile data-lang=Caddyfile><span class=line><span class=cl><span class=p>{</span><span class=c1>
+</span></span></span><span class=line><span class=cl><span class=c1>    # Use Step CA for internal domains
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=k>local_certs</span>
+</span></span><span class=line><span class=cl><span class=p>}</span><span class=c1>
+</span></span></span><span class=line><span class=cl><span class=c1>
+</span></span></span><span class=line><span class=cl><span class=c1># Public-facing service
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=gh>app.example.com</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>reverse_proxy</span> <span class=n>app</span><span class=p>:</span><span class=mi>8080</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>tls</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=k>dns</span> <span class=s>cloudflare</span> <span class=se>{env.CLOUDFLARE_API_TOKEN}</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span><span class=c1>
+</span></span></span><span class=line><span class=cl><span class=c1>
+</span></span></span><span class=line><span class=cl><span class=c1># Internal service — use Step CA
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=gh>monitoring.homelab.local</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>reverse_proxy</span> <span class=n>app</span><span class=p>:</span><span class=mi>3000</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>tls</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=k>ca</span> <span class=n>https://step-ca</span><span class=p>:</span><span class=mi>9000</span><span class=n>/acme/acme/directory</span>
+</span></span><span class=line><span class=cl>        <span class=k>ca_root</span> <span class=s>/etc/ssl/certs/step-root.crt</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=certificate-lifecycle-best-practices>Certificate Lifecycle Best Practices</h2><p>Regardless of which tool you choose, follow these principles:</p><h3 id=1-use-short-lived-certificates>1. Use Short-Lived Certificates</h3><p>Certificates should expire in hours or days, not years. Step CA makes this easy:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Issue a certificate valid for 24 hours</span>
+</span></span><span class=line><span class=cl>step ca certificate app.homelab.local app.crt app.key <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --not-after 24h
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Or 7 days for services where frequent renewal is impractical</span>
+</span></span><span class=line><span class=cl>step ca certificate db.homelab.local db.crt db.key <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --not-after 168h
+</span></span></code></pre></td></tr></table></div></div><p>Short-lived certificates eliminate the need for revocation — if a key is compromised, the certificate expires before an attacker can do much damage.</p><h3 id=2-automate-renewal>2. Automate Renewal</h3><p>Never manually renew certificates. Use automated agents:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Step CA built-in renewal</span>
+</span></span><span class=line><span class=cl>step ca renew app.crt app.key --daemon
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># This runs as a background process and renews at the optimal time</span>
+</span></span><span class=line><span class=cl><span class=c1># (roughly 2/3 of the way through the certificate lifetime)</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=3-distribute-the-root-ca-properly>3. Distribute the Root CA Properly</h3><p>Install your root CA on all client devices:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Linux (Debian/Ubuntu)</span>
+</span></span><span class=line><span class=cl>sudo cp root-ca.crt /usr/local/share/ca-certificates/
+</span></span><span class=line><span class=cl>sudo update-ca-certificates
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># macOS</span>
+</span></span><span class=line><span class=cl>sudo security add-trusted-cert -d -r trustRoot <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -k /Library/Keychains/System.keychain root-ca.crt
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Windows (PowerShell as Administrator)</span>
+</span></span><span class=line><span class=cl>Import-Certificate -FilePath <span class=s2>&#34;root-ca.crt&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -CertStoreLocation Cert:<span class=se>\L</span>ocalMachine<span class=se>\R</span>oot
+</span></span></code></pre></td></tr></table></div></div><h3 id=4-monitor-certificate-expiry>4. Monitor Certificate Expiry</h3><p>Even with automation, monitor your certificates:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Check expiry date of any certificate</span>
+</span></span><span class=line><span class=cl>step certificate inspect app.crt --short <span class=p>|</span> grep Validity
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Or use openssl</span>
+</span></span><span class=line><span class=cl>openssl x509 -in app.crt -noout -dates
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Monitor all certificates in a directory</span>
+</span></span><span class=line><span class=cl><span class=k>for</span> cert in /certs/*.crt<span class=p>;</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>  <span class=nb>echo</span> <span class=s2>&#34;=== </span><span class=nv>$cert</span><span class=s2> ===&#34;</span>
+</span></span><span class=line><span class=cl>  openssl x509 -in <span class=s2>&#34;</span><span class=nv>$cert</span><span class=s2>&#34;</span> -noout -enddate
+</span></span><span class=line><span class=cl><span class=k>done</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=5-back-up-your-root-ca>5. Back Up Your Root CA</h3><p>Your root CA key is the most critical secret in your infrastructure. Back it up securely:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Backup the Step CA keys</span>
+</span></span><span class=line><span class=cl>tar czf step-ca-backup-<span class=k>$(</span>date +%Y%m%d<span class=k>)</span>.tar.gz <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  step/certs/step-ca-root_key.pem <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  step/certs/intermediate_ca_key.pem <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  step/db/
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Encrypt the backup</span>
+</span></span><span class=line><span class=cl>cat step-ca-backup-*.tar.gz <span class=p>|</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  age -r <span class=s2>&#34;age1...&#34;</span> &gt; step-ca-backup-encrypted.tar.gz.age
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Store in multiple locations (offline + cloud)</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=which-should-you-choose>Which Should You Choose?</h2><p>The decision depends on your needs:</p><p><strong>Choose Step CA if:</strong> You run internal services that need TLS, want SSH certificates, require short-lived certificates, or need enterprise-grade PKI with SCEP and webhook support. It is the gold standard for self-hosted certificate authorities.</p><p><strong>Choose Caddy if:</strong> Your primary need is public-facing TLS with zero configuration, you want on-demand certificate issuance for dynamic domains, or you need a reverse proxy that handles HTTPS automatically.</p><p><strong>Choose Nginx Proxy Manager if:</strong> You prefer a web interface, manage a homelab with a handful of services, want the simplest possible setup, or are new to TLS certificate management.</p><p><strong>Best practice:</strong> Run Step CA as your internal certificate authority and use Caddy as your edge reverse proxy. Caddy handles public-facing Let&rsquo;s Encrypt certificates while using Step CA for any internal domains. This gives you the best of both worlds — automatic public TLS and complete control over your internal PKI.</p><p>The days of self-signed certificate warnings and manual certificate management are over. Pick a tool, deploy it once, and let automation handle the rest.</p></div><div id=frame style=width:100%;margin:auto;position:relative;z-index:99998><iframe data-aa=2433958 src='//acceptable.a-ads.com/2433958/?size=Adaptive' style=border:0;padding:0;width:70%;height:auto;overflow:hidden;display:block;margin:auto></iframe></div></article></main><footer class=site-footer><p>Built with <a href=https://gohugo.io>Hugo</a> · <a href=/openswap-guide/index.xml>RSS</a> · <a href=https://github.com/hopkdj>GitHub</a></p><p style=margin-top:8px>&copy; 2026 OpenSwap Guide. All rights reserved.</p></footer></body></html>
