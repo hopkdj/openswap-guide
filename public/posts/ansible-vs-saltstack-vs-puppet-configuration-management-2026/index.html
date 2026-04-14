@@ -1,0 +1,568 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Ansible vs SaltStack vs Puppet: Best Configuration Management 2026 | OpenSwap Guide</title>
+<meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, and local AI deployment."><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/openswap-guide/css/main.min.777dc111b5207bf5336e5799477da0b31fb9080306bf98a82d6eceb979cf9737.css><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://hopkdj.github.io/openswap-guide/ class=logo><div class=logo-icon>H</div>OpenSwap Guide</a><nav><ul class=nav-links><li><a href=/openswap-guide/>Home</a></li><li><a href=/openswap-guide/tags/comparison/>Comparisons</a></li><li><a href=/openswap-guide/tags/guide/>Guides</a></li><li><a href=/openswap-guide/tags/ai/>Local AI</a></li><li><a href=/openswap-guide/index.xml class=nav-rss>Subscribe RSS</a></li></ul></nav></div></header><main><article class=post-single><a href=https://hopkdj.github.io/openswap-guide/ class=back-link>&larr; Back to posts</a><header class=post-single-header><div class=post-single-meta><span class="tag tag-purple">comparison</span>
+<span class="tag tag-green">guide</span>
+<span class="tag tag-blue">self-hosted</span>
+<span>·</span>
+<span>April 14, 2026</span>
+<span>·</span>
+<span>12 min read</span></div><h1 class=post-single-title>Ansible vs SaltStack vs Puppet: Best Configuration Management 2026</h1></header><div class=post-single-content><p>Managing a growing fleet of self-hosted services by hand quickly becomes unsustainable. Whether you&rsquo;re running a homelab with a dozen containers or a production cluster with hundreds of nodes, <strong>configuration management</strong> is the discipline that keeps everything consistent, reproducible, and recoverable.</p><p>In this guide, we compare the three most widely used open-source configuration management systems — <strong>Ansible</strong>, <strong>SaltStack</strong> (Salt), and <strong>Puppet</strong> — and show you exactly how to set each one up, write your first automation, and decide which tool fits your infrastructure.</p><h2 id=why-self-hosted-configuration-management-matters>Why Self-Hosted Configuration Management Matters</h2><p>When you self-host, you own the entire stack. That freedom comes with responsibility: every package update, firewall rule, TLS certificate renewal, and service restart is your problem. Without configuration management, you&rsquo;ll inevitably encounter:</p><ul><li><strong>Configuration drift</strong> — servers that started identical slowly diverge as manual tweaks accumulate</li><li><strong>Disaster recovery pain</strong> — rebuilding a failed node from memory or scattered notes takes hours instead of minutes</li><li><strong>Inconsistent environments</strong> — development, staging, and production slowly drift apart, causing &ldquo;it works on my machine&rdquo; bugs</li><li><strong>Security gaps</strong> — missing a critical patch or misconfigured permission on even one node compromises the entire infrastructure</li></ul><p>Configuration management tools solve these problems by treating your infrastructure state as <strong>declarative code</strong>. You define the desired end state, and the tool ensures every node matches it — automatically, repeatedly, and idempotently.</p><h2 id=what-is-configuration-management>What Is Configuration Management?</h2><p>At its core, configuration management does four things:</p><ol><li><strong>Provisioning</strong> — install packages, create users, set up directories</li><li><strong>Configuration</strong> — write config files, manage services, set environment variables</li><li><strong>Orchestration</strong> — run tasks in a specific order across multiple nodes</li><li><strong>Enforcement</strong> — continuously verify that the actual state matches the desired state</li></ol><p>The three tools we&rsquo;ll compare approach these goals differently, using distinct architectures, languages, and communication patterns.</p><h2 id=ansible-agentless-simplicity>Ansible: Agentless Simplicity</h2><h3 id=architecture>Architecture</h3><p>Ansible uses an <strong>agentless, push-based</strong> architecture. It connects to managed nodes over SSH (Linux) or WinRM (Windows), uploads small Python modules, executes them, and collects results. No daemon runs on your target servers.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>┌──────────────┐     SSH + Python modules     ┌──────────────┐
+</span></span><span class=line><span class=cl>│  Ansible     │ ──────────────────────────►  │  Node A      │
+</span></span><span class=line><span class=cl>│  Controller  │ ──────────────────────────►  │  Node B      │
+</span></span><span class=line><span class=cl>│  (your laptop│ ──────────────────────────►  │  Node C      │
+</span></span><span class=line><span class=cl>│   or server) │                              └──────────────┘
+</span></span><span class=line><span class=cl>└──────────────┘
+</span></span></code></pre></td></tr></table></div></div><p><strong>Key characteristics:</strong></p><ul><li><strong>Language</strong>: YAML playbooks — human-readable, no programming knowledge required</li><li><strong>Communication</strong>: SSH (port 22) — uses existing infrastructure</li><li><strong>Execution model</strong>: Imperative with idempotent modules</li><li><strong>Agent required</strong>: No</li><li><strong>Learning curve</strong>: Low — the lowest of all three tools</li></ul><h3 id=installation>Installation</h3><p>The control node needs Python 3.10+. Managed nodes need Python 3 (pre-installed on most distributions) and an SSH server.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install Ansible on the control node</span>
+</span></span><span class=line><span class=cl>pip install ansible
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Verify installation</span>
+</span></span><span class=line><span class=cl>ansible --version
+</span></span></code></pre></td></tr></table></div></div><h3 id=quick-start>Quick Start</h3><p>Create an inventory file listing your managed hosts:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=c1># inventory.ini</span>
+</span></span><span class=line><span class=cl><span class=k>[webservers]</span>
+</span></span><span class=line><span class=cl><span class=na>web1.example.com ansible_user</span><span class=o>=</span><span class=s>deploy</span>
+</span></span><span class=line><span class=cl><span class=na>web2.example.com ansible_user</span><span class=o>=</span><span class=s>deploy</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>[dbservers]</span>
+</span></span><span class=line><span class=cl><span class=na>db1.example.com ansible_user</span><span class=o>=</span><span class=s>deploy</span>
+</span></span></code></pre></td></tr></table></div></div><p>Write your first playbook to install and configure Nginx:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># site.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nn>---</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>Configure web servers</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>hosts</span><span class=p>:</span><span class=w> </span><span class=l>webservers</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>become</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>tasks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>Install Nginx</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>apt</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>nginx</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>state</span><span class=p>:</span><span class=w> </span><span class=l>present</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>update_cache</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>Deploy Nginx configuration</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>template</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>src</span><span class=p>:</span><span class=w> </span><span class=l>templates/nginx.conf.j2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>dest</span><span class=p>:</span><span class=w> </span><span class=l>/etc/nginx/nginx.conf</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>notify</span><span class=p>:</span><span class=w> </span><span class=l>Restart Nginx</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>Enable and start Nginx</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>systemd</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>nginx</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>enabled</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>state</span><span class=p>:</span><span class=w> </span><span class=l>started</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>handlers</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>Restart Nginx</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>systemd</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>nginx</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>state</span><span class=p>:</span><span class=w> </span><span class=l>restarted</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>The accompanying Jinja2 template (<code>templates/nginx.conf.j2</code>):</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-nginx data-lang=nginx><span class=line><span class=cl><span class=k>worker_processes</span> <span class=p>{</span><span class=kn>{</span> <span class=s>ansible_processor_vcpus</span> <span class=err>}}</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kn>events</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=kn>worker_connections</span> <span class=mi>1024</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kn>http</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=kn>include</span>       <span class=s>/etc/nginx/mime.types</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=kn>default_type</span>  <span class=s>application/octet-stream</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=kn>sendfile</span>      <span class=no>on</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=kn>keepalive_timeout</span> <span class=mi>65</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kn>server</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=kn>listen</span> <span class=mi>80</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>server_name</span> <span class=p>{</span><span class=kn>{</span> <span class=s>inventory_hostname</span> <span class=err>}}</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=kn>location</span> <span class=s>/</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>            <span class=kn>proxy_pass</span> <span class=s>http://127.0.0.1:3000</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>            <span class=kn>proxy_set_header</span> <span class=s>Host</span> <span class=nv>$host</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>            <span class=kn>proxy_set_header</span> <span class=s>X-Real-IP</span> <span class=nv>$remote_addr</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>Run the playbook:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>ansible-playbook -i inventory.ini site.yml --check  <span class=c1># Dry run first</span>
+</span></span><span class=line><span class=cl>ansible-playbook -i inventory.ini site.yml          <span class=c1># Apply changes</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=ansible-with-docker-dockerized-control-node>Ansible With Docker (Dockerized Control Node)</h3><p>If you prefer not to install Ansible directly on your workstation:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.9&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>ansible</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>cyberark/ansible</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./playbooks:/playbooks</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>~/.ssh:/root/.ssh:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./inventory:/etc/ansible/hosts</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>working_dir</span><span class=p>:</span><span class=w> </span><span class=l>/playbooks</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>entrypoint</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;ansible-playbook&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;-i&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;/etc/ansible/hosts&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;site.yml&#34;</span><span class=p>]</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=when-ansible-shines>When Ansible Shines</h3><ul><li><strong>Quick deployments</strong> — no agent setup means you can manage a server in minutes</li><li><strong>Small to medium fleets</strong> — excellent for 5–200 nodes</li><li><strong>Ad-hoc tasks</strong> — run one-off commands across your fleet with <code>ansible all -m shell -a "uptime"</code></li><li><strong>Mixed environments</strong> — seamlessly manages Linux, Windows, network devices, and cloud APIs</li><li><strong>Beginner-friendly</strong> — YAML is easy to read and write</li></ul><h3 id=ansible-limitations>Ansible Limitations</h3><ul><li><strong>Speed</strong> — SSH connections serialize execution; 500+ nodes can take a long time</li><li><strong>Push-only</strong> — no built-in continuous enforcement; you must schedule playbook runs via cron</li><li><strong>No native state tracking</strong> — unlike Puppet, Ansible doesn&rsquo;t maintain a central record of node state</li><li><strong>Python dependency</strong> — managed nodes need Python installed</li></ul><h2 id=saltstack-salt-speed-at-scale>SaltStack (Salt): Speed at Scale</h2><h3 id=architecture-1>Architecture</h3><p>Salt uses a <strong>master-minion architecture</strong> with a high-speed ZeroMQ or RAET message bus. The master pushes commands to minions, which execute and report back in parallel. Salt also supports <strong>agentless SSH mode</strong> (similar to Ansible) for bootstrapping.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>┌──────────────┐     ZeroMQ/RAET (fast)      ┌──────────────┐
+</span></span><span class=line><span class=cl>│   Salt       │ ◄─────────────────────────►  │  Minion A    │
+</span></span><span class=line><span class=cl>│   Master     │ ◄─────────────────────────►  │  Minion B    │
+</span></span><span class=line><span class=cl>│              │ ◄─────────────────────────►  │  Minion C    │
+</span></span><span class=line><span class=cl>└──────────────┘                               └──────────────┘
+</span></span></code></pre></td></tr></table></div></div><p><strong>Key characteristics:</strong></p><ul><li><strong>Language</strong>: YAML + Jinja2 for states; Python for custom modules</li><li><strong>Communication</strong>: ZeroMQ (encrypted AES) on ports 4505–4506</li><li><strong>Execution model</strong>: Declarative states with reactive event system</li><li><strong>Agent required</strong>: Yes (minion), but SSH mode is agentless</li><li><strong>Learning curve</strong>: Medium — more complex than Ansible, easier than Puppet</li></ul><h3 id=installation-1>Installation</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># On the master node (Debian/Ubuntu)</span>
+</span></span><span class=line><span class=cl>apt install salt-master salt-minion
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># On minion nodes</span>
+</span></span><span class=line><span class=cl>apt install salt-minion
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Configure minions to point to the master</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;master: salt-master.example.com&#34;</span> &gt; /etc/salt/minion
+</span></span><span class=line><span class=cl>systemctl <span class=nb>enable</span> --now salt-minion
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Accept minion keys on the master</span>
+</span></span><span class=line><span class=cl>salt-key -A
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-setup>Docker Setup</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.9&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>salt-master</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>saltstack/salt:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=l>salt-master -l info</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;4505:4505&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;4506:4506&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./salt/etc:/etc/salt</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./srv/salt:/srv/salt</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>salt-pki:/etc/salt/pki</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>salt-net</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>aliases</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span>- <span class=l>salt</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>salt-minion</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>saltstack/salt:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=l>salt-minion -l info</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>salt-master</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>SALT_MASTER=salt</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./salt/etc/minion:/etc/salt/minion</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>salt-pki:/etc/salt/pki</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>salt-net</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>salt-pki</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>salt-net</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>bridge</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=quick-start-1>Quick Start</h3><p>Write a state file to install and configure Nginx:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># /srv/salt/nginx/init.sls</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>nginx-pkg</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>pkg.installed</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>nginx</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>nginx-conf</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>file.managed</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>/etc/nginx/nginx.conf</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>source</span><span class=p>:</span><span class=w> </span><span class=l>salt://nginx/files/nginx.conf.j2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>template</span><span class=p>:</span><span class=w> </span><span class=l>jinja</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>require</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>pkg</span><span class=p>:</span><span class=w> </span><span class=l>nginx-pkg</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>watch_in</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>service</span><span class=p>:</span><span class=w> </span><span class=l>nginx-service</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>nginx-service</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>service.running</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>nginx</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>enable</span><span class=p>:</span><span class=w> </span><span class=kc>True</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>watch</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>file</span><span class=p>:</span><span class=w> </span><span class=l>nginx-conf</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Apply the state to all web server minions:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>salt <span class=s1>&#39;web*&#39;</span> state.apply nginx       <span class=c1># Push to matching minions</span>
+</span></span><span class=line><span class=cl>salt <span class=s1>&#39;web*&#39;</span> state.apply nginx <span class=nv>test</span><span class=o>=</span><span class=nb>true</span>  <span class=c1># Dry run</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=salts-event-system>Salt&rsquo;s Event System</h3><p>Salt&rsquo;s standout feature is its <strong>reactive event bus</strong>. Minions fire events for state changes, and you can write reactors that respond automatically:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># /srv/salt/reactors/nginx-restart.sls</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>restart_nginx</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>local.service.restart</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>tgt</span><span class=p>:</span><span class=w> </span>{{<span class=w> </span><span class=l>data[&#39;id&#39;] }}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>args</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>nginx</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Register the reactor on the master:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># /etc/salt/master.d/reactor.conf</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>reactor</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=nt>&#39;salt/minion/*/grains_changed&#39;</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=l>/srv/salt/reactors/nginx-restart.sls</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=when-salt-shines>When Salt Shines</h3><ul><li><strong>Large fleets</strong> — ZeroMQ parallel execution handles 10,000+ nodes efficiently</li><li><strong>Real-time enforcement</strong> — continuous state checking with fast remediation</li><li><strong>Event-driven automation</strong> — react to infrastructure changes automatically</li><li><strong>Remote execution</strong> — <code>salt '*' cmd.run 'apt update && apt upgrade -y'</code> runs across your fleet in seconds</li><li><strong>Flexible topology</strong> — supports master-minion, masterless, and SSH modes</li></ul><h3 id=salt-limitations>Salt Limitations</h3><ul><li><strong>Infrastructure overhead</strong> — requires a master server and open ports</li><li><strong>Key management</strong> — minion keys must be accepted before communication</li><li><strong>Complexity</strong> — the event system and reactor framework add cognitive overhead</li><li><strong>Smaller community</strong> — fewer third-party modules and tutorials compared to Ansible</li></ul><h2 id=puppet-enterprise-grade-reliability>Puppet: Enterprise-Grade Reliability</h2><h3 id=architecture-2>Architecture</h3><p>Puppet uses a <strong>master-agent (or server-agent) architecture</strong> with a custom DSL. Agents check in with the master on a configurable interval (default: 30 minutes), receive a compiled catalog, and apply it locally. Puppet Enterprise adds a web console, RBAC, and reporting.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>┌──────────────┐     HTTPS (8140) polling    ┌──────────────┐
+</span></span><span class=line><span class=cl>│   Puppet     │ ◄─────────────────────────►  │  Agent A     │
+</span></span><span class=line><span class=cl>│   Server     │ ◄─────────────────────────►  │  Agent B     │
+</span></span><span class=line><span class=cl>│              │ ◄─────────────────────────►  │  Agent C     │
+</span></span><span class=line><span class=cl>└──────────────┘                               └──────────────┘
+</span></span><span class=line><span class=cl>        ▲
+</span></span><span class=line><span class=cl>        │ 30-minute check-in cycle
+</span></span></code></pre></td></tr></table></div></div><p><strong>Key characteristics:</strong></p><ul><li><strong>Language</strong>: Puppet DSL (domain-specific language) — purpose-built for configuration</li><li><strong>Communication</strong>: HTTPS (port 8140) with certificate-based authentication</li><li><strong>Execution model</strong>: Declarative — define the desired state, Puppet figures out how to get there</li><li><strong>Agent required</strong>: Yes (puppet-agent package)</li><li><strong>Learning curve</strong>: Steep — the Puppet DSL and catalog compilation model require dedicated learning</li></ul><h3 id=installation-2>Installation</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># On the Puppet server</span>
+</span></span><span class=line><span class=cl>apt install puppetserver
+</span></span><span class=line><span class=cl>systemctl <span class=nb>enable</span> --now puppetserver
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># On agent nodes</span>
+</span></span><span class=line><span class=cl>apt install puppet-agent
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Configure agent to find the server</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;server = puppet.example.com&#34;</span> &gt;&gt; /etc/puppetlabs/puppet/puppet.conf
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Request certificate from agent</span>
+</span></span><span class=line><span class=cl>/opt/puppetlabs/bin/puppet agent --test
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Sign the certificate on the server</span>
+</span></span><span class=line><span class=cl>/opt/puppetlabs/bin/puppetserver ca sign --all
+</span></span></code></pre></td></tr></table></div></div><h3 id=quick-start-2>Quick Start</h3><p>Write a Puppet manifest:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-puppet data-lang=puppet><span class=line><span class=cl><span class=c># /etc/puppetlabs/code/environments/production/manifests/site.pp
+</span></span></span><span class=line><span class=cl><span class=c>
+</span></span></span><span class=line><span class=cl><span class=c># Base configuration for all nodes</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=k>node</span> <span class=k>default</span> <span class=p>{</span><span class=c>
+</span></span></span><span class=line><span class=cl><span class=c>  # Ensure NTP is installed and running</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>  <span class=k>package</span> <span class=p>{</span> <span class=s>&#39;ntp&#39;</span><span class=p>:</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>    <span class=na>ensure</span> <span class=o>=&gt;</span> <span class=k>present</span><span class=p>,</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>  <span class=p>}</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>  <span class=k>service</span> <span class=p>{</span> <span class=s>&#39;ntp&#39;</span><span class=p>:</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>    <span class=na>ensure</span> <span class=o>=&gt;</span> <span class=k>running</span><span class=p>,</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>    <span class=na>enable</span> <span class=o>=&gt;</span> <span class=k>true</span><span class=p>,</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>    <span class=na>require</span> <span class=o>=&gt;</span> <span class=k>Package</span><span class=p>[</span><span class=s>&#39;ntp&#39;</span><span class=p>],</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>  <span class=p>}</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=p>}</span><span class=c>
+</span></span></span><span class=line><span class=cl><span class=c>
+</span></span></span><span class=line><span class=cl><span class=c># Web server nodes</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=k>node</span> <span class=s>&#39;web1.example.com&#39;</span><span class=p>,</span> <span class=s>&#39;web2.example.com&#39;</span> <span class=p>{</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>  <span class=k>include</span> <span class=na>nginx</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=p>}</span><span class=err>
+</span></span></span></code></pre></td></tr></table></div></div><p>Define the Nginx class:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-puppet data-lang=puppet><span class=line><span class=cl><span class=c># /etc/puppetlabs/code/environments/production/modules/nginx/manifests/init.pp</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=k>class</span> <span class=na>nginx</span> <span class=p>{</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>  <span class=k>package</span> <span class=p>{</span> <span class=s>&#39;nginx&#39;</span><span class=p>:</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>    <span class=na>ensure</span> <span class=o>=&gt;</span> <span class=k>present</span><span class=p>,</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>  <span class=p>}</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>  <span class=k>file</span> <span class=p>{</span> <span class=s>&#39;/etc/nginx/nginx.conf&#39;</span><span class=p>:</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>    <span class=na>ensure</span>  <span class=o>=&gt;</span> <span class=k>file</span><span class=p>,</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>    <span class=na>source</span>  <span class=o>=&gt;</span> <span class=s>&#39;puppet:///modules/nginx/nginx.conf&#39;</span><span class=p>,</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>    <span class=na>owner</span>   <span class=o>=&gt;</span> <span class=s>&#39;root&#39;</span><span class=p>,</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>    <span class=na>group</span>   <span class=o>=&gt;</span> <span class=s>&#39;root&#39;</span><span class=p>,</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>    <span class=na>mode</span>    <span class=o>=&gt;</span> <span class=s>&#39;0644&#39;</span><span class=p>,</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>    <span class=k>notify</span>  <span class=o>=&gt;</span> <span class=k>Service</span><span class=p>[</span><span class=s>&#39;nginx&#39;</span><span class=p>],</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>    <span class=na>require</span> <span class=o>=&gt;</span> <span class=k>Package</span><span class=p>[</span><span class=s>&#39;nginx&#39;</span><span class=p>],</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>  <span class=p>}</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>  <span class=k>service</span> <span class=p>{</span> <span class=s>&#39;nginx&#39;</span><span class=p>:</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>    <span class=na>ensure</span> <span class=o>=&gt;</span> <span class=k>running</span><span class=p>,</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>    <span class=na>enable</span> <span class=o>=&gt;</span> <span class=k>true</span><span class=p>,</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span>  <span class=p>}</span><span class=err>
+</span></span></span><span class=line><span class=cl><span class=err></span><span class=p>}</span><span class=err>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=puppet-with-docker>Puppet With Docker</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.9&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>puppetserver</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>puppet/puppetserver:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>hostname</span><span class=p>:</span><span class=w> </span><span class=l>puppet</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8140:8140&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>puppet-code:/etc/puppetlabs/code</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>puppet-ssl:/etc/puppetlabs/puppet/ssl</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PUPPETSERVER_HOSTNAME=puppet</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DNS_ALT_NAMES=puppet,puppet.example.com</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>puppet-agent</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>puppet/puppet-agent:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>hostname</span><span class=p>:</span><span class=w> </span><span class=l>agent1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>puppetserver</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PUPPET_SERVER=puppet</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PUPPET_CA_SERVER=puppet</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>puppet-ssl:/etc/puppetlabs/puppet/ssl</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>puppet-code</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>puppet-ssl</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=when-puppet-shines>When Puppet Shines</h3><ul><li><strong>Compliance and auditing</strong> — detailed reporting on every node&rsquo;s state, ideal for regulated environments</li><li><strong>Long-running infrastructure</strong> — agents continuously enforce desired state without manual intervention</li><li><strong>Complex dependency graphs</strong> — the resource dependency model handles intricate relationships elegantly</li><li><strong>Large enterprises</strong> — Puppet Enterprise provides RBAC, code management pipelines, and orchestration</li><li><strong>Mature ecosystem</strong> — Puppet Forge offers 7,000+ community modules</li></ul><h3 id=puppet-limitations>Puppet Limitations</h3><ul><li><strong>Steep learning curve</strong> — the Puppet DSL is unlike any general-purpose language</li><li><strong>Heavy infrastructure</strong> — the Puppet server is resource-intensive (4 GB+ RAM recommended)</li><li><strong>Slower iterations</strong> — 30-minute check-in cycles mean slower feedback than push-based tools</li><li><strong>Certificate management</strong> — SSL certificates add operational complexity</li></ul><h2 id=comparison-table>Comparison Table</h2><table><thead><tr><th>Feature</th><th>Ansible</th><th>SaltStack</th><th>Puppet</th></tr></thead><tbody><tr><td><strong>Architecture</strong></td><td>Agentless, push</td><td>Master-minion or SSH</td><td>Master-agent</td></tr><tr><td><strong>Language</strong></td><td>YAML</td><td>YAML + Jinja2</td><td>Puppet DSL</td></tr><tr><td><strong>Communication</strong></td><td>SSH (port 22)</td><td>ZeroMQ (4505-4506)</td><td>HTTPS (port 8140)</td></tr><tr><td><strong>Learning Curve</strong></td><td>Low</td><td>Medium</td><td>High</td></tr><tr><td><strong>Execution Speed</strong></td><td>Moderate (serial)</td><td>Fast (parallel)</td><td>Moderate (polling)</td></tr><tr><td><strong>Max Practical Nodes</strong></td><td>~500</td><td>10,000+</td><td>5,000+</td></tr><tr><td><strong>Continuous Enforcement</strong></td><td>No (use cron)</td><td>Yes (built-in)</td><td>Yes (30-min polling)</td></tr><tr><td><strong>Windows Support</strong></td><td>Yes (WinRM)</td><td>Yes</td><td>Yes</td></tr><tr><td><strong>Network Device Support</strong></td><td>Excellent</td><td>Good</td><td>Limited</td></tr><tr><td><strong>Community Modules</strong></td><td>7,000+ (Ansible Galaxy)</td><td>2,000+</td><td>7,000+ (Puppet Forge)</td></tr><tr><td><strong>Enterprise Option</strong></td><td>Ansible Tower/AWX</td><td>SaltStack Enterprise (VMware)</td><td>Puppet Enterprise</td></tr><tr><td><strong>Best For</strong></td><td>Small/medium fleets, quick setup</td><td>Large fleets, real-time ops</td><td>Compliance, enterprise IT</td></tr></tbody></table><h2 id=decision-framework>Decision Framework</h2><h3 id=choose-ansible-if>Choose Ansible if:</h3><ul><li>You want to start managing servers <strong>today</strong> with minimal setup</li><li>Your fleet is under 200 nodes</li><li>You manage <strong>network devices</strong> (routers, switches, firewalls) alongside servers</li><li>Your team prefers <strong>human-readable YAML</strong> over learning a DSL</li><li>You need <strong>ad-hoc remote execution</strong> alongside configuration management</li></ul><h3 id=choose-saltstack-if>Choose SaltStack if:</h3><ul><li>You manage <strong>500+ nodes</strong> and need parallel execution speed</li><li>You want <strong>event-driven automation</strong> — react to infrastructure changes in real time</li><li>You need a hybrid approach: agent-based for speed, SSH for bootstrapping</li><li>You want <strong>remote execution</strong> as a first-class feature, not an afterthought</li><li>You&rsquo;re building a <strong>self-hosted cloud</strong> or container platform</li></ul><h3 id=choose-puppet-if>Choose Puppet if:</h3><ul><li><strong>Compliance and auditing</strong> are your top priorities</li><li>You need <strong>continuous state enforcement</strong> with detailed reporting</li><li>Your organization already has a <strong>DevOps team</strong> that can invest in learning the DSL</li><li>You&rsquo;re in a <strong>regulated industry</strong> (finance, healthcare, government)</li><li>You want the most mature, battle-tested configuration management platform</li></ul><h2 id=practical-self-hosting-recommendations>Practical Self-Hosting Recommendations</h2><h3 id=the-homelab-approach-520-nodes>The Homelab Approach (5–20 nodes)</h3><p>Start with <strong>Ansible</strong>. It requires no agents, uses SSH you already have, and your first playbook takes 15 minutes to write. Use a simple directory structure:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-gdscript3 data-lang=gdscript3><span class=line><span class=cl><span class=n>homelab</span><span class=o>/</span>
+</span></span><span class=line><span class=cl><span class=err>├──</span> <span class=n>inventory</span><span class=o>.</span><span class=n>ini</span>
+</span></span><span class=line><span class=cl><span class=err>├──</span> <span class=n>ansible</span><span class=o>.</span><span class=n>cfg</span>
+</span></span><span class=line><span class=cl><span class=err>├──</span> <span class=n>group_vars</span><span class=o>/</span>
+</span></span><span class=line><span class=cl><span class=err>│</span>   <span class=err>├──</span> <span class=n>all</span><span class=o>.</span><span class=n>yml</span>          <span class=c1># Variables for all hosts</span>
+</span></span><span class=line><span class=cl><span class=err>│</span>   <span class=err>└──</span> <span class=n>pihole</span><span class=o>.</span><span class=n>yml</span>       <span class=c1># Pi-hole specific variables</span>
+</span></span><span class=line><span class=cl><span class=err>├──</span> <span class=n>host_vars</span><span class=o>/</span>
+</span></span><span class=line><span class=cl><span class=err>│</span>   <span class=err>└──</span> <span class=n>nas</span><span class=o>.</span><span class=n>yml</span>          <span class=c1># NAS-specific variables</span>
+</span></span><span class=line><span class=cl><span class=err>├──</span> <span class=n>playbooks</span><span class=o>/</span>
+</span></span><span class=line><span class=cl><span class=err>│</span>   <span class=err>├──</span> <span class=n>base</span><span class=o>-</span><span class=n>setup</span><span class=o>.</span><span class=n>yml</span>   <span class=c1># Common packages, SSH hardening</span>
+</span></span><span class=line><span class=cl><span class=err>│</span>   <span class=err>├──</span> <span class=n>docker</span><span class=o>-</span><span class=n>host</span><span class=o>.</span><span class=n>yml</span>  <span class=c1># Install Docker + compose</span>
+</span></span><span class=line><span class=cl><span class=err>│</span>   <span class=err>└──</span> <span class=n>pihole</span><span class=o>.</span><span class=n>yml</span>       <span class=c1># Pi-hole deployment</span>
+</span></span><span class=line><span class=cl><span class=err>└──</span> <span class=n>roles</span><span class=o>/</span>
+</span></span><span class=line><span class=cl>    <span class=err>├──</span> <span class=n>common</span><span class=o>/</span>
+</span></span><span class=line><span class=cl>    <span class=err>├──</span> <span class=n>docker</span><span class=o>/</span>
+</span></span><span class=line><span class=cl>    <span class=err>└──</span> <span class=n>traefik</span><span class=o>/</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=the-growing-fleet-50500-nodes>The Growing Fleet (50–500 nodes)</h3><p>Consider <strong>SaltStack</strong> if you need real-time enforcement and parallel execution. The master-minion architecture pays off once you&rsquo;re managing dozens of services across multiple servers. Use Salt&rsquo;s <code>salt-ssh</code> for initial bootstrapping, then transition to the agent model.</p><h3 id=the-compliance-environment-any-size-strict-requirements>The Compliance Environment (any size, strict requirements)</h3><p><strong>Puppet</strong> is the right choice when you need audit trails, policy enforcement, and regulatory compliance. The Puppet server&rsquo;s reporting dashboard gives you a real-time view of compliance across every node — invaluable for SOC 2, HIPAA, or PCI DSS requirements.</p><h2 id=conclusion>Conclusion</h2><p>All three tools are mature, open-source, and production-ready. The &ldquo;best&rdquo; choice depends on your specific constraints:</p><ul><li><strong>Ansible wins on simplicity</strong> — the fastest path from zero to automated infrastructure</li><li><strong>SaltStack wins on speed</strong> — unmatched performance for large-scale, real-time operations</li><li><strong>Puppet wins on compliance</strong> — the most rigorous state enforcement and reporting</li></ul><p>For most self-hosters starting out, Ansible is the right choice. It scales further than most people need, and if you eventually outgrow it, both Salt and Puppet have migration paths. The important thing is to start treating your infrastructure as code — the tool you pick matters less than the discipline you build around it.</p></div><div id=frame style=width:100%;margin:auto;position:relative;z-index:99998><iframe data-aa=2433958 src='//acceptable.a-ads.com/2433958/?size=Adaptive' style=border:0;padding:0;width:70%;height:auto;overflow:hidden;display:block;margin:auto></iframe></div></article></main><footer class=site-footer><p>Built with <a href=https://gohugo.io>Hugo</a> · <a href=/openswap-guide/index.xml>RSS</a> · <a href=https://github.com/hopkdj>GitHub</a></p><p style=margin-top:8px>&copy; 2026 OpenSwap Guide. All rights reserved.</p></footer></body></html>
