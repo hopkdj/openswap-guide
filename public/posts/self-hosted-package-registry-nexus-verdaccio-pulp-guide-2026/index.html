@@ -1,0 +1,442 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted Package Registry: Nexus vs Verdaccio vs Pulp Guide 2026 | OpenSwap Guide</title>
+<meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, and local AI deployment."><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/openswap-guide/css/main.min.777dc111b5207bf5336e5799477da0b31fb9080306bf98a82d6eceb979cf9737.css><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://hopkdj.github.io/openswap-guide/ class=logo><div class=logo-icon>H</div>OpenSwap Guide</a><nav><ul class=nav-links><li><a href=/openswap-guide/>Home</a></li><li><a href=/openswap-guide/tags/comparison/>Comparisons</a></li><li><a href=/openswap-guide/tags/guide/>Guides</a></li><li><a href=/openswap-guide/tags/ai/>Local AI</a></li><li><a href=/openswap-guide/index.xml class=nav-rss>Subscribe RSS</a></li></ul></nav></div></header><main><article class=post-single><a href=https://hopkdj.github.io/openswap-guide/ class=back-link>&larr; Back to posts</a><header class=post-single-header><div class=post-single-meta><span class="tag tag-purple">comparison</span>
+<span class="tag tag-green">guide</span>
+<span class="tag tag-blue">self-hosted</span>
+<span>·</span>
+<span>April 14, 2026</span>
+<span>·</span>
+<span>10 min read</span></div><h1 class=post-single-title>Self-Hosted Package Registry: Nexus vs Verdaccio vs Pulp Guide 2026</h1></header><div class=post-single-content><h2 id=why-self-host-your-package-registry>Why Self-Host Your Package Registry?</h2><p>Every modern software project depends on external packages — npm modules, Python wheels, Maven artifacts, Docker images. Pulling these directly from public registries introduces real risks and costs that compound as your infrastructure grows.</p><ul><li><strong>Supply chain security</strong> — public registries are frequent targets for typosquatting, dependency confusion, and malicious package injections. A private registry lets you audit and whitelist every dependency before it reaches your developers.</li><li><strong>Build reliability</strong> — public registries go down, throttle requests, and introduce latency. A local cache ensures builds complete in seconds even during npm or PyPI outages.</li><li><strong>Bandwidth savings</strong> — CI/CD pipelines can download gigabytes of dependencies per day. A local proxy cache eliminates redundant downloads and slashes internet bandwidth costs.</li><li><strong>Private package distribution</strong> — share internal libraries, custom-built artifacts, and proprietary modules across your organization without publishing them publicly.</li><li><strong>Compliance and governance</strong> — enforce license policies, track which versions are deployed where, and maintain an auditable record of every package in your stack.</li><li><strong>Air-gapped environments</strong> — teams working in restricted networks need a local source for all dependencies. A self-hosted registry makes offline development possible.</li></ul><p>Whether you run a small homelab, a startup engineering team, or an enterprise CI/CD pipeline, a self-hosted package registry pays for itself in reliability alone. This guide covers the three most capable open-source options and walks you through production-ready deployments.</p><h2 id=feature-comparison-nexus-vs-verdaccio-vs-pulp>Feature Comparison: Nexus vs Verdaccio vs Pulp</h2><table><thead><tr><th>Feature</th><th>Sonatype Nexus Repository</th><th>Verdaccio</th><th>Pulp Project</th></tr></thead><tbody><tr><td><strong>Package Formats</strong></td><td>20+ (npm, PyPI, Maven, Docker, NuGet, RubyGems, Go, Helm, yum, apt, and more)</td><td>npm, Bower</td><td>15+ (PyPI, Docker, rpm, deb, Ansible, Container, Maven, Rubygems, and more)</td></tr><tr><td><strong>Proxy Caching</strong></td><td>✅ All formats</td><td>✅ npm only</td><td>✅ All formats</td></tr><tr><td><strong>Private Packages</strong></td><td>✅ npm, PyPI, Maven, Docker, and more</td><td>✅ npm only</td><td>✅ All formats</td></tr><tr><td><strong>Proxy Upstream</strong></td><td>Multiple, configurable</td><td>npm registry</td><td>Multiple, configurable</td></tr><tr><td><strong>LDAP/AD Auth</strong></td><td>✅ (Pro) / Basic (OSS)</td><td>✅ via plugins</td><td>✅</td></tr><tr><td><strong>RBAC</strong></td><td>✅ (Pro) / Basic (OSS)</td><td>✅ via config</td><td>✅</td></tr><tr><td><strong>REST API</strong></td><td>✅ Comprehensive</td><td>✅ Basic</td><td>✅ Comprehensive</td></tr><tr><td><strong>Docker Support</strong></td><td>✅ Native (OSS)</td><td>❌</td><td>✅ Native</td></tr><tr><td><strong>Storage Backend</strong></td><td>Local disk, S3</td><td>Local disk, S3 (plugin)</td><td>S3, filesystem, Azure</td></tr><tr><td><strong>Cleanup Policies</strong></td><td>✅ (Pro only)</td><td>✅ via plugin</td><td>✅ Native</td></tr><tr><td><strong>Language</strong></td><td>Java</td><td>Node.js</td><td>Python</td></tr><tr><td><strong>Memory Footprint</strong></td><td>~2 GB minimum</td><td>~150 MB</td><td>~500 MB</td></tr><tr><td><strong>License</strong></td><td>EPL-1.0 (OSS), Commercial (Pro)</td><td>MIT</td><td>GPL-3.0</td></tr><tr><td><strong>Best For</strong></td><td>Enterprise teams needing multi-format support</td><td>Node.js/npm-focused teams</td><td>Python/rpm/deb-heavy environments</td></tr></tbody></table><h2 id=sonatype-nexus-repository-manager-oss>Sonatype Nexus Repository Manager (OSS)</h2><p>Nexus Repository Manager is the most mature and feature-complete open-source package registry available. The OSS edition supports proxy caching and hosting for over 20 package formats out of the box. It runs on the JVM and provides a polished web UI for browsing, searching, and managing artifacts.</p><h3 id=when-to-choose-nexus>When to Choose Nexus</h3><ul><li>Your team uses <strong>multiple package ecosystems</strong> (npm, Maven, PyPI, Docker) and wants one unified registry.</li><li>You need <strong>Docker registry</strong> functionality alongside traditional package formats.</li><li>You want a <strong>battle-tested</strong> solution used by thousands of enterprises worldwide.</li><li>You can allocate at least 2 GB of RAM for the JVM process.</li></ul><h3 id=docker-compose-deployment>Docker Compose Deployment</h3><p>Create a <code>docker-compose.yml</code> for a production-ready Nexus instance:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>nexus</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>sonatype/nexus3:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>nexus-repo</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8081:8081&#34;</span><span class=w>       </span><span class=c># Web UI and API</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8082:8082&#34;</span><span class=w>       </span><span class=c># Docker registry (optional)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>nexus-data:/nexus-data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./nexus.props:/opt/sonatype/nexus/etc/nexus-default.properties:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>INSTALL4J_ADD_VM_PARAMS=-Xms512m -Xmx1024m -XX:MaxDirectMemorySize=512m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>repo-net</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>nexus-data</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>local</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>repo-net</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>bridge</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Create <code>nexus.props</code> to customize the default configuration:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-properties data-lang=properties><span class=line><span class=cl><span class=na>nexus-args</span><span class=o>=</span><span class=s>${karaf.etc},${karaf.data}/etc,${karaf.data}/etc,${nexus.data}/etc</span>
+</span></span><span class=line><span class=cl><span class=na>nexus-edition</span><span class=o>=</span><span class=s>nexus-pro-edition</span>
+</span></span><span class=line><span class=cl><span class=na>application-port</span><span class=o>=</span><span class=s>8081</span>
+</span></span><span class=line><span class=cl><span class=na>application-host</span><span class=o>=</span><span class=s>0.0.0.0</span>
+</span></span></code></pre></td></tr></table></div></div><p>Start the service:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker compose up -d
+</span></span></code></pre></td></tr></table></div></div><p>The first startup takes 2–3 minutes as Nexus initializes its databases. Find the admin password with:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker <span class=nb>exec</span> nexus-repo cat /nexus-data/admin.password
+</span></span></code></pre></td></tr></table></div></div><h3 id=configuring-npm-proxy-cache>Configuring npm Proxy Cache</h3><p>After logging in with the admin credentials, create a proxy repository:</p><ol><li>Go to <strong>Administration → Repositories → Create repository</strong></li><li>Select <strong>npm (proxy)</strong></li><li>Set the name to <code>npm-proxy</code></li><li>Set Remote storage to <code>https://registry.npmjs.org</code></li><li>Under <strong>Storage</strong>, set Blob store to <code>default</code></li><li>Under <strong>HTTP</strong>, enable <strong>Use trust store</strong> if your organization uses a proxy</li><li>Save the repository</li></ol><p>Then create an <strong>npm (group)</strong> repository that combines <code>npm-proxy</code> with any hosted npm repositories you create for private packages. This group repository becomes your single npm endpoint.</p><p>Configure npm clients to use your registry:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>npm <span class=nb>set</span> registry http://nexus-server:8081/repository/npm-group/
+</span></span></code></pre></td></tr></table></div></div><p>For a project-level configuration, add to <code>.npmrc</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>registry=http://nexus-server:8081/repository/npm-group/
+</span></span></code></pre></td></tr></table></div></div><h3 id=configuring-pypi-proxy-cache>Configuring PyPI Proxy Cache</h3><p>The process mirrors the npm setup:</p><ol><li><strong>Administration → Repositories → Create repository → pypi (proxy)</strong></li><li>Set Remote storage to <code>https://pypi.org</code></li><li>Name it <code>pypi-proxy</code></li><li>Save</li></ol><p>Create a <strong>pypi (group)</strong> repository combining the proxy with any hosted repositories. Then configure pip:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>pip config <span class=nb>set</span> global.index-url http://nexus-server:8081/repository/pypi-group/simple
+</span></span><span class=line><span class=cl>pip config <span class=nb>set</span> global.trusted-host nexus-server
+</span></span></code></pre></td></tr></table></div></div><p>Or use a project-level <code>pip.conf</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=k>[global]</span>
+</span></span><span class=line><span class=cl><span class=na>index-url</span> <span class=o>=</span> <span class=s>http://nexus-server:8081/repository/pypi-group/simple</span>
+</span></span><span class=line><span class=cl><span class=na>trusted-host</span> <span class=o>=</span> <span class=s>nexus-server</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-registry-setup>Docker Registry Setup</h3><p>Nexus OSS supports Docker registries natively. Create three repositories:</p><ol><li><strong>docker (proxy)</strong> — pointing to <code>https://registry-1.docker.io</code></li><li><strong>docker (hosted)</strong> — for private images</li><li><strong>docker (group)</strong> — combining both</li></ol><p>Configure the HTTP connector on port 8082 in the docker group repo settings. Then pull through your proxy:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker login nexus-server:8082
+</span></span><span class=line><span class=cl>docker pull nexus-server:8082/library/nginx:latest
+</span></span></code></pre></td></tr></table></div></div><p>Add to <code>/etc/docker/daemon.json</code> to allow insecure registry access on your network:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;insecure-registries&#34;</span><span class=p>:</span> <span class=p>[</span><span class=s2>&#34;nexus-server:8082&#34;</span><span class=p>]</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=verdaccio--lightweight-npm-registry>Verdaccio — Lightweight npm Registry</h2><p>Verdaccio is a purpose-built npm registry written in Node.js. It is significantly lighter than Nexus, starts in seconds, and uses minimal resources. If your team works exclusively with npm packages, Verdaccio is the simplest and most focused option.</p><h3 id=when-to-choose-verdaccio>When to Choose Verdaccio</h3><ul><li>Your stack is <strong>primarily or exclusively Node.js/npm</strong>.</li><li>You want a <strong>lightweight</strong> service that runs on a Raspberry Pi or low-end VPS.</li><li>You value <strong>simplicity</strong> — a single YAML config file controls everything.</li><li>You need <strong>uplinks</strong> to multiple npm registries (npmjs, GitHub Packages, etc.).</li></ul><h3 id=docker-compose-deployment-1>Docker Compose Deployment</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>verdaccio</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>verdaccio/verdaccio:5</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>verdaccio</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;4873:4873&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./conf:/verdaccio/conf</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./storage:/verdaccio/storage</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./plugins:/verdaccio/plugins</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>VERDACCIO_PORT=4873</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>repo-net</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>repo-net</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>bridge</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Create <code>conf/config.yaml</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>storage</span><span class=p>:</span><span class=w> </span><span class=l>/verdaccio/storage</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>plugins</span><span class=p>:</span><span class=w> </span><span class=l>/verdaccio/plugins</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>uplinks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>npmjs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>url</span><span class=p>:</span><span class=w> </span><span class=l>https://registry.npmjs.org/</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>timeout</span><span class=p>:</span><span class=w> </span><span class=l>10s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>maxage</span><span class=p>:</span><span class=w> </span><span class=l>2m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>max_fails</span><span class=p>:</span><span class=w> </span><span class=m>3</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>fail_timeout</span><span class=p>:</span><span class=w> </span><span class=l>2m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>github</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>url</span><span class=p>:</span><span class=w> </span><span class=l>https://npm.pkg.github.com/</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>timeout</span><span class=p>:</span><span class=w> </span><span class=l>10s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>headers</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>Authorization</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;Bearer ${GITHUB_TOKEN}&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>packages</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=s2>&#34;@*/*&#34;</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>access</span><span class=p>:</span><span class=w> </span><span class=l>$all</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>publish</span><span class=p>:</span><span class=w> </span><span class=l>$authenticated</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>proxy</span><span class=p>:</span><span class=w> </span><span class=l>npmjs github</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=s2>&#34;**&#34;</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>access</span><span class=p>:</span><span class=w> </span><span class=l>$all</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>publish</span><span class=p>:</span><span class=w> </span><span class=l>$authenticated</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>proxy</span><span class=p>:</span><span class=w> </span><span class=l>npmjs github</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>log</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>type</span><span class=p>:</span><span class=w> </span><span class=l>stdout</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>format</span><span class=p>:</span><span class=w> </span><span class=l>pretty</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>level</span><span class=p>:</span><span class=w> </span><span class=l>http</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>auth</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>htpasswd</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>file</span><span class=p>:</span><span class=w> </span><span class=l>/verdaccio/conf/htpasswd</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>max_users</span><span class=p>:</span><span class=w> </span><span class=m>100</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>middlewares</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>audit</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>enabled</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>listen</span><span class=p>:</span><span class=w> </span><span class=m>0.0.0.0</span><span class=p>:</span><span class=m>4873</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>This configuration:</p><ul><li>Proxies requests to both npmjs and GitHub Packages as uplinks</li><li>Caches packages for 2 minutes before revalidating</li><li>Allows anyone to read packages but requires authentication to publish</li><li>Enables audit middleware for <code>npm audit</code> support</li><li>Limits to 100 local user accounts (sufficient for most teams)</li></ul><p>Start and create your first user:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker compose up -d
+</span></span><span class=line><span class=cl>npm adduser --registry http://localhost:4873
+</span></span></code></pre></td></tr></table></div></div><h3 id=publishing-private-packages>Publishing Private Packages</h3><p>After creating a user account, publish a private package:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=nb>cd</span> your-npm-package
+</span></span><span class=line><span class=cl>npm publish --registry http://localhost:4873
+</span></span></code></pre></td></tr></table></div></div><p>To scope your packages under an organization-like namespace:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;name&#34;</span><span class=p>:</span> <span class=s2>&#34;@myteam/utils&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;version&#34;</span><span class=p>:</span> <span class=s2>&#34;1.0.0&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;publishConfig&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;registry&#34;</span><span class=p>:</span> <span class=s2>&#34;http://localhost:4873&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=advanced-s3-storage-backend>Advanced: S3 Storage Backend</h3><p>For production deployments, store packages on S3 instead of local disk. Install the plugin:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>npm install -g verdaccio-aws-s3-storage
+</span></span></code></pre></td></tr></table></div></div><p>Then update <code>config.yaml</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>storage</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>s3</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>bucket</span><span class=p>:</span><span class=w> </span><span class=l>verdaccio-packages</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>keyPrefix</span><span class=p>:</span><span class=w> </span><span class=l>packages/</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>region</span><span class=p>:</span><span class=w> </span><span class=l>us-east-1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>accessKeyId</span><span class=p>:</span><span class=w> </span><span class=l>${AWS_ACCESS_KEY_ID}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>secretAccessKey</span><span class=p>:</span><span class=w> </span><span class=l>${AWS_SECRET_ACCESS_KEY}</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=pulp-project--python-native-multi-format-registry>Pulp Project — Python-Native Multi-Format Registry</h2><p>Pulp is a platform for managing software repositories, written in Python. It supports a wide range of package formats through a plugin architecture and integrates particularly well with Python and Linux distribution ecosystems.</p><h3 id=when-to-choose-pulp>When to Choose Pulp</h3><ul><li>Your infrastructure is <strong>Python-heavy</strong> and you need PyPI proxy caching with fine-grained control.</li><li>You manage <strong>Linux distribution packages</strong> (rpm, deb) and need repository mirroring.</li><li>You want <strong>Ansible content</strong> (collections, roles) hosting alongside other formats.</li><li>You prefer a <strong>Python-based</strong> stack that integrates with your existing tooling.</li></ul><h3 id=docker-compose-deployment-2>Docker Compose Deployment</h3><p>Pulp uses a multi-container architecture with a resource manager, worker, content server, and Redis:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>pulp</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>pulp/pulp:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>pulp</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8080:80&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;443:443&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PULP_ADMIN_USER=admin</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PULP_ADMIN_PASSWORD=admin</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>pulp-settings:/etc/pulp</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>pulp-data:/var/lib/pulp/media</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>repo-net</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>pulp-settings</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>pulp-data</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>repo-net</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>bridge</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Start the stack:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker compose up -d
+</span></span></code></pre></td></tr></table></div></div><p>After the containers initialize (about 60 seconds), access the API:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=nb>export</span> <span class=nv>PULP_BASE_URL</span><span class=o>=</span>http://localhost:8080
+</span></span><span class=line><span class=cl><span class=nb>export</span> <span class=nv>PULP_USERNAME</span><span class=o>=</span>admin
+</span></span><span class=line><span class=cl><span class=nb>export</span> <span class=nv>PULP_PASSWORD</span><span class=o>=</span>admin
+</span></span></code></pre></td></tr></table></div></div><h3 id=setting-up-a-pypi-remote-and-repository>Setting Up a PyPI Remote and Repository</h3><p>Pulp uses a remote/repository/publication/distribution model. The <strong>remote</strong> defines the upstream source, the <strong>repository</strong> stores synced content, the <strong>publication</strong> creates a snapshot, and the <strong>distribution</strong> serves it to clients.</p><p>Sync from PyPI:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>pulp rpm remote create --name pypi-remote --url https://pypi.org/
+</span></span><span class=line><span class=cl>pulp rpm repository create --name pypi-local --remote pypi-remote
+</span></span><span class=line><span class=cl>pulp rpm repository sync --name pypi-local
+</span></span></code></pre></td></tr></table></div></div><p>For PyPI specifically, use the pulp-python plugin:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>pulp python remote create --name pypi-remote --url https://pypi.org/
+</span></span><span class=line><span class=cl>pulp python repository create --name pypi-local --remote pypi-remote
+</span></span><span class=line><span class=cl>pulp python repository sync --name pypi-local
+</span></span><span class=line><span class=cl>pulp python publication create --repository pypi-local
+</span></span><span class=line><span class=cl>pulp python distribution create --name pypi-dist --base-path pypi --repository pypi-local
+</span></span></code></pre></td></tr></table></div></div><p>Configure pip to use your Pulp instance:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>pip install --index-url http://localhost:8080/pulp/content/pypi-dist/simple/ requests
+</span></span></code></pre></td></tr></table></div></div><h3 id=mirroring-a-docker-registry>Mirroring a Docker Registry</h3><p>Pulp can mirror Docker registries for offline access:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>pulp container remote create --name dockerhub-nginx <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --url https://registry-1.docker.io <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --include-tags nginx:latest,nginx:1.25,nginx:alpine
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>pulp container repository create --name nginx-local <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --remote dockerhub-nginx
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>pulp container repository sync --name nginx-local
+</span></span><span class=line><span class=cl>pulp container distribution create --name nginx-dist <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --base-path nginx --repository nginx-local
+</span></span></code></pre></td></tr></table></div></div><p>Pull images through your local mirror:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker pull localhost:8080/pulp/content/nginx-dist/nginx:alpine
+</span></span></code></pre></td></tr></table></div></div><h3 id=scheduled-sync-tasks>Scheduled Sync Tasks</h3><p>Keep your local mirrors up to date with scheduled syncs:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Sync every 6 hours</span>
+</span></span><span class=line><span class=cl>pulp task-schedule create <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --name pypi-daily-sync <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --task <span class=s2>&#34;pulpcore.app.tasks.repository.sync&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --schedule <span class=s2>&#34;0 */6 * * *&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --repository pypi-local
+</span></span></code></pre></td></tr></table></div></div><h2 id=putting-it-all-together-reverse-proxy-and-https>Putting It All Together: Reverse Proxy and HTTPS</h2><p>Regardless of which registry you choose, putting it behind a reverse proxy with HTTPS is essential for production use. Here is a Caddy configuration that handles TLS automatically:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-caddyfile data-lang=caddyfile><span class=line><span class=cl><span class=gh>registry.example.com</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>reverse_proxy</span> <span class=n>localhost</span><span class=p>:</span><span class=mi>8081</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>tls</span> <span class=s>admin@example.com</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>header</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=k>Strict-Transport-Security</span> <span class=s2>&#34;max-age=31536000; includeSubDomains&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=k>X-Content-Type-Options</span> <span class=s2>&#34;nosniff&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=k>X-Frame-Options</span> <span class=s2>&#34;DENY&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>Or with Nginx and Let&rsquo;s Encrypt:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-nginx data-lang=nginx><span class=line><span class=cl><span class=k>server</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=kn>listen</span> <span class=mi>443</span> <span class=s>ssl</span> <span class=s>http2</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=kn>server_name</span> <span class=s>registry.example.com</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kn>ssl_certificate</span> <span class=s>/etc/letsencrypt/live/registry.example.com/fullchain.pem</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=kn>ssl_certificate_key</span> <span class=s>/etc/letsencrypt/live/registry.example.com/privkey.pem</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kn>client_max_body_size</span> <span class=s>500M</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kn>location</span> <span class=s>/</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_pass</span> <span class=s>http://127.0.0.1:8081</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_set_header</span> <span class=s>Host</span> <span class=nv>$host</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_set_header</span> <span class=s>X-Real-IP</span> <span class=nv>$remote_addr</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_set_header</span> <span class=s>X-Forwarded-For</span> <span class=nv>$proxy_add_x_forwarded_for</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_set_header</span> <span class=s>X-Forwarded-Proto</span> <span class=nv>$scheme</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>Obtain the certificate with Certbot:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>certbot certonly --nginx -d registry.example.com
+</span></span></code></pre></td></tr></table></div></div><h2 id=migration-checklist>Migration Checklist</h2><p>Moving from public registries to a self-hosted proxy requires coordination:</p><ol><li><strong>Deploy</strong> your registry on a reliable server with adequate storage (start with 50 GB for npm, 100 GB for multi-format).</li><li><strong>Configure proxy upstreams</strong> for each package format your team uses.</li><li><strong>Test</strong> by pointing a single non-critical project at your registry and verifying that installs work.</li><li><strong>Update CI/CD pipelines</strong> — modify your pipeline configuration to use the local registry. For GitHub Actions:</li></ol><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>Setup npm registry</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>run</span><span class=p>:</span><span class=w> </span><span class=l>npm config set registry http://nexus-server:8081/repository/npm-group/</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>Setup pip</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>run</span><span class=p>:</span><span class=w> </span><span class=l>pip config set global.index-url http://nexus-server:8081/repository/pypi-group/simple</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><ol start=5><li><strong>Distribute configuration</strong> — use an <code>.npmrc</code>, <code>pip.conf</code>, or <code>.m2/settings.xml</code> checked into each repository so developers get the correct registry automatically.</li><li><strong>Monitor disk usage</strong> — set up alerts when storage exceeds 80% capacity. Configure cleanup policies to remove old cached packages.</li><li><strong>Backup regularly</strong> — back up the data volume and configuration files. For Nexus:</li></ol><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker <span class=nb>exec</span> nexus-repo tar czf /tmp/nexus-backup-<span class=k>$(</span>date +%F<span class=k>)</span>.tar.gz /nexus-data
+</span></span><span class=line><span class=cl>docker cp nexus-repo:/tmp/nexus-backup-*.tar.gz ./backups/
+</span></span></code></pre></td></tr></table></div></div><h2 id=choosing-the-right-tool>Choosing the Right Tool</h2><ul><li><strong>Choose Nexus</strong> if you need a single registry for npm, Maven, PyPI, Docker, and more. It is the most versatile option and the industry standard for multi-format repositories.</li><li><strong>Choose Verdaccio</strong> if you only need npm. It starts in seconds, uses under 200 MB of RAM, and its configuration is a single readable YAML file.</li><li><strong>Choose Pulp</strong> if you work heavily with Python packages, Linux distribution repositories, or Ansible content. Its Python-native architecture and plugin system make it highly extensible.</li></ul><p>All three are production-ready, open-source, and free to run. The best choice depends on your team&rsquo;s primary package ecosystems and infrastructure constraints. Set one up this weekend and your next dependency outage will be a non-event.</p></div><div id=frame style=width:100%;margin:auto;position:relative;z-index:99998><iframe data-aa=2433958 src='//acceptable.a-ads.com/2433958/?size=Adaptive' style=border:0;padding:0;width:70%;height:auto;overflow:hidden;display:block;margin:auto></iframe></div></article></main><footer class=site-footer><p>Built with <a href=https://gohugo.io>Hugo</a> · <a href=/openswap-guide/index.xml>RSS</a> · <a href=https://github.com/hopkdj>GitHub</a></p><p style=margin-top:8px>&copy; 2026 OpenSwap Guide. All rights reserved.</p></footer></body></html>
