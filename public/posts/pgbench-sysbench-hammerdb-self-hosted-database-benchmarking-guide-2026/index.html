@@ -1,0 +1,450 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted Database Benchmarking: pgbench vs sysbench vs HammerDB 2026 | OpenSwap Guide</title>
+<meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, and local AI deployment."><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/openswap-guide/css/main.min.777dc111b5207bf5336e5799477da0b31fb9080306bf98a82d6eceb979cf9737.css><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://hopkdj.github.io/openswap-guide/ class=logo><div class=logo-icon>H</div>OpenSwap Guide</a><nav><ul class=nav-links><li><a href=/openswap-guide/>Home</a></li><li><a href=/openswap-guide/tags/comparison/>Comparisons</a></li><li><a href=/openswap-guide/tags/guide/>Guides</a></li><li><a href=/openswap-guide/tags/ai/>Local AI</a></li><li><a href=/openswap-guide/index.xml class=nav-rss>Subscribe RSS</a></li></ul></nav></div></header><main><article class=post-single><a href=https://hopkdj.github.io/openswap-guide/ class=back-link>&larr; Back to posts</a><header class=post-single-header><div class=post-single-meta><span class="tag tag-purple">comparison</span>
+<span class="tag tag-green">guide</span>
+<span class="tag tag-blue">self-hosted</span>
+<span>·</span>
+<span>April 15, 2026</span>
+<span>·</span>
+<span>14 min read</span></div><h1 class=post-single-title>Self-Hosted Database Benchmarking: pgbench vs sysbench vs HammerDB 2026</h1></header><div class=post-single-content><p>Before you put a database into production, you need to know how it behaves under load. How many queries per second can it sustain? What happens when 500 concurrent connections hit it simultaneously? Does your schema design cause lock contention under write-heavy workloads? Without answering these questions with real benchmark data, you are deploying blind.</p><p>Commercial database benchmarking services and cloud-managed testing tools charge premium prices for capabilities you can replicate on your own hardware. In 2026, the three most capable open-source database benchmarking tools — <strong>pgbench</strong>, <strong>sysbench</strong>, and <strong>HammerDB</strong> — give you enterprise-grade load testing without licensing fees, data exfiltration risks, or per-test quotas. This guide covers all three with complete Docker-based setup instructions and a practical comparison.</p><h2 id=why-self-host-your-database-benchmarking>Why Self-Host Your Database Benchmarking</h2><p>Running database benchmarks on your own infrastructure, rather than relying on vendor-provided benchmarks or cloud testing services, gives you several decisive advantages:</p><p><strong>Hardware-realistic results.</strong> Cloud provider benchmarks run on their optimized infrastructure with tuned kernels and fast NVMe storage — nothing like your actual production servers. Benchmarking on hardware that matches your deployment environment produces numbers you can actually trust for capacity planning.</p><p><strong>Unlimited testing without quotas.</strong> Commercial benchmarking platforms limit the number of tests, concurrent connections, or data volume. Self-hosted tools have no such restrictions. Run a 72-hour endurance test with 1,000 concurrent clients if your scenario requires it.</p><p><strong>Custom workload modeling.</strong> Pre-packaged benchmarks rarely match your actual query patterns. Self-hosted tools let you write custom scripts that replay your real application&rsquo;s read/write ratios, transaction sizes, and query complexity profiles.</p><p><strong>No data leakage.</strong> Sending schema information and query patterns to a third-party testing platform reveals your data architecture. Keeping benchmarks on-premise means your database design stays private.</p><p><strong>Regression testing across upgrades.</strong> Before upgrading PostgreSQL from 16 to 17, or migrating from MySQL to MariaDB, run identical benchmark suites against both versions on identical hardware. Quantify the performance impact before touching production.</p><p><strong>Cost-effective capacity planning.</strong> Instead of over-provisioning &ldquo;just to be safe,&rdquo; use benchmark data to right-size your servers. A $20/month VPS that runs your benchmark suite can save thousands in unnecessary cloud spend.</p><h2 id=pgbench-postgresqls-built-in-benchmark>pgbench: PostgreSQL&rsquo;s Built-In Benchmark</h2><p><strong>pgbench</strong> ships with every PostgreSQL installation. It implements a modified TPC-B workload — a standardized transaction processing benchmark — and measures transactions per second (TPS) under configurable concurrency levels. Because it is bundled with PostgreSQL, there is zero installation overhead and the tool is always compatible with your server version.</p><h3 id=how-pgbench-works>How pgbench Works</h3><p>pgbench runs a sequence of SQL operations that simulate a banking workload:</p><ol><li><strong>SELECT</strong> an account balance by account ID</li><li><strong>UPDATE</strong> the account balance (add or subtract a value)</li><li><strong>UPDATE</strong> a teller record</li><li><strong>UPDATE</strong> a branch record</li><li><strong>INSERT</strong> a transaction history record</li></ol><p>Each of these operations runs inside a transaction. By default, pgbench runs these five steps repeatedly across a configurable number of concurrent client connections, measuring how many complete transactions the database can process per second.</p><h3 id=docker-setup>Docker Setup</h3><p>Start a PostgreSQL instance and run pgbench inside it:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose.yml — PostgreSQL with pgbench</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>postgres</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>postgres:17-alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>pgbench-target</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_PASSWORD</span><span class=p>:</span><span class=w> </span><span class=l>benchmark123</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_DB</span><span class=p>:</span><span class=w> </span><span class=l>benchdb</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;5432:5432&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      postgres
+</span></span></span><span class=line><span class=cl><span class=sd>        -c shared_buffers=256MB
+</span></span></span><span class=line><span class=cl><span class=sd>        -c effective_cache_size=1GB
+</span></span></span><span class=line><span class=cl><span class=sd>        -c work_mem=16MB
+</span></span></span><span class=line><span class=cl><span class=sd>        -c max_connections=200</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>shm_size</span><span class=p>:</span><span class=w> </span><span class=l>1g</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=running-a-pgbench-test>Running a pgbench Test</h3><p>First, initialize the test database with scale factor 100 (creates ~100,000 rows per table):</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker <span class=nb>exec</span> pgbench-target pgbench -i -s <span class=m>100</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -U postgres -d benchdb
+</span></span></code></pre></td></tr></table></div></div><p>The <code>-i</code> flag initializes the schema and <code>-s 100</code> sets the scale factor. Higher scale factors simulate larger datasets that may not fit in RAM, forcing disk I/O.</p><p>Then run the benchmark with 20 concurrent clients for 120 seconds:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker <span class=nb>exec</span> pgbench-target pgbench -c <span class=m>20</span> -j <span class=m>4</span> -T <span class=m>120</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -U postgres -d benchdb
+</span></span></code></pre></td></tr></table></div></div><ul><li><code>-c 20</code> — 20 concurrent client connections</li><li><code>-j 4</code> — use 4 worker threads to manage clients</li><li><code>-T 120</code> — run for 120 seconds</li></ul><p>Sample output:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>starting vacuum...end.
+</span></span><span class=line><span class=cl>transaction type: &lt;builtin: TPC-B (sort of)&gt;
+</span></span><span class=line><span class=cl>scaling factor: 100
+</span></span><span class=line><span class=cl>query mode: simple
+</span></span><span class=line><span class=cl>number of clients: 20
+</span></span><span class=line><span class=cl>number of threads: 4
+</span></span><span class=line><span class=cl>maximum number of tries: 1
+</span></span><span class=line><span class=cl>number of transactions per client: 0
+</span></span><span class=line><span class=cl>duration: 120 s
+</span></span><span class=line><span class=cl>number of transactions actually processed: 84523
+</span></span><span class=line><span class=cl>latency average = 28.394 ms
+</span></span><span class=line><span class=cl>latency stddev = 12.451 ms
+</span></span><span class=line><span class=cl>initial connection time = 245.123 ms
+</span></span><span class=line><span class=cl>tps = 703.842156 (without initial connection time)
+</span></span></code></pre></td></tr></table></div></div><p>The <strong>tps</strong> line is your key metric — 704 transactions per second sustained over 120 seconds with 20 concurrent clients.</p><h3 id=custom-script-mode>Custom Script Mode</h3><p>pgbench supports custom SQL scripts for testing your actual queries. Create a file called <code>my-workload.sql</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-sql data-lang=sql><span class=line><span class=cl><span class=err>\</span><span class=n>setrandom</span><span class=w> </span><span class=n>aid</span><span class=w> </span><span class=mi>1</span><span class=w> </span><span class=p>:</span><span class=n>naccounts</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=err>\</span><span class=n>setrandom</span><span class=w> </span><span class=n>bid</span><span class=w> </span><span class=mi>1</span><span class=w> </span><span class=p>:</span><span class=n>nbranches</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=err>\</span><span class=n>setrandom</span><span class=w> </span><span class=n>tid</span><span class=w> </span><span class=mi>1</span><span class=w> </span><span class=p>:</span><span class=n>ntellers</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>BEGIN</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>UPDATE</span><span class=w> </span><span class=n>accounts</span><span class=w> </span><span class=k>SET</span><span class=w> </span><span class=n>abalance</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>abalance</span><span class=w> </span><span class=o>+</span><span class=w> </span><span class=p>:</span><span class=n>delta</span><span class=w> </span><span class=k>WHERE</span><span class=w> </span><span class=n>aid</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=p>:</span><span class=n>aid</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>SELECT</span><span class=w> </span><span class=n>abalance</span><span class=w> </span><span class=k>FROM</span><span class=w> </span><span class=n>accounts</span><span class=w> </span><span class=k>WHERE</span><span class=w> </span><span class=n>aid</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=p>:</span><span class=n>aid</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>UPDATE</span><span class=w> </span><span class=n>tellers</span><span class=w> </span><span class=k>SET</span><span class=w> </span><span class=n>tbalance</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>tbalance</span><span class=w> </span><span class=o>+</span><span class=w> </span><span class=p>:</span><span class=n>delta</span><span class=w> </span><span class=k>WHERE</span><span class=w> </span><span class=n>tid</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=p>:</span><span class=n>tid</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>UPDATE</span><span class=w> </span><span class=n>branches</span><span class=w> </span><span class=k>SET</span><span class=w> </span><span class=n>bbalance</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>bbalance</span><span class=w> </span><span class=o>+</span><span class=w> </span><span class=p>:</span><span class=n>delta</span><span class=w> </span><span class=k>WHERE</span><span class=w> </span><span class=n>bid</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=p>:</span><span class=n>bid</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>INSERT</span><span class=w> </span><span class=k>INTO</span><span class=w> </span><span class=n>history</span><span class=w> </span><span class=p>(</span><span class=n>tid</span><span class=p>,</span><span class=w> </span><span class=n>bid</span><span class=p>,</span><span class=w> </span><span class=n>aid</span><span class=p>,</span><span class=w> </span><span class=n>delta</span><span class=p>,</span><span class=w> </span><span class=n>mtime</span><span class=p>)</span><span class=w> </span><span class=k>VALUES</span><span class=w> </span><span class=p>(:</span><span class=n>tid</span><span class=p>,</span><span class=w> </span><span class=p>:</span><span class=n>bid</span><span class=p>,</span><span class=w> </span><span class=p>:</span><span class=n>aid</span><span class=p>,</span><span class=w> </span><span class=p>:</span><span class=n>delta</span><span class=p>,</span><span class=w> </span><span class=k>CURRENT_TIMESTAMP</span><span class=p>);</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>END</span><span class=p>;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Run it with:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker <span class=nb>exec</span> pgbench-target pgbench -f /path/to/my-workload.sql <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -c <span class=m>20</span> -j <span class=m>4</span> -T <span class=m>120</span> -n -U postgres -d benchdb
+</span></span></code></pre></td></tr></table></div></div><p>The <code>-f</code> flag loads your custom script and <code>-n</code> skips the vacuum step (useful for custom workloads that do not use pgbench&rsquo;s built-in tables).</p><h3 id=best-practices-for-pgbench>Best Practices for pgbench</h3><ul><li><strong>Warm the cache first.</strong> Run a short preliminary test before the measured run to load hot data into PostgreSQL&rsquo;s shared buffers.</li><li><strong>Vary the scale factor.</strong> Test with <code>-s 10</code> (fits in RAM) and <code>-s 1000</code> (forces disk I/O) to understand both in-memory and I/O-bound performance.</li><li><strong>Test connection scaling.</strong> Run at <code>-c 10</code>, <code>-c 50</code>, <code>-c 100</code>, and <code>-c 200</code> to find the concurrency level where throughput plateaus or degrades.</li><li><strong>Enable statement-level logging</strong> during tests to identify slow queries: add <code>-l</code> to pgbench and examine <code>pgbench_log.*</code> files.</li><li><strong>Test with realistic <code>postgresql.conf</code> settings.</strong> Default PostgreSQL settings are conservative. Benchmark with production-equivalent <code>shared_buffers</code>, <code>work_mem</code>, and <code>wal_buffers</code> values.</li></ul><h2 id=sysbench-multi-purpose-system-and-database-benchmark>sysbench: Multi-Purpose System and Database Benchmark</h2><p><strong>sysbench</strong> is a modular benchmarking framework that tests CPU, memory, file I/O, mutex performance, and — most relevant here — OLTP database workloads for both MySQL/MariaDB and PostgreSQL. Unlike pgbench, which is PostgreSQL-specific, sysbench provides a unified benchmarking interface across multiple database engines.</p><h3 id=how-sysbench-works>How sysbench Works</h3><p>sysbench uses a Lua-based scripting system. For database benchmarking, it includes a built-in OLTP test that simulates a realistic mix of read and write operations:</p><ul><li><strong>Point SELECT queries</strong> — single-row lookups by primary key</li><li><strong>Range SELECT queries</strong> — multi-row scans within index ranges</li><li><strong>UPDATE queries</strong> — modify individual rows</li><li><strong>INSERT queries</strong> — add new rows</li><li><strong>DELETE queries</strong> — remove rows by primary key</li><li><strong>Index scan queries</strong> — ordered traversal of secondary indexes</li></ul><p>The mix of operations can be configured to match your application&rsquo;s read/write ratio. sysbench reports queries per second (QPS), transactions per second (TPS), latency percentiles (p50, p95, p99), and thread fairness metrics.</p><h3 id=docker-setup-1>Docker Setup</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose.yml — MySQL + sysbench</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>mysql</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>mysql:8.4</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>sysbench-target</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>MYSQL_ROOT_PASSWORD</span><span class=p>:</span><span class=w> </span><span class=l>benchmark123</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>MYSQL_DATABASE</span><span class=p>:</span><span class=w> </span><span class=l>sbtest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;3306:3306&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      mysqld
+</span></span></span><span class=line><span class=cl><span class=sd>        --innodb-buffer-pool-size=512M
+</span></span></span><span class=line><span class=cl><span class=sd>        --innodb-log-file-size=128M
+</span></span></span><span class=line><span class=cl><span class=sd>        --max-connections=200
+</span></span></span><span class=line><span class=cl><span class=sd>        --innodb-flush-log-at-trx-commit=1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>mysql-data:/var/lib/mysql</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>sysbench</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>severalnines/sysbench:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>sysbench-runner</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>mysql</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>entrypoint</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;tail&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;-f&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;/dev/null&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>mysql-data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=running-a-sysbench-test>Running a sysbench Test</h3><p>sysbench operates in three phases: prepare, run, and cleanup.</p><p><strong>Phase 1: Prepare</strong> — create the test database and populate it:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker <span class=nb>exec</span> sysbench-runner sysbench <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --db-driver<span class=o>=</span>mysql <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --mysql-host<span class=o>=</span>sysbench-target <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --mysql-user<span class=o>=</span>root <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --mysql-password<span class=o>=</span>benchmark123 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --mysql-db<span class=o>=</span>sbtest <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --tables<span class=o>=</span><span class=m>10</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --table-size<span class=o>=</span><span class=m>1000000</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  oltp_common prepare
+</span></span></code></pre></td></tr></table></div></div><p>This creates 10 tables with 1 million rows each (~10 million total rows), giving you a ~2-4 GB dataset depending on schema.</p><p><strong>Phase 2: Run</strong> — execute the benchmark:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker <span class=nb>exec</span> sysbench-runner sysbench <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --db-driver<span class=o>=</span>mysql <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --mysql-host<span class=o>=</span>sysbench-target <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --mysql-user<span class=o>=</span>root <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --mysql-password<span class=o>=</span>benchmark123 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --mysql-db<span class=o>=</span>sbtest <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --threads<span class=o>=</span><span class=m>16</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --time<span class=o>=</span><span class=m>120</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --report-interval<span class=o>=</span><span class=m>10</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --percentile<span class=o>=</span><span class=m>99</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  oltp_read_write run
+</span></span></code></pre></td></tr></table></div></div><ul><li><code>--threads=16</code> — 16 concurrent worker threads</li><li><code>--time=120</code> — 120-second test duration</li><li><code>--report-interval=10</code> — print intermediate results every 10 seconds</li><li><code>--percentile=99</code> — calculate p99 latency</li><li><code>oltp_read_write</code> — mixed read/write workload (70/30 split)</li></ul><p><strong>Phase 3: Cleanup</strong> — remove test data:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker <span class=nb>exec</span> sysbench-runner sysbench <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --db-driver<span class=o>=</span>mysql <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --mysql-host<span class=o>=</span>sysbench-target <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --mysql-user<span class=o>=</span>root <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --mysql-password<span class=o>=</span>benchmark123 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --mysql-db<span class=o>=</span>sbtest <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  oltp_common cleanup
+</span></span></code></pre></td></tr></table></div></div><h3 id=sysbench-test-modes>sysbench Test Modes</h3><p>sysbench ships with several predefined OLTP test scripts:</p><table><thead><tr><th>Test Mode</th><th>Description</th><th>Use Case</th></tr></thead><tbody><tr><td><code>oltp_read_only</code></td><td>100% SELECT queries</td><td>Read-heavy workloads (content sites, analytics reads)</td></tr><tr><td><code>oltp_read_write</code></td><td>~70% reads, ~30% writes</td><td>General application workloads</td></tr><tr><td><code>oltp_write_only</code></td><td>100% INSERT/UPDATE/DELETE</td><td>Write-heavy workloads (logging, IoT ingestion)</td></tr><tr><td><code>oltp_point_select</code></td><td>Single-row PK lookups</td><td>Cache hit rate testing, key-value store comparison</td></tr><tr><td><code>oltp_delete</code></td><td>Range deletes</td><td>Cleanup job simulation</td></tr><tr><td><code>oltp_insert</code></td><td>Bulk inserts</td><td>Data pipeline and ETL benchmarking</td></tr><tr><td><code>oltp_update_index</code></td><td>Indexed column updates</td><td>Hot row contention testing</td></tr><tr><td><code>oltp_update_non_index</code></td><td>Non-indexed column updates</td><td>Full table scan simulation</td></tr></tbody></table><h3 id=non-database-benchmarks>Non-Database Benchmarks</h3><p>sysbench also tests hardware performance, which helps you understand whether bottlenecks are database-specific or systemic:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># CPU benchmark — prime number computation</span>
+</span></span><span class=line><span class=cl>sysbench cpu --cpu-max-prime<span class=o>=</span><span class=m>20000</span> run
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Memory benchmark — sequential read/write</span>
+</span></span><span class=line><span class=cl>sysbench memory --memory-block-size<span class=o>=</span>1M --memory-total-size<span class=o>=</span>10G run
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># File I/O benchmark — random read/write on test files</span>
+</span></span><span class=line><span class=cl>sysbench fileio --file-total-size<span class=o>=</span>5G --file-test-mode<span class=o>=</span>rndrw prepare
+</span></span><span class=line><span class=cl>sysbench fileio --file-total-size<span class=o>=</span>5G --file-test-mode<span class=o>=</span>rndrw --threads<span class=o>=</span><span class=m>8</span> run
+</span></span><span class=line><span class=cl>sysbench fileio --file-total-size<span class=o>=</span>5G --file-test-mode<span class=o>=</span>rndrw cleanup
+</span></span></code></pre></td></tr></table></div></div><p>Running these before and after a database benchmark helps you distinguish between database-level optimization opportunities and fundamental hardware limitations.</p><h2 id=hammerdb-enterprise-grade-multi-database-benchmark>HammerDB: Enterprise-Grade Multi-Database Benchmark</h2><p><strong>HammerDB</strong> is the most sophisticated open-source database benchmarking tool available. It implements official TPC-C and TPC-H benchmarks — the same standardized workloads used by vendors in published performance comparisons — and supports PostgreSQL, MySQL, MariaDB, Oracle, SQL Server, and DB2.</p><p>HammerDB provides a graphical user interface (via Tcl/Tk) for building test scenarios, but also supports fully automated command-line execution, making it ideal for CI/CD pipeline integration and headless server testing.</p><h3 id=tpc-c-vs-tpc-h>TPC-C vs TPC-H</h3><p>HammerDB implements two distinct benchmark standards:</p><p><strong>TPC-C (Online Transaction Processing):</strong> Simulates a wholesale supplier&rsquo;s order management system with concurrent users performing new orders, payment processing, order status checks, delivery scheduling, and stock level queries. Measures throughput in transactions per minute (tpmC) and price-performance ratio.</p><p><strong>TPC-H (Decision Support):</strong> Simulates a data warehouse environment with complex analytical queries across large datasets. Measures query response times for business intelligence workloads including pricing reports, shipping patterns, and supplier analysis.</p><h3 id=docker-setup-2>Docker Setup</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose.yml — HammerDB with PostgreSQL</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>postgres</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>postgres:17-alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>hammerdb-target</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_PASSWORD</span><span class=p>:</span><span class=w> </span><span class=l>benchmark123</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_DB</span><span class=p>:</span><span class=w> </span><span class=l>hammerdb</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;5432:5432&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>shm_size</span><span class=p>:</span><span class=w> </span><span class=l>2g</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>hammerdb</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>hammerdb/hammerdb:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>hammerdb-runner</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>postgres</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>entrypoint</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;tail&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;-f&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;/dev/null&#34;</span><span class=p>]</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=running-a-tpc-c-benchmark-via-cli>Running a TPC-C Benchmark via CLI</h3><p>HammerDB uses Tcl scripts for automation. Create a benchmark script:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-tcl data-lang=tcl><span class=line><span class=cl><span class=c># tpcc-benchmark.tcl
+</span></span></span><span class=line><span class=cl><span class=c>#!/usr/bin/tclsh
+</span></span></span><span class=line><span class=cl><span class=c></span><span class=nv>load_libtclodbc</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c># Connect to PostgreSQL
+</span></span></span><span class=line><span class=cl><span class=c></span><span class=nv>dbset</span> db pg
+</span></span><span class=line><span class=cl><span class=nv>dbset</span> bm TPC-C
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c># Server connection
+</span></span></span><span class=line><span class=cl><span class=c></span><span class=k>set</span> vu_total <span class=mi>50</span>
+</span></span><span class=line><span class=cl><span class=k>set</span> tpcc_user_dict <span class=s2>&#34;user:benchuser password:benchmark123&#34;</span>
+</span></span><span class=line><span class=cl><span class=k>set</span> tpcc_server <span class=s2>&#34;hammerdb-target&#34;</span>
+</span></span><span class=line><span class=cl><span class=k>set</span> tpcc_port <span class=s2>&#34;5432&#34;</span>
+</span></span><span class=line><span class=cl><span class=k>set</span> tpcc_database <span class=s2>&#34;hammerdb&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c># Schema configuration
+</span></span></span><span class=line><span class=cl><span class=c></span><span class=k>set</span> tpcc_warehouse_count <span class=mi>20</span>
+</span></span><span class=line><span class=cl><span class=k>set</span> tpcc_num_vu <span class=nv>$vu_total</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c># Build the schema
+</span></span></span><span class=line><span class=cl><span class=c></span><span class=nb>puts</span> <span class=s2>&#34;Building TPC-C schema...&#34;</span>
+</span></span><span class=line><span class=cl><span class=nv>buildschema</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c># Wait for schema build to complete
+</span></span></span><span class=line><span class=cl><span class=c></span><span class=nv>waitforbuildcomplete</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c># Run the timed test
+</span></span></span><span class=line><span class=cl><span class=c></span><span class=nb>puts</span> <span class=s2>&#34;Starting TPC-C benchmark...&#34;</span>
+</span></span><span class=line><span class=cl><span class=nv>vuset</span> vu_total <span class=nv>$vu_total</span>
+</span></span><span class=line><span class=cl><span class=nv>vuset</span> logtimer TRUE
+</span></span><span class=line><span class=cl><span class=nv>vucreate</span>
+</span></span><span class=line><span class=cl><span class=nv>timerstart</span> <span class=mi>300</span>  <span class=k>;</span><span class=c># 5-minute timed test
+</span></span></span><span class=line><span class=cl><span class=c></span><span class=nv>vurun</span>
+</span></span><span class=line><span class=cl><span class=nv>waitforruncomplete</span>
+</span></span><span class=line><span class=cl><span class=nv>timerstop</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c># Print results
+</span></span></span><span class=line><span class=cl><span class=c></span><span class=nv>printResults</span>
+</span></span><span class=line><span class=cl><span class=nb>exit</span>
+</span></span></code></pre></td></tr></table></div></div><p>Run it with:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker <span class=nb>exec</span> hammerdb-runner hammerdbcli auto tpcc-benchmark.tcl
+</span></span></code></pre></td></tr></table></div></div><p>HammerDB outputs detailed results including:</p><ul><li><strong>tpmC</strong> — transactions per minute (standardized TPC-C metric)</li><li><strong>NOPM</strong> — new orders per minute</li><li><strong>Response time percentiles</strong> — p50, p95, p99 for each transaction type</li><li><strong>Virtual user efficiency</strong> — how effectively each simulated user contributes to throughput</li></ul><h3 id=tpc-h-analytical-benchmark>TPC-H (Analytical) Benchmark</h3><p>For data warehouse workloads, switch to TPC-H:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-tcl data-lang=tcl><span class=line><span class=cl><span class=c># tpch-benchmark.tcl
+</span></span></span><span class=line><span class=cl><span class=c></span><span class=nv>dbset</span> db pg
+</span></span><span class=line><span class=cl><span class=nv>dbset</span> bm TPC-H
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>set</span> tpch_user_dict <span class=s2>&#34;user:benchuser password:benchmark123&#34;</span>
+</span></span><span class=line><span class=cl><span class=k>set</span> tpch_server <span class=s2>&#34;hammerdb-target&#34;</span>
+</span></span><span class=line><span class=cl><span class=k>set</span> tpch_port <span class=s2>&#34;5432&#34;</span>
+</span></span><span class=line><span class=cl><span class=k>set</span> tpch_database <span class=s2>&#34;hammerdb&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>set</span> tpch_scale_factor <span class=mi>10</span>   <span class=k>;</span><span class=c># 10 GB dataset
+</span></span></span><span class=line><span class=cl><span class=c></span><span class=k>set</span> tpch_update_set <span class=mi>1</span>      <span class=k>;</span><span class=c># 1 refresh stream
+</span></span></span><span class=line><span class=cl><span class=c>
+</span></span></span><span class=line><span class=cl><span class=c></span><span class=nv>buildschema</span>
+</span></span><span class=line><span class=cl><span class=nv>waitforbuildcomplete</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nv>vuset</span> vu_total <span class=mi>4</span>
+</span></span><span class=line><span class=cl><span class=nv>vuset</span> logtimer TRUE
+</span></span><span class=line><span class=cl><span class=nv>vucreate</span>
+</span></span><span class=line><span class=cl><span class=nv>timerstart</span> <span class=mi>600</span>
+</span></span><span class=line><span class=cl><span class=nv>vurun</span>
+</span></span><span class=line><span class=cl><span class=nv>waitforruncomplete</span>
+</span></span><span class=line><span class=cl><span class=nv>timerstop</span>
+</span></span><span class=line><span class=cl><span class=nv>printResults</span>
+</span></span><span class=line><span class=cl><span class=nb>exit</span>
+</span></span></code></pre></td></tr></table></div></div><p>TPC-H runs 22 complex analytical queries involving multi-table joins, aggregations, subqueries, and window functions — the kinds of queries that differentiate a tuned data warehouse from a poorly configured one.</p><h2 id=head-to-head-comparison>Head-to-Head Comparison</h2><table><thead><tr><th>Feature</th><th>pgbench</th><th>sysbench</th><th>HammerDB</th></tr></thead><tbody><tr><td><strong>License</strong></td><td>PostgreSQL (open-source)</td><td>GPL-2.0</td><td>GPL-3.0</td></tr><tr><td><strong>Database Support</strong></td><td>PostgreSQL only</td><td>MySQL, MariaDB, PostgreSQL</td><td>PostgreSQL, MySQL, Oracle, SQL Server, DB2, MariaDB</td></tr><tr><td><strong>Benchmark Standards</strong></td><td>Modified TPC-B</td><td>Custom OLTP scripts</td><td>TPC-C, TPC-H (official)</td></tr><tr><td><strong>Installation</strong></td><td>Bundled with PostgreSQL</td><td>Separate package</td><td>Separate package + optional GUI</td></tr><tr><td><strong>Custom Workloads</strong></td><td>SQL script files</td><td>Lua scripts</td><td>Tcl scripts</td></tr><tr><td><strong>GUI</strong></td><td>No</td><td>No</td><td>Yes (Tcl/Tk)</td></tr><tr><td><strong>CLI Automation</strong></td><td>Yes</td><td>Yes</td><td>Yes</td></tr><tr><td><strong>Metrics Reported</strong></td><td>TPS, latency</td><td>QPS, TPS, latency percentiles</td><td>tpmC, NOPM, latency percentiles</td></tr><tr><td><strong>Hardware Tests</strong></td><td>No</td><td>CPU, memory, file I/O, mutex</td><td>No</td></tr><tr><td><strong>Data Volume Control</strong></td><td>Scale factor (-s)</td><td>Tables × table-size</td><td>Scale factor (SF)</td></tr><tr><td><strong>CI/CD Friendly</strong></td><td>Excellent</td><td>Excellent</td><td>Good (CLI mode)</td></tr><tr><td><strong>Best For</strong></td><td>Quick PostgreSQL checks</td><td>Cross-engine comparison</td><td>Certified benchmark compliance</td></tr></tbody></table><h2 id=choosing-the-right-tool>Choosing the Right Tool</h2><h3 id=use-pgbench-when>Use pgbench when:</h3><ul><li>You run PostgreSQL exclusively and need a fast, zero-install benchmark</li><li>You want to test PostgreSQL configuration changes (<code>shared_buffers</code>, <code>work_mem</code>, checkpoint settings)</li><li>You need to benchmark custom SQL scripts against PostgreSQL-specific features (CTEs, window functions, JSONB operations)</li><li>Quick sanity checks before and after a major version upgrade</li></ul><h3 id=use-sysbench-when>Use sysbench when:</h3><ul><li>You need to compare PostgreSQL vs MySQL vs MariaDB on identical hardware</li><li>You want to isolate database performance from hardware bottlenecks (run CPU/memory/fileio tests first)</li><li>Your workload is heavily read-focused or write-focused and you need test modes that match</li><li>You need latency percentile data (p95, p99) for SLA compliance planning</li></ul><h3 id=use-hammerdb-when>Use HammerDB when:</h3><ul><li>You need TPC-C or TPC-H certified benchmark results for vendor comparisons or procurement decisions</li><li>You benchmark multiple database engines (Oracle, SQL Server, PostgreSQL) with a single tool</li><li>You want OLAP (analytical) benchmarking alongside OLTP (transactional) testing</li><li>Your team benefits from a visual test configuration interface</li></ul><h2 id=practical-benchmarking-workflow>Practical Benchmarking Workflow</h2><p>Here is a recommended workflow for evaluating a new database deployment:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Step 1: Baseline hardware performance</span>
+</span></span><span class=line><span class=cl>sysbench cpu --cpu-max-prime<span class=o>=</span><span class=m>20000</span> run
+</span></span><span class=line><span class=cl>sysbench memory --memory-block-size<span class=o>=</span>1M --memory-total-size<span class=o>=</span>10G run
+</span></span><span class=line><span class=cl>sysbench fileio --file-total-size<span class=o>=</span>5G --file-test-mode<span class=o>=</span>rndrw prepare
+</span></span><span class=line><span class=cl>sysbench fileio --file-total-size<span class=o>=</span>5G --file-test-mode<span class=o>=</span>rndrw --threads<span class=o>=</span><span class=m>8</span> --time<span class=o>=</span><span class=m>60</span> run
+</span></span><span class=line><span class=cl>sysbench fileio --file-total-size<span class=o>=</span>5G --file-test-mode<span class=o>=</span>rndrw cleanup
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Step 2: PostgreSQL-specific baseline</span>
+</span></span><span class=line><span class=cl>docker <span class=nb>exec</span> pgbench-target pgbench -i -s <span class=m>50</span> -U postgres -d benchdb
+</span></span><span class=line><span class=cl>docker <span class=nb>exec</span> pgbench-target pgbench -c <span class=m>10</span> -j <span class=m>2</span> -T <span class=m>60</span> -U postgres -d benchdb
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Step 3: Connection scaling test</span>
+</span></span><span class=line><span class=cl><span class=k>for</span> clients in <span class=m>10</span> <span class=m>25</span> <span class=m>50</span> <span class=m>100</span> 200<span class=p>;</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>  <span class=nb>echo</span> <span class=s2>&#34;=== </span><span class=nv>$clients</span><span class=s2> concurrent clients ===&#34;</span>
+</span></span><span class=line><span class=cl>  docker <span class=nb>exec</span> pgbench-target pgbench -c <span class=nv>$clients</span> -j <span class=m>4</span> -T <span class=m>60</span> -U postgres -d benchdb
+</span></span><span class=line><span class=cl><span class=k>done</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Step 4: Cross-engine comparison (if applicable)</span>
+</span></span><span class=line><span class=cl>docker <span class=nb>exec</span> sysbench-runner sysbench --db-driver<span class=o>=</span>mysql <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --mysql-host<span class=o>=</span>sysbench-target --mysql-user<span class=o>=</span>root <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --mysql-password<span class=o>=</span>benchmark123 --mysql-db<span class=o>=</span>sbtest <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --tables<span class=o>=</span><span class=m>10</span> --table-size<span class=o>=</span><span class=m>1000000</span> --threads<span class=o>=</span><span class=m>16</span> --time<span class=o>=</span><span class=m>120</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  oltp_read_write run
+</span></span></code></pre></td></tr></table></div></div><p>Plot the results from Step 3 to create a throughput-vs-concurrency curve. The point where the curve flattens or begins declining tells you the practical connection limit for your hardware and configuration — valuable information for configuring connection poolers like PgBouncer or ProxySQL.</p><h2 id=interpreting-results-correctly>Interpreting Results Correctly</h2><p>Benchmark numbers are only useful when interpreted correctly:</p><ul><li><strong>Single-run results are misleading.</strong> Always run each test 3-5 times and report the median. The first run includes cache warming; the last runs may show thermal throttling on bare metal.</li><li><strong>TPS is not QPS.</strong> A single transaction may contain 5-10 SQL queries. pgbench reports TPS; sysbench reports both TPS and QPS. Make sure you compare like with like.</li><li><strong>Latency percentiles matter more than averages.</strong> A p99 latency of 500ms means 1 out of every 100 queries takes half a second — unacceptable for user-facing applications even if the average is 20ms.</li><li><strong>Scale factor changes everything.</strong> A benchmark with <code>-s 10</code> (dataset fits in RAM) measures CPU and memory performance. A benchmark with <code>-s 1000</code> (dataset exceeds RAM) measures I/O subsystem performance. Both are valid but answer different questions.</li><li><strong>Benchmark your actual schema.</strong> Synthetic benchmarks are a starting point. Always supplement with tests that use your real schema, indexes, and query patterns.</li></ul><h2 id=conclusion>Conclusion</h2><p>Database performance is not a property of the database software alone — it is the result of the interaction between your queries, your schema, your configuration, and your hardware. The only way to understand this interaction is to measure it systematically. pgbench gives you instant PostgreSQL benchmarking with zero setup overhead. sysbench provides a unified testing framework across database engines and hardware subsystems. HammerDB delivers certified TPC benchmarks that let you compare apples to apples across entirely different database platforms.</p><p>All three tools are free, open-source, and Docker-ready. There is no reason to deploy a database into production without first answering the fundamental question: how does it perform under the load you expect it to carry?</p></div><div id=frame style=width:100%;margin:auto;position:relative;z-index:99998><iframe data-aa=2433958 src='//acceptable.a-ads.com/2433958/?size=Adaptive' style=border:0;padding:0;width:70%;height:auto;overflow:hidden;display:block;margin:auto></iframe></div></article></main><footer class=site-footer><p>Built with <a href=https://gohugo.io>Hugo</a> · <a href=/openswap-guide/index.xml>RSS</a> · <a href=https://github.com/hopkdj>GitHub</a></p><p style=margin-top:8px>&copy; 2026 OpenSwap Guide. All rights reserved.</p></footer></body></html>
