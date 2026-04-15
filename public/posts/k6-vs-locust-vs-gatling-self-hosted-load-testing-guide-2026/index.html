@@ -1,0 +1,620 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>k6 vs Locust vs Gatling: Best Self-Hosted Load Testing Tools 2026 | OpenSwap Guide</title>
+<meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, and local AI deployment."><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/openswap-guide/css/main.min.777dc111b5207bf5336e5799477da0b31fb9080306bf98a82d6eceb979cf9737.css><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://hopkdj.github.io/openswap-guide/ class=logo><div class=logo-icon>H</div>OpenSwap Guide</a><nav><ul class=nav-links><li><a href=/openswap-guide/>Home</a></li><li><a href=/openswap-guide/tags/comparison/>Comparisons</a></li><li><a href=/openswap-guide/tags/guide/>Guides</a></li><li><a href=/openswap-guide/tags/ai/>Local AI</a></li><li><a href=/openswap-guide/index.xml class=nav-rss>Subscribe RSS</a></li></ul></nav></div></header><main><article class=post-single><a href=https://hopkdj.github.io/openswap-guide/ class=back-link>&larr; Back to posts</a><header class=post-single-header><div class=post-single-meta><span class="tag tag-purple">comparison</span>
+<span class="tag tag-green">guide</span>
+<span class="tag tag-blue">self-hosted</span>
+<span>·</span>
+<span>April 15, 2026</span>
+<span>·</span>
+<span>12 min read</span></div><h1 class=post-single-title>k6 vs Locust vs Gatling: Best Self-Hosted Load Testing Tools 2026</h1></header><div class=post-single-content><p>If you self-host web applications, APIs, or microservices, knowing how your infrastructure handles real-world traffic is not optional — it is essential. Commercial load testing platforms charge per virtual user, per test hour, or per seat, and they require sending your traffic patterns to a third-party cloud. Self-hosted open-source load testing tools eliminate those costs, keep your test data private, and integrate directly into your existing infrastructure.</p><p>This guide compares the three leading open-source load testing platforms: <strong>k6</strong>, <strong>Locust</strong>, and <strong>Gatling</strong>. We will cover architecture, scripting models, distributed execution, output formats, and practical Docker-based setups so you can start stress-testing your services today.</p><h2 id=why-self-host-your-load-testing>Why Self-Host Your Load Testing</h2><p>Running load tests from your own infrastructure has distinct advantages over commercial SaaS platforms.</p><p><strong>Full traffic privacy.</strong> Load tests reveal your application&rsquo;s endpoints, request patterns, payload sizes, and failure points. Keeping test execution in-house means no external provider sees your API topology or traffic profiles.</p><p><strong>Unlimited virtual users.</strong> Commercial platforms cap concurrent virtual users by pricing tier. Self-hosted, your only limit is the hardware you allocate. Spin up dozens of load generator containers and simulate hundreds of thousands of concurrent users at zero marginal cost.</p><p><strong>Deep infrastructure integration.</strong> Self-hosted tools plug directly into your existing monitoring stack. Export metrics to Prometheus, visualize dashboards in Grafana, and correlate load test results with your APM data — all without API key juggling or rate limits.</p><p><strong>CI/CD native.</strong> Embed load tests as gates in your deployment pipeline. Fail a release if p95 latency exceeds a threshold, or automatically ramp up tests before major version bumps. All of this runs on your own runners.</p><p><strong>Reproducible baselines.</strong> When your test environment, network path, and tooling are fully controlled, performance regressions become measurable and comparable across releases. Cloud-based platforms introduce network variability that masks real application changes.</p><h2 id=quick-comparison-table>Quick Comparison Table</h2><table><thead><tr><th>Feature</th><th>k6</th><th>Locust</th><th>Gatling</th></tr></thead><tbody><tr><td>Language</td><td>JavaScript (ES6)</td><td>Python</td><td>Scala / Kotlin / Java</td></tr><tr><td>Engine</td><td>Go (single binary)</td><td>Python + gevent</td><td>Java (Netty)</td></tr><tr><td>License</td><td>MPL 2.0 (core)</td><td>MIT</td><td>Apache 2.0</td></tr><tr><td>Protocol focus</td><td>HTTP/HTTPS, gRPC, WebSocket</td><td>HTTP/HTTPS, WebSocket, custom</td><td>HTTP/HTTPS, JMS, WebSocket, gRPC</td></tr><tr><td>Script format</td><td>JS code</td><td>Python classes</td><td>Scala DSL / recorder</td></tr><tr><td>Distributed mode</td><td>k6 Cloud or <code>k6-cloud</code> extension</td><td>Built-in (master/worker)</td><td>Built-in (cluster mode)</td></tr><tr><td>Real-time UI</td><td>No (export to Grafana)</td><td>Yes (built-in web UI)</td><td>No (HTML report after run)</td></tr><tr><td>CI integration</td><td>Native (xk6, Docker, GitHub Action)</td><td>Docker, pip, GitHub Action</td><td>Maven/Gradle plugin, Docker</td></tr><tr><td>Output formats</td><td>JSON, CSV, InfluxDB, Prometheus, Datadog</td><td>CSV, Web UI, charts</td><td>HTML, JUnit XML, JSON</td></tr><tr><td>Learning curve</td><td>Low (JS familiarity)</td><td>Low (Python familiarity)</td><td>Medium (JVM ecosystem)</td></tr><tr><td>Max realistic VUs per node</td><td>~5,000–15,000</td><td>~3,000–10,000</td><td>~10,000–50,000</td></tr><tr><td>Test recorder</td><td>Browser extension</td><td>No</td><td>Yes (built-in proxy recorder)</td></tr></tbody></table><h2 id=k6-developer-friendly-load-testing>k6: Developer-Friendly Load Testing</h2><p>k6, originally built by Load Impact and now maintained by Grafana Labs, has become the most popular choice for developer-centric load testing. Its JavaScript API is intuitive, its single-binary Go runtime is fast, and its Grafana ecosystem integration is seamless.</p><h3 id=architecture>Architecture</h3><p>k6 runs as a single Go binary that executes JavaScript test scripts. Each virtual user is a lightweight goroutine, not an OS thread, which means a single machine can sustain tens of thousands of concurrent users. The engine uses a shared iteration model where each VU runs the <code>default</code> function in a loop for the duration of the test.</p><h3 id=getting-started-with-docker>Getting Started with Docker</h3><p>The fastest way to run k6 is with the official Docker image:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker run --rm -i grafana/k6 run - &lt;script.js
+</span></span></code></pre></td></tr></table></div></div><p>Here is a basic load test script:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-javascript data-lang=javascript><span class=line><span class=cl><span class=kr>import</span> <span class=nx>http</span> <span class=nx>from</span> <span class=s1>&#39;k6/http&#39;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=kr>import</span> <span class=p>{</span> <span class=nx>check</span><span class=p>,</span> <span class=nx>sleep</span> <span class=p>}</span> <span class=nx>from</span> <span class=s1>&#39;k6&#39;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=kr>import</span> <span class=p>{</span> <span class=nx>Rate</span> <span class=p>}</span> <span class=nx>from</span> <span class=s1>&#39;k6/metrics&#39;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kr>const</span> <span class=nx>errorRate</span> <span class=o>=</span> <span class=k>new</span> <span class=nx>Rate</span><span class=p>(</span><span class=s1>&#39;errors&#39;</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kr>export</span> <span class=kr>const</span> <span class=nx>options</span> <span class=o>=</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nx>stages</span><span class=o>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>    <span class=p>{</span> <span class=nx>duration</span><span class=o>:</span> <span class=s1>&#39;30s&#39;</span><span class=p>,</span> <span class=nx>target</span><span class=o>:</span> <span class=mi>50</span> <span class=p>},</span>    <span class=c1>// Ramp up to 50 VUs
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=p>{</span> <span class=nx>duration</span><span class=o>:</span> <span class=s1>&#39;1m&#39;</span><span class=p>,</span> <span class=nx>target</span><span class=o>:</span> <span class=mi>50</span> <span class=p>},</span>     <span class=c1>// Stay at 50 VUs
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=p>{</span> <span class=nx>duration</span><span class=o>:</span> <span class=s1>&#39;30s&#39;</span><span class=p>,</span> <span class=nx>target</span><span class=o>:</span> <span class=mi>200</span> <span class=p>},</span>   <span class=c1>// Spike to 200 VUs
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=p>{</span> <span class=nx>duration</span><span class=o>:</span> <span class=s1>&#39;1m&#39;</span><span class=p>,</span> <span class=nx>target</span><span class=o>:</span> <span class=mi>200</span> <span class=p>},</span>    <span class=c1>// Hold at 200 VUs
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=p>{</span> <span class=nx>duration</span><span class=o>:</span> <span class=s1>&#39;30s&#39;</span><span class=p>,</span> <span class=nx>target</span><span class=o>:</span> <span class=mi>0</span> <span class=p>},</span>     <span class=c1>// Ramp down
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=p>],</span>
+</span></span><span class=line><span class=cl>  <span class=nx>thresholds</span><span class=o>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nx>http_req_duration</span><span class=o>:</span> <span class=p>[</span><span class=s1>&#39;p(95)&lt;500&#39;</span><span class=p>],</span>   <span class=c1>// 95th percentile under 500ms
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=nx>http_req_failed</span><span class=o>:</span> <span class=p>[</span><span class=s1>&#39;rate&lt;0.01&#39;</span><span class=p>],</span>     <span class=c1>// Error rate below 1%
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=nx>errors</span><span class=o>:</span> <span class=p>[</span><span class=s1>&#39;rate&lt;0.05&#39;</span><span class=p>],</span>              <span class=c1>// Custom error rate below 5%
+</span></span></span><span class=line><span class=cl><span class=c1></span>  <span class=p>},</span>
+</span></span><span class=line><span class=cl><span class=p>};</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kr>export</span> <span class=k>default</span> <span class=kd>function</span> <span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=kr>const</span> <span class=nx>res</span> <span class=o>=</span> <span class=nx>http</span><span class=p>.</span><span class=nx>get</span><span class=p>(</span><span class=s1>&#39;https://api.example.com/health&#39;</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>  <span class=nx>check</span><span class=p>(</span><span class=nx>res</span><span class=p>,</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=s1>&#39;status is 200&#39;</span><span class=o>:</span> <span class=p>(</span><span class=nx>r</span><span class=p>)</span> <span class=p>=&gt;</span> <span class=nx>r</span><span class=p>.</span><span class=nx>status</span> <span class=o>===</span> <span class=mi>200</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s1>&#39;response time &lt; 200ms&#39;</span><span class=o>:</span> <span class=p>(</span><span class=nx>r</span><span class=p>)</span> <span class=p>=&gt;</span> <span class=nx>r</span><span class=p>.</span><span class=nx>timings</span><span class=p>.</span><span class=nx>duration</span> <span class=o>&lt;</span> <span class=mi>200</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=p>})</span> <span class=o>||</span> <span class=nx>errorRate</span><span class=p>.</span><span class=nx>add</span><span class=p>(</span><span class=mi>1</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>  <span class=nx>sleep</span><span class=p>(</span><span class=mi>1</span><span class=p>);</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>Save this as <code>load-test.js</code> and run it:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker run --rm -i -v <span class=s2>&#34;</span><span class=k>$(</span><span class=nb>pwd</span><span class=k>)</span><span class=s2>:/scripts&#34;</span> grafana/k6 run /scripts/load-test.js
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-compose-setup-with-prometheus-and-grafana>Docker Compose Setup with Prometheus and Grafana</h3><p>For production-grade monitoring, run k6 alongside a Prometheus and Grafana stack:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>k6</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>grafana/k6:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./scripts:/scripts</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=l>run --out output-prometheus-remote-write=http://prometheus:9090/api/v1/write /scripts/load-test.js</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>prometheus</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>prometheus</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>prom/prometheus:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;9090:9090&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./prometheus.yml:/etc/prometheus/prometheus.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>grafana</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>grafana/grafana:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;3000:3000&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>GF_SECURITY_ADMIN_PASSWORD=admin</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>grafana-data:/var/lib/grafana</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>grafana-data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Create <code>prometheus.yml</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>global</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>scrape_interval</span><span class=p>:</span><span class=w> </span><span class=l>5s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>scrape_configs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=nt>job_name</span><span class=p>:</span><span class=w> </span><span class=s1>&#39;k6&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>static_configs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>targets</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s1>&#39;k6:6565&#39;</span><span class=p>]</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=advanced-parameterized-tests-with-scenarios>Advanced: Parameterized Tests with Scenarios</h3><p>k6 supports multiple concurrent scenarios with different load patterns:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-javascript data-lang=javascript><span class=line><span class=cl><span class=kr>export</span> <span class=kr>const</span> <span class=nx>options</span> <span class=o>=</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nx>scenarios</span><span class=o>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nx>browsing</span><span class=o>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nx>executor</span><span class=o>:</span> <span class=s1>&#39;ramping-vus&#39;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nx>startVUs</span><span class=o>:</span> <span class=mi>0</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nx>stages</span><span class=o>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>        <span class=p>{</span> <span class=nx>duration</span><span class=o>:</span> <span class=s1>&#39;2m&#39;</span><span class=p>,</span> <span class=nx>target</span><span class=o>:</span> <span class=mi>100</span> <span class=p>},</span>
+</span></span><span class=line><span class=cl>        <span class=p>{</span> <span class=nx>duration</span><span class=o>:</span> <span class=s1>&#39;5m&#39;</span><span class=p>,</span> <span class=nx>target</span><span class=o>:</span> <span class=mi>100</span> <span class=p>},</span>
+</span></span><span class=line><span class=cl>        <span class=p>{</span> <span class=nx>duration</span><span class=o>:</span> <span class=s1>&#39;2m&#39;</span><span class=p>,</span> <span class=nx>target</span><span class=o>:</span> <span class=mi>0</span> <span class=p>},</span>
+</span></span><span class=line><span class=cl>      <span class=p>],</span>
+</span></span><span class=line><span class=cl>      <span class=nx>exec</span><span class=o>:</span> <span class=s1>&#39;browsePages&#39;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=nx>checkout</span><span class=o>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nx>executor</span><span class=o>:</span> <span class=s1>&#39;constant-arrival-rate&#39;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nx>rate</span><span class=o>:</span> <span class=mi>10</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nx>timeUnit</span><span class=o>:</span> <span class=s1>&#39;1s&#39;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nx>duration</span><span class=o>:</span> <span class=s1>&#39;7m&#39;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nx>preAllocatedVUs</span><span class=o>:</span> <span class=mi>20</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nx>maxVUs</span><span class=o>:</span> <span class=mi>50</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nx>exec</span><span class=o>:</span> <span class=s1>&#39;checkout&#39;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nx>startTime</span><span class=o>:</span> <span class=s1>&#39;30s&#39;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=p>},</span>
+</span></span><span class=line><span class=cl>  <span class=p>},</span>
+</span></span><span class=line><span class=cl><span class=p>};</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kr>export</span> <span class=kd>function</span> <span class=nx>browsePages</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nx>http</span><span class=p>.</span><span class=nx>get</span><span class=p>(</span><span class=s1>&#39;https://shop.example.com/&#39;</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>  <span class=nx>http</span><span class=p>.</span><span class=nx>get</span><span class=p>(</span><span class=s1>&#39;https://shop.example.com/products&#39;</span><span class=p>);</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kr>export</span> <span class=kd>function</span> <span class=nx>checkout</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=kr>const</span> <span class=nx>loginRes</span> <span class=o>=</span> <span class=nx>http</span><span class=p>.</span><span class=nx>post</span><span class=p>(</span><span class=s1>&#39;https://shop.example.com/login&#39;</span><span class=p>,</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nx>username</span><span class=o>:</span> <span class=s1>&#39;testuser&#39;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=nx>password</span><span class=o>:</span> <span class=s1>&#39;testpass&#39;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=p>});</span>
+</span></span><span class=line><span class=cl>  <span class=kr>const</span> <span class=nx>cartRes</span> <span class=o>=</span> <span class=nx>http</span><span class=p>.</span><span class=nx>post</span><span class=p>(</span><span class=s1>&#39;https://shop.example.com/cart/add&#39;</span><span class=p>,</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nx>product_id</span><span class=o>:</span> <span class=s1>&#39;sku-12345&#39;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=nx>quantity</span><span class=o>:</span> <span class=mi>1</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=p>});</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=locust-python-native-distributed-testing>Locust: Python-Native Distributed Testing</h2><p>Locust takes a fundamentally different approach. Instead of a predefined load pattern, you define user behavior as Python code and let Locust simulate users making requests with realistic timing. Its built-in web UI provides real-time test monitoring without any additional infrastructure.</p><h3 id=architecture-1>Architecture</h3><p>Locust uses gevent (coroutine-based networking) to handle thousands of concurrent users in a single process. Each virtual user is a greenlet — a lightweight coroutine that runs independently. The master-worker architecture distributes load across multiple machines transparently.</p><h3 id=installation-and-quick-start>Installation and Quick Start</h3><p>Install Locust via pip:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>pip install locust
+</span></span></code></pre></td></tr></table></div></div><p>Create a test file called <code>locustfile.py</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=kn>from</span> <span class=nn>locust</span> <span class=kn>import</span> <span class=n>HttpUser</span><span class=p>,</span> <span class=n>task</span><span class=p>,</span> <span class=n>between</span><span class=p>,</span> <span class=n>constant</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>random</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>class</span> <span class=nc>WebsiteUser</span><span class=p>(</span><span class=n>HttpUser</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>    <span class=c1># Wait between 1 and 5 seconds between tasks</span>
+</span></span><span class=line><span class=cl>    <span class=n>wait_time</span> <span class=o>=</span> <span class=n>between</span><span class=p>(</span><span class=mi>1</span><span class=p>,</span> <span class=mi>5</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=k>def</span> <span class=nf>on_start</span><span class=p>(</span><span class=bp>self</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;&#34;&#34;Called when a simulated user starts.&#34;&#34;&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=bp>self</span><span class=o>.</span><span class=n>client</span><span class=o>.</span><span class=n>post</span><span class=p>(</span><span class=s2>&#34;/login&#34;</span><span class=p>,</span> <span class=n>json</span><span class=o>=</span><span class=p>{</span>
+</span></span><span class=line><span class=cl>            <span class=s2>&#34;username&#34;</span><span class=p>:</span> <span class=s2>&#34;testuser&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>            <span class=s2>&#34;password&#34;</span><span class=p>:</span> <span class=s2>&#34;password123&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=p>})</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=nd>@task</span><span class=p>(</span><span class=mi>3</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=k>def</span> <span class=nf>view_products</span><span class=p>(</span><span class=bp>self</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>        <span class=bp>self</span><span class=o>.</span><span class=n>client</span><span class=o>.</span><span class=n>get</span><span class=p>(</span><span class=s2>&#34;/products&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=bp>self</span><span class=o>.</span><span class=n>client</span><span class=o>.</span><span class=n>get</span><span class=p>(</span><span class=sa>f</span><span class=s2>&#34;/products/</span><span class=si>{</span><span class=n>random</span><span class=o>.</span><span class=n>randint</span><span class=p>(</span><span class=mi>1</span><span class=p>,</span> <span class=mi>100</span><span class=p>)</span><span class=si>}</span><span class=s2>&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=nd>@task</span><span class=p>(</span><span class=mi>1</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=k>def</span> <span class=nf>view_cart</span><span class=p>(</span><span class=bp>self</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>        <span class=bp>self</span><span class=o>.</span><span class=n>client</span><span class=o>.</span><span class=n>get</span><span class=p>(</span><span class=s2>&#34;/cart&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=nd>@task</span><span class=p>(</span><span class=mi>2</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=k>def</span> <span class=nf>search</span><span class=p>(</span><span class=bp>self</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>        <span class=bp>self</span><span class=o>.</span><span class=n>client</span><span class=o>.</span><span class=n>get</span><span class=p>(</span><span class=s2>&#34;/search&#34;</span><span class=p>,</span> <span class=n>params</span><span class=o>=</span><span class=p>{</span><span class=s2>&#34;q&#34;</span><span class=p>:</span> <span class=n>random</span><span class=o>.</span><span class=n>choice</span><span class=p>([</span>
+</span></span><span class=line><span class=cl>            <span class=s2>&#34;laptop&#34;</span><span class=p>,</span> <span class=s2>&#34;phone&#34;</span><span class=p>,</span> <span class=s2>&#34;tablet&#34;</span><span class=p>,</span> <span class=s2>&#34;monitor&#34;</span><span class=p>,</span> <span class=s2>&#34;keyboard&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=p>])})</span>
+</span></span></code></pre></td></tr></table></div></div><p>Start the Locust web UI:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>locust -f locustfile.py --host<span class=o>=</span>https://shop.example.com
+</span></span></code></pre></td></tr></table></div></div><p>Open <code>http://localhost:8089</code> in your browser. Set the number of users and spawn rate, then start the test. The real-time dashboard shows requests per second, response times, failure rates, and a live chart.</p><h3 id=running-locust-in-docker>Running Locust in Docker</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker run -p 8089:8089 -v <span class=s2>&#34;</span><span class=k>$(</span><span class=nb>pwd</span><span class=k>)</span><span class=s2>:/mnt/locust&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  locustio/locust -f /mnt/locust/locustfile.py <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --host<span class=o>=</span>https://shop.example.com
+</span></span></code></pre></td></tr></table></div></div><h3 id=distributed-mode-with-docker-compose>Distributed Mode with Docker Compose</h3><p>For large-scale tests, run Locust in master/worker mode:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>master</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>locustio/locust:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8089:8089&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;5557:5557&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./locust:/mnt/locust</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      -f /mnt/locust/locustfile.py
+</span></span></span><span class=line><span class=cl><span class=sd>      --master
+</span></span></span><span class=line><span class=cl><span class=sd>      --host=https://shop.example.com
+</span></span></span><span class=line><span class=cl><span class=sd>      --expect-workers 4</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>worker</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>locustio/locust:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./locust:/mnt/locust</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      -f /mnt/locust/locustfile.py
+</span></span></span><span class=line><span class=cl><span class=sd>      --worker
+</span></span></span><span class=line><span class=cl><span class=sd>      --master-host master</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>deploy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>replicas</span><span class=p>:</span><span class=w> </span><span class=m>4</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Scale workers on the fly:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker compose up -d --scale <span class=nv>worker</span><span class=o>=</span><span class=m>8</span>
+</span></span></code></pre></td></tr></table></div></div><p>This spins up eight worker containers distributing load across the test target. The master aggregates results and serves the web UI.</p><h3 id=headless-mode-for-cicd>Headless Mode for CI/CD</h3><p>For automated pipelines, run Locust without the web UI:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>locust -f locustfile.py --headless <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --host<span class=o>=</span>https://shop.example.com <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --users <span class=m>500</span> --spawn-rate <span class=m>50</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --run-time 10m <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --csv<span class=o>=</span>results/locust <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --html<span class=o>=</span>results/report.html
+</span></span></code></pre></td></tr></table></div></div><h2 id=gatling-enterprise-grade-performance-testing>Gatling: Enterprise-Grade Performance Testing</h2><p>Gatling is the heavyweight option, designed for high-performance scenarios where you need to simulate tens of thousands of concurrent users from a single machine. Built on Akka and Netty, its asynchronous architecture delivers exceptional throughput. The built-in test recorder captures browser interactions and generates Scala test scripts automatically.</p><h3 id=architecture-2>Architecture</h3><p>Gatling runs on the JVM and uses a non-blocking, event-driven architecture. Its DSL (domain-specific language) allows you to describe complex user journeys declaratively. The recorder acts as an HTTP proxy — browse your application normally, and Gatling captures every request to generate a test script.</p><h3 id=getting-started-with-docker-1>Getting Started with Docker</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker run -it --rm -v <span class=s2>&#34;</span><span class=k>$(</span><span class=nb>pwd</span><span class=k>)</span><span class=s2>:/opt/gatling/user-files&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  denvazh/gatling:latest
+</span></span></code></pre></td></tr></table></div></div><p>Create a simulation file at <code>user-files/simulations/ApiSimulation.scala</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-scala data-lang=scala><span class=line><span class=cl><span class=k>package</span> <span class=nn>tests</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>import</span> <span class=nn>scala.concurrent.duration._</span>
+</span></span><span class=line><span class=cl><span class=k>import</span> <span class=nn>io.gatling.core.Predef._</span>
+</span></span><span class=line><span class=cl><span class=k>import</span> <span class=nn>io.gatling.http.Predef._</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>class</span> <span class=nc>ApiSimulation</span> <span class=k>extends</span> <span class=nc>Simulation</span> <span class=o>{</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=n>httpProtocol</span> <span class=k>=</span> <span class=n>http</span>
+</span></span><span class=line><span class=cl>    <span class=o>.</span><span class=n>baseUrl</span><span class=o>(</span><span class=s>&#34;https://api.example.com&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=o>.</span><span class=n>header</span><span class=o>(</span><span class=s>&#34;Content-Type&#34;</span><span class=o>,</span> <span class=s>&#34;application/json&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=o>.</span><span class=n>acceptHeader</span><span class=o>(</span><span class=s>&#34;application/json&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=o>.</span><span class=n>userAgentHeader</span><span class=o>(</span><span class=s>&#34;Gatling/LoadTest&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=k>val</span> <span class=n>scn</span> <span class=k>=</span> <span class=n>scenario</span><span class=o>(</span><span class=s>&#34;API Load Test&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=o>.</span><span class=n>exec</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>      <span class=n>http</span><span class=o>(</span><span class=s>&#34;Health Check&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>        <span class=o>.</span><span class=n>get</span><span class=o>(</span><span class=s>&#34;/health&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>        <span class=o>.</span><span class=n>check</span><span class=o>(</span><span class=n>status</span><span class=o>.</span><span class=n>is</span><span class=o>(</span><span class=mi>200</span><span class=o>))</span>
+</span></span><span class=line><span class=cl>        <span class=o>.</span><span class=n>check</span><span class=o>(</span><span class=n>responseTimeInMillis</span><span class=o>.</span><span class=n>lt</span><span class=o>(</span><span class=mi>200</span><span class=o>))</span>
+</span></span><span class=line><span class=cl>    <span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=o>.</span><span class=n>pause</span><span class=o>(</span><span class=mi>1</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=o>.</span><span class=n>exec</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>      <span class=n>http</span><span class=o>(</span><span class=s>&#34;List Products&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>        <span class=o>.</span><span class=n>get</span><span class=o>(</span><span class=s>&#34;/api/products?page=1&amp;limit=20&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>        <span class=o>.</span><span class=n>check</span><span class=o>(</span><span class=n>status</span><span class=o>.</span><span class=n>is</span><span class=o>(</span><span class=mi>200</span><span class=o>))</span>
+</span></span><span class=line><span class=cl>        <span class=o>.</span><span class=n>check</span><span class=o>(</span><span class=n>jsonPath</span><span class=o>(</span><span class=s>&#34;$.total&#34;</span><span class=o>).</span><span class=n>exists</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=o>.</span><span class=n>pause</span><span class=o>(</span><span class=mi>2</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=o>.</span><span class=n>feed</span><span class=o>(</span><span class=n>csv</span><span class=o>(</span><span class=s>&#34;product_ids.csv&#34;</span><span class=o>).</span><span class=n>circular</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=o>.</span><span class=n>exec</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>      <span class=n>http</span><span class=o>(</span><span class=s>&#34;Product Detail&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>        <span class=o>.</span><span class=n>get</span><span class=o>(</span><span class=s>&#34;/api/products/${product_id}&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>        <span class=o>.</span><span class=n>check</span><span class=o>(</span><span class=n>status</span><span class=o>.</span><span class=n>in</span><span class=o>(</span><span class=mi>200</span><span class=o>,</span> <span class=mi>404</span><span class=o>))</span>
+</span></span><span class=line><span class=cl>    <span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=o>.</span><span class=n>pause</span><span class=o>(</span><span class=mi>1</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=o>.</span><span class=n>exec</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>      <span class=n>http</span><span class=o>(</span><span class=s>&#34;Create Order&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>        <span class=o>.</span><span class=n>post</span><span class=o>(</span><span class=s>&#34;/api/orders&#34;</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>        <span class=o>.</span><span class=n>body</span><span class=o>(</span><span class=nc>StringBody</span><span class=o>(</span><span class=s>&#34;&#34;&#34;{&#34;product_id&#34;: &#34;${product_id}&#34;, &#34;quantity&#34;: 1}&#34;&#34;&#34;</span><span class=o>)).</span><span class=n>asJson</span>
+</span></span><span class=line><span class=cl>        <span class=o>.</span><span class=n>check</span><span class=o>(</span><span class=n>status</span><span class=o>.</span><span class=n>is</span><span class=o>(</span><span class=mi>201</span><span class=o>))</span>
+</span></span><span class=line><span class=cl>        <span class=o>.</span><span class=n>check</span><span class=o>(</span><span class=n>jsonPath</span><span class=o>(</span><span class=s>&#34;$.order_id&#34;</span><span class=o>).</span><span class=n>saveAs</span><span class=o>(</span><span class=s>&#34;order_id&#34;</span><span class=o>))</span>
+</span></span><span class=line><span class=cl>    <span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>  <span class=n>setUp</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>    <span class=n>scn</span><span class=o>.</span><span class=n>injectOpen</span><span class=o>(</span>
+</span></span><span class=line><span class=cl>      <span class=n>rampUsersPerSec</span><span class=o>(</span><span class=mi>1</span><span class=o>).</span><span class=n>to</span><span class=o>(</span><span class=mi>50</span><span class=o>).</span><span class=n>during</span><span class=o>(</span><span class=mi>60</span><span class=o>),</span>
+</span></span><span class=line><span class=cl>      <span class=n>constantUsersPerSec</span><span class=o>(</span><span class=mi>50</span><span class=o>).</span><span class=n>during</span><span class=o>(</span><span class=mi>300</span><span class=o>),</span>
+</span></span><span class=line><span class=cl>      <span class=n>rampUsersPerSec</span><span class=o>(</span><span class=mi>50</span><span class=o>).</span><span class=n>to</span><span class=o>(</span><span class=mi>0</span><span class=o>).</span><span class=n>during</span><span class=o>(</span><span class=mi>30</span><span class=o>)</span>
+</span></span><span class=line><span class=cl>    <span class=o>)</span>
+</span></span><span class=line><span class=cl>  <span class=o>).</span><span class=n>protocols</span><span class=o>(</span><span class=n>httpProtocol</span><span class=o>)</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>Feed data file <code>user-files/data/product_ids.csv</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-csv data-lang=csv><span class=line><span class=cl><span class=s>product_id</span><span class=p>
+</span></span></span><span class=line><span class=cl><span class=p></span><span class=s>sku-001</span><span class=p>
+</span></span></span><span class=line><span class=cl><span class=p></span><span class=s>sku-002</span><span class=p>
+</span></span></span><span class=line><span class=cl><span class=p></span><span class=s>sku-003</span><span class=p>
+</span></span></span><span class=line><span class=cl><span class=p></span><span class=s>sku-004</span><span class=p>
+</span></span></span><span class=line><span class=cl><span class=p></span><span class=s>sku-005</span><span class=p>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=docker-compose-with-full-stack>Docker Compose with Full Stack</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>gatling</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>denvazh/gatling:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./user-files:/opt/gatling/user-files</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./results:/opt/gatling/results</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>JAVA_OPTS=-Xms512m -Xmx2g</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>influxdb</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>influxdb:2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8086:8086&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DOCKER_INFLUXDB_INIT_MODE=setup</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DOCKER_INFLUXDB_INIT_USERNAME=admin</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DOCKER_INFLUXDB_INIT_PASSWORD=admin123</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DOCKER_INFLUXDB_INIT_ORG=loadtest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DOCKER_INFLUXDB_INIT_BUCKET=gatling</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>grafana</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>grafana/grafana:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;3000:3000&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>GF_SECURITY_ADMIN_PASSWORD=admin</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>grafana-data:/var/lib/grafana</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>grafana-data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=html-report-output>HTML Report Output</h3><p>After each run, Gatling generates a standalone HTML report with:</p><ul><li>Request count and success/failure breakdown</li><li>Response time percentiles (50th, 75th, 90th, 95th, 99th)</li><li>Active users over time</li><li>Response time distribution histogram</li><li>Individual request statistics with detailed breakdowns</li></ul><p>Open the report in any browser — no server required. The report is fully self-contained HTML with embedded charts.</p><h2 id=choosing-the-right-tool>Choosing the Right Tool</h2><h3 id=use-k6-when>Use k6 when:</h3><ul><li>Your team writes JavaScript or TypeScript</li><li>You want tight Grafana/Prometheus integration</li><li>You need threshold-based pass/fail gates in CI/CD</li><li>You test APIs with complex scenarios (ramping, spikes, constant arrival rate)</li><li>You want a single binary with zero JVM dependency</li></ul><h3 id=use-locust-when>Use Locust when:</h3><ul><li>Your team prefers Python</li><li>You need a built-in real-time web UI without extra setup</li><li>You want simple master/worker distributed execution</li><li>Your tests involve complex Python logic (data generation, dynamic behavior)</li><li>You value rapid prototyping — write a test in 10 lines of Python</li></ul><h3 id=use-gatling-when>Use Gatling when:</h3><ul><li>You need maximum throughput per machine (50K+ VUs)</li><li>You want a test recorder that generates scripts from browser sessions</li><li>Your team is comfortable with Scala, Kotlin, or Java</li><li>You need detailed HTML reports for stakeholder presentations</li><li>You test JVM-based applications and want JVM-aware metrics</li></ul><h2 id=cicd-integration-examples>CI/CD Integration Examples</h2><h3 id=github-actions-with-k6>GitHub Actions with k6</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>Load Test</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>push</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>branches</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=l>main]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>jobs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>load-test</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>runs-on</span><span class=p>:</span><span class=w> </span><span class=l>ubuntu-latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>steps</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>uses</span><span class=p>:</span><span class=w> </span><span class=l>actions/checkout@v4</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>Run k6</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>uses</span><span class=p>:</span><span class=w> </span><span class=l>grafana/k6-action@v0.3.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>with</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>filename</span><span class=p>:</span><span class=w> </span><span class=l>scripts/load-test.js</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>flags</span><span class=p>:</span><span class=w> </span>--<span class=l>out json=results.json</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>Upload results</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>uses</span><span class=p>:</span><span class=w> </span><span class=l>actions/upload-artifact@v4</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>with</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>k6-results</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>path</span><span class=p>:</span><span class=w> </span><span class=l>results.json</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=github-actions-with-locust>GitHub Actions with Locust</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>Load Test</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>schedule</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>cron</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;0 2 * * 1&#34;</span><span class=w>  </span><span class=c># Every Monday at 2 AM</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>jobs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>locust-test</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>runs-on</span><span class=p>:</span><span class=w> </span><span class=l>ubuntu-latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>steps</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>uses</span><span class=p>:</span><span class=w> </span><span class=l>actions/checkout@v4</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>Run Locust</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>run</span><span class=p>:</span><span class=w> </span><span class=p>|</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>          pip install locust
+</span></span></span><span class=line><span class=cl><span class=sd>          locust -f locustfile.py --headless \
+</span></span></span><span class=line><span class=cl><span class=sd>            --host=https://staging.example.com \
+</span></span></span><span class=line><span class=cl><span class=sd>            --users 200 --spawn-rate 20 \
+</span></span></span><span class=line><span class=cl><span class=sd>            --run-time 5m \
+</span></span></span><span class=line><span class=cl><span class=sd>            --html=results/report.html</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>Upload report</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>uses</span><span class=p>:</span><span class=w> </span><span class=l>actions/upload-artifact@v4</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>with</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>locust-report</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>path</span><span class=p>:</span><span class=w> </span><span class=l>results/report.html</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=best-practices-for-self-hosted-load-testing>Best Practices for Self-Hosted Load Testing</h2><ol><li><p><strong>Isolate test traffic.</strong> Run load tests against a staging environment that mirrors production. Testing against production risks impacting real users and skews your metrics with production traffic noise.</p></li><li><p><strong>Monitor the target system.</strong> Pair every load test with infrastructure monitoring. Collect CPU, memory, network I/O, and database connection pool metrics from the system under test to identify bottlenecks, not just response times.</p></li><li><p><strong>Warm up before measuring.</strong> Many systems have cold caches, JIT compilation, or connection pool initialization that inflates early response times. Include a warmup phase before your measurement window.</p></li><li><p><strong>Test realistic scenarios.</strong> A single endpoint hammered by identical requests rarely reflects real traffic. Use parameterized feeds, randomized delays, and multi-step user journeys that mirror actual usage patterns.</p></li><li><p><strong>Establish baselines.</strong> Run the same test against a known-good version and store the results. Every subsequent release gets compared against that baseline to catch performance regressions early.</p></li><li><p><strong>Distribute geographically.</strong> If your users span multiple regions, run load generators from different locations. Network latency between continents can dominate response times for globally distributed applications.</p></li><li><p><strong>Automate threshold checks.</strong> Define clear pass/fail criteria — p95 latency under 500ms, error rate below 1%, throughput above 1000 requests per second. Fail your CI pipeline when thresholds are breached.</p></li></ol><p>Load testing is not a one-time activity. It is a continuous practice that protects your infrastructure from performance regressions, capacity surprises, and costly outages. Pick the tool that matches your team&rsquo;s skills, set it up with Docker, and start testing before your next release goes live.</p></div><div id=frame style=width:100%;margin:auto;position:relative;z-index:99998><iframe data-aa=2433958 src='//acceptable.a-ads.com/2433958/?size=Adaptive' style=border:0;padding:0;width:70%;height:auto;overflow:hidden;display:block;margin:auto></iframe></div></article></main><footer class=site-footer><p>Built with <a href=https://gohugo.io>Hugo</a> · <a href=/openswap-guide/index.xml>RSS</a> · <a href=https://github.com/hopkdj>GitHub</a></p><p style=margin-top:8px>&copy; 2026 OpenSwap Guide. All rights reserved.</p></footer></body></html>
