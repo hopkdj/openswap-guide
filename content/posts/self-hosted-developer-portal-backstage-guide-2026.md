@@ -1,63 +1,76 @@
 ---
-title: "Complete Guide to Self-Hosted Developer Portals: Backstage and Beyond 2026"
+title: "Self-Hosted Developer Portal: Backstage vs Alternatives Complete Guide 2026"
 date: 2026-04-15
-tags: ["developer-portal", "backstage", "internal-developer-platform", "self-hosted", "devops"]
+tags: ["comparison", "guide", "self-hosted", "privacy", "developer-tools", "backstage"]
 draft: false
-description: "Build your own internal developer platform with open-source tools. Complete guide to Backstage, self-hosted developer portals, service catalogs, and scaffolder templates for 2026."
+description: "Complete guide to building a self-hosted developer portal in 2026. Compare Backstage, Port, and Compass. Includes Docker setup, plugin configuration, service catalog best practices, and cost analysis."
 ---
 
-Every growing engineering team eventually hits the same wall: too many services, too many repositories, scattered documentation, inconsistent tooling, and onboarding new developers takes weeks instead of days. A **developer portal** solves this by providing a single pane of glass for all your internal services, APIs, documentation, and tooling.
+Every engineering organization eventually hits the same wall: services multiply, documentation scatters across wikis, nobody knows who owns what, and onboarding new developers takes weeks instead of days. A developer portal solves this by centralizing service discovery, documentation, tooling, and infrastructure access into a single, searchable interface.
 
-While companies like Spotify (who created Backstage), Netflix, and Stripe have invested millions in their internal developer platforms, you don't need a massive budget to build one. Open-source and self-hosted options let any team create a professional developer portal on their own infrastructure.
+The question is no longer *whether* to build one, but *which platform* to use and *how* to host it without handing your internal architecture to a third-party SaaS vendor.
 
-## Why You Need a Self-Hosted Developer Portal
+This guide covers the leading open-source and self-hostable developer portal solutions in 2026, with practical deployment instructions for each.
 
-Internal developer portals are becoming essential infrastructure for teams with more than a handful of microservices. Here's why building one on your own servers makes sense:
+## Why Self-Host Your Developer Portal?
 
-### The Problem of Developer Friction
+Developer portals contain your organization's entire service topology — internal API endpoints, database connection strings, deployment pipelines, and ownership maps. Running this on someone else's cloud introduces several risks:
 
-When developers spend hours searching for the right repository, guessing which API endpoint to call, or asking teammates "how do I deploy this?" — that's friction that directly reduces engineering velocity. A developer portal eliminates this by centralizing:
+**Data sovereignty.** Your service catalog reveals your architecture. Sending it to an external SaaS provider means your infrastructure topology lives on their servers, subject to their retention policies and breach risk.
 
-- **Service catalog** — every microservice, library, and application in one searchable index
-- **API documentation** — auto-generated from OpenAPI specs, linked to the owning team
-- **Scaffolder templates** — new project boilerplate generated in minutes, not hours
-- **Ownership tracking** — clear mapping of who maintains what, with escalation paths
-- **Scorecards and standards** — automated checks for documentation, tests, and security compliance
+**Vendor lock-in.** Once your teams depend on a proprietary portal, migrating away becomes a multi-month project. Open-source platforms keep your data in standard formats (YAML, JSON) that you own.
 
-### Self-Hosted vs. SaaS Developer Portals
+**Cost at scale.** SaaS developer portals typically charge per active user or per registered service. At 200+ engineers and 500+ microservices, annual costs easily exceed $50,000. Self-hosting costs a fraction — typically a single small VM or Kubernetes cluster.
 
-Cloud-based developer portal services like Port, Compass (Atlassian), and Cortex offer convenience but come with trade-offs:
+**Deep customization.** Open-source portals let you build plugins for your exact stack: custom CI/CD integrations, internal tool links, proprietary metrics dashboards, and authentication flows that SaaS products won't support.
 
-| Feature | Self-Hosted (Backstage) | SaaS (Port, Cortex) |
-|---------|------------------------|---------------------|
-| **Data privacy** | Full control, never leaves your infra | Data stored on vendor servers |
-| **Customization** | Unlimited — open-source codebase | Limited to vendor-provided features |
-| **Cost at scale** | Infrastructure cost only (~$50-200/mo) | Per-seat pricing ($50-150/user/mo) |
-| **Vendor lock-in** | None — you own everything | High — migration is painful |
-| **Setup complexity** | Higher — requires DevOps effort | Lower — managed service |
-| **Plugin ecosystem** | 800+ community plugins | Limited integrations |
-| **SLA control** | You define it | Dependent on vendor uptime |
-| **Integration with internal tools** | Direct database/API access | Requires webhooks or API sync |
+**Air-gapped environments.** Financial services, healthcare, and government teams often cannot send internal service metadata outside their network. Self-hosting is the only option.
 
-For teams that value data sovereignty, have complex internal tooling, or want to avoid per-seat licensing at scale, self-hosted is the clear winner.
+## The Landscape: Three Approaches
 
-## Backstage: The Gold Standard for Open-Source Developer Portals
+The developer portal market has settled into three distinct approaches:
 
-[Backstage](https://backstage.io/) is an open-source developer portal framework originally built by Spotify and now a CNCF incubating project. It provides the core building blocks — service catalog, software templates, tech docs, and a plugin system — that you extend to match your organization's needs.
+| Feature | Backstage (Spotify) | Port | Compass (Atlassian) |
+|---------|---------------------|------|---------------------|
+| **License** | Apache 2.0 | Commercial SaaS | Commercial SaaS |
+| **Self-hostable** | Yes, fully | No | No |
+| **Primary focus** | Service catalog + extensible plugin ecosystem | Developer experience + self-service | Code-centric service discovery |
+| **Setup complexity** | Moderate to high | Low (SaaS signup) | Low (SaaS signup) |
+| **Customization depth** | Unlimited (React + TypeScript plugins) | Limited to platform features | Limited to Atlassian ecosystem |
+| **Community size** | 40,000+ GitHub stars, CNCF project | Growing SaaS customer base | Atlassian enterprise customers |
+| **Plugin ecosystem** | 500+ official and community plugins | Native integrations only | Atlassian marketplace apps |
+| **Best for** | Teams wanting full control and customization | Teams wanting quick setup with minimal ops | Atlassian-heavy organizations |
+| **Estimated annual cost** | Infrastructure only (~$500-$2,000/yr) | $15-$40/user/month | $10-$25/user/month |
 
-### Core Architecture
+Backstage stands alone as the only genuinely self-hostable option with an open-source core. The other two require sending your data to vendor-managed infrastructure.
 
-Backstage consists of three main components:
+## Getting Started with Backstage
 
-1. **Software Catalog** — entity registry that tracks services, components, APIs, resources, and systems. Entities are defined as YAML files in your repositories and ingested via the catalog processor.
+Backstage is the CNCF-hosted developer portal originally built by Spotify. It provides a unified interface for managing your entire software catalog, including services, libraries, websites, and data pipelines.
 
-2. **Software Templates (Scaffolder)** — parameterized templates that bootstrap new projects with your organization's standards, CI/CD pipelines, and infrastructure-as-code configurations.
+### Prerequisites
 
-3. **TechDocs** — documentation-as-code system that renders Markdown documentation from repositories directly in the portal, supporting a "docs like code" workflow.
+- Node.js 20.x or 22.x LTS
+- Yarn 1.x (classic) or npm
+- PostgreSQL 14+ (for production)
+- Docker and Docker Compose (optional, for containerized deployment)
 
-### Installing Backstage with Docker Compose
+### Quick Start with npx
 
-The fastest way to get Backstage running is with Docker Compose. Here's a production-ready setup:
+The fastest way to explore Backstage is generating a fresh app:
+
+```bash
+npx @backstage/create-app@latest
+cd my-backstage-app
+yarn install
+yarn dev
+```
+
+This starts the frontend on port 3000 and the backend on port 7007. The development server includes hot-reload for plugin development.
+
+### Production Deployment with Docker Compose
+
+For production, you need a persistent database and proper backend configuration. Here is a complete Docker Compose setup:
 
 ```yaml
 version: '3.8'
@@ -66,204 +79,237 @@ services:
   backstage:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: packages/backend/Dockerfile
     ports:
       - "7007:7007"
     environment:
       - NODE_ENV=production
-      - POSTGRES_HOST=postgres
-      - POSTGRES_PORT=5432
-      - POSTGRES_USER=backstage
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=backstage
+      - DATABASE_URL=postgresql://backstage:backstage@postgres:5432/backstage
+      - LOG_LEVEL=info
+      # Authentication providers
+      - AUTH_GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
+      - AUTH_GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
     depends_on:
       postgres:
         condition: service_healthy
     restart: unless-stopped
-    networks:
-      - backstage-net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7007/healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   postgres:
     image: postgres:16-alpine
     environment:
       - POSTGRES_USER=backstage
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_PASSWORD=backstage
       - POSTGRES_DB=backstage
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U backstage"]
-      interval: 5s
-      timeout: 3s
+      interval: 10s
+      timeout: 5s
       retries: 5
-    networks:
-      - backstage-net
 
 volumes:
-  pgdata:
-
-networks:
-  backstage-net:
-    driver: bridge
+  postgres_data:
 ```
 
-Save this as `docker-compose.yml` and create your `.env`:
-
-```bash
-POSTGRES_PASSWORD=your-secure-password-here
-```
-
-### Building the Backstage App
-
-Backstage requires a Node.js application as its frontend and backend. Create it using the official CLI:
-
-```bash
-# Install the Backstage CLI
-npx @backstage/create-app@latest
-
-# This creates an app with:
-# - packages/app (frontend React application)
-# - packages/backend (Node.js backend server)
-# - app-config.yaml (configuration)
-
-# Install dependencies
-cd my-backstage-app
-yarn install
-
-# Build for production
-yarn build:backend
-```
-
-Create a Dockerfile for the backend:
-
-```dockerfile
-FROM node:20-bookworm-slim
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    git dumb-init tini && rm -rf /var/lib/apt/lists/*
-RUN yarn config set network-timeout 300000
-WORKDIR /app
-COPY yarn.lock package.json packages/backend/dist/skeleton.tar.gz ./
-RUN tar xzf skeleton.tar.gz && rm skeleton.tar.gz
-RUN yarn install --production --frozen-lockfile
-COPY packages/backend/dist/bundle.tar.gz .
-RUN tar xzf bundle.tar.gz && rm bundle.tar.gz
-CMD ["dumb-init", "node", "packages/backend", "--config", "app-config.yaml"]
-```
-
-Build and run:
+Build and start the stack:
 
 ```bash
 docker compose up -d --build
 ```
 
-Access the portal at `http://localhost:7007`.
+The portal will be available at `http://localhost:7007`.
 
-### Configuring the Software Catalog
+### Production Build with Helm for Kubernetes
 
-The catalog is the heart of Backstage. Define entities using YAML files. Here's a comprehensive example:
+For Kubernetes deployments, the official Helm chart handles everything:
+
+```bash
+helm repo add backstage https://backstage.github.io/charts
+helm repo update
+
+helm install my-backstage backstage/backstage \
+  --set backstage.extraEnvVars[0].name=DATABASE_URL \
+  --set backstage.extraEnvVars[0].value=postgresql://backstage:backstage@my-postgres:5432/backstage \
+  --set image.repository=myregistry/backstage \
+  --set image.tag=latest \
+  --namespace developer-portal \
+  --create-namespace
+```
+
+## Configuring the Software Catalog
+
+The software catalog is Backstage's core feature. It tracks every component in your organization using YAML descriptor files.
+
+### Entity Descriptor Structure
+
+Each service, library, or system is defined in a `catalog-info.yaml` file at the repository root:
 
 ```yaml
-# catalog-info.yaml (place in each repository root)
 apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
   name: payment-service
-  description: Handles payment processing and refunds
+  description: Handles payment processing and refund workflows
+  tags:
+    - payments
+    - stripe
+    - production
   annotations:
     github.com/project-slug: myorg/payment-service
-    backstage.io/techdocs-ref: dir:.
+    circleci.com/project-slug: github/myorg/payment-service
     sonarqube.org/project-key: myorg_payment-service
-    prometheus.io/alert: myorg-payment-service
-    grafana.com/dashboard-selector: >-
-      labels.app_kubernetes_io_name == "payment-service"
-  tags:
-    - java
-    - spring-boot
-    - production
-    - pci-dss
-  links:
-    - url: https://grafana.internal/d/payment-service
-      title: Grafana Dashboard
-      icon: dashboard
-    - url: https://logs.internal/payment-service
-      title: Log Dashboard
-      icon: bugReport
 spec:
   type: service
   lifecycle: production
-  owner: payments-team
-  system: payment-platform
+  owner: team-payments
+  system: checkout-platform
   dependsOn:
-    - resource:default/postgres-payments
-    - component:default/fraud-detection-service
+    - component:stripe-api
+    - component:fraud-detection-service
+  providesApis:
+    - payment-api
 ```
 
-For group and user entities (team ownership):
+### Registering Catalog Locations
+
+Tell Backstage where to find your catalog files by editing `app-config.yaml`:
 
 ```yaml
-# group.yaml
-apiVersion: backstage.io/v1alpha1
-kind: Group
-metadata:
-  name: payments-team
-  description: Team responsible for payment processing
-spec:
-  type: team
-  profile:
-    displayName: Payments Team
-    email: payments@myorg.com
-    slack: '#payments-team'
-  parent: engineering
-  children: []
-  members: [alice, bob, charlie]
-```
-
-### Setting Up the Catalog Processor
-
-To automatically ingest catalog info from all your repositories, configure the catalog processor:
-
-```yaml
-# app-config.yaml
 catalog:
-  import:
-    entityFilename: catalog-info.yaml
-    pullRequestBranchName: backstage-integration
-  rules:
-    - allow: [Component, API, Resource, System, Group, User, Domain, Location]
   locations:
-    # Discover all catalog files across your GitHub org
-    - type: github-discovery
+    # Single target for a specific repository
+    - type: url
+      target: https://github.com/myorg/payment-service/blob/main/catalog-info.yaml
+      rules:
+        - allow: [Component, API, System, Resource]
+
+    # Wildcard registration for all repositories
+    - type: url
       target: https://github.com/myorg/*/blob/main/catalog-info.yaml
       rules:
-        - allow: [Component, API, Resource, System]
+        - allow: [Component, API, System, Resource]
 
-    # Static location for shared resources
-    - type: file
-      target: ../../catalog/shared-resources.yaml
+    # Group and user imports from GitHub
+    - type: url
+      target: https://github.com/myorg/.github/blob/main/teams.yaml
       rules:
-        - allow: [Resource]
-
-    # TechDocs documentation locations
-    - type: github-discovery
-      target: https://github.com/myorg/*/blob/main/mkdocs.yml
-      rules:
-        - allow: [Component]
-
-providers:
-  github:
-    providerId:
-      organization: 'myorg'
-      catalogPath: '/catalog-info.yaml'
-      filters:
-        repository: '.*'
-      schedule:
-        frequency: { hours: 1 }
-        timeout: { minutes: 3 }
+        - allow: [Group, User]
 ```
 
-### Software Templates (Scaffolder)
+### Organizing with Systems and Domains
 
-Templates are what make Backstage genuinely powerful — they let developers bootstrap new services in minutes with all your organization's standards baked in.
+For larger organizations, structure your catalog hierarchically:
+
+```yaml
+# domains/ecommerce.yaml
+apiVersion: backstage.io/v1alpha1
+kind: Domain
+metadata:
+  name: ecommerce
+  description: All services related to the online store
+spec:
+  owner: vp-engineering
+
+# systems/checkout.yaml
+apiVersion: backstage.io/v1alpha1
+kind: System
+metadata:
+  name: checkout-platform
+  description: Checkout flow, cart, and payment processing
+spec:
+  owner: team-checkout
+  domain: ecommerce
+```
+
+This creates a navigable hierarchy: Domain → System → Component, making it easy for developers to understand how services relate to each other.
+
+## Essential Plugins
+
+Backstage's power comes from its plugin ecosystem. Here are the most useful plugins for a production deployment.
+
+### CI/CD Integration
+
+Connect your pipelines so developers see build status directly in the portal:
+
+```bash
+# Install CircleCI plugin
+yarn add --cwd packages/app @backstage/plugin-circleci
+
+# Install GitHub Actions plugin  
+yarn add --cwd packages/app @backstage/plugin-github-actions
+
+# Install Jenkins plugin
+yarn add --cwd packages/app @backstage/plugin-jenkins
+```
+
+Add to `packages/app/src/App.tsx`:
+
+```typescript
+import { CircleCIPage, EntityCircleCIContent } from '@backstage/plugin-circleci';
+```
+
+Then register the route in your app configuration so each service page shows its recent builds.
+
+### Kubernetes Integration
+
+The Kubernetes plugin shows live cluster resources, pod status, and deployment health for each registered service:
+
+```bash
+yarn add --cwd packages/app @backstage/plugin-kubernetes
+yarn add --cwd packages/backend @backstage/plugin-kubernetes-backend
+```
+
+Configuration in `app-config.yaml`:
+
+```yaml
+kubernetes:
+  serviceLocatorMethod:
+    type: 'multiTenant'
+  clusterLocatorMethods:
+    - type: 'config'
+      clusters:
+        - url: https://k8s-cluster.example.com:6443
+          name: production
+          authProvider: 'serviceAccount'
+          skipTLSVerify: false
+          skipMetricsLookup: false
+          dashboardApp: 'portainer'
+```
+
+### TechDocs (Documentation as Code)
+
+TechDocs lets teams write documentation in Markdown alongside their code, which Backstage renders into a searchable documentation site:
+
+```bash
+yarn add --cwd packages/app @backstage/plugin-techdocs
+yarn add --cwd packages/backend @backstage/plugin-techdocs-backend
+```
+
+Add a `mkdocs.yml` file to each repository:
+
+```yaml
+site_name: Payment Service
+nav:
+  - Home: index.md
+  - Architecture: architecture.md
+  - API Reference: api-reference.md
+  - Runbook: runbook.md
+```
+
+Backstage builds these into static HTML and serves them under each component's TechDocs tab.
+
+### Scaffolder (Software Templates)
+
+The scaffolder creates new services from standardized templates, enforcing your conventions automatically:
 
 ```yaml
 # templates/spring-boot-service/template.yaml
@@ -272,425 +318,252 @@ kind: Template
 metadata:
   name: spring-boot-service
   title: Spring Boot Microservice
-  description: Create a new Spring Boot microservice with CI/CD, monitoring, and security best practices
-  tags:
-    - java
-    - spring-boot
-    - microservice
+  description: Create a new Spring Boot service with standard dependencies
 spec:
-  owner: platform-engineering
+  owner: team-platform
   type: service
-
   parameters:
-    - title: Service Information
+    - title: Service Details
       required:
         - serviceName
         - description
-        - owner
       properties:
         serviceName:
           title: Service Name
           type: string
-          pattern: '^[a-z][a-z0-9-]+$'
-          description: Kebab-case name for the service
           ui:autofocus: true
         description:
           title: Description
           type: string
-          description: What this service does
-        owner:
-          title: Team Owner
-          type: string
-          ui:field: OwnerPicker
-          ui:options:
-            catalogFilter:
-              kind: Group
-
-    - title: Configuration
-      required:
-        - database
+    - title: Repository Location
       properties:
-        database:
-          title: Database Type
+        repoUrl:
+          title: Repository URL
           type: string
-          enum:
-            - postgresql
-            - mysql
-            - none
-          default: postgresql
-        includeRedis:
-          title: Include Redis Cache
-          type: boolean
-          default: false
-        includeKafka:
-          title: Include Kafka Integration
-          type: boolean
-          default: false
-
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - github.com
   steps:
-    - id: fetch-base
-      name: Fetch Base Template
+    - id: fetch-template
+      name: Fetch Template
       action: fetch:template
       input:
         url: ./skeleton
-        targetPath: ./service
         values:
           serviceName: ${{ parameters.serviceName }}
           description: ${{ parameters.description }}
-          owner: ${{ parameters.owner }}
-          database: ${{ parameters.database }}
-          includeRedis: ${{ parameters.includeRedis }}
-          includeKafka: ${{ parameters.includeKafka }}
-          orgName: myorg
-
+          owner: ${{ user.entity.metadata.name }}
     - id: publish
-      name: Publish to GitHub
+      name: Publish
       action: publish:github
       input:
         allowedHosts: ['github.com']
-        description: ${{ parameters.description }}
-        repoUrl: github.com?owner=myorg&repo=${{ parameters.serviceName }}
+        repoUrl: ${{ parameters.repoUrl }}
         defaultBranch: main
         protectDefaultBranch: true
-        allowAutoMerge: true
-
     - id: register
-      name: Register to Catalog
+      name: Register
       action: catalog:register
       input:
         repoContentsUrl: ${{ steps.publish.output.repoContentsUrl }}
         catalogInfoPath: '/catalog-info.yaml'
-
-  output:
-    links:
-      - title: Repository
-        url: ${{ steps.publish.output.remoteUrl }}
-      - title: Open in Backstage
-        icon: catalog
-        entityRef: ${{ steps.register.output.entityRef }}
 ```
 
-The template skeleton (`./skeleton/`) contains your actual project files with EJS templating:
+This template creates a new repository, populates it with a pre-configured Spring Boot project, adds the catalog descriptor, and registers the component automatically.
+
+### Scorecards and Quality Gates
+
+Track service maturity across your organization:
 
 ```yaml
-# skeleton/catalog-info.yaml
 apiVersion: backstage.io/v1alpha1
-kind: Component
+kind: ScoreCard
 metadata:
-  name: ${{ values.serviceName }}
-  description: ${{ values.description }}
-  annotations:
-    github.com/project-slug: myorg/${{ values.serviceName }}
-    backstage.io/techdocs-ref: dir:.
-  tags:
-    - java
-    - spring-boot
+  name: production-ready
 spec:
-  type: service
-  lifecycle: experimental
-  owner: ${{ values.owner }}
+  type: production-readiness
+  scoring:
+    strategy: aggregate
+  checks:
+    - name: Has Owner
+      description: Every service must have a designated owner
+      weight: 10
+    - name: Has Documentation
+      description: TechDocs must be present and non-empty
+      weight: 15
+    - name: CI Pipeline
+      description: Automated build and test pipeline configured
+      weight: 20
+    - name: Health Endpoint
+      description: /health endpoint returns 200
+      weight: 15
+    - name: Monitoring
+      description: Grafana dashboard and PagerDuty integration
+      weight: 20
+    - name: Security Scan
+      description: Trivy or Snyk scan passes with zero critical findings
+      weight: 20
 ```
+
+Services are scored from 0-100, and leadership gets a dashboard showing which services meet production standards.
+
+## Authentication and Access Control
+
+Backstage supports multiple authentication providers out of the box:
 
 ```yaml
-# skeleton/.github/workflows/ci.yml
-name: CI
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    services:
-      {% if values.database == 'postgresql' %}
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_PASSWORD: test
-        ports:
-          - 5432:5432
-      {% endif %}
-      {% if values.includeRedis %}
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-      {% endif %}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '21'
-      - run: ./mvnw verify
-```
-
-### TechDocs: Documentation as Code
-
-Backstage's TechDocs renders documentation directly from repositories. Configure it with:
-
-```yaml
-# app-config.yaml (TechDocs section)
-techdocs:
-  builder: 'local'
-  generator:
-    runIn: 'local'
-    input:
-      install:
-        - python3 -m pip install mkdocs-techdocs-core==1.*
-  publisher:
-    type: 'local'
-    workingDirectory: '/tmp/techdocs'
-```
-
-Then in each service repository, create a `mkdocs.yml`:
-
-```yaml
-# mkdocs.yml
-site_name: Payment Service
-nav:
-  - Home: index.md
-  - Architecture: architecture.md
-  - API Reference: api.md
-  - Runbook: runbook.md
-  - On-Call: oncall.md
-
-plugins:
-  - techdocs-core
-```
-
-Documentation lives alongside code and renders beautifully in the portal with search and navigation.
-
-## Essential Plugins for Production Backstage
-
-The real power of Backstage comes from its plugin ecosystem. Here are the most valuable ones:
-
-| Plugin | Purpose | Category |
-|--------|---------|----------|
-| `@backstage/plugin-kubernetes` | Kubernetes resource visualization | Infrastructure |
-| `@backstage/plugin-sonarqube` | Code quality metrics | Quality |
-| `@backstage/plugin-jenkins` | CI/CD pipeline status | CI/CD |
-| `@backstage/plugin-sentry` | Error tracking integration | Monitoring |
-| `@backstage/plugin-prometheus` | Metrics and alerting | Monitoring |
-| `@backstage/plugin-tech-radar` | Technology radar visualization | Governance |
-| `@backstage/plugin-scorecard` | Service maturity scoring | Governance |
-| `@backstage/plugin-cost-insights` | Cloud cost tracking | FinOps |
-| `@backstage/plugin-graphiql` | GraphQL API explorer | Development |
-| `@backstage/plugin-lighthouse` | Web performance audits | Quality |
-
-Install plugins in your backend:
-
-```bash
-# From your Backstage app directory
-cd packages/backend
-yarn add @backstage/plugin-kubernetes-backend @backstage/plugin-sonarqube-backend
-
-cd packages/app
-yarn add @backstage/plugin-kubernetes @backstage/plugin-sonarqube
-```
-
-## Running Backstage in Production
-
-### Nginx Reverse Proxy with TLS
-
-```nginx
-server {
-    listen 80;
-    server_name portal.myorg.com;
-    return 301 https://$host$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
-    server_name portal.myorg.com;
-
-    ssl_certificate /etc/letsencrypt/live/portal.myorg.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/portal.myorg.com/privkey.pem;
-
-    location / {
-        proxy_pass http://localhost:7007;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_cache_bypass $http_upgrade;
-    }
-
-    # Enable gzip compression
-    gzip on;
-    gzip_types text/plain text/css application/json application/javascript text/xml;
-}
-```
-
-### Authentication Setup
-
-Backstage supports multiple authentication providers. For a self-hosted setup with Keycloak:
-
-```yaml
-# app-config.yaml
 auth:
   environment: production
   providers:
+    github:
+      production:
+        clientId: ${AUTH_GITHUB_CLIENT_ID}
+        clientSecret: ${AUTH_GITHUB_CLIENT_SECRET}
+    gitlab:
+      production:
+        clientId: ${AUTH_GITLAB_CLIENT_ID}
+        clientSecret: ${AUTH_GITLAB_CLIENT_SECRET}
     oidc:
       production:
+        metadataUrl: https://sso.example.com/.well-known/openid-configuration
         clientId: ${AUTH_OIDC_CLIENT_ID}
         clientSecret: ${AUTH_OIDC_CLIENT_SECRET}
-        metadataUrl: ${AUTH_OIDC_METADATA_URL}
         prompt: auto
-        scope: openid profile email
-
-catalog:
-  providers:
-    oidc:
-      production:
-        factory: 'oidc'
-        defaultNamespace: default
 ```
 
-### Scaling for Large Organizations
+For permission management, the permission framework lets you define fine-grained access policies:
 
-For organizations with thousands of services:
+```typescript
+// packages/backend/src/plugins/permissions.ts
+import { PermissionPolicy } from '@backstage/plugin-permission-common';
+
+export class MyPermissionPolicy implements PermissionPolicy {
+  async handle(request, user) {
+    // Allow all admins full access
+    if (user.entity?.spec.profile?.email?.includes('@admin.example.com')) {
+      return { result: 'ALLOW' };
+    }
+
+    // Restrict catalog edits to platform team
+    if (request.permission.name === 'catalog.entity.refresh') {
+      const isPlatformTeam = user.entity?.spec.memberships?.includes('team-platform');
+      return {
+        result: isPlatformTeam ? 'ALLOW' : 'DENY',
+      };
+    }
+
+    return { result: 'ALLOW' };
+  }
+}
+```
+
+## Monitoring and Maintenance
+
+A self-hosted developer portal needs the same operational care as any production service.
+
+### Health Checks
+
+Backstage exposes a health endpoint that Docker and Kubernetes can probe:
 
 ```yaml
-# app-config.yaml - Performance tuning
-catalog:
-  providers:
-    github:
-      providerId:
-        schedule:
-          frequency: { hours: 2 }
-          timeout: { minutes: 10 }
-          initialDelay: { seconds: 30 }
-        entityRefreshDuration: { minutes: 30 }
-
-backend:
-  database:
-    client: pg
-    connection:
-      host: ${POSTGRES_HOST}
-      port: ${POSTGRES_PORT}
-      user: ${POSTGRES_USER}
-      password: ${POSTGRES_PASSWORD}
-      database: ${POSTGRES_DB}
-      pool:
-        min: 2
-        max: 10
-        idleTimeoutMillis: 30000
+healthcheck:
+  test: ["CMD", "curl", "-f", "http://localhost:7007/healthcheck"]
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 60s
 ```
 
-## Best Practices for Developer Portal Success
+### Database Maintenance
 
-### Start Small, Iterate Fast
+PostgreSQL requires periodic maintenance for the catalog database:
 
-Don't try to catalog every service on day one. Start with:
+```bash
+# Vacuum and analyze for optimal query performance
+psql -U backstage -d backstage -c "VACUUM ANALYZE;"
 
-1. **Core services** — your top 10-20 most important services
-2. **One template** — the most common project type your team creates
-3. **Basic docs** — README files for each service, nothing fancy
+# Monitor table sizes
+psql -U backstage -d backstage -c "
+  SELECT schemaname, relname, 
+    pg_size_pretty(pg_total_relation_size(relid)) as total_size
+  FROM pg_catalog.pg_statio_user_tables 
+  ORDER BY pg_total_relation_size(relid) DESC 
+  LIMIT 10;
+"
 
-Expand gradually as adoption grows.
-
-### Make Catalog Updates Automatic
-
-The biggest failure mode for developer portals is stale data. Solve this with:
-
-- **CI/CD integration** — validate `catalog-info.yaml` in every PR
-- **Automated discovery** — scan repos daily for new services
-- **Slack reminders** — notify owners when catalog info hasn't been updated in 90 days
-
-```yaml
-# GitHub Action to validate catalog-info.yaml
-name: Validate Catalog
-on:
-  push:
-    paths:
-      - 'catalog-info.yaml'
-
-jobs:
-  validate:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: RoadieHQ/backstage-catalog-validator@v1
-        with:
-          path: './catalog-info.yaml'
+# Clean up old search data (run weekly via cron)
+psql -U backstage -d backstage -c "
+  DELETE FROM search.documents 
+  WHERE updated_at < NOW() - INTERVAL '90 days';
+"
 ```
 
-### Use Scorecards to Drive Standards
+### Backup Strategy
 
-Backstage scorecards let you define and track standards:
+```bash
+#!/bin/bash
+# backup-backstage.sh — run daily via cron
 
-```yaml
-# scorecard.yaml
-apiVersion: backstage.io/v1alpha1
-kind: Scorecard
-metadata:
-  name: production-ready
-  description: Criteria for production deployment
-spec:
-  targets:
-    - kind: Component
-      filter: "spec.lifecycle = 'production'"
-  checks:
-    - name: Has README
-      description: Service has documented README
-      weight: 2
-    - name: Has Owner
-      description: Service has an assigned owner
-      weight: 3
-    - name: CI Pipeline
-      description: CI pipeline passes on main branch
-      weight: 3
-    - name: Monitoring Configured
-      description: Prometheus alerts are configured
-      weight: 2
-    - name: Security Scan
-      description: No critical CVEs in dependencies
-      weight: 5
+BACKUP_DIR="/var/backups/backstage"
+TIMESTAMP=$(date +%Y%m%d-%H%M%S)
+
+# Database dump
+pg_dump -U backstage -d backstage -F c -f "$BACKUP_DIR/backstage-db-$TIMESTAMP.dump"
+
+# Compress application config
+tar czf "$BACKUP_DIR/backstage-config-$TIMESTAMP.tar.gz" \
+  app-config.yaml app-config.production.yaml \
+  packages/app/src/components packages/backend/src/plugins
+
+# Retain only last 30 days of backups
+find "$BACKUP_DIR" -name "*.dump" -mtime +30 -delete
+find "$BACKUP_DIR" -name "*.tar.gz" -mtime +30 -delete
+
+echo "Backup completed: $TIMESTAMP"
 ```
 
-### Measure Portal Adoption
+## Alternative Approaches
 
-Track metrics that matter:
+### Lightweight Portals for Small Teams
 
-- **Time to onboard** new developers (target: under 1 day)
-- **Time to create** a new service (target: under 15 minutes with templates)
-- **Catalog coverage** — percentage of services registered (target: over 95%)
-- **Template usage** — how many services were scaffolded vs. created manually
-- **Portal DAU** — daily active users of the developer portal
+If Backstage feels like overkill for a team under 20 people, consider simpler approaches:
 
-## Alternative Self-Hosted Options
+**Gitea or GitLab wikis** with standardized README conventions and a central index page can serve as a lightweight service directory.
 
-While Backstage dominates the open-source space, there are other approaches worth considering:
+**Static site generators** like Hugo or MkDocs with a custom theme can render your catalog from YAML files into a browsable website, deployed as a CI job.
 
-### Lightweight Alternatives
+**Portainer or Rancher dashboards** already provide service discovery and health monitoring for containerized workloads without additional infrastructure.
 
-If Backstage feels too heavy for your team, consider:
+### When Backstage Makes Sense
 
-| Solution | Best For | Complexity |
-|----------|----------|------------|
-| **Backstage** | Full-featured developer portal | High |
-| **Static HTML + Hugo** | Small teams, simple catalog | Low |
-| **GitLab Internal Portal** | GitLab-heavy shops | Medium |
-| **Custom dashboard** | Unique requirements | Variable |
+Backstage is the right choice when:
 
-For teams under 20 engineers, a well-organized `README.md` in a central `docs/` repository with a static site generator can serve as a lightweight developer portal. The key is having a single source of truth — the tool matters less than the discipline.
+- You have 50+ microservices across multiple teams
+- You need software templates to standardize new service creation
+- Multiple tool integrations (CI/CD, monitoring, security, cloud) need a unified view
+- You want custom plugins for internal tooling
+- Your organization requires data to stay within your infrastructure
 
-### Enterprise Platforms with Self-Hosted Options
+## Cost Comparison
 
-- **Mia-Platform Developer Portal** — enterprise-focused, Kubernetes-native
-- **Humanitec** — internal developer platform with self-hosted option
-- **Custom-built with React + GraphQL** — for teams with unique requirements
+For a 100-person engineering team managing 200 services:
+
+| Cost Item | Backstage (self-hosted) | Port | Compass |
+|-----------|------------------------|------|---------|
+| Software license | $0 (Apache 2.0) | $30,000/yr ($25/user/mo × 100) | $18,000/yr ($15/user/mo × 100) |
+| Infrastructure | $1,200/yr (2 vCPU VM + Postgres) | Included | Included |
+| Setup effort | 2-4 weeks | 1-2 days | 1-2 days |
+| Ongoing maintenance | 4-8 hrs/month | Minimal | Minimal |
+| **Year 1 total** | **~$1,200 + engineering time** | **~$30,000** | **~$18,000** |
+| **3-year total** | **~$3,600 + engineering time** | **~$90,000** | **~$54,000** |
+
+The infrastructure cost for self-hosting Backstage is typically a single small VM running PostgreSQL and the Backstage backend, or a small Kubernetes namespace if you already operate a cluster.
 
 ## Conclusion
 
-A self-hosted developer portal built on Backstage gives your team the same capabilities that top tech companies spend millions developing internally. The investment in setup pays back quickly through faster onboarding, standardized tooling, and reduced developer friction.
+Self-hosting your developer portal gives you full ownership of your service catalog, unlimited customization through Backstage's plugin architecture, and dramatically lower costs at scale. While the initial setup requires more effort than signing up for a SaaS alternative, the long-term benefits — data control, no per-user pricing, and the ability to build exactly the integrations your teams need — make it the right choice for organizations serious about developer experience.
 
-Start with the catalog, add one template, and iterate based on feedback. The open-source community around Backstage is massive and growing — with over 800 plugins and contributions from companies like Spotify, Netflix, Airbnb, and American Airlines. Your team doesn't have to build this from scratch; you're standing on the shoulders of giants.
+Start with the Docker Compose setup to validate the concept, then move to Kubernetes with the Helm chart once your team confirms the value. The plugin ecosystem means you can grow from a simple service catalog into a full developer platform without switching tools.
 
-The best developer portal is the one your team actually uses. Keep it simple, make it fast, and let the content come from the code repositories themselves. With Backstage running on your own infrastructure, you control the data, the features, and the roadmap.
+For more self-hosted infrastructure guides, check out our comparisons of [CI/CD platforms](/self-hosted-ci-cd-woodpecker-drone-jenkins-concourse-2026/), [container management dashboards](/self-hosted-container-management-dashboards-portainer-dockge-yacht-guide/), and [monitoring stacks](/self-hosted-datadog-alternative-signoz-grafana-hyperdx-2026/).
