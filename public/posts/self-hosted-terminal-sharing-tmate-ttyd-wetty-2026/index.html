@@ -1,0 +1,374 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted Terminal Sharing 2026: tmate, ttyd & Wetty Compared | OpenSwap Guide</title>
+<meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, and local AI deployment."><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/openswap-guide/css/main.min.777dc111b5207bf5336e5799477da0b31fb9080306bf98a82d6eceb979cf9737.css><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://hopkdj.github.io/openswap-guide/ class=logo><div class=logo-icon>H</div>OpenSwap Guide</a><nav><ul class=nav-links><li><a href=/openswap-guide/>Home</a></li><li><a href=/openswap-guide/tags/comparison/>Comparisons</a></li><li><a href=/openswap-guide/tags/guide/>Guides</a></li><li><a href=/openswap-guide/tags/ai/>Local AI</a></li><li><a href=/openswap-guide/index.xml class=nav-rss>Subscribe RSS</a></li></ul></nav></div></header><main><article class=post-single><a href=https://hopkdj.github.io/openswap-guide/ class=back-link>&larr; Back to posts</a><header class=post-single-header><div class=post-single-meta><span class="tag tag-purple">comparison</span>
+<span class="tag tag-green">guide</span>
+<span class="tag tag-blue">self-hosted</span>
+<span>·</span>
+<span>April 15, 2026</span>
+<span>·</span>
+<span>13 min read</span></div><h1 class=post-single-title>Self-Hosted Terminal Sharing 2026: tmate, ttyd & Wetty Compared</h1></header><div class=post-single-content><p>Every developer has been in this situation: a production server is misbehaving, a junior engineer is stuck on a configuration issue, or you need to walk a teammate through a complex debugging session. You could paste commands over chat, ship a screen recording, or grant SSH access and hope for the best. Or you could share your terminal in real time, with a single link.</p><p>Terminal sharing tools solve this problem elegantly. They let you broadcast a live terminal session to anyone with a URL, support multi-user collaboration where both parties can type, and work entirely in the browser — no client installation required. In 2026, three open-source tools dominate this space: <strong>tmate</strong>, <strong>ttyd</strong>, and <strong>Wetty</strong>. Each takes a fundamentally different approach, and each has strengths that make it the right choice for specific scenarios.</p><p>This guide compares all three, provides complete Docker-based deployment instructions, and covers security hardening so you can run these tools in production without exposing your infrastructure.</p><h2 id=why-self-host-terminal-sharing>Why Self-Host Terminal Sharing</h2><p>Commercial terminal sharing services exist, but they introduce dependencies that most teams would rather avoid.</p><p><strong>Data never leaves your infrastructure.</strong> When you share a terminal session through a third-party service, every keystroke, command output, and environment variable passes through their servers. Even with encryption in transit, the service operator has access to your session data. Self-hosting means the relay runs on hardware you control, behind your own firewall, with your own access policies.</p><p><strong>No account required, no limits.</strong> Commercial tools typically require registration, impose session duration limits, restrict the number of concurrent viewers, or gate collaboration features behind paid plans. Self-hosted tools have none of these restrictions. Share with one person or one hundred — the only limit is your server&rsquo;s capacity.</p><p><strong>Works behind corporate firewalls.</strong> Many self-hosted terminal sharing tools use WebSocket connections on standard ports (80/443), which traverse corporate firewalls and proxy servers without special configuration. This makes them ideal for enterprise environments where SSH access to production machines is heavily restricted.</p><p><strong>Persistent sessions for training and documentation.</strong> Some tools support recording sessions for later playback, creating a searchable archive of troubleshooting procedures, onboarding walkthroughs, and deployment runbooks. This turns ad-hoc collaboration into institutional knowledge.</p><p><strong>Zero-cost at any scale.</strong> Once deployed on your own infrastructure, terminal sharing costs nothing per session, per user, or per hour. A single small VPS can serve an entire organization&rsquo;s collaboration needs.</p><h2 id=tmate-instant-terminal-sharing-via-ssh-multiplexing>tmate: Instant Terminal Sharing via SSH Multiplexing</h2><p><strong>tmate</strong> is a fork of tmux designed specifically for terminal sharing. It creates a tmux session and immediately exposes it through a secure WebSocket tunnel, generating an SSH connection string and a web-based terminal URL. The design philosophy is minimalism: install one binary, run one command, share instantly.</p><h3 id=architecture>Architecture</h3><p>tmate operates on a client-server model that mirrors tmux:</p><ul><li>The <strong>tmate client</strong> runs on your local machine, creating a tmux session</li><li>The <strong>tmate server</strong> (default: public relay at <code>tmate.io</code>) maintains the tunnel and accepts incoming WebSocket connections</li><li>Viewers connect via SSH or a web browser, joining the same shared session</li></ul><p>The default configuration uses the public <code>tmate.io</code> relay, which means your session data passes through a third-party server. For self-hosting, you run your own tmate server instance, eliminating this dependency entirely.</p><h3 id=installing-and-running-tmate>Installing and Running tmate</h3><p>On Debian/Ubuntu:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>sudo apt install tmate
+</span></span></code></pre></td></tr></table></div></div><p>On macOS with Homebrew:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>brew install tmate
+</span></span></code></pre></td></tr></table></div></div><p>To start a shared session:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>tmate
+</span></span></code></pre></td></tr></table></div></div><p>tmate will display connection strings:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>ssh: ssh YnR4c3JzZkZANXQudG1hdGUuaW8
+</span></span><span class=line><span class=cl>web: https://tmate.io/t/YnR4c3JzZkZANXQudG1hdGUuaW8
+</span></span><span class=line><span class=cl>read-only: https://tmate.io/ro/YnR4c3JzZkZANXQudG1hdGUuaW8
+</span></span></code></pre></td></tr></table></div></div><h3 id=self-hosting-the-tmate-server>Self-Hosting the tmate Server</h3><p>To run your own relay server with Docker:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose.yml — tmate server</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>tmate-server</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>ghcr.io/tmate-io/tmate:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>tmate-server</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;22:22&#34;</span><span class=w>        </span><span class=c># SSH connections</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;443:443&#34;</span><span class=w>      </span><span class=c># WebSocket connections</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./tmate.conf:/etc/tmate/tmate.conf</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./certs:/etc/tmate/certs:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>TMATE_HOSTNAME=tmate.yourdomain.com</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Configuration file (<code>tmate.conf</code>):</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl># /etc/tmate/tmate.conf
+</span></span><span class=line><span class=cl>set -g tmate-server-host &#34;0.0.0.0&#34;
+</span></span><span class=line><span class=cl>set -g tmate-server-port 22
+</span></span><span class=line><span class=cl>set -g tmate-websocket-host &#34;0.0.0.0&#34;
+</span></span><span class=line><span class=cl>set -g tmate-websocket-port 443
+</span></span><span class=line><span class=cl>set -g tmate-websocket-path &#34;/&#34;
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># TLS configuration
+</span></span><span class=line><span class=cl>set -g tmate-websocket-tls-key &#34;/etc/tmate/certs/privkey.pem&#34;
+</span></span><span class=line><span class=cl>set -g tmate-websocket-tls-cert &#34;/etc/tmate/certs/fullchain.pem&#34;
+</span></span></code></pre></td></tr></table></div></div><p>Clients then connect to your server:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>tmate -F -S /tmp/tmate.sock new-session
+</span></span><span class=line><span class=cl>tmate <span class=nb>set</span> -g tmate-server <span class=s2>&#34;tmate.yourdomain.com&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=tmate-strengths-and-weaknesses>tmate Strengths and Weaknesses</h3><p>tmate excels at <strong>instant, zero-configuration sharing</strong>. If you already use tmux, there is essentially no learning curve. The SSH-based connection works from any terminal, and the read-only URLs are perfect for sharing with stakeholders who need visibility but should not have write access. Session recording is built in through tmux&rsquo;s native <code>pipe-pane</code> feature.</p><p>However, tmate is fundamentally a <strong>point-to-point</strong> tool. It shares one terminal session at a time. There is no web-based dashboard to manage multiple sessions, no user authentication beyond SSH keys, and no integration with existing identity providers. The web terminal, while functional, is less polished than purpose-built web terminal solutions.</p><h2 id=ttyd-web-based-terminal-for-any-command>ttyd: Web-Based Terminal for Any Command</h2><p><strong>ttyd</strong> takes a different approach entirely. Instead of sharing an existing terminal session, it runs any command-line program and exposes it through a web-based terminal interface. The result is a lightweight, single-binary terminal server that can serve anything from a full shell to specialized command-line tools.</p><h3 id=architecture-1>Architecture</h3><p>ttyd is a single Go binary that:</p><ol><li>Spawns a command (usually a shell like <code>/bin/bash</code>)</li><li>Attaches a pseudo-terminal (pty) to the process</li><li>Serves a web-based terminal (built on xterm.js) over HTTP/WebSocket</li><li>Handles terminal resizing, color output, and clipboard integration</li></ol><p>The architecture is deliberately simple: one process, one port, no external dependencies. This makes it easy to containerize, deploy behind a reverse proxy, and scale horizontally.</p><h3 id=docker-setup-for-ttyd>Docker Setup for ttyd</h3><p>Basic deployment with shell access:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose.yml — ttyd</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>ttyd</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>lscr.io/linuxserver/ttyd:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>ttyd</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PUID=1000</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PGID=1000</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>TZ=Etc/UTC</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;7681:7681&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;/bin/bash&#34;</span><span class=p>]</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>For a more controlled setup with authentication:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>ttyd-auth</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>lscr.io/linuxserver/ttyd:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>ttyd-auth</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;7682:7681&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./config:/config</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/var/run/docker.sock:/var/run/docker.sock:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;-c&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;admin:secretpassword&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;--writable&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;/bin/bash&#34;</span><span class=p>]</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>The <code>-c</code> flag sets basic HTTP authentication credentials. For production use, place ttyd behind a reverse proxy with proper TLS and authentication:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-nginx data-lang=nginx><span class=line><span class=cl><span class=c1># /etc/nginx/sites-available/ttyd
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>server</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=kn>listen</span> <span class=mi>443</span> <span class=s>ssl</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=kn>server_name</span> <span class=s>terminal.yourdomain.com</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kn>ssl_certificate</span> <span class=s>/etc/letsencrypt/live/terminal.yourdomain.com/fullchain.pem</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=kn>ssl_certificate_key</span> <span class=s>/etc/letsencrypt/live/terminal.yourdomain.com/privkey.pem</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kn>location</span> <span class=s>/</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_pass</span> <span class=s>http://127.0.0.1:7681</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_http_version</span> <span class=mi>1</span><span class=s>.1</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_set_header</span> <span class=s>Upgrade</span> <span class=nv>$http_upgrade</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_set_header</span> <span class=s>Connection</span> <span class=s>&#34;upgrade&#34;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_set_header</span> <span class=s>Host</span> <span class=nv>$host</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_set_header</span> <span class=s>X-Real-IP</span> <span class=nv>$remote_addr</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_set_header</span> <span class=s>X-Forwarded-For</span> <span class=nv>$proxy_add_x_forwarded_for</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_set_header</span> <span class=s>X-Forwarded-Proto</span> <span class=nv>$scheme</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=c1># Basic auth via nginx
+</span></span></span><span class=line><span class=cl><span class=c1></span>        <span class=kn>auth_basic</span> <span class=s>&#34;Terminal</span> <span class=s>Access&#34;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>auth_basic_user_file</span> <span class=s>/etc/nginx/.htpasswd</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=running-arbitrary-commands>Running Arbitrary Commands</h3><p>ttyd&rsquo;s flexibility comes from its ability to run <strong>any command</strong>, not just shells:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Run htop as a monitored terminal</span>
+</span></span><span class=line><span class=cl>ttyd htop
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Run a Python REPL</span>
+</span></span><span class=line><span class=cl>ttyd python3
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Run a specific script with restricted environment</span>
+</span></span><span class=line><span class=cl>ttyd --writable /opt/scripts/deploy.sh
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Run with read-only mode (viewer cannot type)</span>
+</span></span><span class=line><span class=cl>ttyd -R tail -f /var/log/syslog
+</span></span></code></pre></td></tr></table></div></div><p>This makes ttyd useful beyond terminal sharing. You can use it to expose monitoring dashboards, database consoles, or deployment scripts through a web interface — each on its own port, with its own access controls.</p><h3 id=ttyd-strengths-and-weaknesses>ttyd Strengths and Weaknesses</h3><p>ttyd shines when you need to <strong>expose specific commands or tools</strong> through a web interface. Its single-binary design makes deployment trivial, and the ability to run arbitrary commands opens up creative use cases beyond simple terminal sharing. The web terminal interface is polished, with proper xterm.js rendering, clipboard support, and responsive terminal resizing.</p><p>The main limitation is that ttyd does not support <strong>multi-user sessions</strong> natively. Each connection spawns a separate process. To achieve shared sessions, you would need to pair ttyd with tmux or screen inside the container. There is also no built-in session recording or replay capability.</p><h2 id=wetty-ssh-in-the-browser>Wetty: SSH in the Browser</h2><p><strong>Wetty</strong> (Web + tty) is the most infrastructure-oriented of the three tools. It acts as an SSH-to-WebSocket bridge, allowing users to connect to any SSH server through their web browser. Rather than creating new terminal sessions, Wetty provides browser-based access to existing SSH infrastructure.</p><h3 id=architecture-2>Architecture</h3><p>Wetty is a Node.js application that:</p><ol><li>Runs a web server serving an xterm.js-based terminal</li><li>Accepts SSH credentials from the user (or uses key-based authentication)</li><li>Establishes an SSH connection to the target host</li><li>Bridges the SSH session to the browser via WebSocket</li></ol><p>This design means Wetty does not manage terminal sessions itself — it is a <strong>pass-through</strong> to existing SSH servers. The SSH server handles authentication, authorization, shell allocation, and session management. Wetty merely provides a browser-accessible interface.</p><h3 id=docker-setup-for-wetty>Docker Setup for Wetty</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose.yml — Wetty</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>wetty</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>wettyoss/wetty:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>wetty</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;3000:3000&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>SSHHOST=your-ssh-server.example.com</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>SSHPORT=22</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>BASE=/</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;--ssh-host&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;your-ssh-server.example.com&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;--ssh-port&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;22&#34;</span><span class=p>]</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>For a fully self-contained setup where Wetty runs on the same host it provides access to:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>wetty-local</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>wettyoss/wetty:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>wetty-local</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>network_mode</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;host&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>SSHHOST=127.0.0.1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>SSHPORT=22</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;--ssh-host&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;127.0.0.1&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;--ssh-port&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;22&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;--base&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;/terminal&#34;</span><span class=p>]</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=advanced-wetty-configuration-with-reverse-proxy>Advanced Wetty Configuration with Reverse Proxy</h3><p>For production deployment, Wetty should sit behind a reverse proxy with TLS termination and authentication:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-nginx data-lang=nginx><span class=line><span class=cl><span class=c1># /etc/nginx/sites-available/wetty
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>server</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=kn>listen</span> <span class=mi>443</span> <span class=s>ssl</span> <span class=s>http2</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=kn>server_name</span> <span class=s>ssh.yourdomain.com</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kn>ssl_certificate</span> <span class=s>/etc/letsencrypt/live/ssh.yourdomain.com/fullchain.pem</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=kn>ssl_certificate_key</span> <span class=s>/etc/letsencrypt/live/ssh.yourdomain.com/privkey.pem</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=kn>ssl_protocols</span> <span class=s>TLSv1.2</span> <span class=s>TLSv1.3</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=kn>ssl_ciphers</span> <span class=s>HIGH:!aNULL:!MD5</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1># Security headers
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=kn>add_header</span> <span class=s>X-Frame-Options</span> <span class=s>DENY</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=kn>add_header</span> <span class=s>X-Content-Type-Options</span> <span class=s>nosniff</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=kn>add_header</span> <span class=s>Content-Security-Policy</span> <span class=s>&#34;default-src</span> <span class=s>&#39;self&#39;</span> <span class=s>&#39;unsafe-inline&#39;</span> <span class=s>&#39;unsafe-eval&#39;</span><span class=p>;</span> <span class=kn>connect-src</span> <span class=s>&#39;self&#39;</span> <span class=s>wss:</span><span class=p>;</span><span class=kn>&#34;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kn>location</span> <span class=s>/</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_pass</span> <span class=s>http://127.0.0.1:3000</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_http_version</span> <span class=mi>1</span><span class=s>.1</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_set_header</span> <span class=s>Upgrade</span> <span class=nv>$http_upgrade</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_set_header</span> <span class=s>Connection</span> <span class=s>&#34;upgrade&#34;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_set_header</span> <span class=s>Host</span> <span class=nv>$host</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_set_header</span> <span class=s>X-Real-IP</span> <span class=nv>$remote_addr</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_buffering</span> <span class=no>off</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_cache</span> <span class=no>off</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>        <span class=c1># Forward client certificate for SSH auth
+</span></span></span><span class=line><span class=cl><span class=c1></span>        <span class=kn>proxy_set_header</span> <span class=s>X-SSL-Client-Cert</span> <span class=nv>$ssl_client_cert</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=integrating-wetty-with-existing-ssh-infrastructure>Integrating Wetty with Existing SSH Infrastructure</h3><p>Wetty&rsquo;s primary advantage is that it works with your <strong>existing SSH setup</strong>. No new authentication systems, no separate user management, no additional attack surface on the target servers. Users authenticate through Wetty&rsquo;s web interface, and Wetty forwards those credentials to the SSH server using the same mechanisms you already have configured:</p><ul><li>Public key authentication</li><li>Password authentication</li><li>Two-factor authentication (if configured on the SSH server)</li><li>Certificate-based authentication</li><li>LDAP/Active Directory integration (via SSH PAM modules)</li></ul><p>This means Wetty can provide browser-based access to hundreds of servers without any changes to the existing infrastructure. The SSH servers do not even need to know Wetty exists.</p><h3 id=wetty-strengths-and-weaknesses>Wetty Strengths and Weaknesses</h3><p>Wetty is the best choice when you need to <strong>provide browser-based SSH access to existing infrastructure</strong>. It requires zero changes to your servers, integrates seamlessly with existing authentication and authorization systems, and gives users the full power of SSH through a browser tab.</p><p>However, Wetty is the least suited for <strong>ad-hoc terminal sharing</strong>. It does not create shareable sessions, does not support read-only viewing modes, and does not provide session recording. It is an SSH client in the browser, not a collaboration tool.</p><h2 id=head-to-head-comparison>Head-to-Head Comparison</h2><table><thead><tr><th>Feature</th><th>tmate</th><th>ttyd</th><th>Wetty</th></tr></thead><tbody><tr><td><strong>Primary use case</strong></td><td>Quick terminal sharing</td><td>Web terminal for any command</td><td>Browser-based SSH access</td></tr><tr><td><strong>Multi-user sessions</strong></td><td>Yes (shared tmux)</td><td>No (per-connection process)</td><td>No (per-connection SSH)</td></tr><tr><td><strong>Read-only mode</strong></td><td>Yes (separate URL)</td><td>Yes (<code>-R</code> flag)</td><td>No</td></tr><tr><td><strong>Session recording</strong></td><td>Yes (tmux <code>pipe-pane</code>)</td><td>No</td><td>No</td></tr><tr><td><strong>Authentication</strong></td><td>SSH keys</td><td>HTTP basic auth, reverse proxy</td><td>SSH (any method)</td></tr><tr><td><strong>Browser terminal</strong></td><td>Yes (xterm.js)</td><td>Yes (xterm.js)</td><td>Yes (xterm.js)</td></tr><tr><td><strong>SSH access</strong></td><td>Yes (native)</td><td>No</td><td>Yes (pass-through)</td></tr><tr><td><strong>Self-hosting complexity</strong></td><td>Medium (needs relay server)</td><td>Low (single binary)</td><td>Low (single binary)</td></tr><tr><td><strong>Reverse proxy support</strong></td><td>Yes (WebSocket)</td><td>Yes (WebSocket)</td><td>Yes (WebSocket)</td></tr><tr><td><strong>Docker image size</strong></td><td>~15 MB</td><td>~10 MB</td><td>~50 MB</td></tr><tr><td><strong>Dependencies</strong></td><td>tmux, SSH</td><td>None (static binary)</td><td>Node.js</td></tr><tr><td><strong>Clipboard support</strong></td><td>Limited</td><td>Yes</td><td>Yes</td></tr><tr><td><strong>Terminal resizing</strong></td><td>Yes</td><td>Yes</td><td>Yes</td></tr><tr><td><strong>Access to existing SSH infra</strong></td><td>No</td><td>No</td><td>Yes</td></tr></tbody></table><h2 id=choosing-the-right-tool>Choosing the Right Tool</h2><p>The decision comes down to your specific workflow:</p><p><strong>Choose tmate if</strong> you need instant terminal sharing with read-only links and session recording. It is the best fit for pair programming, debugging sessions, and training scenarios where one person drives and others observe. The tmux integration means experienced terminal users feel immediately at home.</p><p><strong>Choose ttyd if</strong> you want to expose specific command-line tools through a web interface. Its ability to run any command makes it versatile: monitoring dashboards, database consoles, deployment scripts, or interactive shells. The simple deployment model makes it easy to run multiple instances, each serving a different purpose.</p><p><strong>Choose Wetty if</strong> you need browser-based access to existing SSH infrastructure without modifying the target servers. It is ideal for organizations that want to provide terminal access through a web portal, integrate with existing identity providers, or give contractors limited access without distributing SSH keys.</p><h2 id=security-hardening-for-production-deployment>Security Hardening for Production Deployment</h2><p>Terminal sharing tools expose powerful access to your systems. Hardening is not optional.</p><h3 id=tls-everywhere>TLS Everywhere</h3><p>Never run terminal sharing tools over plain HTTP. All three tools transmit keystrokes and command output, which includes passwords, API keys, and sensitive file contents. Use Let&rsquo;s Encrypt or your organization&rsquo;s CA to obtain TLS certificates, and configure your reverse proxy to redirect all HTTP traffic to HTTPS.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Obtain certificates with certbot</span>
+</span></span><span class=line><span class=cl>sudo certbot certonly --standalone -d terminal.yourdomain.com
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Auto-renewal via cron</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;0 3 * * * certbot renew --quiet &amp;&amp; systemctl reload nginx&#34;</span> <span class=p>|</span> sudo tee -a /etc/crontab
+</span></span></code></pre></td></tr></table></div></div><h3 id=network-isolation>Network Isolation</h3><p>Run terminal sharing tools in isolated Docker networks. Do not give them access to your internal network unless absolutely necessary:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>ttyd</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>lscr.io/linuxserver/ttyd:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>terminal-net</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=c># No access to host network or internal services</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>terminal-net</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>bridge</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>internal</span><span class=p>:</span><span class=w> </span><span class=kc>false</span><span class=w>  </span><span class=c># Allow outbound internet for package installs</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=time-limited-access-tokens>Time-Limited Access Tokens</h3><p>For tmate and ttyd, implement session timeouts to prevent stale sessions from remaining accessible:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># tmate: auto-disconnect after 30 minutes of inactivity</span>
+</span></span><span class=line><span class=cl>tmate <span class=nb>set</span> -g detach-on-destroy on
+</span></span><span class=line><span class=cl>tmate <span class=nb>set</span> -g lock-after-time <span class=m>1800</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># ttyd: use a wrapper script with timeout</span>
+</span></span><span class=line><span class=cl>ttyd --timeout <span class=m>1800</span> /bin/bash
+</span></span></code></pre></td></tr></table></div></div><h3 id=audit-logging>Audit Logging</h3><p>Log all connections and commands for compliance and incident response:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Enable command logging via bash PROMPT_COMMAND</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s1>&#39;export PROMPT_COMMAND=&#34;history -a; logger -t terminal-share \&#34;USER=\$USER CMD=\$(history 1)\&#34;&#34;&#39;</span> &gt;&gt; /etc/bash.bashrc
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Docker-level logging with log rotation</span>
+</span></span><span class=line><span class=cl><span class=c1># Add to docker-compose.yml:</span>
+</span></span><span class=line><span class=cl><span class=c1># logging:</span>
+</span></span><span class=line><span class=cl><span class=c1>#   driver: json-file</span>
+</span></span><span class=line><span class=cl><span class=c1>#   options:</span>
+</span></span><span class=line><span class=cl><span class=c1>#     max-size: &#34;10m&#34;</span>
+</span></span><span class=line><span class=cl><span class=c1>#     max-file: &#34;5&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=rate-limiting>Rate Limiting</h3><p>Protect against brute-force authentication attempts at the reverse proxy level:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-nginx data-lang=nginx><span class=line><span class=cl><span class=c1># Rate limiting zone
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>limit_req_zone</span> <span class=nv>$binary_remote_addr</span> <span class=s>zone=terminal:10m</span> <span class=s>rate=5r/m</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>server</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=kn>location</span> <span class=s>/</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=kn>limit_req</span> <span class=s>zone=terminal</span> <span class=s>burst=3</span> <span class=s>nodelay</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=c1># ... proxy configuration
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=conclusion>Conclusion</h2><p>Terminal sharing should not require a commercial SaaS subscription, and it certainly should not route your keystrokes through servers you do not control. In 2026, tmate, ttyd, and Wetty provide three distinct approaches to self-hosted terminal access, each optimized for different workflows.</p><p>For most development teams, running <strong>tmate</strong> on a small VPS covers the majority of collaboration needs: instant sharing, read-only links for stakeholders, and session recording for documentation. <strong>ttyd</strong> fills the gap when you need to expose specific tools through a browser. <strong>Wetty</strong> provides the bridge between existing SSH infrastructure and browser-based access.</p><p>All three tools are open source, free to run, and deployable with Docker in under five minutes. The only question is which one matches your workflow.</p></div><div id=frame style=width:100%;margin:auto;position:relative;z-index:99998><iframe data-aa=2433958 src='//acceptable.a-ads.com/2433958/?size=Adaptive' style=border:0;padding:0;width:70%;height:auto;overflow:hidden;display:block;margin:auto></iframe></div></article></main><footer class=site-footer><p>Built with <a href=https://gohugo.io>Hugo</a> · <a href=/openswap-guide/index.xml>RSS</a> · <a href=https://github.com/hopkdj>GitHub</a></p><p style=margin-top:8px>&copy; 2026 OpenSwap Guide. All rights reserved.</p></footer></body></html>
