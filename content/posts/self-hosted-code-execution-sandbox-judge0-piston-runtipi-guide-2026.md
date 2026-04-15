@@ -1,146 +1,140 @@
 ---
-title: "Judge0 vs Piston vs Runtipi: Best Self-Hosted Code Execution Sandbox 2026"
+title: "Self-Hosted Code Execution Sandboxes: Judge0 vs Piston vs RunTipi 2026"
 date: 2026-04-15
-tags: ["comparison", "guide", "self-hosted", "developer-tools", "education"]
+tags: ["comparison", "guide", "self-hosted", "developer-tools", "sandbox"]
 draft: false
-description: "Compare Judge0, Piston, and Runtipi — the top open-source code execution engines for building coding platforms, interview tools, and educational sites. Docker deployment guides included."
+description: "Build your own self-hosted code execution platform with Judge0, Piston, or RunTipi. Complete comparison and setup guide for running user-submitted code safely in 2026."
 ---
 
-If you're building a coding challenge platform, an online IDE, an automated grading system, or a technical interview tool, you need a way to run untrusted user code safely. Cloud APIs like Judge0 CE's hosted tier or Sphere Engine are convenient, but they come with rate limits, per-execution costs, and latency you can't control.
+Running arbitrary code submitted by users is one of the most dangerous operations a web application can perform. Whether you're building a coding interview platform, an online judge for competitive programming, an interactive documentation site, or a collaborative REPL, you need a way to execute untrusted code without compromising your server.
 
-**Self-hosting a code execution sandbox** gives you unlimited runs, sub-100ms response times on local hardware, complete data privacy, and the freedom to add custom languages or toolchains. In this guide, you'll compare the three leading open-source options — **Judge0**, **Piston**, and **Runtipi** — and learn exactly how to deploy and configure each one.
+Commercial services like Replit, CodeSandbox, and JDoodle solve this problem — but they come with usage limits, vendor lock-in, and sometimes unpredictable pricing. In 2026, the open-source alternatives have matured to the point where running your own code execution sandbox is practical, affordable, and gives you full control over supported languages, resource limits, and execution policies.
 
----
+## Why Self-Host a Code Execution Sandbox?
 
-## Why Self-Host Your Code Execution Engine?
+There are several compelling reasons to run your own code execution platform rather than relying on a third-party API:
 
-Running code submitted by users is one of the most security-sensitive operations you can perform. Whether you're building an educational platform, a competitive programming site, or an internal developer tool, handing code execution off to a third-party API introduces real risks.
+**Data privacy and compliance.** When code execution is involved, you may be processing proprietary algorithms, student submissions, or internal scripts. Keeping everything on your own infrastructure ensures that sensitive code never leaves your network. For organizations subject to GDPR, HIPAA, or SOC 2 requirements, this is often mandatory.
 
-### Unlimited Execution Without Per-Run Costs
+**Cost predictability at scale.** Commercial code execution APIs typically charge per execution or per CPU-second. A busy coding education platform can easily run tens of thousands of executions per day. At that scale, self-hosting on a single mid-range server becomes dramatically cheaper than paying per-call fees.
 
-Hosted code execution services charge per submission or per CPU-second. A coding platform with 500 students each submitting 20 solutions per week generates 10,000 executions weekly. At typical SaaS pricing of $0.001–$0.01 per execution, that's $40–$400 per month just for code running. Self-hosting eliminates per-run pricing entirely — you pay only for the server it runs on.
+**Language and runtime control.** Commercial platforms decide which languages and versions to support. With a self-hosted sandbox, you control the exact compiler versions, library availability, and runtime flags. Need a specific Python package pre-installed? Want to test code against a beta version of Rust? You decide.
 
-### Data Privacy and Academic Integrity
+**No rate limits or throttling.** During peak usage — exam periods, hackathons, or CI/CD pipeline bursts — you won't hit API rate limits. Your sandbox scales with your hardware.
 
-When students submit solutions to a hosted API, their code leaves your network. For institutions with FERPA, GDPR, or internal data policies, that's a compliance problem. Self-hosting keeps all submissions, test results, and execution logs within your infrastructure boundary.
+**Deep integration.** Running locally means lower latency, no network overhead, and the ability to integrate directly with your existing infrastructure — databases, message queues, monitoring dashboards, and custom grading systems.
 
-### Custom Language Support and Toolchains
+**Educational value.** Understanding how code execution sandboxes work — the containerization, resource limits, security boundaries — is valuable knowledge for any developer working with untrusted input.
 
-Hosted services offer a fixed set of languages and versions. Self-hosting lets you install any compiler, interpreter, or runtime — including proprietary toolchains, domain-specific languages, or specific library versions your curriculum requires.
+## The Threat Model: What Are We Protecting Against?
 
-### Latency and Reliability
+Before diving into tools, it's important to understand what "sandboxing" actually means in this context. When you execute user-submitted code, you need to defend against:
 
-A hosted API round-trip adds 200–800ms of network latency per execution. For interactive coding environments where users expect near-instant feedback, running the execution engine on the same network (or the same machine) drops that to under 50ms. You also control availability — no dependency on an external service's uptime.
+- **Filesystem access** — reading `/etc/passwd`, writing to arbitrary paths, planting backdoors
+- **Network access** — making outbound HTTP requests, opening reverse shells, port scanning
+- **Resource exhaustion** — fork bombs, memory allocation attacks, CPU spinning
+- **Privilege escalation** — exploiting kernel vulnerabilities, container escapes
+- **Persistent processes** — spawning daemons that survive the execution window
 
-### Resource Control and Sandboxing
+Every serious code execution sandbox addresses these threats through a combination of containerization (Docker, LXC), system call filtering (seccomp-bpf, AppArmor), resource cgroups, and network namespace isolation. The differences between tools lie in how they implement these protections and how easy they are to deploy and manage.
 
-Self-hosting means you decide the isolation strategy: Docker containers, firejail, gVisor, or bare-metal chroots. You set CPU time limits, memory caps, network policies, and filesystem restrictions exactly how your use case demands.
+## Judge0: The Industry-Standard Code Execution Engine
 
----
+Judge0 is the most widely deployed open-source code execution engine. It powers many coding interview platforms, online judges, and educational tools. Its architecture is battle-tested and its API is straightforward.
 
-## Quick Comparison: Judge0 vs Piston vs Runtipi
+### Architecture
 
-| Feature | **Judge0** | **Piston** | **Runtipi** |
-|---|---|---|---|
-| **License** | GPLv3 | MIT | MIT |
-| **Language** | Ruby (API) + C++ (isolate) | Python (API) + Docker | Go (API) + Docker |
-| **GitHub Stars** | 3,500+ | 2,000+ | 200+ |
-| **Languages Supported** | 75+ | 70+ | 30+ |
-| **Execution Model** | Docker + `isolate` syscall sandbox | Docker containers | Docker containers |
-| **API Format** | REST (JSON) | REST (JSON) | REST (JSON) |
-| **Batch Submissions** | ✅ Native (bulk API) | ❌ Sequential | ❌ Sequential |
-| **Callback/Webhook** | ✅ Async callbacks | ❌ Poll only | ❌ Poll only |
-| **Custom Languages** | ✅ Add via ISO image | ✅ Add via Dockerfile | ✅ Add via config |
-| **Resource Limits** | CPU time, memory, processes, file size | CPU time, memory, output size | CPU time, memory |
-| **File I/O Support** | ✅ Multiple files | ✅ stdin/stdout + files | ✅ stdin/stdout |
-| **Network Access** | ❌ Blocked (sandboxed) | Configurable | ❌ Blocked |
-| **Min RAM** | 4 GB | 2 GB | 1 GB |
-| **Best For** | Competitive programming, grading | General-purpose execution | Lightweight deployments |
+Judge0 consists of three components:
 
----
+1. **Server** — A Ruby on Rails application that manages submission queues, tracks execution status, and exposes a REST API
+2. **Workers** — Separate processes that pull submissions from the queue, execute them in isolated Docker containers, and report results
+3. **Database** — PostgreSQL for persistence (optional, can run in memory-only mode)
 
-## Judge0: The Established Standard
+All code execution happens inside Docker containers with strict resource limits. Each submission runs in its own container that is destroyed after execution.
 
-**Judge0** is the most mature and widely adopted open-source code execution system. It powers numerous competitive programming platforms, university grading systems, and coding interview tools. Its architecture is built around **isolate** — a security-focused sandbox originally developed for the French IOI team that uses Linux namespaces, seccomp-bpf, and cgroups to confine execution.
+### Key Features
 
-### Architecture Overview
+| Feature | Details |
+|---------|---------|
+| Languages | 75+ languages and compilers supported |
+| API | RESTful JSON API with OpenAPI specification |
+| Isolation | Docker containers with cgroup resource limits |
+| Concurrency | Horizontal scaling with multiple workers |
+| Batch submissions | Submit multiple code snippets in one request |
+| Callbacks | Webhook support for async result delivery |
+| Compilation flags | Custom compiler and runtime flags per submission |
+| File I/O | Support for additional files attached to submissions |
 
-Judge0 consists of two main components:
+### Installation with Docker Compose
 
-- **Judge0 API** (Ruby on Rails) — the REST API that receives submissions, queues them, and returns results
-- **Judge0 Workers** — background processes that pull submissions from a Redis queue, execute them in isolated Docker containers, and push results back
-
-The separation of API and workers means you can scale workers horizontally to handle high submission volumes without touching the API layer.
-
-### Docker Deployment
-
-The fastest way to get Judge0 running is with the official Docker Compose setup:
+The recommended deployment uses Docker Compose. Create a `docker-compose.yml` file:
 
 ```yaml
-# docker-compose.yml
 version: "3.8"
-
 services:
-  server:
+  judge0:
     image: judge0/judge0:1.13.1
     volumes:
-      - ./judge0.conf:/etc/judge0/judge0.conf
+      - ./judge0.conf:/judge0.conf:ro
     ports:
       - "2358:2358"
     privileged: true
-    environment:
-      - JUDGE0_HOMES_ENABLED=true
-      - JUDGE0_ENABLE_BATCHED_SUBMISSIONS=true
-    depends_on:
-      - db
-      - redis
-    restart: always
+    restart: unless-stopped
+
+  workers:
+    image: judge0/judge0-workers:1.13.1
+    volumes:
+      - ./judge0.conf:/judge0.conf:ro
+    privileged: true
+    restart: unless-stopped
 
   db:
     image: postgres:16-alpine
     environment:
       POSTGRES_DB: judge0
       POSTGRES_USER: judge0
-      POSTGRES_PASSWORD: your_secure_password
+      POSTGRES_PASSWORD: YourSecurePassword
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    restart: always
+    restart: unless-stopped
 
   redis:
     image: redis:7-alpine
-    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
-    restart: always
+    command: redis-server --requirepass YourRedisPassword
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
 
 volumes:
   postgres_data:
+  redis_data:
 ```
 
-Create the configuration file:
+Create a `judge0.conf` configuration file:
 
 ```ini
-# judge0.conf
-[server]
-port = 2358
-workers = 4
+[redis]
+host = redis
+password = YourRedisPassword
+
+[database]
+host = db
+username = judge0
+password = YourSecurePassword
+database = judge0
+
+[worker]
 max_queue_size = 100
 max_cpu_time_limit = 15000
 max_memory_limit = 512000
 max_processes_and_or_threads = 60
-enable_batched_submissions = true
-enable_callbacks = true
-callbacks_max_tries = 3
-callbacks_timeout = 5
+max_file_size = 1024
+max_number_of_runs = 20
 
-[database]
-host = db
-port = 5432
-username = judge0
-password = your_secure_password
-name = judge0
-
-[redis]
-host = redis
-port = 6379
+[security]
+enable_per_process_and_thread_time_limit = true
+enable_per_process_and_thread_memory_limit = true
+enable_additional_files = true
 ```
 
 Start the stack:
@@ -149,132 +143,125 @@ Start the stack:
 docker compose up -d
 ```
 
-Verify the API is responding:
+Verify the installation:
 
 ```bash
-curl http://localhost:2358/languages | python3 -m json.tool | head -20
-```
-
-### Submitting Code
-
-Send a Python submission:
-
-```bash
-curl -X POST http://localhost:2358/submissions \
+curl -X POST "http://localhost:2358/submissions?base64_encoded=false&wait=true" \
   -H "Content-Type: application/json" \
   -d '{
-    "source_code": "print(\"Hello, World!\")",
-    "language_id": 71,
-    "stdin": "",
-    "cpu_time_limit": 2,
-    "memory_limit": 128000
+    "source_code": "print(\"Hello from Judge0!\")",
+    "language_id": 71
   }'
 ```
 
-The response includes a `token` you use to poll for results:
+Language ID 71 corresponds to Python 3. The response includes the execution output, status, CPU time, and memory usage:
 
-```bash
-curl http://localhost:2358/submissions/{token}
-```
-
-### Adding a Custom Language
-
-Judge0 supports 75+ languages out of the box. To add a custom language:
-
-```bash
-# List existing languages
-curl http://localhost:2358/languages
-
-# Add a new language (e.g., Rust nightly)
-curl -X POST http://localhost:2358/languages \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "Rust (Nightly)",
-    "compile_cmd": "/usr/local/bin/rustc main.rs -o a.out",
-    "run_cmd": "./a.out"
-  }'
-```
-
-### Production Hardening
-
-For production deployments, add these configurations:
-
-```ini
-# judge0.conf — production settings
-[security]
-enable_per_process_and_thread_time_limit = true
-enable_per_process_and_thread_memory_limit = true
-max_extract_size = 10485760
-allow_enable_network = false
-allow_enable_per_process_and_thread_time_limit = true
-
-[rate_limit]
-max_submissions_per_minute = 60
-```
-
-Pair Judge0 with a reverse proxy for TLS termination:
-
-```yaml
-# Add to docker-compose.yml
-  caddy:
-    image: caddy:2-alpine
-    ports:
-      - "443:443"
-      - "80:80"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
-      - caddy_data:/data
-    depends_on:
-      - server
-
-volumes:
-  caddy_data:
-```
-
-```
-# Caddyfile
-judge0.example.com {
-  reverse_proxy server:2358
-  encode gzip
-  log
+```json
+{
+  "stdout": "Hello from Judge0!\n",
+  "status": { "id": 3, "description": "Accepted" },
+  "time": "0.012",
+  "memory": 9216
 }
 ```
 
----
+### Using Judge0 in Your Application
 
-## Piston: The Lightweight Contender
+Here's a practical example of submitting code from a Python application:
 
-**Piston** is a high-performance code execution engine developed by EngineerMan. It's designed to be simpler to deploy and maintain than Judge0 while supporting a comparable set of languages. Piston uses Docker containers for isolation and has a straightforward REST API.
+```python
+import requests
 
-### Why Choose Piston Over Judge0?
+JUDGE0_URL = "http://localhost:2358"
 
-- **Simpler architecture** — no Redis or PostgreSQL dependency. Piston is a single Python service with Docker.
-- **MIT license** — more permissive than Judge0's GPLv3, important for commercial products.
-- **Lower resource footprint** — runs comfortably on 2 GB RAM vs Judge0's 4 GB minimum.
-- **Language package management** — Piston manages language runtime packages that can be installed and updated independently.
+def run_code(source_code: str, language_id: int, stdin: str = "") -> dict:
+    """Submit code to Judge0 and return the result."""
+    response = requests.post(
+        f"{JUDGE0_URL}/submissions?base64_encoded=false&wait=true",
+        json={
+            "source_code": source_code,
+            "language_id": language_id,
+            "stdin": stdin,
+            "cpu_time_limit": 5,
+            "memory_limit": 128000,
+        }
+    )
+    return response.json()
 
-### Docker Deployment
+# Run Python code
+result = run_code(
+    source_code="n = int(input()); print(f'Factorial: {__import__(\"math\").factorial(n)}')",
+    language_id=71,  # Python 3
+    stdin="10"
+)
+
+print(f"Output: {result['stdout']}")
+print(f"Status: {result['status']['description']}")
+print(f"Time: {result['time']}s, Memory: {result['memory']} KB")
+```
+
+For production use, submit asynchronously and poll for results:
+
+```python
+def run_code_async(source_code: str, language_id: int) -> str:
+    """Submit code and return the submission token for polling."""
+    response = requests.post(
+        f"{JUDGE0_URL}/submissions?base64_encoded=false",
+        json={"source_code": source_code, "language_id": language_id}
+    )
+    return response.json()["token"]
+
+def get_result(token: str) -> dict:
+    """Poll for execution result."""
+    response = requests.get(f"{JUDGE0_URL}/submissions/{token}?base64_encoded=false")
+    return response.json()
+```
+
+## Piston: Lightweight Code Execution Runtime
+
+Piston, developed by EngineerMan, takes a different approach. Instead of a full application framework, Piston focuses purely on being a fast, lightweight code execution runtime. It's designed to be easy to deploy and supports a wide range of languages through a package-based system.
+
+### Architecture
+
+Piston's design is notably simpler than Judge0:
+
+1. **API Server** — A Node.js application that receives execution requests
+2. **Job Manager** — Coordinates execution across language runtimes
+3. **Runtime Packages** — Each language is a separate Docker image with its compiler/interpreter
+
+Piston uses Docker for isolation but with a different strategy: it pre-builds Docker images for each supported language and runs code inside these images with strict resource limits via cgroups and seccomp profiles.
+
+### Key Features
+
+| Feature | Details |
+|---------|---------|
+| Languages | 40+ languages with easy package addition |
+| API | Simple REST API with JSON request/response |
+| Isolation | Docker containers with seccomp filtering |
+| Package system | Add new languages by dropping a package spec |
+| Network isolation | Default deny for outbound connections |
+| Timeout handling | Strict wall-clock and CPU time limits |
+| Output capture | Captures stdout, stderr, and exit codes |
+| Multi-file support | Execute projects with multiple source files |
+
+### Installation with Docker
+
+Piston provides an official Docker image that bundles the most common languages:
 
 ```yaml
-# docker-compose.yml for Piston
 version: "3.8"
-
 services:
   piston:
     image: ghcr.io/engineer-man/piston:latest
     ports:
       - "2000:2000"
-    volumes:
-      - piston-data:/piston/packages
-      - /var/run/docker.sock:/var/run/docker.sock
-    environment:
-      - PISTON_REPO_URL=https://github.com/engineer-man/piston/releases/download
-    restart: always
+    restart: unless-stopped
     security_opt:
-      - no-new-privileges:true
-
-volumes:
-  piston-data:
+      - seccomp:unconfined
+    deploy:
+      resources:
+        limits:
+          memory: 4G
 ```
 
 Start the service:
@@ -283,15 +270,15 @@ Start the service:
 docker compose up -d
 ```
 
-Verify it's running:
+### Using Piston
+
+First, check available runtimes:
 
 ```bash
-curl http://localhost:2000/api/v2/runtimes | python3 -m json.tool | head -20
+curl http://localhost:2000/api/v2/runtimes | python3 -m json.tool
 ```
 
-### Submitting Code
-
-Piston's API v2 uses a different structure than Judge0:
+Submit code for execution:
 
 ```bash
 curl -X POST http://localhost:2000/api/v2/execute \
@@ -302,458 +289,429 @@ curl -X POST http://localhost:2000/api/v2/execute \
     "files": [
       {
         "name": "main.py",
-        "content": "import sys\nprint(f\"Received: {sys.stdin.read().strip()}\")"
+        "content": "import sys\nprint(f\"Python {sys.version}\")\nfor i in range(5):\n    print(f\"  Count: {i}\")"
       }
     ],
-    "stdin": "Hello from stdin",
+    "stdin": "",
+    "args": [],
     "compile_timeout": 10000,
     "run_timeout": 3000,
     "memory_limit": 128000
   }'
 ```
 
-The response is immediate — no token polling required:
+The response structure is clean and predictable:
 
 ```json
 {
   "run": {
-    "stdout": "Received: Hello from stdin\n",
+    "stdout": "Python 3.12.0\n  Count: 0\n  Count: 1\n  Count: 2\n  Count: 3\n  Count: 4\n",
     "stderr": "",
+    "output": "Python 3.12.0\n  Count: 0\n  Count: 1\n  Count: 2\n  Count: 3\n  Count: 4\n",
     "code": 0,
-    "signal": null,
-    "output": "Received: Hello from stdin\n"
-  }
+    "signal": null
+  },
+  "language": "python",
+  "version": "3.12.0"
 }
 ```
 
-### Adding Custom Language Packages
+### Adding Custom Languages
 
-Piston uses a package system for language runtimes. To build and install a custom package:
+Piston's package system makes it straightforward to add new languages. Create a `package.json` for your language:
 
-```bash
-# Enter the Piston container
-docker exec -it piston_api bash
-
-# Inside the container, create a package build script
-mkdir -p /piston/packages/node/21.0.0
-cat > /piston/packages/node/21.0.0/build.sh << 'EOF'
-#!/bin/bash
-set -e
-
-VERSION="21.0.0"
-apt-get update
-apt-get install -y wget
-
-wget https://nodejs.org/dist/v${VERSION}/node-v${VERSION}-linux-x64.tar.xz
-tar -xf node-v${VERSION}-linux-x64.tar.xz
-mv node-v${VERSION}-linux-x64 /opt/node
-
-ln -s /opt/node/bin/node /usr/bin/node
-ln -s /opt/node/bin/npm /usr/bin/npm
-ln -s /opt/node/bin/npx /usr/bin/npx
-
-echo "Node.js ${VERSION} installed"
-EOF
-
-chmod +x /piston/packages/node/21.0.0/build.sh
-cd /piston/packages/node/21.0.0 && ./build.sh
-```
-
-Register the runtime:
-
-```bash
-curl -X POST http://localhost:2000/api/v2/runtimes \
-  -H "Content-Type: application/json" \
-  -d '{
-    "language": "node",
-    "version": "21.0.0",
-    "aliases": ["nodejs", "javascript"]
-  }'
-```
-
-### Production Configuration
-
-Add a reverse proxy with rate limiting:
-
-```nginx
-# nginx.conf for Piston
-server {
-    listen 443 ssl;
-    server_name piston.example.com;
-
-    ssl_certificate /etc/ssl/certs/piston.crt;
-    ssl_certificate_key /etc/ssl/private/piston.key;
-
-    location /api/v2/execute {
-        limit_req zone=api burst=20 nodelay;
-        client_max_body_size 5M;
-
-        proxy_pass http://127.0.0.1:2000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_read_timeout 30s;
-    }
-
-    location /api/v2/runtimes {
-        proxy_cache runtimes_cache;
-        proxy_cache_valid 200 1h;
-        proxy_pass http://127.0.0.1:2000;
-    }
+```json
+{
+  "language": "rust",
+  "version": "1.75.0",
+  "aliases": ["rs"],
+  "pkg": "rust",
+  "versioned": false
 }
 ```
 
----
+Piston will pull the appropriate Docker image and make the language available through the API. You can also build custom runtime images:
 
-## Runtipi: The Minimalist Option
+```dockerfile
+FROM ubuntu:22.04
 
-**Runtipi** is a lightweight, Go-based code execution engine designed for simplicity and low resource consumption. It's the newest of the three and prioritizes a small footprint and easy deployment over feature breadth.
+RUN apt-get update && apt-get install -y \
+    rustc \
+    cargo \
+    && rm -rf /var/lib/apt/lists/*
 
-### Why Choose Runtipi?
+# Set up the execution environment
+RUN mkdir -p /piston/packages/rust/1.75.0
+COPY run.sh /piston/packages/rust/1.75.0/
+RUN chmod +x /piston/packages/rust/1.75.0/run.sh
+```
 
-- **Smallest footprint** — runs on 1 GB RAM, single Go binary plus Docker.
-- **No database required** — zero external dependencies beyond Docker.
-- **Fast startup** — the entire service starts in under 2 seconds.
-- **Simple configuration** — TOML or environment variables, no complex config files.
+## RunTipi: The Modern Contender
 
-### Docker Deployment
+RunTipi is a newer entrant in the code execution space, designed from the ground up with modern architecture patterns. It emphasizes simplicity, fast startup times, and a clean developer experience.
+
+### Architecture
+
+RunTipi uses a microservices approach:
+
+1. **Gateway** — API gateway that routes requests to execution workers
+2. **Workers** — Stateless workers that execute code in isolated containers
+3. **Image Registry** — Pre-built container images for each supported language
+
+Unlike Judge0 and Piston, RunTipi uses container image layering to minimize startup time. Language-specific base images are cached, and execution containers are spun up on-demand rather than using a queue-based model.
+
+### Key Features
+
+| Feature | Details |
+|---------|---------|
+| Languages | 30+ languages with active community contributions |
+| API | RESTful API with WebSocket support for streaming output |
+| Isolation | Firecracker microVMs for stronger security isolation |
+| Streaming | Real-time output streaming via WebSocket |
+| Fast cold start | Pre-warmed containers for sub-100ms response times |
+| Resource limits | Per-execution CPU, memory, and disk quotas |
+| Custom images | Build and register your own language environments |
+| Metrics | Built-in Prometheus metrics endpoint |
+
+### Installation
+
+RunTipi provides a Helm chart for Kubernetes and a Docker Compose setup for single-node deployments:
 
 ```yaml
-# docker-compose.yml for Runtipi
 version: "3.8"
-
 services:
-  runtipi:
-    image: ghcr.io/nicoulaj/runtipi:latest
+  gateway:
+    image: runtipi/gateway:latest
     ports:
       - "3000:3000"
-    volumes:
-      - ./runtipi-config.toml:/etc/runtipi/config.toml
-      - /var/run/docker.sock:/var/run/docker.sock
     environment:
-      - RUNTIPI_MAX_CPU_TIME=10
-      - RUNTIPI_MAX_MEMORY=256M
-      - RUNTIPI_MAX_OUTPUT_SIZE=1M
-    restart: always
-    security_opt:
-      - no-new-privileges:true
+      WORKER_URL: http://worker:8080
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      - worker
+      - redis
+    restart: unless-stopped
+
+  worker:
+    image: runtipi/worker:latest
+    environment:
+      MAX_CONCURRENT: 10
+      DEFAULT_CPU_LIMIT: 2
+      DEFAULT_MEMORY_LIMIT: 512
+      RUNTIME_DIR: /var/lib/runtipi/runtimes
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - runtime_data:/var/lib/runtipi/runtimes
+    privileged: true
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+volumes:
+  runtime_data:
 ```
 
-Create the configuration:
-
-```toml
-# runtipi-config.toml
-[server]
-port = 3000
-host = "0.0.0.0"
-
-[sandbox]
-max_cpu_time = "10s"
-max_memory = "256M"
-max_output_size = "1M"
-network_enabled = false
-mount_readonly = true
-
-[languages]
-[languages.python]
-image = "python:3.12-slim"
-run_cmd = ["python3", "main.py"]
-
-[languages.node]
-image = "node:21-slim"
-run_cmd = ["node", "main.js"]
-
-[languages.rust]
-image = "rust:1.75-slim"
-compile_cmd = ["rustc", "main.rs", "-o", "main"]
-run_cmd = ["./main"]
-```
-
-Start the service:
+Deploy the stack:
 
 ```bash
 docker compose up -d
 ```
 
-### Submitting Code
+Verify the deployment:
 
 ```bash
-curl -X POST http://localhost:3000/api/v1/execute \
-  -H "Content-Type: application/json" \
-  -d '{
-    "language": "python",
-    "code": "print(sum(range(100)))",
-    "stdin": "",
-    "timeout": 5
-  }'
+curl http://localhost:3000/api/v1/languages
 ```
 
-Response:
+## Head-to-Head Comparison
 
-```json
-{
-  "stdout": "4950\n",
-  "stderr": "",
-  "exit_code": 0,
-  "duration_ms": 45,
-  "memory_kb": 8192
-}
-```
+### Performance
 
----
+| Metric | Judge0 | Piston | RunTipi |
+|--------|--------|--------|---------|
+| Cold start time | 200-500ms | 100-300ms | 50-150ms |
+| Max throughput | ~100 exec/s (single node) | ~150 exec/s | ~200 exec/s |
+| Memory overhead | 200MB base + per-container | 150MB base + per-container | 100MB base + per-container |
+| Queue latency | 10-50ms (Redis-backed) | Near-zero (direct) | 5-20ms (Redis-backed) |
 
-## Integration Patterns
+### Security
 
-### Building a Coding Challenge Platform
+| Feature | Judge0 | Piston | RunTipi |
+|---------|--------|--------|---------|
+| Container isolation | Docker cgroups | Docker + seccomp | Firecracker microVMs |
+| Network blocking | Optional | Default | Default |
+| Filesystem limits | Yes | Yes | Yes |
+| Syscall filtering | Via Docker defaults | Custom seccomp profile | Kernel-level isolation |
+| Container escape protection | Good | Good | Excellent |
+| Privileged mode required | Yes (for cgroups) | Yes (for seccomp) | No (Firecracker) |
 
-Here's how to integrate Judge0 into a Python web application for automated code grading:
+### Feature Matrix
 
-```python
-import requests
-import time
-from dataclasses import dataclass
+| Feature | Judge0 | Piston | RunTipi |
+|---------|--------|--------|---------|
+| Languages supported | 75+ | 40+ | 30+ |
+| Batch submissions | Yes | No | No |
+| Webhook callbacks | Yes | No | No |
+| WebSocket streaming | No | No | Yes |
+| Custom compiler flags | Yes | Limited | Yes |
+| Multi-file projects | Yes | Yes | Yes |
+| File I/O limits | Configurable | Configurable | Configurable |
+| Built-in metrics | Basic (stats endpoint) | Basic | Prometheus endpoint |
+| Kubernetes native | No | No | Yes (Helm chart) |
+| API complexity | Moderate (many endpoints) | Simple (2 endpoints) | Moderate |
+| Documentation | Extensive | Good | Growing |
 
-@dataclass
-class SubmissionResult:
-    status: str
-    stdout: str
-    stderr: str
-    time_ms: float
-    memory_kb: int
-    exit_code: int
+### Deployment Complexity
 
-class CodeJudge:
-    def __init__(self, api_url: str = "http://localhost:2358"):
-        self.api_url = api_url
-        # Map language names to Judge0 language IDs
-        self.languages = {
-            "python": 71,   # Python 3.8.1
-            "javascript": 63,  # JavaScript Node.js
-            "java": 62,     # Java OpenJDK
-            "cpp": 54,      # C++ GCC
-            "c": 50,        # C GCC
-            "rust": 73,     # Rust
-            "go": 60,       # Go
-        }
+| Aspect | Judge0 | Piston | RunTipi |
+|--------|--------|--------|---------|
+| Docker Compose setup | Medium (4 services) | Easy (1 service) | Medium (3 services) |
+| External dependencies | PostgreSQL + Redis | None | Redis |
+| Kubernetes deployment | Custom manifests | Custom manifests | Helm chart provided |
+| Horizontal scaling | Yes (add workers) | Limited | Yes (add workers) |
+| State management | Database-backed | Stateless | Redis-backed |
+| Upgrade path | Versioned releases | Rolling updates | Versioned releases |
 
-    def submit(self, code: str, language: str, test_cases: list[dict],
-               timeout: int = 5, memory_limit: int = 256000) -> list[SubmissionResult]:
-        lang_id = self.languages.get(language)
-        if not lang_id:
-            raise ValueError(f"Unsupported language: {language}")
-
-        results = []
-        for tc in test_cases:
-            # Submit the code with test case input
-            resp = requests.post(
-                f"{self.api_url}/submissions",
-                json={
-                    "source_code": code,
-                    "language_id": lang_id,
-                    "stdin": tc["input"],
-                    "cpu_time_limit": timeout,
-                    "memory_limit": memory_limit,
-                }
-            )
-            token = resp.json()["token"]
-
-            # Poll for result
-            result = self._wait_for_result(token)
-            results.append(result)
-
-        return results
-
-    def _wait_for_result(self, token: str, max_retries: int = 20,
-                         delay: float = 0.5) -> SubmissionResult:
-        for _ in range(max_retries):
-            resp = requests.get(f"{self.api_url}/submissions/{token}")
-            data = resp.json()
-            status = data.get("status", {}).get("description", "")
-
-            if status in ("Accepted", "Wrong Answer", "Compilation Error",
-                          "Runtime Error", "Time Limit Exceeded"):
-                return SubmissionResult(
-                    status=status,
-                    stdout=data.get("stdout", ""),
-                    stderr=data.get("stderr", ""),
-                    time_ms=data.get("time", 0) * 1000,
-                    memory_kb=data.get("memory", 0),
-                    exit_code=data.get("exit_code", -1),
-                )
-            time.sleep(delay)
-
-        raise TimeoutError(f"Submission {token} did not complete")
-
-    def grade(self, code: str, language: str, test_cases: list[dict]) -> dict:
-        """Run all test cases and return a grade summary."""
-        results = self.submit(code, language, test_cases)
-        passed = sum(1 for r in results if r.status == "Accepted")
-        total = len(results)
-
-        return {
-            "score": f"{passed}/{total}",
-            "percentage": round(passed / total * 100, 1),
-            "details": [
-                {"test": i + 1, "status": r.status, "time_ms": r.time_ms}
-                for i, r in enumerate(results)
-            ]
-        }
-
-# Usage example
-judge = CodeJudge()
-
-test_cases = [
-    {"input": "5\n", "expected": "120"},      # 5! = 120
-    {"input": "0\n", "expected": "1"},        # 0! = 1
-    {"input": "10\n", "expected": "3628800"}, # 10!
-]
-
-student_code = """
-import math
-n = int(input())
-print(math.factorial(n))
-"""
-
-grade = judge.grade(student_code, "python", test_cases)
-print(f"Score: {grade['score']} ({grade['percentage']}%)")
-```
-
-### Piston Integration for a Simple API
-
-For Piston's synchronous API, the integration is even simpler:
-
-```python
-import requests
-
-def run_code_piston(language: str, version: str, code: str,
-                    stdin: str = "", timeout: int = 3000) -> dict:
-    resp = requests.post(
-        "http://localhost:2000/api/v2/execute",
-        json={
-            "language": language,
-            "version": version,
-            "files": [{"name": "main.py", "content": code}],
-            "stdin": stdin,
-            "run_timeout": timeout,
-        }
-    )
-    return resp.json()
-
-# Execute a Python script
-result = run_code_piston("python", "3.12.0", """
-import sys
-numbers = [int(x) for x in sys.stdin.read().split()]
-print(f"Sum: {sum(numbers)}, Average: {sum(numbers)/len(numbers):.2f}")
-""", stdin="10 20 30 40 50")
-
-print(result["run"]["output"])  # Sum: 150, Average: 30.00
-```
-
----
-
-## Security Considerations
-
-Running untrusted code is inherently risky. Regardless of which engine you choose, follow these practices:
-
-### Isolation Layers
-
-1. **Container-level**: Each execution runs in a fresh Docker container with no persistent state
-2. **System-level**: Use seccomp profiles to block dangerous syscalls (`ptrace`, `mount`, `reboot`)
-3. **Resource limits**: Always set CPU time, memory, and process count limits
-4. **Network isolation**: Disable outbound network access unless specifically required
-5. **Filesystem**: Mount the execution directory as read-only; restrict write access to `/tmp`
-
-### Judge0-Specific Security
-
-Judge0's `isolate` binary provides syscall-level sandboxing beyond Docker:
-
-```ini
-# judge0.conf — security settings
-[security]
-enable_per_process_and_thread_time_limit = true
-enable_per_process_and_thread_memory_limit = true
-max_file_size = 1024
-enable_network = false
-```
-
-### Piston-Specific Security
-
-Limit Docker socket access and use user namespaces:
-
-```yaml
-# docker-compose.yml — security options
-services:
-  piston:
-    security_opt:
-      - no-new-privileges:true
-      - seccomp:/path/to/seccomp-profile.json
-    user: "1000:1000"
-```
-
-### Common Attack Vectors to Mitigate
-
-| Attack Type | Mitigation |
-|---|---|
-| Fork bomb | `max_processes_and_or_threads = 60` (Judge0) |
-| Memory exhaustion | `memory_limit = 128000` (128 MB per submission) |
-| Infinite loop | `cpu_time_limit = 2` (2 seconds max) |
-| File system abuse | Read-only mount + no persistent volumes |
-| Network exfiltration | Disable outbound networking in sandbox |
-| Side-channel timing | Shared-nothing containers, no shared CPU state |
-
----
-
-## Choosing the Right Engine
+## Choosing the Right Tool
 
 ### Choose Judge0 if:
 
-- You're building a competitive programming platform or university grading system
-- You need batch submissions and async callbacks
-- You require the widest language support (75+ languages)
-- You want the most battle-tested security model (isolate sandbox)
-- Your team can manage a multi-service stack (PostgreSQL + Redis + API + Workers)
+- You need the broadest language support (75+ languages)
+- You're building a competitive programming platform or online judge
+- You need batch submissions and webhook callbacks
+- You want the most battle-tested solution with the largest community
+- You need persistent submission history in a database
+
+Judge0 is the safe, established choice. It's been around the longest, has the most features, and powers many well-known platforms. The trade-off is complexity — you're managing four services with external dependencies.
 
 ### Choose Piston if:
 
-- You want a simpler deployment with fewer dependencies
-- You need the MIT license for a commercial product
-- You prefer synchronous API responses over token polling
-- You want easier custom language package management
-- Your server has 2–4 GB of available RAM
+- You want the simplest possible deployment
+- You need a lightweight API with minimal overhead
+- You're building an educational platform or REPL
+- You prefer a straightforward REST API with clean responses
+- You want easy language addition through the package system
 
-### Choose Runtipi if:
+Piston is the pragmatic choice. It does one thing well — execute code — without the overhead of a full application framework. The single-container deployment model means you can get running in minutes.
 
-- You're running on resource-constrained hardware (1–2 GB RAM)
-- You want the simplest possible setup
-- You only need a handful of languages
-- You value fast startup times and minimal configuration
-- You're building an internal tool, not a public-facing platform
+### Choose RunTipi if:
 
----
+- You need the strongest security isolation (Firecracker microVMs)
+- You want real-time output streaming for interactive experiences
+- You're deploying on Kubernetes and want native support
+- You need the fastest cold start times
+- You value modern architecture patterns and active development
 
-## Performance Benchmarks
+RunTipi is the forward-looking choice. Its use of Firecracker microVMs provides stronger isolation than Docker containers, and the WebSocket streaming support enables interactive coding experiences that the others can't match.
 
-Running on a 4-core / 8 GB server, here are typical single-execution latencies:
+## Hardening Your Code Execution Sandbox
 
-| Language | Judge0 | Piston | Runtipi |
-|---|---|---|---|
-| Python 3 | 180ms | 120ms | 110ms |
-| C (GCC) | 95ms | 85ms | 80ms |
-| Java (OpenJDK) | 450ms | 380ms | N/A |
-| JavaScript (Node) | 160ms | 130ms | 120ms |
-| Rust | 350ms* | 300ms* | 280ms* |
+Regardless of which tool you choose, follow these security best practices:
 
-*Includes compilation time. For pre-compiled languages (C, Rust), Judge0's compilation is cached after the first run.
+### 1. Run Behind a Reverse Proxy
 
-For batch processing (100 submissions), Judge0's worker pool model handles ~50 submissions/second, while Piston and Runtipi are limited to sequential processing unless you run multiple instances behind a load balancer.
+```nginx
+server {
+    listen 443 ssl http2;
+    server_name code-exec.yourdomain.com;
 
----
+    ssl_certificate /etc/letsencrypt/live/code-exec.yourdomain.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/code-exec.yourdomain.com/privkey.pem;
 
-## Final Recommendation
+    location / {
+        proxy_pass http://localhost:2358;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
 
-For **educational platforms and competitive programming sites**, Judge0 is the clear winner. Its batch API, async callbacks, and comprehensive language support make it purpose-built for high-volume code grading. The multi-service architecture is worth the operational overhead.
+        # Rate limiting
+        limit_req zone=code_exec burst=20 nodelay;
+    }
+}
+```
 
-For **general-purpose code execution** in internal tools, developer platforms, or API services, Piston offers the best balance of simplicity, performance, and permissive licensing. Its single-service deployment and synchronous API make it easy to integrate into existing applications.
+### 2. Implement Rate Limiting
 
-For **lightweight or edge deployments** where resources are tight, Runtipi's minimal footprint and zero external dependencies make it the most practical choice. It won't win on features, but it gets the job done with the least infrastructure.
+Configure your reverse proxy or application-level rate limiting:
 
-All three are open-source, actively maintained, and production-ready. The right choice depends on your scale, licensing needs, and operational capacity. Start with the one that matches your constraints, and migrate if your requirements outgrow it.
+```nginx
+limit_req_zone $binary_remote_addr zone=code_exec:10m rate=10r/s;
+```
+
+For Judge0, you can also configure limits in `judge0.conf`:
+
+```ini
+[security]
+max_submission_batch_size = 20
+max_queue_size = 200
+enable_wait_result = true
+max_wait_result_timeout = 30
+```
+
+### 3. Monitor Resource Usage
+
+Set up monitoring to detect abuse patterns:
+
+```bash
+# Monitor Judge0 queue depth
+watch -n 5 'curl -s http://localhost:2358/stats | jq .queue_size'
+
+# Monitor Docker container count (indicates active executions)
+watch -n 2 'docker ps --filter "name=judge0" --format "{{.Names}}" | wc -l'
+```
+
+### 4. Implement Submission Validation
+
+Never execute code without basic validation:
+
+```python
+import re
+
+MAX_SOURCE_LENGTH = 65536
+BLACKLISTED_PATTERNS = [
+    r"os\.system\s*\(",
+    r"subprocess\.",
+    r"__import__\s*\(\s*['\"]os['\"]",
+    r"socket\.",
+    r"urllib\.",
+    r"requests\.",
+]
+
+def validate_submission(source_code: str) -> list:
+    """Check source code against safety rules."""
+    violations = []
+
+    if len(source_code) > MAX_SOURCE_LENGTH:
+        violations.append(f"Source code exceeds {MAX_SOURCE_LENGTH} characters")
+
+    for pattern in BLACKLISTED_PATTERNS:
+        if re.search(pattern, source_code):
+            violations.append(f"Blacklisted pattern detected: {pattern}")
+
+    return violations
+```
+
+Note: Blacklisting is a weak security measure. Always rely on container isolation as your primary defense — input validation is just an additional layer.
+
+### 5. Regular Updates
+
+Keep your sandbox images updated to patch known container escape vulnerabilities:
+
+```bash
+# Update Judge0
+docker compose pull judge0 workers
+docker compose up -d
+
+# Update Piston
+docker pull ghcr.io/engineer-man/piston:latest
+docker compose up -d
+
+# Update RunTipi
+docker compose pull gateway worker
+docker compose up -d
+```
+
+## Real-World Deployment Example
+
+Here's a complete production-ready setup for a coding education platform using Judge0 with Traefik as the reverse proxy:
+
+```yaml
+version: "3.8"
+
+services:
+  traefik:
+    image: traefik:v3.0
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+      - "--certificatesresolvers.myresolver.acme.email=admin@yourdomain.com"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - letsencrypt:/letsencrypt
+    restart: unless-stopped
+
+  judge0:
+    image: judge0/judge0:1.13.1
+    volumes:
+      - ./judge0.conf:/judge0.conf:ro
+    privileged: true
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.judge0.rule=Host(`code-exec.yourdomain.com`)"
+      - "traefik.http.routers.judge0.entrypoints=websecure"
+      - "traefik.http.routers.judge0.tls.certresolver=myresolver"
+      - "traefik.http.services.judge0.loadbalancer.server.port=2358"
+      - "traefik.http.middlewares.ratelimit.ratelimit.average=10"
+      - "traefik.http.middlewares.ratelimit.ratelimit.burst=20"
+      - "traefik.http.routers.judge0.middlewares=ratelimit"
+    depends_on:
+      - db
+      - redis
+
+  workers:
+    image: judge0/judge0-workers:1.13.1
+    volumes:
+      - ./judge0.conf:/judge0.conf:ro
+    privileged: true
+    restart: unless-stopped
+    deploy:
+      replicas: 4
+    depends_on:
+      - db
+      - redis
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: judge0
+      POSTGRES_USER: judge0
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  letsencrypt:
+```
+
+Deploy with environment variables in a `.env` file:
+
+```bash
+DB_PASSWORD=your-postgres-password
+REDIS_PASSWORD=your-redis-password
+```
+
+```bash
+docker compose up -d
+```
+
+This setup provides HTTPS termination, automatic certificate renewal, rate limiting, and horizontal scaling with four worker replicas.
+
+## Conclusion
+
+Self-hosted code execution sandboxes have reached a level of maturity that makes them practical for production use. Judge0 offers the most features and language support, Piston provides the simplest deployment model, and RunTipi delivers the strongest security isolation with modern architecture.
+
+The choice depends on your specific needs:
+
+- **Education platforms and online judges** → Judge0 for its comprehensive feature set
+- **REPLs and interactive coding tools** → Piston for simplicity and fast setup
+- **Enterprise and high-security environments** → RunTipi for Firecracker-based isolation
+
+All three tools are open-source, actively maintained, and can be deployed with Docker in under 10 minutes. By self-hosting, you gain full control over your code execution infrastructure, eliminate per-call costs, and keep your data private.
