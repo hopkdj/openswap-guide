@@ -1,0 +1,530 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted Data Quality Tools: Great Expectations vs Soda Core vs dbt Tests 2026 | OpenSwap Guide</title>
+<meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, and local AI deployment."><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/openswap-guide/css/main.min.777dc111b5207bf5336e5799477da0b31fb9080306bf98a82d6eceb979cf9737.css><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://hopkdj.github.io/openswap-guide/ class=logo><div class=logo-icon>H</div>OpenSwap Guide</a><nav><ul class=nav-links><li><a href=/openswap-guide/>Home</a></li><li><a href=/openswap-guide/tags/comparison/>Comparisons</a></li><li><a href=/openswap-guide/tags/guide/>Guides</a></li><li><a href=/openswap-guide/tags/ai/>Local AI</a></li><li><a href=/openswap-guide/index.xml class=nav-rss>Subscribe RSS</a></li></ul></nav></div></header><main><article class=post-single><a href=https://hopkdj.github.io/openswap-guide/ class=back-link>&larr; Back to posts</a><header class=post-single-header><div class=post-single-meta><span class="tag tag-purple">comparison</span>
+<span class="tag tag-green">guide</span>
+<span class="tag tag-blue">self-hosted</span>
+<span>·</span>
+<span>April 15, 2026</span>
+<span>·</span>
+<span>12 min read</span></div><h1 class=post-single-title>Self-Hosted Data Quality Tools: Great Expectations vs Soda Core vs dbt Tests 2026</h1></header><div class=post-single-content><p>Data pipelines break silently. A column changes type upstream, a date field gets corrupted, or a critical lookup table goes empty. Without automated data quality checks, these issues cascade into dashboards, reports, and machine learning models before anyone notices. By the time someone flags bad numbers, the damage is already done.</p><p>This is where data quality frameworks come in. Tools like <strong>Great Expectations</strong>, <strong>Soda Core</strong>, and <strong>dbt tests</strong> let you define expectations about your data, run validations automatically, and get alerted when something goes wrong. All three are open-source, can be fully self-hosted, and integrate into existing CI/CD pipelines.</p><p>In this guide, we will compare these three tools head-to-head, show you how to install and configure each one, and help you pick the right fit for your data stack.</p><h2 id=why-self-host-your-data-quality-framework>Why Self-Host Your Data Quality Framework</h2><p>Data quality is fundamentally about trust. When you send your data profiles, validation results, and schema information to a third-party cloud service, you are creating several problems:</p><p><strong>Sensitive data exposure.</strong> Data quality tools need to read your actual data to validate it. That means column distributions, value ranges, null rates, and sometimes even sample records are transmitted to an external service. For healthcare, finance, or any regulated industry, this is a non-starter.</p><p><strong>Latency and coupling.</strong> Cloud-based validation introduces network round-trips for every check. In a high-throughput pipeline processing millions of rows, this adds up. Self-hosted validation runs directly against your database or data lake with zero network overhead.</p><p><strong>Cost at scale.</strong> SaaS data quality platforms charge by volume — rows scanned, checks run, or storage used. A busy pipeline can generate thousands of validation runs per day. Self-hosted tools have no per-row fees.</p><p><strong>Integration depth.</strong> When the tool runs on your infrastructure, it can connect to your internal databases, message queues, and alerting systems without requiring public endpoints, VPN tunnels, or firewall exceptions.</p><p><strong>Full audit trail.</strong> Validation results stay in your control. You can log them to your own monitoring stack, archive them for compliance, and correlate them with your deployment history.</p><h2 id=great-expectations-the-most-mature-framework>Great Expectations: The Most Mature Framework</h2><p>Great Expectations (GX) is the most widely adopted open-source data quality framework. Developed by Superconductive Health and now maintained as an independent open-source project, it introduced the concept of &ldquo;expectations&rdquo; — declarative assertions about what your data should look like.</p><h3 id=core-concepts>Core Concepts</h3><p>An <strong>expectation</strong> is a single validation rule. Examples:</p><ul><li><code>expect_column_values_to_not_be_null</code> — checks that a column has no missing values</li><li><code>expect_column_values_to_be_between</code> — validates numeric ranges</li><li><code>expect_table_row_count_to_be_between</code> — ensures a table is not empty or unexpectedly large</li><li><code>expect_column_values_to_match_regex</code> — validates string patterns</li></ul><p>Expectations are grouped into <strong>Expectation Suites</strong>, which represent the full set of rules for a particular dataset. A <strong>Validation</strong> is the act of running a suite against actual data and producing a <strong>Validation Result</strong> — a detailed JSON report of what passed, what failed, and why.</p><h3 id=installation-and-setup>Installation and Setup</h3><p>Great Expectations is a Python package. The simplest way to get started is with pip:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>pip install great_expectations
+</span></span></code></pre></td></tr></table></div></div><p>Initialize a new GX project:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>great_expectations init
+</span></span></code></pre></td></tr></table></div></div><p>This creates a <code>great_expectations/</code> directory with the standard project structure:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-gdscript3 data-lang=gdscript3><span class=line><span class=cl><span class=n>great_expectations</span><span class=o>/</span>
+</span></span><span class=line><span class=cl><span class=err>├──</span> <span class=n>expectations</span><span class=o>/</span>          <span class=c1># JSON expectation suite files</span>
+</span></span><span class=line><span class=cl><span class=err>├──</span> <span class=n>checkpoints</span><span class=o>/</span>           <span class=c1># Checkpoint configurations</span>
+</span></span><span class=line><span class=cl><span class=err>├──</span> <span class=n>plugins</span><span class=o>/</span>               <span class=c1># Custom expectation implementations</span>
+</span></span><span class=line><span class=cl><span class=err>├──</span> <span class=n>uncommitted</span><span class=o>/</span>           <span class=c1># Git-ignored (data_docs, credentials)</span>
+</span></span><span class=line><span class=cl><span class=err>│</span>   <span class=err>├──</span> <span class=n>data_docs</span><span class=o>/</span>         <span class=c1># HTML validation reports</span>
+</span></span><span class=line><span class=cl><span class=err>│</span>   <span class=err>└──</span> <span class=n>config_variables</span><span class=o>.</span><span class=n>yml</span>
+</span></span><span class=line><span class=cl><span class=err>└──</span> <span class=n>great_expectations</span><span class=o>.</span><span class=n>yml</span> <span class=c1># Main configuration</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-compose-setup>Docker Compose Setup</h3><p>For production deployments, run Great Expectations as part of your pipeline infrastructure:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>gx-runner</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>python:3.11-slim</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>working_dir</span><span class=p>:</span><span class=w> </span><span class=l>/app</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./great_expectations:/app/great_expectations</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./pipelines:/app/pipelines</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>GX_HOME=/app/great_expectations</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      bash -c &#34;
+</span></span></span><span class=line><span class=cl><span class=sd>        pip install great_expectations[sqlalchemy] pandas &amp;&amp;
+</span></span></span><span class=line><span class=cl><span class=sd>        python /app/pipelines/validate.py
+</span></span></span><span class=line><span class=cl><span class=sd>      &#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>data-network</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>data-network</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>bridge</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=writing-your-first-expectation-suite>Writing Your First Expectation Suite</h3><p>Create a suite programmatically:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=kn>import</span> <span class=nn>great_expectations</span> <span class=k>as</span> <span class=nn>gx</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Connect to a context</span>
+</span></span><span class=line><span class=cl><span class=n>context</span> <span class=o>=</span> <span class=n>gx</span><span class=o>.</span><span class=n>get_context</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Create a new expectation suite</span>
+</span></span><span class=line><span class=cl><span class=n>suite</span> <span class=o>=</span> <span class=n>context</span><span class=o>.</span><span class=n>add_or_update_expectation_suite</span><span class=p>(</span><span class=s2>&#34;sales_data&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Add expectations</span>
+</span></span><span class=line><span class=cl><span class=n>suite</span><span class=o>.</span><span class=n>add_expectation</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>    <span class=n>gx</span><span class=o>.</span><span class=n>expectations</span><span class=o>.</span><span class=n>ExpectColumnValuesToNotBeNull</span><span class=p>(</span><span class=n>column</span><span class=o>=</span><span class=s2>&#34;order_id&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=n>suite</span><span class=o>.</span><span class=n>add_expectation</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>    <span class=n>gx</span><span class=o>.</span><span class=n>expectations</span><span class=o>.</span><span class=n>ExpectColumnValuesToBeBetween</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>        <span class=n>column</span><span class=o>=</span><span class=s2>&#34;total_amount&#34;</span><span class=p>,</span> <span class=n>min_value</span><span class=o>=</span><span class=mi>0</span><span class=p>,</span> <span class=n>max_value</span><span class=o>=</span><span class=mi>100000</span>
+</span></span><span class=line><span class=cl>    <span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=n>suite</span><span class=o>.</span><span class=n>add_expectation</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>    <span class=n>gx</span><span class=o>.</span><span class=n>expectations</span><span class=o>.</span><span class=n>ExpectColumnDistinctValuesToContainSet</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>        <span class=n>column</span><span class=o>=</span><span class=s2>&#34;status&#34;</span><span class=p>,</span> <span class=n>value_set</span><span class=o>=</span><span class=p>[</span><span class=s2>&#34;pending&#34;</span><span class=p>,</span> <span class=s2>&#34;shipped&#34;</span><span class=p>,</span> <span class=s2>&#34;delivered&#34;</span><span class=p>,</span> <span class=s2>&#34;cancelled&#34;</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>    <span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=n>suite</span><span class=o>.</span><span class=n>add_expectation</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>    <span class=n>gx</span><span class=o>.</span><span class=n>expectations</span><span class=o>.</span><span class=n>ExpectTableRowCountToBeBetween</span><span class=p>(</span><span class=n>min_value</span><span class=o>=</span><span class=mi>1</span><span class=p>,</span> <span class=n>max_value</span><span class=o>=</span><span class=kc>None</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>context</span><span class=o>.</span><span class=n>save_expectation_suite</span><span class=p>(</span><span class=n>suite</span><span class=p>)</span>
+</span></span></code></pre></td></tr></table></div></div><p>Run validation against a Pandas DataFrame or SQL database:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=kn>import</span> <span class=nn>great_expectations</span> <span class=k>as</span> <span class=nn>gx</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>context</span> <span class=o>=</span> <span class=n>gx</span><span class=o>.</span><span class=n>get_context</span><span class=p>()</span>
+</span></span><span class=line><span class=cl><span class=n>validator</span> <span class=o>=</span> <span class=n>context</span><span class=o>.</span><span class=n>get_validator</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>    <span class=n>batch_definition_name</span><span class=o>=</span><span class=s2>&#34;daily_sales&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=n>expectation_suite_name</span><span class=o>=</span><span class=s2>&#34;sales_data&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=c1># For SQL:</span>
+</span></span><span class=line><span class=cl>    <span class=c1># datasource_name=&#34;postgres&#34;,</span>
+</span></span><span class=line><span class=cl>    <span class=c1># data_asset_name=&#34;public.sales&#34;,</span>
+</span></span><span class=line><span class=cl><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>results</span> <span class=o>=</span> <span class=n>validator</span><span class=o>.</span><span class=n>validate</span><span class=p>()</span>
+</span></span><span class=line><span class=cl><span class=nb>print</span><span class=p>(</span><span class=sa>f</span><span class=s2>&#34;Success: </span><span class=si>{</span><span class=n>results</span><span class=o>.</span><span class=n>success</span><span class=si>}</span><span class=s2>&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=nb>print</span><span class=p>(</span><span class=sa>f</span><span class=s2>&#34;Passed: </span><span class=si>{</span><span class=n>results</span><span class=o>.</span><span class=n>result</span><span class=o>.</span><span class=n>success_count</span><span class=si>}</span><span class=s2>&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=nb>print</span><span class=p>(</span><span class=sa>f</span><span class=s2>&#34;Failed: </span><span class=si>{</span><span class=n>results</span><span class=o>.</span><span class=n>result</span><span class=o>.</span><span class=n>unexpected_count</span><span class=si>}</span><span class=s2>&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Save results as checkpoint</span>
+</span></span><span class=line><span class=cl><span class=n>context</span><span class=o>.</span><span class=n>build_data_docs</span><span class=p>()</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=built-in-data-docs>Built-in Data Docs</h3><p>Great Expectations generates beautiful HTML reports automatically:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>great_expectations docs build
+</span></span></code></pre></td></tr></table></div></div><p>These reports show every expectation, its result, unexpected values, and a pass/fail summary. You can host them on any static file server, internal wiki, or S3 bucket with static website hosting.</p><h2 id=soda-core-yaml-first-data-quality>Soda Core: YAML-First Data Quality</h2><p>Soda Core takes a different approach. Instead of Python code, you define checks in YAML files called <strong>SodaCL</strong> (Soda Checks Language). This makes it accessible to data analysts who may not be comfortable writing Python, while still being powerful enough for engineers.</p><h3 id=core-concepts-1>Core Concepts</h3><p>A <strong>check</strong> in SodaCL is a single assertion. Checks are organized in YAML files that reference a data source. Soda Core runs checks against the actual database by generating and executing SQL queries — it does not pull data into memory.</p><p>Key check types:</p><ul><li><code>missing_count(column) = 0</code> — no null values allowed</li><li><code>values in (column) must be ['active', 'inactive']</code> — enum validation</li><li><code>row_count > 1000</code> — minimum table size</li><li><code>freshness(column) &lt; 1h</code> — data recency check</li><li><code>schema changes</code> — detect unexpected column additions or removals</li></ul><h3 id=installation>Installation</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>pip install soda-core-postgres
+</span></span><span class=line><span class=cl><span class=c1># Or for other databases:</span>
+</span></span><span class=line><span class=cl><span class=c1># pip install soda-core-snowflake</span>
+</span></span><span class=line><span class=cl><span class=c1># pip install soda-core-bigquery</span>
+</span></span><span class=line><span class=cl><span class=c1># pip install soda-core-spark</span>
+</span></span><span class=line><span class=cl><span class=c1># pip install soda-core-duckdb</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=configuration-file>Configuration File</h3><p>Create a <code>configuration.yml</code> that defines your data sources:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>data_source my_postgres</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>type</span><span class=p>:</span><span class=w> </span><span class=l>postgres</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>connection</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>host</span><span class=p>:</span><span class=w> </span><span class=l>localhost</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>port</span><span class=p>:</span><span class=w> </span><span class=m>5432</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>username</span><span class=p>:</span><span class=w> </span><span class=l>${POSTGRES_USER}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>password</span><span class=p>:</span><span class=w> </span><span class=l>${POSTGRES_PASSWORD}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>database</span><span class=p>:</span><span class=w> </span><span class=l>analytics</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>schema</span><span class=p>:</span><span class=w> </span><span class=l>public</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Note that credentials are referenced as environment variables — never hardcode them in the YAML file.</p><h3 id=writing-checks>Writing Checks</h3><p>Create a <code>checks/sales_checks.yml</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>checks for sales_orders</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=l>row_count &gt; 1000</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=l>missing_count(order_id) = 0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=l>duplicate_count(order_id) = 0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=l>min(total_amount) &gt;= 0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=l>max(total_amount) &lt;= 100000</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=l>values in (status) must be [&#39;pending&#39;, &#39;shipped&#39;, &#39;delivered&#39;, &#39;cancelled&#39;]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=l>freshness(created_at) &lt; 24h</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>checks for customers</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=nt>schema changes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>warn</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>when adds</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span>- <span class=l>email</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>when deletes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span>- <span class=l>customer_id</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span>- <span class=l>name</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=l>row_count &gt; 500</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=l>missing_count(email) &lt; 5</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=running-checks>Running Checks</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>soda scan -d configuration.yml -c checks/sales_checks.yml
+</span></span></code></pre></td></tr></table></div></div><p>Soda Core connects to the database, translates each check into SQL, executes the queries, and returns a summary:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>Scan summary:
+</span></span><span class=line><span class=cl>5/6 checks PASSED:
+</span></span><span class=line><span class=cl>  sales_orders in my_postgres
+</span></span><span class=line><span class=cl>    ✓ row_count &gt; 1000
+</span></span><span class=line><span class=cl>    ✓ missing_count(order_id) = 0
+</span></span><span class=line><span class=cl>    ✓ duplicate_count(order_id) = 0
+</span></span><span class=line><span class=cl>    ✓ min(total_amount) &gt;= 0
+</span></span><span class=line><span class=cl>    ✓ values in (status) must be [...]
+</span></span><span class=line><span class=cl>1/6 checks FAILED:
+</span></span><span class=line><span class=cl>  sales_orders in my_postgres
+</span></span><span class=line><span class=cl>    ✗ freshness(created_at) &lt; 24h
+</span></span><span class=line><span class=cl>      freshness = 36h (last refresh: 2026-04-14 08:00:00)
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-compose-setup-1>Docker Compose Setup</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>soda-scanner</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>python:3.11-slim</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>working_dir</span><span class=p>:</span><span class=w> </span><span class=l>/app</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./soda:/app/soda</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>POSTGRES_USER=analytics</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>POSTGRES_PASSWORD=${PG_PASSWORD}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      bash -c &#34;
+</span></span></span><span class=line><span class=cl><span class=sd>        pip install soda-core-postgres &amp;&amp;
+</span></span></span><span class=line><span class=cl><span class=sd>        soda scan -d /app/soda/configuration.yml /app/soda/checks/
+</span></span></span><span class=line><span class=cl><span class=sd>      &#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>data-network</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Soda also offers <strong>Soda Cloud</strong>, a hosted dashboard for monitoring results. But the core scanning engine is fully open-source and self-hosted. For a self-hosted dashboard, you can parse the JSON scan output and feed it into Grafana, Prometheus, or any monitoring system.</p><h2 id=dbt-tests-quality-checks-inside-your-transformation-layer>dbt Tests: Quality Checks Inside Your Transformation Layer</h2><p>dbt (data build tool) is primarily a SQL transformation framework, but its built-in testing capabilities make it a powerful data quality tool for teams already using dbt for their ELT pipelines.</p><h3 id=core-concepts-2>Core Concepts</h3><p>dbt tests are defined in YAML files alongside your models. They run as SQL queries against your warehouse and are executed as part of the <code>dbt test</code> command. Tests can be <strong>generic</strong> (built-in, parameterized) or <strong>singular</strong> (custom SQL queries).</p><p>Built-in generic tests:</p><ul><li><code>not_null</code> — column has no nulls</li><li><code>unique</code> — all values in a column are distinct</li><li><code>accepted_values</code> — values must be from a specified list</li><li><code>relationships</code> — foreign key integrity check</li></ul><h3 id=installation-1>Installation</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>pip install dbt-postgres
+</span></span><span class=line><span class=cl><span class=c1># Or: dbt-snowflake, dbt-bigquery, dbt-duckdb, dbt-redshift</span>
+</span></span></code></pre></td></tr></table></div></div><p>Initialize a project:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>dbt init data_quality_project
+</span></span><span class=line><span class=cl><span class=nb>cd</span> data_quality_project
+</span></span></code></pre></td></tr></table></div></div><h3 id=writing-tests>Writing Tests</h3><p>In your <code>models/schema.yml</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=m>2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>models</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>stg_orders</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>columns</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>order_id</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>tests</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span>- <span class=l>unique</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span>- <span class=l>not_null</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>status</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>tests</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span>- <span class=nt>accepted_values</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>values</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s1>&#39;pending&#39;</span><span class=p>,</span><span class=w> </span><span class=s1>&#39;shipped&#39;</span><span class=p>,</span><span class=w> </span><span class=s1>&#39;delivered&#39;</span><span class=p>,</span><span class=w> </span><span class=s1>&#39;cancelled&#39;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>total_amount</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>tests</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span>- <span class=l>not_null</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>customer_id</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>tests</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span>- <span class=nt>relationships</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>to</span><span class=p>:</span><span class=w> </span><span class=l>ref(&#39;stg_customers&#39;)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>field</span><span class=p>:</span><span class=w> </span><span class=l>customer_id</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>stg_customers</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>columns</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>customer_id</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>tests</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span>- <span class=l>unique</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span>- <span class=l>not_null</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>email</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>tests</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span>- <span class=l>not_null</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=custom-sql-tests>Custom SQL Tests</h3><p>For checks that go beyond the built-in tests, create singular tests in <code>tests/</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-sql data-lang=sql><span class=line><span class=cl><span class=c1>-- tests/assert_no_negative_refunds.sql
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>select</span><span class=w> </span><span class=n>order_id</span><span class=p>,</span><span class=w> </span><span class=n>refund_amount</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>from</span><span class=w> </span><span class=err>{{</span><span class=w> </span><span class=k>ref</span><span class=p>(</span><span class=s1>&#39;fct_refunds&#39;</span><span class=p>)</span><span class=w> </span><span class=err>}}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>where</span><span class=w> </span><span class=n>refund_amount</span><span class=w> </span><span class=o>&lt;</span><span class=w> </span><span class=mi>0</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>dbt treats any SQL file in the <code>tests/</code> directory that returns zero rows as a passing test. If rows are returned, the test fails and those rows are shown in the output.</p><h3 id=running-tests>Running Tests</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>dbt <span class=nb>test</span> --select stg_orders
+</span></span></code></pre></td></tr></table></div></div><p>Output:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>1 of 6 START test not_null_stg_orders_order_id ...................... [PASS]
+</span></span><span class=line><span class=cl>2 of 6 START test unique_stg_orders_order_id ........................ [PASS]
+</span></span><span class=line><span class=cl>3 of 6 START test accepted_values_stg_orders_status ................. [PASS]
+</span></span><span class=line><span class=cl>4 of 6 START test not_null_stg_orders_total_amount .................. [PASS]
+</span></span><span class=line><span class=cl>5 of 6 START test relationships_stg_orders_customer_id .............. [PASS]
+</span></span><span class=line><span class=cl>6 of 6 START test custom_no_negative_refunds ........................ [PASS]
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>Finished running 6 tests in 12.3s.
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-compose-setup-2>Docker Compose Setup</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>dbt-runner</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>python:3.11-slim</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>working_dir</span><span class=p>:</span><span class=w> </span><span class=l>/app</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./dbt_project:/app</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DBT_PROFILES_DIR=/app</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>POSTGRES_HOST=postgres</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>POSTGRES_DB=analytics</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>POSTGRES_USER=analytics</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>POSTGRES_PASSWORD=${PG_PASSWORD}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      bash -c &#34;
+</span></span></span><span class=line><span class=cl><span class=sd>        pip install dbt-postgres &amp;&amp;
+</span></span></span><span class=line><span class=cl><span class=sd>        dbt deps &amp;&amp;
+</span></span></span><span class=line><span class=cl><span class=sd>        dbt run &amp;&amp;
+</span></span></span><span class=line><span class=cl><span class=sd>        dbt test
+</span></span></span><span class=line><span class=cl><span class=sd>      &#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>data-network</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=dbt-package-for-advanced-tests>dbt Package for Advanced Tests</h3><p>The <code>dbt_expectations</code> package extends dbt with Great Expectations-style tests:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># packages.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>packages</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=nt>package</span><span class=p>:</span><span class=w> </span><span class=l>calogica/dbt_expectations</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;&gt;=0.10.0&#34;</span><span class=p>]</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>After running <code>dbt deps</code>, you can use tests like:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>stg_orders</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>columns</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>created_at</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>tests</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>dbt_expectations.expect_column_values_to_be_of_type</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>column_type</span><span class=p>:</span><span class=w> </span><span class=l>timestamp</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>dbt_expectations.expect_row_value_to_have_recent_data</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>datepart</span><span class=p>:</span><span class=w> </span><span class=l>day</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>interval</span><span class=p>:</span><span class=w> </span><span class=m>1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>dbt_expectations.expect_column_distinct_count_to_be_greater_than</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>value</span><span class=p>:</span><span class=w> </span><span class=m>100</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=head-to-head-comparison>Head-to-Head Comparison</h2><table><thead><tr><th>Feature</th><th>Great Expectations</th><th>Soda Core</th><th>dbt Tests</th></tr></thead><tbody><tr><td><strong>License</strong></td><td>Apache 2.0</td><td>Apache 2.0</td><td>Apache 2.0</td></tr><tr><td><strong>Definition format</strong></td><td>Python API</td><td>YAML (SodaCL)</td><td>YAML + SQL</td></tr><tr><td><strong>Execution engine</strong></td><td>Python (reads data into memory or uses SQLAlchemy)</td><td>SQL (generates queries, runs on database)</td><td>SQL (runs as warehouse queries)</td></tr><tr><td><strong>Built-in checks</strong></td><td>90+ expectation types</td><td>30+ check types</td><td>4 generic tests (extensible via packages)</td></tr><tr><td><strong>Schema validation</strong></td><td>Yes (expect_column_to_exist)</td><td>Yes (schema changes check)</td><td>Limited (via dbt_expectations)</td></tr><tr><td><strong>Freshness checks</strong></td><td>Custom expectation</td><td>Built-in freshness check</td><td>Via dbt_expectations package</td></tr><tr><td><strong>Data profiling</strong></td><td>Full profiling (distributions, histograms)</td><td>Limited (via metrics)</td><td>No built-in profiling</td></tr><tr><td><strong>CI/CD integration</strong></td><td>Checkpoints + CLI</td><td>CLI + scan JSON output</td><td><code>dbt test</code> + CI plugins</td></tr><tr><td><strong>Reporting</strong></td><td>HTML Data Docs (built-in)</td><td>CLI output + JSON</td><td>CLI output + docs (dbt docs)</td></tr><tr><td><strong>Learning curve</strong></td><td>Moderate (Python knowledge needed)</td><td>Low (YAML only)</td><td>Low (if already using dbt)</td></tr><tr><td><strong>Best for</strong></td><td>Data engineers who want programmatic control</td><td>Analysts who prefer declarative YAML</td><td>Teams already using dbt for transformations</td></tr></tbody></table><h2 id=choosing-the-right-tool>Choosing the Right Tool</h2><p><strong>Pick Great Expectations if:</strong> You need the most comprehensive framework with the deepest feature set. Its Python API gives you unlimited flexibility — you can write custom expectations that check anything expressible in code. The Data Docs feature provides excellent out-of-the-box reporting. It is the best choice when you have dedicated data engineers and complex validation requirements.</p><p><strong>Pick Soda Core if:</strong> You want a low-barrier entry point. The YAML-based SodaCL is easy to read and write, and the fact that it generates SQL rather than pulling data into memory makes it efficient for large datasets. It is ideal for teams where analysts need to write and maintain checks without Python expertise.</p><p><strong>Pick dbt tests if:</strong> You are already running dbt for your transformations. Adding tests to your existing models requires zero additional infrastructure. The <code>dbt_expectations</code> package bridges the gap to more advanced checks. This is the path of least resistance for dbt-centric stacks.</p><h2 id=real-world-pipeline-integration>Real-World Pipeline Integration</h2><p>Here is how you would wire data quality checks into a production pipeline that runs daily:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># pipeline.yml - Airflow or cron-triggered</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>data-quality</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>python:3.11-slim</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./checks:/app/checks</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./great_expectations:/app/great_expectations</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DATABASE_URL=postgresql://user:pass@db:5432/analytics</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      bash -c &#34;
+</span></span></span><span class=line><span class=cl><span class=sd>        pip install great_expectations[sqlalchemy] soda-core-postgres &amp;&amp;
+</span></span></span><span class=line><span class=cl><span class=sd>        echo &#39;Running GX validations...&#39; &amp;&amp;
+</span></span></span><span class=line><span class=cl><span class=sd>        python /app/great_expectations/validate.py &amp;&amp;
+</span></span></span><span class=line><span class=cl><span class=sd>        echo &#39;Running Soda checks...&#39; &amp;&amp;
+</span></span></span><span class=line><span class=cl><span class=sd>        soda scan -d /app/checks/configuration.yml /app/checks/ &amp;&amp;
+</span></span></span><span class=line><span class=cl><span class=sd>        echo &#39;All quality checks complete&#39;
+</span></span></span><span class=line><span class=cl><span class=sd>      &#34;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>For alerting, parse the validation results and send notifications:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=kn>import</span> <span class=nn>json</span><span class=o>,</span> <span class=nn>smtplib</span><span class=o>,</span> <span class=nn>requests</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>alert_on_failures</span><span class=p>(</span><span class=n>results</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>    <span class=n>failures</span> <span class=o>=</span> <span class=p>[</span><span class=n>r</span> <span class=k>for</span> <span class=n>r</span> <span class=ow>in</span> <span class=n>results</span> <span class=k>if</span> <span class=ow>not</span> <span class=n>r</span><span class=p>[</span><span class=s1>&#39;success&#39;</span><span class=p>]]</span>
+</span></span><span class=line><span class=cl>    <span class=k>if</span> <span class=ow>not</span> <span class=n>failures</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>        <span class=k>return</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=n>message</span> <span class=o>=</span> <span class=sa>f</span><span class=s2>&#34;Data quality alert: </span><span class=si>{</span><span class=nb>len</span><span class=p>(</span><span class=n>failures</span><span class=p>)</span><span class=si>}</span><span class=s2> checks failed</span><span class=se>\n\n</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=n>f</span> <span class=ow>in</span> <span class=n>failures</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>        <span class=n>message</span> <span class=o>+=</span> <span class=sa>f</span><span class=s2>&#34;- </span><span class=si>{</span><span class=n>f</span><span class=p>[</span><span class=s1>&#39;expectation_type&#39;</span><span class=p>]</span><span class=si>}</span><span class=s2> on </span><span class=si>{</span><span class=n>f</span><span class=p>[</span><span class=s1>&#39;column&#39;</span><span class=p>]</span><span class=si>}</span><span class=se>\n</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1># Send to Slack</span>
+</span></span><span class=line><span class=cl>    <span class=n>requests</span><span class=o>.</span><span class=n>post</span><span class=p>(</span><span class=n>SLACK_WEBHOOK</span><span class=p>,</span> <span class=n>json</span><span class=o>=</span><span class=p>{</span><span class=s2>&#34;text&#34;</span><span class=p>:</span> <span class=n>message</span><span class=p>})</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1># Or send email</span>
+</span></span><span class=line><span class=cl>    <span class=c1># send_email(&#34;data-quality@company.com&#34;, &#34;DQ Alert&#34;, message)</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=conclusion>Conclusion</h2><p>Data quality is not optional. Every pipeline that moves, transforms, or stores data needs automated validation. The question is not whether to implement data quality checks, but which tool fits your team&rsquo;s skills and existing infrastructure.</p><p>Great Expectations offers the most comprehensive feature set and is the industry standard for programmatic data validation. Soda Core provides the simplest entry point with its YAML-based check language. dbt tests integrate seamlessly into existing dbt workflows with minimal overhead.</p><p>All three are open-source, self-hostable, and free to run at any scale. The best choice depends on whether your team writes more Python, more YAML, or more SQL — and whether you want a standalone validation layer or something embedded in your transformation pipeline.</p></div><div id=frame style=width:100%;margin:auto;position:relative;z-index:99998><iframe data-aa=2433958 src='//acceptable.a-ads.com/2433958/?size=Adaptive' style=border:0;padding:0;width:70%;height:auto;overflow:hidden;display:block;margin:auto></iframe></div></article></main><footer class=site-footer><p>Built with <a href=https://gohugo.io>Hugo</a> · <a href=/openswap-guide/index.xml>RSS</a> · <a href=https://github.com/hopkdj>GitHub</a></p><p style=margin-top:8px>&copy; 2026 OpenSwap Guide. All rights reserved.</p></footer></body></html>
