@@ -1,0 +1,466 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>ClickHouse vs Apache Druid vs Apache Pinot: Best Self-Hosted Analytics Database 2026 | OpenSwap Guide</title>
+<meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, and local AI deployment."><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/openswap-guide/css/main.min.777dc111b5207bf5336e5799477da0b31fb9080306bf98a82d6eceb979cf9737.css><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://hopkdj.github.io/openswap-guide/ class=logo><div class=logo-icon>H</div>OpenSwap Guide</a><nav><ul class=nav-links><li><a href=/openswap-guide/>Home</a></li><li><a href=/openswap-guide/tags/comparison/>Comparisons</a></li><li><a href=/openswap-guide/tags/guide/>Guides</a></li><li><a href=/openswap-guide/tags/ai/>Local AI</a></li><li><a href=/openswap-guide/index.xml class=nav-rss>Subscribe RSS</a></li></ul></nav></div></header><main><article class=post-single><a href=https://hopkdj.github.io/openswap-guide/ class=back-link>&larr; Back to posts</a><header class=post-single-header><div class=post-single-meta><span class="tag tag-purple">comparison</span>
+<span class="tag tag-green">guide</span>
+<span class="tag tag-blue">self-hosted</span>
+<span>·</span>
+<span>April 15, 2026</span>
+<span>·</span>
+<span>10 min read</span></div><h1 class=post-single-title>ClickHouse vs Apache Druid vs Apache Pinot: Best Self-Hosted Analytics Database 2026</h1></header><div class=post-single-content><p>Self-hosting your analytics infrastructure gives you full control over your data, eliminates vendor lock-in, and dramatically reduces costs at scale. When it comes to running real-time analytical queries on large datasets, three open-source databases stand out: <strong>ClickHouse</strong>, <strong>Apache Druid</strong>, and <strong>Apache Pinot</strong>.</p><p>Each of these systems is designed for fast OLAP (Online Analytical Processing) workloads, but they differ significantly in architecture, use cases, and operational complexity. This guide breaks down the differences, provides Docker-based setup instructions, and helps you choose the right tool for your stack.</p><h2 id=why-self-host-your-analytics-database>Why Self-Host Your Analytics Database</h2><p>Commercial analytics platforms like Snowflake, Google BigQuery, and Amazon Redshift are powerful but come with significant trade-offs:</p><ul><li><strong>Escalating costs</strong> — Query-based pricing means costs grow unpredictably with usage. A team running hundreds of dashboards can easily spend $5,000–$50,000+ per month.</li><li><strong>Data sovereignty</strong> — Sending user data to third-party clouds raises compliance issues under GDPR, HIPAA, and SOC 2.</li><li><strong>Vendor lock-in</strong> — Migrating petabytes of data out of a cloud warehouse is expensive and time-consuming.</li><li><strong>Latency constraints</strong> — Real-time ingestion and sub-second queries are difficult to achieve with cloud-only architectures that route through multiple network hops.</li></ul><p>Self-hosting solves these problems. You own the hardware (or rent it predictably), data never leaves your infrastructure, and query performance depends on your configuration — not someone else&rsquo;s shared resources.</p><p>Open-source OLAP databases like ClickHouse, Druid, and Pinot are proven at massive scale. Cloudflare uses ClickHouse to process trillions of requests. Uber and Netflix run Druid for real-time analytics. LinkedIn relies on Pinot for user-facing analytics with strict SLAs.</p><h2 id=architecture-at-a-glance>Architecture at a Glance</h2><p>Understanding how each system stores and processes data is key to picking the right one.</p><h3 id=clickhouse>ClickHouse</h3><p>ClickHouse is a column-oriented database management system originally developed by Yandex. Its core design principles are:</p><ul><li><strong>Columnar storage</strong> with heavy compression (data is often 5–10x smaller than raw)</li><li><strong>Vectorized query execution</strong> — processes data in batches using SIMD CPU instructions</li><li><strong>MergeTree family</strong> of table engines for efficient inserts and background merges</li><li><strong>Single binary</strong> deployment — simple to run, no external dependencies</li><li><strong>SQL-native</strong> — uses a SQL dialect very close to standard SQL</li></ul><p>ClickHouse shines when you need fast aggregation queries on large datasets with relatively simple ingestion patterns.</p><h3 id=apache-druid>Apache Druid</h3><p>Apache Druid is a distributed, column-oriented data store originally built at Metamarkets. Its architecture is built around:</p><ul><li><strong>Immutable data segments</strong> stored in deep storage (S3, HDFS) with a local cache</li><li><strong>Real-time ingestion</strong> via Kafka streams or batch ingestion from files</li><li><strong>Broker/Historical/MiddleManager/Coordinator</strong> node separation for horizontal scaling</li><li><strong>Approximate algorithms</strong> (theta sketches, HLL) for fast cardinality estimation</li><li><strong>Time-first indexing</strong> — optimized for time-series and event data</li></ul><p>Druid excels at real-time dashboards where data arrives continuously and you need sub-second responses on time-based queries.</p><h3 id=apache-pinot>Apache Pinot</h3><p>Apache Pinot was built at LinkedIn specifically for low-latency analytics on user-facing applications. Its architecture features:</p><ul><li><strong>Immutable segments</strong> with real-time and offline serving paths</li><li><strong>Multiple index types</strong> — inverted, star-tree, sorted, range, JSON, and geospatial</li><li><strong>Controller/Server/Broker</strong> separation with ZooKeeper for coordination</li><li><strong>Upsert support</strong> — handles late-arriving and corrected data better than Druid</li><li><strong>Built-in ingestion</strong> from Kafka, Hadoop, and local files with automatic schema evolution</li></ul><p>Pinot is the best choice when you need sub-100ms queries on user-facing dashboards with complex filtering requirements.</p><h2 id=feature-comparison>Feature Comparison</h2><table><thead><tr><th>Feature</th><th>ClickHouse</th><th>Apache Druid</th><th>Apache Pinot</th></tr></thead><tbody><tr><td><strong>Primary Use Case</strong></td><td>General analytics, log analysis</td><td>Real-time dashboards, event streaming</td><td>User-facing analytics, low-latency serving</td></tr><tr><td><strong>Query Language</strong></td><td>SQL (extended)</td><td>SQL (limited)</td><td>SQL (Pinot SQL)</td></tr><tr><td><strong>Real-Time Ingestion</strong></td><td>Yes (via Kafka engine, materialized views)</td><td>Yes (native, first-class)</td><td>Yes (native, with upsert support)</td></tr><tr><td><strong>Latency</strong></td><td>Sub-second to seconds</td><td>Sub-second</td><td>Sub-100ms (p99)</td></tr><tr><td><strong>Storage Backend</strong></td><td>Local disk (distributed via ReplicatedMergeTree)</td><td>Deep storage (S3/HDFS) + local cache</td><td>Local disk + deep storage (optional)</td></tr><tr><td><strong>Horizontal Scaling</strong></td><td>Yes (sharding + replication)</td><td>Yes (segment-based)</td><td>Yes (server-based)</td></tr><tr><td><strong>Approximate Queries</strong></td><td>Yes (GROUP BY with sampling)</td><td>Yes (sketches, quantiles)</td><td>Yes (DISTINCTCOUNT, percentile approximations)</td></tr><tr><td><strong>Joins</strong></td><td>Full SQL JOINs</td><td>Limited (broadcast joins only)</td><td>Limited (dimension tables only)</td></tr><tr><td><strong>Upsert/Mutation</strong></td><td>Yes (lightweight deletes, mutations)</td><td>No (immutable segments)</td><td>Yes (native upsert)</td></tr><tr><td><strong>Complexity</strong></td><td>Low (single binary)</td><td>High (4 node types + ZooKeeper)</td><td>Medium (3 node types + ZooKeeper)</td></tr><tr><td><strong>Compression</strong></td><td>Excellent (LZ4, ZSTD)</td><td>Good (LZ4)</td><td>Good (LZ4)</td></tr><tr><td><strong>Community / Stars</strong></td><td>45k+ GitHub stars</td><td>13k+ GitHub stars</td><td>6k+ GitHub stars</td></tr><tr><td><strong>License</strong></td><td>Apache 2.0</td><td>Apache 2.0</td><td>Apache 2.0</td></tr></tbody></table><h2 id=docker-setup-getting-started-in-minutes>Docker Setup: Getting Started in Minutes</h2><h3 id=clickhouse-simplest-setup>ClickHouse (Simplest Setup)</h3><p>ClickHouse is the easiest to get running. A single container is all you need for development and small-scale production.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>clickhouse</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>clickhouse/clickhouse-server:24.8</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>clickhouse</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8123:8123&#34;</span><span class=w>   </span><span class=c># HTTP interface</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;9000:9000&#34;</span><span class=w>   </span><span class=c># Native protocol</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>clickhouse_data:/var/lib/clickhouse</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ulimits</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>nofile</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>soft</span><span class=p>:</span><span class=w> </span><span class=m>262144</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>hard</span><span class=p>:</span><span class=w> </span><span class=m>262144</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>clickhouse_data</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>default</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>analytics</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker compose up -d
+</span></span></code></pre></td></tr></table></div></div><p>Once running, access the web interface at <code>http://localhost:8123/play</code> and run SQL queries directly:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-sql data-lang=sql><span class=line><span class=cl><span class=k>CREATE</span><span class=w> </span><span class=k>TABLE</span><span class=w> </span><span class=n>events</span><span class=w> </span><span class=p>(</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=k>timestamp</span><span class=w> </span><span class=n>DateTime64</span><span class=p>(</span><span class=mi>3</span><span class=p>),</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>event_type</span><span class=w> </span><span class=n>LowCardinality</span><span class=p>(</span><span class=n>String</span><span class=p>),</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>user_id</span><span class=w> </span><span class=n>UInt64</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>properties</span><span class=w> </span><span class=n>String</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>country</span><span class=w> </span><span class=n>LowCardinality</span><span class=p>(</span><span class=n>String</span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>)</span><span class=w> </span><span class=n>ENGINE</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>MergeTree</span><span class=p>()</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>ORDER</span><span class=w> </span><span class=k>BY</span><span class=w> </span><span class=p>(</span><span class=n>event_type</span><span class=p>,</span><span class=w> </span><span class=k>timestamp</span><span class=p>);</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c1>-- Insert sample data
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>INSERT</span><span class=w> </span><span class=k>INTO</span><span class=w> </span><span class=n>events</span><span class=w> </span><span class=k>VALUES</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=p>(</span><span class=n>now</span><span class=p>(),</span><span class=w> </span><span class=s1>&#39;page_view&#39;</span><span class=p>,</span><span class=w> </span><span class=mi>1001</span><span class=p>,</span><span class=w> </span><span class=s1>&#39;{&#34;page&#34;: &#34;/home&#34;}&#39;</span><span class=p>,</span><span class=w> </span><span class=s1>&#39;US&#39;</span><span class=p>),</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=p>(</span><span class=n>now</span><span class=p>(),</span><span class=w> </span><span class=s1>&#39;click&#39;</span><span class=p>,</span><span class=w> </span><span class=mi>1001</span><span class=p>,</span><span class=w> </span><span class=s1>&#39;{&#34;button&#34;: &#34;signup&#34;}&#39;</span><span class=p>,</span><span class=w> </span><span class=s1>&#39;US&#39;</span><span class=p>),</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=p>(</span><span class=n>now</span><span class=p>(),</span><span class=w> </span><span class=s1>&#39;page_view&#39;</span><span class=p>,</span><span class=w> </span><span class=mi>1002</span><span class=p>,</span><span class=w> </span><span class=s1>&#39;{&#34;page&#34;: &#34;/pricing&#34;}&#39;</span><span class=p>,</span><span class=w> </span><span class=s1>&#39;DE&#39;</span><span class=p>);</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c1>-- Fast aggregation
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>SELECT</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>country</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>event_type</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=k>count</span><span class=p>()</span><span class=w> </span><span class=k>AS</span><span class=w> </span><span class=n>total</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>uniq</span><span class=p>(</span><span class=n>user_id</span><span class=p>)</span><span class=w> </span><span class=k>AS</span><span class=w> </span><span class=n>unique_users</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>FROM</span><span class=w> </span><span class=n>events</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>WHERE</span><span class=w> </span><span class=k>timestamp</span><span class=w> </span><span class=o>&gt;=</span><span class=w> </span><span class=n>now</span><span class=p>()</span><span class=w> </span><span class=o>-</span><span class=w> </span><span class=nb>INTERVAL</span><span class=w> </span><span class=mi>7</span><span class=w> </span><span class=k>DAY</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>GROUP</span><span class=w> </span><span class=k>BY</span><span class=w> </span><span class=n>country</span><span class=p>,</span><span class=w> </span><span class=n>event_type</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>ORDER</span><span class=w> </span><span class=k>BY</span><span class=w> </span><span class=n>total</span><span class=w> </span><span class=k>DESC</span><span class=p>;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>For Kafka ingestion, ClickHouse provides a built-in <code>Kafka</code> table engine:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-sql data-lang=sql><span class=line><span class=cl><span class=k>CREATE</span><span class=w> </span><span class=k>TABLE</span><span class=w> </span><span class=n>kafka_events</span><span class=w> </span><span class=p>(</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=k>timestamp</span><span class=w> </span><span class=n>DateTime64</span><span class=p>(</span><span class=mi>3</span><span class=p>),</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>event_type</span><span class=w> </span><span class=n>String</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>user_id</span><span class=w> </span><span class=n>UInt64</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>properties</span><span class=w> </span><span class=n>String</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>country</span><span class=w> </span><span class=n>String</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>)</span><span class=w> </span><span class=n>ENGINE</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>Kafka</span><span class=p>(</span><span class=s1>&#39;kafka:9092&#39;</span><span class=p>,</span><span class=w> </span><span class=s1>&#39;events-topic&#39;</span><span class=p>,</span><span class=w> </span><span class=s1>&#39;clickhouse-consumer-group&#39;</span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=n>SETTINGS</span><span class=w> </span><span class=n>kafka_format</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=s1>&#39;JSONEachRow&#39;</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>CREATE</span><span class=w> </span><span class=n>MATERIALIZED</span><span class=w> </span><span class=k>VIEW</span><span class=w> </span><span class=n>events_mv</span><span class=w> </span><span class=k>TO</span><span class=w> </span><span class=n>events</span><span class=w> </span><span class=k>AS</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>SELECT</span><span class=w> </span><span class=o>*</span><span class=w> </span><span class=k>FROM</span><span class=w> </span><span class=n>kafka_events</span><span class=p>;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=apache-druid-1>Apache Druid</h3><p>Druid requires more components but Docker Compose makes it manageable:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span><span class=lnt>62
+</span><span class=lnt>63
+</span><span class=lnt>64
+</span><span class=lnt>65
+</span><span class=lnt>66
+</span><span class=lnt>67
+</span><span class=lnt>68
+</span><span class=lnt>69
+</span><span class=lnt>70
+</span><span class=lnt>71
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>zookeeper</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>zookeeper:3.8</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>druid-zookeeper</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;2181:2181&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>ZOO_MY_ID</span><span class=p>:</span><span class=w> </span><span class=m>1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>postgres</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>postgres:16</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>druid-postgres</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_PASSWORD</span><span class=p>:</span><span class=w> </span><span class=l>FoolishPassword</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_USER</span><span class=p>:</span><span class=w> </span><span class=l>druid</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_DB</span><span class=p>:</span><span class=w> </span><span class=l>druid</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>coordinator-overlord</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>apache/druid:31.0.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>druid-coordinator</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>zookeeper</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>postgres</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./druid/conf:/opt/druid/conf</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8081:8081&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>coordinator-overlord</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>DRUID_PORT</span><span class=p>:</span><span class=w> </span><span class=m>8081</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>broker</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>apache/druid:31.0.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>druid-broker</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>zookeeper</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>postgres</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8082:8082&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>broker</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>DRUID_PORT</span><span class=p>:</span><span class=w> </span><span class=m>8082</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>historical</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>apache/druid:31.0.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>druid-historical</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>zookeeper</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>postgres</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8083:8083&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>historical</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>DRUID_PORT</span><span class=p>:</span><span class=w> </span><span class=m>8083</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>middlemanager</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>apache/druid:31.0.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>druid-middle</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>zookeeper</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>postgres</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8091:8091&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>middlemanager</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>DRUID_PORT</span><span class=p>:</span><span class=w> </span><span class=m>8091</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Druid includes a web console at <code>http://localhost:8888</code> for managing data sources, tasks, and running SQL queries.</p><p>Ingest data via the console UI using the guided workflow, or POST an ingestion spec:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>curl -X <span class=s1>&#39;POST&#39;</span> -H <span class=s1>&#39;Content-Type: application/json&#39;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -d @ingestion-spec.json <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  http://localhost:8081/druid/indexer/v1/task
+</span></span></code></pre></td></tr></table></div></div><h3 id=apache-pinot-1>Apache Pinot</h3><p>Pinot also uses ZooKeeper for coordination:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>zookeeper</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>zookeeper:3.9</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>pinot-zookeeper</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;2181:2181&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>pinot-controller</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>apachepinot/pinot:1.2.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>pinot-controller</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;9000:9000&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>StartController</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;-zkAddress&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;zookeeper:2181&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>JAVA_OPTS</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;-Xms256m -Xmx512m&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>pinot-server</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>apachepinot/pinot:1.2.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>pinot-server</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8099:8099&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>StartServer</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;-zkAddress&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;zookeeper:2181&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>pinot-controller</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>JAVA_OPTS</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;-Xms256m -Xmx512m&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>pinot-broker</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>apachepinot/pinot:1.2.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>pinot-broker</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;7070:7070&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>StartBroker</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;-zkAddress&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;zookeeper:2181&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>pinot-controller</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>JAVA_OPTS</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;-Xms256m -Xmx512m&#34;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Pinot&rsquo;s web console is available at <code>http://localhost:9000</code>. Create a table schema and upload data:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Create a schema</span>
+</span></span><span class=line><span class=cl>cat &gt; events-schema.json <span class=s>&lt;&lt; &#39;EOF&#39;
+</span></span></span><span class=line><span class=cl><span class=s>{
+</span></span></span><span class=line><span class=cl><span class=s>  &#34;schemaName&#34;: &#34;events&#34;,
+</span></span></span><span class=line><span class=cl><span class=s>  &#34;dimensionFieldSpecs&#34;: [
+</span></span></span><span class=line><span class=cl><span class=s>    {&#34;name&#34;: &#34;event_type&#34;, &#34;dataType&#34;: &#34;STRING&#34;},
+</span></span></span><span class=line><span class=cl><span class=s>    {&#34;name&#34;: &#34;user_id&#34;, &#34;dataType&#34;: &#34;LONG&#34;},
+</span></span></span><span class=line><span class=cl><span class=s>    {&#34;name&#34;: &#34;country&#34;, &#34;dataType&#34;: &#34;STRING&#34;}
+</span></span></span><span class=line><span class=cl><span class=s>  ],
+</span></span></span><span class=line><span class=cl><span class=s>  &#34;dateTimeFieldSpecs&#34;: [{
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;name&#34;: &#34;timestamp&#34;,
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;dataType&#34;: &#34;TIMESTAMP&#34;,
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;format&#34;: &#34;1:MILLISECONDS:EPOCH&#34;,
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;granularity&#34;: &#34;1:MILLISECONDS&#34;
+</span></span></span><span class=line><span class=cl><span class=s>  }]
+</span></span></span><span class=line><span class=cl><span class=s>}
+</span></span></span><span class=line><span class=cl><span class=s>EOF</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Create table config</span>
+</span></span><span class=line><span class=cl>cat &gt; events-table.json <span class=s>&lt;&lt; &#39;EOF&#39;
+</span></span></span><span class=line><span class=cl><span class=s>{
+</span></span></span><span class=line><span class=cl><span class=s>  &#34;tableName&#34;: &#34;events&#34;,
+</span></span></span><span class=line><span class=cl><span class=s>  &#34;tableType&#34;: &#34;REALTIME&#34;,
+</span></span></span><span class=line><span class=cl><span class=s>  &#34;segmentsConfig&#34;: {
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;timeColumnName&#34;: &#34;timestamp&#34;,
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;schemaName&#34;: &#34;events&#34;,
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;replication&#34;: &#34;1&#34;
+</span></span></span><span class=line><span class=cl><span class=s>  },
+</span></span></span><span class=line><span class=cl><span class=s>  &#34;tableIndexConfig&#34;: {
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;loadMode&#34;: &#34;MMAP&#34;,
+</span></span></span><span class=line><span class=cl><span class=s>    &#34;streamConfig&#34;: {
+</span></span></span><span class=line><span class=cl><span class=s>      &#34;streamType&#34;: &#34;kafka&#34;,
+</span></span></span><span class=line><span class=cl><span class=s>      &#34;stream.kafka.consumer.type&#34;: &#34;lowlevel&#34;,
+</span></span></span><span class=line><span class=cl><span class=s>      &#34;stream.kafka.topic.name&#34;: &#34;events-topic&#34;,
+</span></span></span><span class=line><span class=cl><span class=s>      &#34;stream.kafka.broker.list&#34;: &#34;kafka:9092&#34;,
+</span></span></span><span class=line><span class=cl><span class=s>      &#34;stream.kafka.consumer.factory.class.name&#34;: &#34;LowLevelConsumerFactory&#34;
+</span></span></span><span class=line><span class=cl><span class=s>    }
+</span></span></span><span class=line><span class=cl><span class=s>  }
+</span></span></span><span class=line><span class=cl><span class=s>}
+</span></span></span><span class=line><span class=cl><span class=s>EOF</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Create the table</span>
+</span></span><span class=line><span class=cl>curl -X POST <span class=s2>&#34;http://localhost:9000/tables&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -F <span class=s2>&#34;schemaFile=@events-schema.json&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -F <span class=s2>&#34;tableConfigFile=@events-table.json&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><p>Query via the Pinot SQL API:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>curl -X POST <span class=s2>&#34;http://localhost:8000/query/sql&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -H <span class=s2>&#34;Content-Type: application/json&#34;</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -d <span class=s1>&#39;{&#34;sql&#34;: &#34;SELECT event_type, COUNT(*) FROM events GROUP BY event_type&#34;}&#39;</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=performance-benchmarks>Performance Benchmarks</h2><p>Performance depends heavily on your workload, but here are representative results from independent benchmarks on similar hardware (8 vCPU, 32 GB RAM, 500 GB NVMe SSD):</p><table><thead><tr><th>Benchmark</th><th>ClickHouse</th><th>Apache Druid</th><th>Apache Pinot</th></tr></thead><tbody><tr><td><strong>10B row SUM() with GROUP BY</strong></td><td>0.8s</td><td>1.4s</td><td>1.1s</td></tr><tr><td><strong>Distinct count on 500M rows</strong></td><td>1.2s</td><td>0.6s (approx)</td><td>0.9s (approx)</td></tr><tr><td><strong>Real-time ingestion (events/s)</strong></td><td>500K–2M</td><td>1–5M</td><td>1–3M</td></tr><tr><td><strong>p99 query latency (simple filter)</strong></td><td>50–200ms</td><td>100–500ms</td><td>10–100ms</td></tr><tr><td><strong>Storage (10B events, compressed)</strong></td><td>120 GB</td><td>200 GB</td><td>180 GB</td></tr><tr><td><strong>Complex JOIN (5 tables)</strong></td><td>2.5s</td><td>N/A (unsupported)</td><td>N/A (unsupported)</td></tr></tbody></table><p>Key takeaways:</p><ul><li><strong>ClickHouse</strong> has the best raw compute performance for batch-style aggregations and supports full SQL JOINs.</li><li><strong>Druid</strong> leads on ingestion throughput and approximate queries.</li><li><strong>Pinot</strong> delivers the lowest p99 latency for simple filter queries on user-facing dashboards.</li></ul><h2 id=when-to-choose-which>When to Choose Which</h2><h3 id=choose-clickhouse-if>Choose ClickHouse if:</h3><ul><li>You need a general-purpose analytics database with full SQL support</li><li>Your queries involve JOINs, subqueries, or complex aggregations</li><li>You want the simplest operational setup (single binary, minimal configuration)</li><li>You&rsquo;re replacing Elasticsearch for log analysis or time-series data</li><li>Your team already knows SQL and doesn&rsquo;t want to learn a specialized query language</li><li>You need excellent compression to minimize storage costs</li></ul><h3 id=choose-apache-druid-if>Choose Apache Druid if:</h3><ul><li>You have continuous real-time data streams (Kafka, Kinesis)</li><li>Your dashboards are heavily time-series focused</li><li>You need approximate algorithms (cardinality, quantiles, top-N) at massive scale</li><li>Your ingestion rate is extremely high (millions of events per second)</li><li>You want separation of compute (Brokers) and storage (Historicals) for independent scaling</li><li>You&rsquo;re building internal analytics dashboards for operations teams</li></ul><h3 id=choose-apache-pinot-if>Choose Apache Pinot if:</h3><ul><li>You need sub-100ms query latency for user-facing applications</li><li>Your data requires upserts (correcting or updating existing records)</li><li>You have complex filtering needs (multi-value, geospatial, JSON predicates)</li><li>You&rsquo;re building customer-facing analytics (like LinkedIn&rsquo;s &ldquo;Who Viewed Your Profile&rdquo;)</li><li>You need strong SLAs with predictable p99 latency</li><li>You want a balance between Druid&rsquo;s real-time capabilities and simpler operations</li></ul><h2 id=ecosystem-and-integrations>Ecosystem and Integrations</h2><p>All three databases integrate with popular visualization tools:</p><table><thead><tr><th>Tool</th><th>ClickHouse</th><th>Druid</th><th>Pinot</th></tr></thead><tbody><tr><td><strong>Grafana</strong></td><td>Native plugin</td><td>Native plugin</td><td>Community plugin</td></tr><tr><td><strong>Superset</strong></td><td>Native (via SQLAlchemy)</td><td>Native</td><td>Native</td></tr><tr><td><strong>Metabase</strong></td><td>Community driver</td><td>Limited support</td><td>Limited support</td></tr><tr><td><strong>Tableau</strong></td><td>ODBC/JDBC connector</td><td>JDBC connector</td><td>ODBC connector</td></tr><tr><td><strong>dbt</strong></td><td>Official adapter</td><td>Community adapter</td><td>Community adapter</td></tr></tbody></table><p>For data ingestion, all three support Apache Kafka as the primary streaming source. ClickHouse also has native table engines for PostgreSQL, MySQL, MongoDB, S3, and HTTP endpoints. Druid and Pinot offer batch ingestion from Parquet, ORC, and CSV files through their respective ingestion frameworks.</p><h2 id=migration-tips>Migration Tips</h2><p>Moving from a commercial warehouse to a self-hosted OLAP database requires planning:</p><ol><li><strong>Audit your queries</strong> — Identify which SQL features you use most. If you rely heavily on window functions and CTEs, ClickHouse is your safest migration target.</li><li><strong>Benchmark with your data</strong> — Export a representative sample (1–10 GB) and run your most expensive queries on each candidate.</li><li><strong>Start with read replicas</strong> — Run your new database alongside the old one, shadow production queries, and compare results before cutover.</li><li><strong>Plan ingestion pipelines</strong> — Replace your existing ETL jobs with streaming ingestion (Kafka) or scheduled batch loads. ClickHouse&rsquo;s materialized views can often replace complex ETL transforms.</li><li><strong>Set up monitoring</strong> — Deploy Prometheus + Grafana for all three. ClickHouse&rsquo;s <code>system</code> tables, Druid&rsquo;s built-in metrics endpoint, and Pinot&rsquo;s JMX metrics all integrate seamlessly.</li></ol><h2 id=conclusion>Conclusion</h2><p>ClickHouse, Apache Druid, and Apache Pinot are all production-grade, open-source analytics databases that can replace expensive commercial alternatives. The choice comes down to your specific requirements:</p><ul><li><strong>ClickHouse</strong> for simplicity, SQL compatibility, and all-around performance</li><li><strong>Apache Druid</strong> for high-throughput real-time streaming and approximate analytics</li><li><strong>Apache Pinot</strong> for ultra-low-latency user-facing queries with upsert support</li></ul><p>All three are Apache 2.0 licensed, actively maintained, and backed by vibrant communities with commercial support options available. Start with a Docker Compose setup, benchmark with your actual data, and you&rsquo;ll find the right fit for your analytics stack.</p></div><div id=frame style=width:100%;margin:auto;position:relative;z-index:99998><iframe data-aa=2433958 src='//acceptable.a-ads.com/2433958/?size=Adaptive' style=border:0;padding:0;width:70%;height:auto;overflow:hidden;display:block;margin:auto></iframe></div></article></main><footer class=site-footer><p>Built with <a href=https://gohugo.io>Hugo</a> · <a href=/openswap-guide/index.xml>RSS</a> · <a href=https://github.com/hopkdj>GitHub</a></p><p style=margin-top:8px>&copy; 2026 OpenSwap Guide. All rights reserved.</p></footer></body></html>
