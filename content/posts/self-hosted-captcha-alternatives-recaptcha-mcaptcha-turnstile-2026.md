@@ -1,44 +1,52 @@
 ---
-title: "Best Self-Hosted CAPTCHA Alternatives to Google reCAPTCHA 2026"
-date: 2026-04-14
-tags: ["comparison", "guide", "self-hosted", "privacy", "security"]
+title: "Best Self-Hosted CAPTCHA Alternatives to reCAPTCHA in 2026"
+date: 2026-04-16
+tags: ["comparison", "guide", "self-hosted", "privacy"]
 draft: false
-description: "Replace Google reCAPTCHA with privacy-respecting alternatives. Compare mCaptcha, hCaptcha, Cloudflare Turnstile, and custom honeypot strategies with Docker setup and integration code."
+description: "Complete guide to self-hosted and privacy-friendly CAPTCHA alternatives including mCaptcha, Cloudflare Turnstile, hCaptcha, and DIY solutions with Docker setup instructions."
 ---
 
-## Best Self-Hosted CAPTCHA Alternatives to Google reCAPTCHA 2026
+Google reCAPTCHA has been the default bot-protection choice for over a decade. But in 2026, privacy regulations, GDPR enforcement, and growing distrust of Google's data-collection practices make it a liability for many website owners. If you run a self-hosted stack, relying on an external Google service contradicts the entire philosophy of keeping your data under your own control.
 
-Google reCAPTCHA is embedded in millions of websites, but it comes at a steep privacy cost. Every challenge collects behavioral data — mouse movements, keystroke timing, browser fingerprint, and IP address — and feeds it into Google's advertising and tracking infrastructure. For site operators who care about user privacy, this is an unacceptable trade-off.
+This guide covers the best self-hosted and privacy-respecting CAPTCHA alternatives available today, complete with Docker deployment instructions, integration examples, and a detailed comparison to help you pick the right solution.
 
-The good news: in 2026, there are several capable alternatives. Some are fully self-hosted and keep all data on your infrastructure. Others are privacy-respecting cloud services that collect zero personal data. And in many cases, you don't need a CAPTCHA at all — smarter design patterns can block bots without challenging legitimate users.
+## Why Replace reCAPTCHA in 2026
 
-This guide covers the best CAPTCHA alternatives available today, compares them head-to-head, and provides production-ready Docker setups and integration code for each.
+There are several compelling reasons to move away from Google reCAPTCHA:
 
-## Why Replace Google reCAPTCHA
+### Privacy and GDPR Compliance
 
-The case for moving away from reCAPTCHA goes beyond ideology. There are practical reasons that affect your users, your compliance posture, and your site's accessibility.
+reCAPTCHA loads scripts from `google.com` and `gstatic.com` domains, sending visitor IP addresses, browser fingerprints, mouse movements, and behavioral data to Google's servers. Under GDPR, this constitutes personal data processing that requires explicit user consent. Many European websites have been fined for loading reCAPTCHA without proper consent banners.
 
-- **Privacy invasion**: reCAPTCHA v3 silently scores every visitor using behavioral telemetry. Even users who never see a puzzle are being tracked. This data flows to Google servers and is subject to their data retention policies.
-- **GDPR compliance risk**: Under GDPR, behavioral tracking requires explicit consent. reCAPTCHA's data collection is hard to square with consent requirements, and several European data protection authorities have flagged it as problematic.
-- **Accessibility problems**: Audio CAPTCHAs are notoriously difficult for users with hearing impairments. Visual puzzles exclude users with visual disabilities. Google has improved accessibility over the years, but challenges remain.
-- **User friction**: Nobody enjoys selecting traffic lights and crosswalks. Friction in forms directly impacts conversion rates — every extra second of interaction costs you sign-ups, purchases, and engagement.
-- **Vendor lock-in**: Your form security depends on a Google service. If Google changes its API, pricing, or availability, your forms break. Self-hosted alternatives keep control in your hands.
-- **Performance overhead**: reCAPTCHA loads external JavaScript from Google's domains, adding DNS lookups, TLS handshakes, and script execution time. This slows page loads and hurts Core Web Vitals scores.
+Self-hosted alternatives keep all data within your infrastructure. No third-party cookies, no cross-site tracking, no Google Analytics-adjacent data harvesting.
 
-## Option 1: mCaptcha — Fully Self-Hosted Proof-of-Work CAPTCHA
+### Performance Impact
 
-mCaptcha is the leading open-source, self-hosted CAPTCHA system. Instead of presenting visual puzzles, it uses proof-of-work (PoW) challenges — the user's browser performs a lightweight computational task that takes a fraction of a second. Bots that submit forms at scale would need to solve PoW for every request, making automated attacks economically unviable.
+reCAPTCHA adds significant page weight. The v3 script alone is roughly 35KB gzipped, and the challenge widget can add another 100KB+ of JavaScript, CSS, and iframe resources. For privacy-conscious users running script blockers, the widget often breaks entirely, locking them out of your forms.
 
-### Key Features
+Lightweight self-hosted solutions typically load under 10KB and don't depend on external CDNs.
 
-- **Zero external dependencies**: Everything runs on your server. No third-party API calls, no external scripts, no tracking.
-- **Proof-of-work based**: No images, no audio, no puzzles. Users don't notice anything — the browser solves the challenge silently in JavaScript.
-- **Privacy-first**: No cookies, no fingerprinting, no behavioral data collection. mCaptcha knows nothing about who your visitors are.
-- **Lightweight**: The JavaScript payload is under 5 KB. Compare that to reCAPTCHA's 30+ KB of external scripts.
-- **Rate limiting integration**: Can be combined with IP-based rate limiting for defense in depth.
-- **REST API**: Easy integration with any backend framework.
+### Reliability and Vendor Lock-in
 
-### Docker Setup
+When Google's reCAPTCHA service experiences an outage, every form on your site stops working. You have zero control over uptime, rate limits, or policy changes. Google has already deprecated reCAPTCHA v1 and v2 Invisible at various points, forcing migrations on developers.
+
+Self-hosted solutions run on your own servers with no external dependencies.
+
+### Accessibility
+
+Many CAPTCHA systems are notoriously difficult for users with visual or motor impairments. Audio alternatives are often unintelligible, and visual puzzles can be impossible to solve for certain disabilities. Modern privacy-friendly alternatives use behavioral signals or simple logic puzzles that are far more accessible.
+
+## mCaptcha — Fully Open-Source and Self-Hosted
+
+[mCaptcha](https://mcaptcha.org/) is a proof-of-work based CAPTCHA system that is 100% open-source (AGPL-3.0) and designed to be self-hosted. Instead of presenting visual puzzles, it challenges the browser to solve a computational puzzle — something that is trivial for a real browser but expensive for automated bots.
+
+### How It Works
+
+When a user visits a form, mCaptcha issues a computational challenge (a hash preimage problem). The browser solves it in the background using JavaScript, typically taking 1-3 seconds for a human user's device. Bots would need to solve millions of these to mount a meaningful attack, which is computationally infeasible.
+
+No images, no audio, no behavioral tracking — just math.
+
+### Docker Deployment
 
 ```yaml
 version: "3.8"
@@ -49,33 +57,48 @@ services:
     container_name: mcaptcha
     restart: unless-stopped
     ports:
-      - "7493:7493"
+      - "7860:7860"
     environment:
-      - MCAPTCHA_DATABASE_URL=postgres://mcaptcha:mcaptcha_secret@mcaptcha_db/mcaptcha
-      - MCAPTCHA_SECRET_KEY=your-256-bit-secret-key-here
-      - MCAPTCHA_SITE_NAME=My Website
+      MCAPTCHA_db_URL: "postgres://mcaptcha:mcaptcha@mcaptcha_db:5432/mcaptcha"
+      MCAPTCHA_secret: "your-super-secret-key-change-this"
+      MCAPTCHA_siteURL: "https://mcaptcha.example.com"
     depends_on:
       mcaptcha_db:
         condition: service_healthy
+    networks:
+      - mcaptcha_net
 
   mcaptcha_db:
     image: postgres:16-alpine
     container_name: mcaptcha_db
     restart: unless-stopped
     environment:
-      - POSTGRES_USER=mcaptcha
-      - POSTGRES_PASSWORD=mcaptcha_secret
-      - POSTGRES_DB=mcaptcha
+      POSTGRES_USER: mcaptcha
+      POSTGRES_PASSWORD: mcaptcha
+      POSTGRES_DB: mcaptcha
     volumes:
       - mcaptcha_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U mcaptcha"]
-      interval: 10s
+      interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - mcaptcha_net
+
+  mcaptcha_cache:
+    image: redis:7-alpine
+    container_name: mcaptcha_cache
+    restart: unless-stopped
+    networks:
+      - mcaptcha_net
 
 volumes:
   mcaptcha_data:
+
+networks:
+  mcaptcha_net:
+    driver: bridge
 ```
 
 Save this as `docker-compose.yml` and run:
@@ -84,404 +107,497 @@ Save this as `docker-compose.yml` and run:
 docker compose up -d
 ```
 
-### Frontend Integration
+Your mCaptcha instance will be available at `http://localhost:7860`. Place it behind a reverse proxy with TLS for production use.
 
-Add the mCaptcha widget to your HTML forms:
+### Integration Example
+
+Once deployed, integrate mCaptcha into your HTML forms:
 
 ```html
-<!-- Include the mCaptcha client library -->
-<script src="https://your-domain.com/mcaptcha.js"></script>
+<!-- Add the mCaptcha widget -->
+<script src="https://mcaptcha.example.com/widget.js" data-sitekey="YOUR_SITE_KEY"></script>
 
+<!-- On form submit, verify the token server-side -->
+<!-- Example with Node.js / Express -->
+const verify = await fetch("https://mcaptcha.example.com/api/v1/verify", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    sitekey: "YOUR_SITE_KEY",
+    secret: "YOUR_SECRET_KEY",
+    response: token,
+  }),
+});
+const result = await verify.json();
+```
+
+### Pros and Cons
+
+| Aspect | Details |
+|--------|---------|
+| License | AGPL-3.0 (fully open-source) |
+| Self-hosted | Yes, complete independence |
+| Privacy | No tracking, no data collection |
+| Performance | ~8KB widget, no external requests |
+| Accessibility | Excellent — no visual/audio challenges |
+| Setup complexity | Moderate (requires PostgreSQL) |
+| Bot protection | Strong proof-of-work model |
+| Mobile support | Works on all modern browsers |
+
+## Cloudflare Turnstile — Free, No Visible Challenge
+
+[Cloudflare Turnstile](https://www.cloudflare.com/products/turnstile/) is a free CAPTCHA alternative that replaces puzzles and image grids with invisible behavioral analysis. While not self-hosted in the strict sense, it is significantly more privacy-friendly than reCAPTCHA and doesn't require users to solve challenges in most cases.
+
+### How It Works
+
+Turnstile analyzes browser signals, TLS fingerprints, and behavioral patterns to distinguish humans from bots. When confidence is high, the user sees nothing — the verification happens silently. Only in edge cases does it present a simple checkbox.
+
+Unlike reCAPTCHA, Turnstile does not use the data for advertising purposes and does not build user profiles across sites.
+
+### Quick Integration
+
+```html
+<!-- Add the Turnstile script -->
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+
+<!-- Widget in your form -->
 <form action="/submit" method="POST">
-  <input type="text" name="username" required>
-  <input type="email" name="email" required>
-
-  <!-- mCaptcha widget — renders a small badge, no puzzle -->
-  <div class="mcaptcha" data-site-key="your-site-key"></div>
-
+  <div class="cf-turnstile" data-sitekey="your_site_key"></div>
   <button type="submit">Submit</button>
 </form>
-```
 
-### Backend Verification (Node.js)
-
-```javascript
-const express = require("express");
-const fetch = require("node-fetch");
-const app = express();
-
-app.post("/submit", async (req, res) => {
-  const token = req.body["mcaptcha-token"];
-
-  // Verify the proof-of-work token with your mCaptcha instance
-  const response = await fetch("http://localhost:7493/api/v1/verify", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      token: token,
-      secret: "your-256-bit-secret-key-here",
-    }),
-  });
-
-  const result = await response.json();
-
-  if (result.success) {
-    // Token is valid — process the form
-    res.json({ status: "ok" });
-  } else {
-    // Invalid token — reject the submission
-    res.status(403).json({ error: "CAPTCHA verification failed" });
-  }
-});
-
-app.listen(3000);
-```
-
-### Backend Verification (Python / Flask)
-
-```python
-from flask import Flask, request, jsonify
-import requests
-
-app = Flask(__name__)
-
-MCAPTCHA_VERIFY_URL = "http://localhost:7493/api/v1/verify"
-MCAPTCHA_SECRET = "your-256-bit-secret-key-here"
-
-@app.route("/submit", methods=["POST"])
-def submit():
-    token = request.form.get("mcaptcha-token")
-
-    response = requests.post(MCAPTCHA_VERIFY_URL, json={
-        "token": token,
-        "secret": MCAPTCHA_SECRET,
-    })
-
-    if response.json().get("success"):
-        return jsonify({"status": "ok"})
-    else:
-        return jsonify({"error": "CAPTCHA verification failed"}), 403
-
-if __name__ == "__main__":
-    app.run(port=3000)
-```
-
-### Backend Verification (PHP)
-
-```php
+<!-- Server-side verification (PHP example) -->
 <?php
-$token = $_POST['mcaptcha-token'] ?? '';
-$secret = 'your-256-bit-secret-key-here';
+$secret = "your_secret_key";
+$response = $_POST["cf-turnstile-response"];
+$remoteip = $_SERVER["REMOTE_ADDR"];
 
-$response = json_decode(file_get_contents(
-    'http://localhost:7493/api/v1/verify',
-    false,
-    stream_context_create([
-        'http' => [
-            'method' => 'POST',
-            'header' => 'Content-Type: application/json',
-            'content' => json_encode([
-                'token' => $token,
-                'secret' => $secret,
-            ]),
-        ],
-    ])
-), true);
+$verify = file_get_contents(
+  "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+  false,
+  stream_context_create([
+    "http" => [
+      "method" => "POST",
+      "header" => "Content-Type: application/x-www-form-urlencoded",
+      "content" => http_build_query([
+        "secret" => $secret,
+        "response" => $response,
+        "remoteip" => $remoteip,
+      ]),
+    ],
+  ])
+);
+$result = json_decode($verify);
 
-if ($response['success'] ?? false) {
-    // Process the form
-    echo json_encode(['status' => 'ok']);
+if ($result->success) {
+  // Human verified — process the form
 } else {
-    http_response_code(403);
-    echo json_encode(['error' => 'CAPTCHA verification failed']);
+  // Verification failed
 }
 ?>
 ```
 
-## Option 2: hCaptcha — Privacy-Respecting Cloud Alternative
+### Docker-Based Reverse Proxy Setup
 
-hCaptcha is the most widely adopted drop-in replacement for reCAPTCHA. It works as a cloud service but has a fundamentally different privacy model: it does not sell user data to advertisers and offers GDPR-compliant data processing agreements. For teams that want a managed solution without building their own infrastructure, hCaptcha is the practical choice.
-
-### Key Features
-
-- **reCAPTCHA-compatible API**: Drop-in replacement. Change one line of JavaScript and one API endpoint in your backend.
-- **Privacy-focused**: No advertising data sales. Offers EU data residency options.
-- **Accessibility**: Screen-reader-compatible audio challenges and WCAG 2.1 AA compliance.
-- **Enterprise features**: SLA guarantees, dedicated support, custom rule configuration.
-- **Free tier**: Generous free tier for low-volume sites (up to 1 million requests/month).
-- **Bot analytics dashboard**: View bot traffic patterns and block rates.
-
-### Integration
-
-```html
-<!-- Replace www.google.com with hcaptcha.com — that's the entire migration -->
-<script src="https://js.hcaptcha.com/1/api.js" async defer></script>
-
-<form action="/submit" method="POST">
-  <div class="h-captcha" data-sitekey="your-hcaptcha-site-key"></div>
-  <button type="submit">Submit</button>
-</form>
-```
-
-Backend verification uses the same pattern as reCAPTCHA but with a different endpoint:
-
-```bash
-curl -X POST https://hcaptcha.com/siteverify \
-  -d "secret=your-secret-key" \
-  -d "response=RESPONSE_TOKEN"
-```
-
-### Self-Hosted hCaptcha Proxy
-
-For teams that want hCaptcha's challenge generation but don't want direct browser-to-hCaptcha communication, you can run a reverse proxy:
+For users who want to proxy Turnstile through their own domain (to avoid loading any Cloudflare domains directly):
 
 ```yaml
 version: "3.8"
 
 services:
-  hcaptcha-proxy:
+  captcha-proxy:
     image: nginx:alpine
+    container_name: captcha-proxy
+    restart: unless-stopped
     ports:
-      - "443:443"
+      - "8443:443"
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./proxy.conf:/etc/nginx/conf.d/default.conf
       - ./certs:/etc/nginx/certs:ro
+    networks:
+      - proxy_net
 
-volumes:
-  certs:
+networks:
+  proxy_net:
+    driver: bridge
 ```
 
+With `proxy.conf`:
+
 ```nginx
-# nginx.conf
-events { worker_connections 1024; }
+server {
+  listen 443 ssl;
+  server_name captcha.yourdomain.com;
 
-http {
-  server {
-    listen 443 ssl;
-    server_name captcha.your-domain.com;
+  ssl_certificate /etc/nginx/certs/cert.pem;
+  ssl_certificate_key /etc/nginx/certs/key.pem;
 
-    ssl_certificate     /etc/nginx/certs/fullchain.pem;
-    ssl_certificate_key /etc/nginx/certs/privkey.pem;
+  location /turnstile/ {
+    proxy_pass https://challenges.cloudflare.com/turnstile/;
+    proxy_set_header Host challenges.cloudflare.com;
+    proxy_set_header X-Real-IP $remote_addr;
+  }
 
-    location /1/api.js {
-      proxy_pass https://js.hcaptcha.com/1/api.js;
-      proxy_set_header Host js.hcaptcha.com;
-    }
-
-    location /siteverify {
-      proxy_pass https://hcaptcha.com/siteverify;
-      proxy_set_header Host hcaptcha.com;
-    }
+  location /api/verify {
+    proxy_pass https://challenges.cloudflare.com/turnstile/v0/siteverify;
+    proxy_set_header Host challenges.cloudflare.com;
+    proxy_method POST;
+    proxy_set_body $request_body;
   }
 }
 ```
 
-## Option 3: Cloudflare Turnstile — Invisible, Free, No Puzzles
+### Pros and Cons
 
-Cloudflare Turnstile is a free CAPTCHA replacement that uses non-interactive challenges. Instead of asking users to solve puzzles, it evaluates environmental signals to determine whether the visitor is human. The result: most legitimate users never see a challenge at all.
+| Aspect | Details |
+|--------|---------|
+| License | Proprietary (free to use) |
+| Self-hosted | No, but proxyable |
+| Privacy | No ad profiling, limited data retention |
+| Performance | ~15KB, invisible in most cases |
+| Accessibility | Good — rarely presents challenges |
+| Setup complexity | Low — just add a script tag |
+| Bot protection | Strong behavioral analysis |
+| Cost | Free up to 1M requests/month |
 
-### Key Features
+## hCaptcha — Privacy-First with Self-Hosted Option
 
-- **No puzzles**: Invisible by default. Legitimate users pass through without interaction.
-- **Free**: No paid tiers. Unlimited requests.
-- **Privacy**: Does not use visitor data for advertising. Cloudflare's privacy policy applies.
-- **Easy integration**: Compatible with reCAPTCHA and hCaptcha form factors.
-- **Widget options**: Invisible, managed (shows a small widget), and non-interactive modes.
-- **Smart widget**: Automatically selects the least intrusive challenge type.
+[hCaptcha](https://www.hcaptcha.com/) positions itself as a privacy-friendly reCAPTCHA replacement. While their hosted service is the most common deployment model, they also offer an **on-premise/enterprise self-hosted option** for organizations that need full data control.
+
+### How It Works
+
+hCaptcha presents image-selection challenges similar to reCAPTCHA v2, but with stronger privacy guarantees. Their hosted service does not use verification data for advertising, and they offer GDPR-compliant data processing agreements. The enterprise self-hosted version runs entirely within your infrastructure.
+
+### Hosted Quick Start
+
+```html
+<script src="https://js.hcaptcha.com/1/api.js" async defer></script>
+
+<form action="/submit" method="POST">
+  <div class="h-captcha" data-sitekey="your_site_key"></div>
+  <button type="submit">Submit</button>
+</form>
+```
+
+### Enterprise Self-Hosted Deployment
+
+For the self-hosted enterprise version, hCaptcha provides a Docker-based deployment:
+
+```yaml
+version: "3.8"
+
+services:
+  hcaptcha-onprem:
+    image: hcaptcha/onpremise:latest
+    container_name: hcaptcha-onprem
+    restart: unless-stopped
+    ports:
+      - "9090:8080"
+    environment:
+      HC_LICENSE_KEY: "your-enterprise-license-key"
+      HC_DATABASE_URL: "postgres://hcaptcha:password@hcaptcha_db:5432/hcaptcha"
+      HC_SECRET_KEY: "your-hmac-secret-key"
+    volumes:
+      - hcaptcha_models:/models
+    depends_on:
+      - hcaptcha_db
+    networks:
+      - hcaptcha_net
+
+  hcaptcha_db:
+    image: postgres:16-alpine
+    container_name: hcaptcha_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hcaptcha
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: hcaptcha
+    volumes:
+      - hcaptcha_data:/var/lib/postgresql/data
+    networks:
+      - hcaptcha_net
+
+volumes:
+  hcaptcha_models:
+  hcaptcha_data:
+
+networks:
+  hcaptcha_net:
+    driver: bridge
+```
+
+Note: The self-hosted version requires an enterprise license. The hosted version has a generous free tier (1M requests/month).
+
+### Server-Side Verification
+
+```bash
+# Verify hCaptcha response with curl
+curl https://hcaptcha.com/siteverify \
+  -d "secret=YOUR_SECRET" \
+  -d "response=USER_TOKEN" \
+  -d "remoteip=USER_IP"
+```
+
+### Pros and Cons
+
+| Aspect | Details |
+|--------|---------|
+| License | Proprietary (hosted: free tier; self-hosted: enterprise) |
+| Self-hosted | Yes (enterprise license required) |
+| Privacy | No ad profiling, GDPR compliant |
+| Performance | ~25KB widget |
+| Accessibility | Moderate — visual image challenges |
+| Setup complexity | Low (hosted), high (self-hosted) |
+| Bot protection | Very strong — widely deployed |
+| Cost | Free tier available; self-hosted requires license |
+
+## FriendlyCaptcha — Puzzle-Based, Developer-Friendly
+
+[FriendlyCaptcha](https://friendlycaptcha.com/) takes a different approach entirely. Instead of image grids or behavioral analysis, it uses cryptographic puzzles that are solved in the browser. It's designed to be developer-friendly with clean APIs and SDKs for every major framework.
+
+### How It Works
+
+FriendlyCaptcha generates a unique puzzle for each form submission. The browser solves it in the background using WebAssembly for optimal performance. The puzzle takes about 1-2 seconds on modern devices but would take automated bots significantly longer to solve at scale.
 
 ### Integration
 
 ```html
-<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<script
+  src="https://cdn.jsdelivr.net/npm/friendly-challenge@0.9.16/widget.min.js"
+  async
+  defer
+></script>
 
 <form action="/submit" method="POST">
-  <!-- Turnstile widget -->
-  <div class="cf-turnstile" data-sitekey="your-site-key" data-theme="dark"></div>
+  <div
+    class="frc-captcha"
+    data-sitekey="your_site_key"
+    data-start="auto"
+  ></div>
   <button type="submit">Submit</button>
 </form>
 ```
 
-Backend verification:
+### Self-Hosted Widget Proxy
+
+While the verification API is cloud-hosted, you can self-host the widget assets to eliminate external CDN dependencies:
 
 ```bash
-curl https://challenges.cloudflare.com/turnstile/v0/siteverify \
-  -d "secret=your-secret-key" \
-  -d "response=RESPONSE_TOKEN"
+# Download and serve the widget locally
+mkdir -p /var/www/captcha-widget
+cd /var/www/captcha-widget
+
+curl -O https://cdn.jsdelivr.net/npm/friendly-challenge@0.9.16/widget.min.js
+curl -O https://cdn.jsdelivr.net/npm/friendly-challenge@0.9.16/widget.min.js.map
+
+# Serve with Caddy
+cat > Caddyfile << 'EOF'
+captcha-assets.yourdomain.com {
+  root * /var/www/captcha-widget
+  file_server
+  encode gzip
+}
+EOF
+
+caddy run --config Caddyfile
 ```
 
-Turnstile's smart widget automatically falls back to a visible challenge only when the invisible check is inconclusive. For most sites, over 95% of human visitors pass through without any interaction.
-
-## Option 4: Custom Honeypot + Rate Limiting — No CAPTCHA Required
-
-The most privacy-respecting CAPTCHA is no CAPTCHA at all. Many bots are dumb — they fill out every form field they find in the HTML. A honeypot field (a hidden input that real users can't see but bots will fill) catches these without any challenge. Combined with server-side rate limiting, this approach blocks the majority of automated spam without impacting real users.
-
-### Honeypot Implementation
+Then reference your local copy:
 
 ```html
-<form action="/submit" method="POST">
-  <input type="text" name="username" required>
-  <input type="email" name="email" required>
-
-  <!-- Honeypot field — hidden from humans via CSS, visible to bots -->
-  <input type="text" name="website" class="honeypot" tabindex="-1" autocomplete="off">
-
-  <button type="submit">Submit</button>
-</form>
-
-<style>
-  .honeypot {
-    display: none !important;
-    visibility: hidden;
-    position: absolute;
-    left: -9999px;
-  }
-</style>
+<script src="https://captcha-assets.yourdomain.com/widget.min.js" async defer></script>
 ```
 
-```python
-from flask import Flask, request, jsonify
-from time import time
-from collections import defaultdict
+### Pros and Cons
 
-app = Flask(__name__)
+| Aspect | Details |
+|--------|---------|
+| License | Proprietary (free tier for open-source) |
+| Self-hosted | Partially (widget can be self-hosted) |
+| Privacy | No tracking, GDPR compliant |
+| Performance | ~12KB, WebAssembly optimized |
+| Accessibility | Excellent — no visual challenges |
+| Setup complexity | Low |
+| Bot protection | Strong cryptographic puzzles |
+| Cost | Free for open-source; paid tiers for commercial |
 
-# Simple IP-based rate limiter
-rate_limit_store = defaultdict(list)
-RATE_LIMIT = 10  # requests
-RATE_WINDOW = 60  # seconds
+## DIY CAPTCHA — Build Your Own
 
-def check_rate_limit(ip):
-    now = time()
-    # Remove old entries outside the window
-    rate_limit_store[ip] = [t for t in rate_limit_store[ip] if now - t < RATE_WINDOW]
-    if len(rate_limit_store[ip]) >= RATE_LIMIT:
-        return False
-    rate_limit_store[ip].append(now)
-    return True
+For developers who want complete control, building a custom CAPTCHA system is more feasible than ever. Here are three practical approaches:
 
-@app.route("/submit", methods=["POST"])
-def submit():
-    # Honeypot check
-    if request.form.get("website"):
-        # Bot filled the hidden field — silently reject
-        return "", 200
+### Approach 1: Simple Math Challenge
 
-    # Rate limit check
-    client_ip = request.remote_addr
-    if not check_rate_limit(client_ip):
-        return jsonify({"error": "Too many requests"}), 429
-
-    # Process the form
-    return jsonify({"status": "ok"})
-```
-
-### Token-Based Form Protection
-
-Another approach that requires zero third-party services: generate a unique, time-limited token when the page loads, and require it on form submission. This prevents replay attacks and makes bulk form submission impractical.
+The simplest DIY CAPTCHA generates basic arithmetic problems:
 
 ```python
-import hashlib
-import hmac
-import time
-from flask import Flask, request, session, render_template, jsonify
+# Python / Flask example
+import random
+from flask import Flask, render_template_string, request, session
 
 app = Flask(__name__)
-app.secret_key = "your-application-secret-key"
+app.secret_key = "change-this-to-a-real-secret"
 
-def generate_form_token():
-    timestamp = str(int(time.time()))
-    signature = hmac.new(
-        app.secret_key.encode(),
-        timestamp.encode(),
-        hashlib.sha256
-    ).hexdigest()
-    return f"{timestamp}:{signature}"
-
-def verify_form_token(token):
-    try:
-        timestamp, signature = token.split(":")
-        expected = hmac.new(
-            app.secret_key.encode(),
-            timestamp.encode(),
-            hashlib.sha256
-        ).hexdigest()
-        # Token expires after 10 minutes
-        if int(time.time()) - int(timestamp) > 600:
-            return False
-        return hmac.compare_digest(signature, expected)
-    except (ValueError, TypeError):
-        return False
-
-@app.route("/contact")
+@app.route("/contact", methods=["GET", "POST"])
 def contact():
-    token = generate_form_token()
-    return render_template("contact.html", csrf_token=token)
+    if request.method == "POST":
+        a = int(session.get("captcha_a", 0))
+        b = int(session.get("captcha_b", 0))
+        answer = request.form.get("captcha_answer", "")
 
-@app.route("/submit", methods=["POST"])
-def submit():
-    token = request.form.get("form_token")
-    if not verify_form_token(token):
-        return jsonify({"error": "Invalid or expired form token"}), 403
+        if str(a + b) != answer:
+            return "CAPTCHA failed. Please try again.", 400
 
-    return jsonify({"status": "ok"})
+        # Process the form
+        return "Form submitted successfully!"
+
+    # Generate new CAPTCHA
+    a = random.randint(1, 20)
+    b = random.randint(1, 20)
+    session["captcha_a"] = a
+    session["captcha_b"] = b
+
+    return render_template_string("""
+    <form method="POST">
+      <label>What is {{ a }} + {{ b }}?</label>
+      <input type="text" name="captcha_answer" required>
+      <button type="submit">Submit</button>
+    </form>
+    """, a=a, b=b)
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
 ```
 
-## Comparison Table
+While basic, this approach is fully self-hosted, zero-dependency, and respects user privacy. It's suitable for low-traffic sites and internal tools.
 
-| Feature | mCaptcha | hCaptcha | Cloudflare Turnstile | Honeypot + Rate Limit |
-|---|---|---|---|---|
-| **Self-hosted** | Yes | No (cloud) | No (cloud) | Yes |
-| **Cost** | Free | Free tier, paid plans | Free | Free |
-| **User interaction** | None (silent PoW) | Visual/audio puzzle | Usually none | None |
-| **JavaScript size** | ~5 KB | ~30 KB | ~15 KB | 0 KB |
-| **Privacy** | Excellent | Good | Good | Excellent |
-| **Accessibility** | Excellent (no puzzle) | Good (WCAG 2.1 AA) | Excellent | Excellent |
-| **Bot detection strength** | Medium | High | High | Low-Medium |
-| **Setup complexity** | Medium (needs DB) | Low (drop-in) | Low (drop-in) | Very low |
-| **GDPR compliant** | Yes (no data collected) | Yes (DPA available) | Yes | Yes |
-| **Best for** | Privacy-focused sites | Sites wanting managed service | Sites already on Cloudflare | Low-traffic blogs, internal tools |
+### Approach 2: Honeypot + Rate Limiting
 
-## Choosing the Right Approach
-
-The best CAPTCHA strategy depends on your threat model, user base, and infrastructure preferences.
-
-**Choose mCaptcha if** you want full data sovereignty, run your own servers, and need a zero-friction experience. The proof-of-work model is elegant — it makes automated attacks expensive without imposing any burden on real users. The trade-off is that you need to maintain a database and a service.
-
-**Choose hCaptcha if** you want a drop-in reCAPTCHA replacement with minimal code changes and are comfortable with a cloud provider that respects privacy. The free tier covers most small to medium sites, and the migration takes under five minutes.
-
-**Choose Cloudflare Turnstile if** you already use Cloudflare's DNS or CDN. Turnstile integrates seamlessly and the invisible challenge model means nearly all legitimate users never notice it. It's free with no request limits.
-
-**Choose honeypot + rate limiting if** your site doesn't attract sophisticated bot attacks. Most comment spam and form spam comes from basic bots that fill every field. A honeypot catches these at zero cost to user experience. Combine it with rate limiting and you have a solid baseline defense.
-
-**Layered approach (recommended)**: For production applications, combine multiple strategies. Use a honeypot to catch dumb bots, add rate limiting at the reverse proxy level, and deploy mCaptcha or Turnstile as a final gate for the submission endpoint. This defense-in-depth approach blocks everything from basic scrapers to targeted automated attacks while keeping the user experience frictionless.
-
-## Nginx Rate Limiting Configuration
-
-Regardless of which CAPTCHA you choose, add server-side rate limiting as a baseline:
+A more sophisticated DIY approach combines honeypot fields with rate limiting:
 
 ```nginx
-# Rate limit zone — 10 requests per minute per IP
-limit_req_zone $binary_remote_addr zone=form_submit:10m rate=10r/m;
+# Nginx rate limiting configuration
+limit_req_zone $binary_remote_addr zone=contact_form:10m rate=5r/m;
 
 server {
-    listen 80;
-    server_name your-domain.com;
+  location /api/contact {
+    limit_req zone=contact_form burst=10 nodelay;
 
-    location /submit {
-        limit_req zone=form_submit burst=5 nodelay;
-        limit_req_status 429;
-
-        proxy_pass http://localhost:3000;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    }
+    # Proxy to your backend
+    proxy_pass http://127.0.0.1:3000;
+  }
 }
 ```
 
-This limits each IP to 10 form submissions per minute, with a burst allowance of 5 for legitimate users who click submit multiple times. Excess requests receive a 429 Too Many Requests response.
+```html
+<!-- Honeypot field in your form -->
+<form action="/api/contact" method="POST">
+  <!-- Hidden honeypot — bots will fill it, humans won't see it -->
+  <input
+    type="text"
+    name="website"
+    style="display:none"
+    tabindex="-1"
+    autocomplete="off"
+  >
 
-## Conclusion
+  <label for="message">Message:</label>
+  <textarea name="message" required></textarea>
 
-Google reCAPTCHA is no longer the default choice for form protection. In 2026, you have options that respect user privacy, comply with GDPR, and deliver better user experiences. mCaptcha leads the self-hosted category with its proof-of-work approach. hCaptcha and Cloudflare Turnstile offer managed alternatives with strong privacy policies. And for many sites, a well-implemented honeypot combined with rate limiting eliminates the need for any CAPTCHA at all.
+  <button type="submit">Send</button>
+</form>
+```
 
-The best strategy depends on your threat model, but one thing is clear: you no longer need to choose between bot protection and user privacy. You can have both.
+```python
+# Backend validation
+@app.route("/api/contact", methods=["POST"])
+def contact():
+    # Check honeypot
+    if request.form.get("website"):
+        return "Bot detected", 403
+
+    # Check timestamp (form should not be submitted instantly)
+    submit_time = time.time()
+    form_loaded = float(request.form.get("_loaded_at", 0))
+
+    if submit_time - form_loaded < 2:
+        return "Too fast — possible bot", 403
+
+    # Process the legitimate form
+    return "OK", 200
+```
+
+This combination blocks most automated bots without any visual challenges or external services.
+
+### Approach 3: Time-Based Token with HMAC
+
+For a more robust DIY solution, use time-limited HMAC tokens:
+
+```python
+import hmac
+import hashlib
+import time
+import os
+
+SECRET = os.environ.get("CAPTCHA_SECRET", "change-me")
+
+def generate_token():
+    timestamp = int(time.time())
+    message = f"{timestamp}:{SECRET}"
+    token = hmac.new(
+        SECRET.encode(), message.encode(), hashlib.sha256
+    ).hexdigest()
+    return f"{timestamp}:{token}"
+
+def verify_token(token, max_age=300):
+    try:
+        timestamp_str, received_hash = token.split(":", 1)
+        timestamp = int(timestamp_str)
+
+        if time.time() - timestamp > max_age:
+            return False
+
+        message = f"{timestamp_str}:{SECRET}"
+        expected = hmac.new(
+            SECRET.encode(), message.encode(), hashlib.sha256
+        ).hexdigest()
+
+        return hmac.compare_digest(received_hash, expected)
+    except (ValueError, TypeError):
+        return False
+```
+
+This approach ensures that each form token is unique, time-limited, and tamper-proof. Bots cannot reuse old tokens or forge new ones without knowing the secret.
+
+## Comparison Table
+
+| Feature | mCaptcha | Turnstile | hCaptcha | FriendlyCaptcha | DIY |
+|---------|----------|-----------|----------|-----------------|-----|
+| **Fully open-source** | Yes | No | No | No | Yes |
+| **Self-hosted** | Yes | No (proxyable) | Yes (enterprise) | Partial | Yes |
+| **Cost** | Free | Free | Free tier | Free for OSS | Free |
+| **Visual challenges** | No | Rarely | Yes | No | Customizable |
+| **Data sent to third party** | None | Minimal | Moderate | Minimal | None |
+| **GDPR compliant** | Yes | Yes | Yes | Yes | Yes |
+| **Setup difficulty** | Medium | Easy | Easy | Easy | Varies |
+| **Bot protection strength** | Strong | Very strong | Very strong | Strong | Moderate |
+| **Widget size** | ~8KB | ~15KB | ~25KB | ~12KB | <5KB |
+| **Mobile friendly** | Yes | Yes | Yes | Yes | Yes |
+| **Best for** | Privacy purists | Easy migration | High-traffic sites | Developer experience | Full control |
+
+## Which Should You Choose?
+
+**For maximum privacy and independence:** Deploy **mCaptcha**. It's fully open-source, self-hosted, and keeps all data within your infrastructure. The proof-of-work model is elegant and effective.
+
+**For easy migration from reCAPTCHA:** Use **Cloudflare Turnstile**. It's free, invisible to most users, and the migration is as simple as swapping a script tag. While not self-hosted, it respects privacy far more than Google.
+
+**For enterprise-grade protection:** **hCaptcha's** self-hosted enterprise option provides the strongest bot detection with full data control, though it requires a commercial license.
+
+**For developer experience:** **FriendlyCaptcha** offers the cleanest APIs, best documentation, and free open-source licenses.
+
+**For full control and zero dependencies:** Build a **DIY solution** combining honeypots, rate limiting, and HMAC tokens. It won't stop nation-state actors, but it blocks 99% of automated spam for small to medium sites.
+
+## Final Thoughts
+
+The era of blindly embedding Google reCAPTCHA on every form is over. With mature self-hosted alternatives available, there's no reason to send your visitors' behavioral data to a third-party advertising company. Whether you choose mCaptcha for full independence, Turnstile for simplicity, or a custom DIY solution, your users will benefit from a faster, more private, and more accessible experience.
+
+The best CAPTCHA is the one your users never notice — and that doesn't sell their data.
