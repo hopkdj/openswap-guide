@@ -1,58 +1,94 @@
 ---
 title: "Strapi vs Directus vs Ghost: Best Self-Hosted Headless CMS 2026"
-date: 2026-04-13
-tags: ["comparison", "guide", "self-hosted", "headless-cms", "strapi", "directus", "ghost"]
+date: 2026-04-16
+tags: ["comparison", "guide", "self-hosted", "cms", "headless"]
 draft: false
-description: "Complete comparison of Strapi, Directus, and Ghost for self-hosted headless CMS in 2026. Docker setup, features, performance, and a decision guide to pick the right platform for your project."
+description: "Complete comparison of Strapi, Directus, and Ghost for self-hosted headless CMS. Learn which open-source platform fits your project with Docker setup guides and feature comparisons."
 ---
 
-If you are building a modern web application, mobile app, or multi-channel digital product, you have probably hit the same wall: your content needs a home, but traditional monolithic CMS platforms tie you to their front-end rendering engine. A headless CMS decouples content management from content delivery, serving structured data through APIs so your front end can be anything — a React app, a mobile application, a static site, or even a digital signage display.
+## Strapi vs Directvs vs Ghost: Best Self-Hosted Headless CMS in 2026
 
-The three most popular open-source, self-hosted headless CMS platforms in 2026 are **Strapi**, **Directus**, and **Ghost**. Each takes a fundamentally different approach to content management, and choosing the right one can save you months of development effort.
+Choosing the right content management system can make or break a project. The traditional monolithic CMS model — where the backend and frontend are tightly coupled — is giving way to headless architectures. With a headless CMS, content is managed in the backend and delivered via APIs to any frontend: React, Vue, Svelte, mobile apps, or even IoT devices.
+
+Three open-source platforms dominate the self-hosted headless CMS landscape in 2026: **Strapi**, **Directus**, and **Ghost**. Each takes a fundamentally different approach. Strapi is a customizable API-first framework, Directus wraps any SQL database with an instant admin interface, and Ghost focuses on streamlined publishing with built-in membership features.
 
 ## Why Self-Host Your Headless CMS
 
-Running a headless CMS on your own infrastructure gives you advantages that no SaaS provider can match:
+Running a headless CMS on your own infrastructure offers advantages that managed SaaS solutions simply cannot match:
 
-- **Full data ownership.** Your content, user data, and media files never leave your servers. This matters for GDPR compliance, healthcare regulations, and any organization with strict data governance policies.
-- **No usage-based pricing surprises.** SaaS CMS platforms charge per API call, per editor seat, or per gigabyte of media. Self-hosting means you pay only for your infrastructure, regardless of traffic spikes.
-- **Unlimited customization.** Every open-source CMS can be extended with custom plugins, hooks, and API endpoints. You are not limited by a vendor's roadmap or feature tier.
-- **Vendor independence.** If a SaaS provider changes pricing, discontinues a feature, or gets acquired, your product is at risk. Self-hosted tools are immune to these business decisions.
-- **Integration flexibility.** Connect your CMS directly to internal databases, message queues, authentication systems, and CI/CD pipelines without relying on webhooks or third-party connectors.
+**Full data ownership.** Your content lives on your servers. There is no vendor lock-in, no surprise price hikes, and no risk of a service shutting down and taking your data with it. When you self-host, you control the database, the backups, and the retention policies.
 
-The trade-off is operational responsibility — you manage updates, backups, and scaling. But with Docker and modern orchestration tools, that overhead is minimal compared to the benefits.
+**Unlimited customization.** SaaS platforms restrict what you can modify. Self-hosted CMS instances let you add custom endpoints, modify the authentication pipeline, integrate with internal services, and deploy custom plugins without approval workflows.
 
-## Strapi: The API-First Content Platform
+**Cost predictability at scale.** Managed CMS platforms charge per API call, per editor seat, or per content record. When your content library grows to hundreds of thousands of entries or your API traffic spikes, those costs compound quickly. A self-hosted instance on a $10–20/month VPS handles the same load for a fixed price.
 
-Strapi is the most widely adopted open-source headless CMS, with over 100,000 GitHub stars. Written in Node.js and TypeScript, it provides a visual content-type builder, role-based access control, and a plugin ecosystem that covers everything from SEO optimization to internationalization.
+**Privacy compliance.** GDPR, HIPAA, and SOC 2 requirements often mandate that data stay within specific geographic boundaries or on infrastructure you control. Self-hosting removes the ambiguity of third-party data handling.
 
-Strapi v5 (current stable: **v5.42.0**) introduced a redesigned admin panel, improved content relations handling, and a more robust permissions system. It supports PostgreSQL, MySQL, MariaDB, and SQLite as database backends.
+**Offline and air-gapped deployments.** Some organizations need CMS functionality in environments without internet access. Self-hosted solutions can run entirely on-premise.
 
-### Key Features
+Now let us examine how the three leading options compare across every dimension that matters.
 
-- **Visual content-type builder.** Define collections, single types, and component structures through a drag-and-drop interface. No schema migration files to write.
-- **GraphQL and REST APIs.** Both are available out of the box. GraphQL is particularly useful for front-end applications that need to fetch nested content in a single query.
-- **Plugin marketplace.** Over 500 community plugins for features like sitemap generation, image optimization, SSO integration, and workflow management.
-- **Draft and publish workflow.** Built-in content versioning with draft, review, and published states.
-- **Internationalization.** Multi-language content support with locale fallbacks.
-- **Media library.** Asset management with automatic image optimization, cropping, and CDN integration.
+## Architecture and Core Philosophy
 
-### When to Choose Strapi
+### Strapi: The Customizable API Framework
 
-Strapi is ideal when your project requires a traditional CMS-like editorial experience — content teams need to create, review, and publish articles, product pages, or marketing content. The visual content-type builder means non-technical editors can define new content structures without developer involvement.
+Strapi is built on Node.js and uses a plugin-based architecture. Every feature — content types, roles, media management — is implemented as a plugin. You can override, replace, or extend any part of the system. Strapi generates REST and GraphQL APIs automatically from your content type definitions.
 
-It is also a strong choice for multi-channel content delivery. The same API can serve a website, a mobile app, and a partner integration simultaneously, with locale-specific content and fine-grained permission controls.
+Strapi's architecture assumes you want to define your content structure through its admin panel or JSON configuration files, then consume those APIs from a separate frontend. It stores data in whichever relational database you configure: PostgreSQL, MySQL, MariaDB, or SQLite.
 
-### Strapi Docker Setup
+The framework approach means Strapi gives you building blocks rather than a finished product. You get a powerful admin panel and API layer, but anything beyond the core features requires either installing a community plugin or writing your own.
 
-Here is a production-ready Docker Compose configuration for Strapi with PostgreSQL:
+### Directus: The Database Mirror
+
+Directus takes a radically different approach. Instead of defining content types within the CMS, Directus connects to an existing SQL database and automatically generates an admin interface and API based on the current schema. It supports PostgreSQL, MySQL, MariaDB, SQLite, and even MS SQL Server and Oracle in the enterprise tier.
+
+The key insight behind Directus is that your database is your source of truth — the CMS should reflect it, not replace it. If you add a column directly in the database, Directus picks it up. If you remove a table, the API updates. There is no separate "content type definition" layer that can drift from the actual database structure.
+
+Directus provides both REST and GraphQL APIs, real-time WebSocket subscriptions, and a visual data browser that works with any table structure. It also includes built-in file management, user management, and role-based access control.
+
+### Ghost: The Publishing-First Platform
+
+Ghost is built on Node.js and is purpose-built for content publishing. Unlike Strapi and Directus, which are general-purpose data management platforms, Ghost is designed specifically for articles, newsletters, and membership sites.
+
+Ghost uses SQLite by default (with MySQL support for production) and delivers a fast, opinionated publishing experience. It includes a built-in Handlebars theme engine, member subscriptions, email newsletters, and payment integration with Stripe.
+
+Ghost is the most "batteries included" of the three options. Where Strapi and Directus give you a flexible backend and expect you to build the frontend, Ghost can serve a complete website out of the box. Its headless Content API also lets you use Ghost as a backend for custom frontends.
+
+## Feature Comparison
+
+| Feature | Strapi 5.x | Directus 11.x | Ghost 5.x |
+|---------|-----------|---------------|-----------|
+| Primary focus | API-first CMS | Database wrapper | Publishing platform |
+| REST API | Yes (auto-generated) | Yes (auto-generated) | Yes (Content API) |
+| GraphQL API | Via plugin (Apollo) | Built-in | No (Content API is REST) |
+| Database support | PostgreSQL, MySQL, MariaDB, SQLite | PostgreSQL, MySQL, MariaDB, SQLite, MSSQL, Oracle | SQLite (dev), MySQL (prod) |
+| Admin panel | Content-focused | Data explorer (any table) | Writing-focused |
+| Custom code | Plugins, extensions, API overrides | Extensions, hooks, custom endpoints | Custom themes, integrations |
+| User roles & permissions | Granular RBAC | Granular RBAC | Roles (Owner, Admin, Editor, Author, Contributor) |
+| Media management | Built-in | Built-in with transforms | Built-in image optimization |
+| Multilingual content | Via i18n plugin | Built-in | No (single language per install) |
+| Membership/monetization | Via plugins | Via extensions + Stripe | Built-in (Stripe integration) |
+| Email/newsletter | Via plugins | Via Flows automation | Built-in |
+| Real-time updates | Via webhooks | WebSocket subscriptions | Via webhooks |
+| Version control | Content versioning (limited) | Revision history per item | Post revisions |
+| Search | Via plugins (MeiliSearch, Algolia) | Built-in full-text search | Built-in |
+| Headless mode | Default (always headless) | Default (always headless) | Optional (Content API) |
+| Theming engine | None (frontend agnostic) | None (frontend agnostic) | Handlebars themes built in |
+| SSO/OAuth | Enterprise edition | Built-in (OAuth2, SAML, OIDC) | Built-in (OAuth2) |
+| Activity log | Audit log plugin | Built-in activity log | Basic staff log |
+
+## Installation and Setup
+
+### Deploying Strapi with Docker
+
+The simplest way to run Strapi is with Docker Compose. This configuration uses PostgreSQL for production-grade storage:
 
 ```yaml
 version: "3.8"
 
 services:
   strapi:
-    image: strapi/strapi:5
+    image: strapi/strapi:latest
     restart: unless-stopped
     ports:
       - "1337:1337"
@@ -62,16 +98,15 @@ services:
       DATABASE_PORT: 5432
       DATABASE_NAME: strapi
       DATABASE_USERNAME: strapi
-      DATABASE_PASSWORD: ${DB_PASSWORD}
-      JWT_SECRET: ${JWT_SECRET}
-      ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET}
-      APP_KEYS: ${APP_KEYS}
-      NODE_ENV: production
+      DATABASE_PASSWORD: changeme_strapi_db
+      JWT_SECRET: your-jwt-secret-at-least-32-chars
+      ADMIN_JWT_SECRET: your-admin-secret-at-least-32-chars
+      APP_KEYS: key1,key2,key3,key4
     volumes:
-      - strapi_config:/opt/app/config
-      - strapi_src:/opt/app/src
-      - strapi_public:/opt/app/public
-      - strapi_uploads:/opt/app/uploads
+      - strapi-data:/opt/app
+      - ./config:/opt/app/config
+      - ./src:/opt/app/src
+      - ./public/uploads:/opt/app/public/uploads
     depends_on:
       strapi-db:
         condition: service_healthy
@@ -80,76 +115,38 @@ services:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: strapi
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: strapi
+      POSTGRES_USER: strapi
+      POSTGRES_PASSWORD: changeme_strapi_db
     volumes:
-      - strapi_data:/var/lib/postgresql/data
+      - db-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U strapi"]
-      interval: 10s
+      interval: 5s
       timeout: 5s
       retries: 5
 
 volumes:
-  strapi_data:
-  strapi_config:
-  strapi_src:
-  strapi_public:
-  strapi_uploads:
+  strapi-data:
+  db-data:
 ```
 
-Create a `.env` file with your secrets:
+After starting with `docker compose up -d`, access the admin panel at `http://localhost:1337/admin`. Create your first admin account and begin defining content types through the visual builder. Strapi will generate REST endpoints automatically.
+
+To enable GraphQL, install the plugin:
 
 ```bash
-DB_PASSWORD=your-secure-database-password
-JWT_SECRET=$(openssl rand -base64 32)
-ADMIN_JWT_SECRET=$(openssl rand -base64 32)
-APP_KEYS=$(openssl rand -base64 32),$(openssl rand -base64 32)
+cd your-strapi-project
+npm install @strapi/plugin-graphql@5.0.0
+npm run build
+npm run develop
 ```
 
-Start the stack:
+The GraphQL playground becomes available at `http://localhost:1337/graphql`.
 
-```bash
-docker compose up -d
-```
+### Deploying Directus with Docker
 
-After startup, visit `http://localhost:1337/admin` to create your admin account and begin building content types.
-
-### Performance Considerations
-
-Strapi runs on Node.js, which handles concurrent API requests well. For high-traffic deployments, consider:
-
-- Adding a reverse proxy (Nginx, Traefik, or Caddy) with response caching for read-heavy endpoints.
-- Using PostgreSQL connection pooling via PgBouncer when editor concurrency exceeds 50 simultaneous users.
-- Offloading media storage to S3-compatible object storage (MinIO, Cloudflare R2) using the `@strapi/provider-upload-aws-s3` plugin.
-- Enabling the built-in response cache plugin to reduce database load for frequently accessed content.
-
-## Directus: The Real-Time Data Platform
-
-Directus takes a fundamentally different approach. Instead of providing its own content modeling layer, Directus wraps directly around your SQL database and generates a real-time API and admin app on top of it. Current stable version: **v11.17.2**.
-
-This means your data lives in a standard PostgreSQL or MySQL database with conventional tables and columns. Directus does not impose its own schema format. If you ever decide to stop using Directus, your database remains fully usable by any other application.
-
-### Key Features
-
-- **Database-first architecture.** Directus maps your existing SQL schema into a content management interface. It can also create new tables through its visual interface.
-- **No vendor lock-in.** Your data is stored in standard SQL tables. Remove Directus and your database works as-is with any ORM or query tool.
-- **Real-time subscriptions.** WebSocket-based live queries allow front-end applications to receive instant updates when content changes.
-- **Advanced data modeling.** Relational fields, M2M junctions, aliases, and computed fields are all supported through the admin interface.
-- **Built-in analytics dashboard.** Create custom data visualizations and charts directly within the Directus admin panel.
-- **Flow automation engine.** Visual workflow builder for triggers, operations, and actions — similar to n8n but built into the platform.
-- **File storage abstraction.** Support for local disk, S3, GCS, and Azure Blob Storage with automatic thumbnail generation.
-
-### When to Choose Directus
-
-Directus shines when your project involves complex relational data models. If you are building a product catalog with multiple interconnected tables (products, categories, variants, inventory, pricing tiers), Directus's direct SQL mapping makes relationships explicit and queryable.
-
-It is also the best choice when you already have an existing database that needs an admin interface. Directus can introspect your schema and immediately provide a content management layer without any data migration.
-
-For teams that value data portability and want to avoid vendor-specific schema formats, Directus is the clear winner. The database belongs to you, not the CMS.
-
-### Directus Docker Setup
+Directus has one of the simplest Docker setups because it includes everything in a single container:
 
 ```yaml
 version: "3.8"
@@ -161,113 +158,58 @@ services:
     ports:
       - "8055:8055"
     environment:
-      KEY: ${DIRECTUS_KEY}
-      SECRET: ${DIRECTUS_SECRET}
-      ADMIN_EMAIL: ${ADMIN_EMAIL}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
-      DB_CLIENT: postgresql
-      DB_HOST: directus-db
-      DB_PORT: 5432
-      DB_DATABASE: directus
-      DB_USER: directus
-      DB_PASSWORD: ${DB_PASSWORD}
+      KEY: "your-secret-key-min-32-characters"
+      SECRET: "your-secret-value-min-32-characters"
+      ADMIN_EMAIL: "admin@example.com"
+      ADMIN_PASSWORD: "secure-admin-password"
+      DB_CLIENT: "pg"
+      DB_HOST: "directus-db"
+      DB_PORT: "5432"
+      DB_DATABASE: "directus"
+      DB_USER: "directus"
+      DB_PASSWORD: "changeme_directus_db"
       CACHE_ENABLED: "true"
-      CACHE_TTL: 5m
-      STORAGE_LOCAL_ROOT: /directus/uploads
-      WEBSOCKETS_ENABLED: "true"
-      FLOWS_ENV_ALLOW_LIST: "true"
+      CACHE_STORE: "redis"
+      REDIS: "redis://directus-cache:6379"
     volumes:
-      - directus_uploads:/directus/uploads
-      - directus_extensions:/directus/extensions
+      - ./uploads:/directus/uploads
+      - ./extensions:/directus/extensions
     depends_on:
       directus-db:
         condition: service_healthy
+      directus-cache:
+        condition: service_started
 
   directus-db:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: directus
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: directus
+      POSTGRES_USER: directus
+      POSTGRES_PASSWORD: changeme_directus_db
     volumes:
-      - directus_data:/var/lib/postgresql/data
+      - db-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U directus"]
-      interval: 10s
+      interval: 5s
       timeout: 5s
       retries: 5
 
+  directus-cache:
+    image: redis:7-alpine
+    restart: unless-stopped
+
 volumes:
-  directus_data:
-  directus_uploads:
-  directus_extensions:
+  db-data:
 ```
 
-Environment file:
+Directus starts in seconds. Point your browser to `http://localhost:8055` and log in with the admin credentials from the environment variables. The first thing you will see is the Data Model page — Directus scans your database and displays every table.
 
-```bash
-DIRECTUS_KEY=$(openssl rand -base64 32)
-DIRECTUS_SECRET=$(openssl rand -base64 32)
-ADMIN_EMAIL=admin@example.com
-ADMIN_PASSWORD=your-admin-password
-DB_PASSWORD=your-secure-database-password
-```
+To connect Directus to an existing database, simply configure the `DB_*` variables to point to it. Directus will introspect the schema and immediately make every table queryable through the API.
 
-Launch the stack:
+### Deploying Ghost with Docker
 
-```bash
-docker compose up -d
-```
-
-Access the admin panel at `http://localhost:8055`. Directus will prompt you to create the first admin user if the database is empty.
-
-### Advanced: Connecting Directus to an Existing Database
-
-One of Directus's most powerful features is its ability to wrap around an existing database. If you have a production PostgreSQL database, point Directus at it and it will introspect all tables, columns, and relationships:
-
-```yaml
-  directus:
-    environment:
-      DB_CLIENT: postgresql
-      DB_HOST: your-existing-db-host
-      DB_PORT: 5432
-      DB_DATABASE: production_db
-      DB_USER: directus_reader
-      DB_PASSWORD: ${DB_PASSWORD}
-      # Enable schema introspection
-      DB_EXCLUDE_TABLES: "spatial_ref_sys,geometry_columns"
-```
-
-Directus will create its own metadata tables (prefixed with `directus_`) while leaving your existing schema untouched.
-
-## Ghost: The Publishing-Focused Platform
-
-Ghost started as a blogging platform but evolved into a full-featured headless CMS with a strong focus on content publishing, membership management, and newsletter delivery. Current stable version: **v6.28.0**.
-
-Unlike Strapi and Directus, Ghost is opinionated about content structure. It provides posts, pages, tags, authors, and members — and that is by design. If your content model fits this structure, Ghost delivers an unmatched editorial experience. If you need arbitrary content types, Ghost is not the right tool.
-
-### Key Features
-
-- **Superior writing experience.** The editor is purpose-built for long-form content with markdown support, image embedding, and real-time previews.
-- **Built-in membership and subscriptions.** Native support for paid memberships, free tiers, and Stripe integration. No plugins required.
-- **Newsletter delivery.** Send posts directly to subscriber email inboxes with customizable templates and delivery scheduling.
-- **Native SEO features.** Automatic sitemap generation, canonical URLs, Open Graph tags, structured data, and AMP support.
-- **Theme system.** Handlebars-based themes with a rich ecosystem of free and premium designs.
-- **Content API and Admin API.** RESTful APIs for headless consumption, plus a GraphQL API available through configuration.
-- **Webmentions and oEmbed.** Built-in support for the fediverse-friendly webmention protocol and oEmbed for rich link previews.
-
-### When to Choose Ghost
-
-Ghost is the right choice when your primary content type is articles, blog posts, or editorial content. If you are running a publication, a company blog, a newsletter business, or a membership site, Ghost provides more out-of-the-box value than Strapi or Directus.
-
-The built-in membership and subscription system alone can replace multiple third-party services — no need for separate payment processors, email marketing platforms, or membership gate plugins.
-
-However, Ghost is **not** a general-purpose headless CMS. You cannot create custom content types like "product," "event," or "recipe" without significant customization. If your project requires arbitrary data models, look at Strapi or Directus instead.
-
-### Ghost Docker Setup
-
-Ghost requires MySQL 8.0+ (it does not support PostgreSQL). Here is a production-ready setup:
+Ghost provides an official Docker image with a streamlined configuration:
 
 ```yaml
 version: "3.8"
@@ -279,19 +221,19 @@ services:
     ports:
       - "2368:2368"
     environment:
-      url: https://your-domain.com
+      url: "https://your-domain.com"
       database__client: mysql
       database__connection__host: ghost-db
       database__connection__user: ghost
-      database__connection__password: ${DB_PASSWORD}
+      database__connection__password: changeme_ghost_db
       database__connection__database: ghost
       mail__transport: SMTP
-      mail__options__host: ${SMTP_HOST}
+      mail__options__host: smtp.your-provider.com
       mail__options__port: 587
-      mail__options__auth__user: ${SMTP_USER}
-      mail__options__auth__pass: ${SMTP_PASS}
+      mail__options__auth__user: noreply@your-domain.com
+      mail__options__auth__pass: your-smtp-password
     volumes:
-      - ghost_content:/var/lib/ghost/content
+      - ghost-content:/var/lib/ghost/content
     depends_on:
       ghost-db:
         condition: service_healthy
@@ -300,12 +242,12 @@ services:
     image: mysql:8.0
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_USER: ghost
-      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: changeme_root
       MYSQL_DATABASE: ghost
+      MYSQL_USER: ghost
+      MYSQL_PASSWORD: changeme_ghost_db
     volumes:
-      - ghost_db_data:/var/lib/mysql
+      - mysql-data:/var/lib/mysql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
@@ -313,167 +255,179 @@ services:
       retries: 5
 
 volumes:
-  ghost_db_data:
-  ghost_content:
+  ghost-content:
+  mysql-data:
 ```
 
-Environment file:
+After `docker compose up -d`, visit `http://localhost:2368/ghost` to complete the setup wizard. Ghost will prompt you to configure the blog title, invite staff users, and set up your publishing preferences.
+
+For a quick development setup, Ghost also supports SQLite with zero database configuration:
 
 ```bash
-DB_PASSWORD=your-secure-database-password
-MYSQL_ROOT_PASSWORD=your-mysql-root-password
-SMTP_HOST=smtp.your-provider.com
-SMTP_USER=noreply@your-domain.com
-SMTP_PASS=your-smtp-password
+mkdir ghost-dev && cd ghost-dev
+docker run -d --name ghost-dev \
+  -p 2368:2368 \
+  -v $(pwd)/content:/var/lib/ghost/content \
+  -e database__client=sqlite3 \
+  ghost:5-alpine
 ```
 
-Start Ghost:
-
-```bash
-docker compose up -d
-```
-
-Visit `http://localhost:2368/ghost` to complete the setup wizard.
-
-### Configuring Ghost as a Pure Headless CMS
-
-By default, Ghost serves its own theme-rendered pages. To use it purely as a headless CMS (serving content to a separate front-end application), disable the theme rendering and restrict API access:
-
-```yaml
-  ghost:
-    environment:
-      # Serve only the API, no theme pages
-      serveAdmin: "true"
-      serveSite: "true"
-      # Use Content API v5 for your front-end
-      # Access token for Content API (read-only)
-      # Generate at Settings > Integrations in the admin panel
-```
-
-Your front-end application can fetch content using the Content API:
-
-```javascript
-const GhostContentAPI = require("@tryghost/content-api");
-
-const api = new GhostContentAPI({
-  url: "https://your-domain.com",
-  key: "your-content-api-key",
-  version: "v5",
-});
-
-// Fetch all published posts
-const posts = await api.posts.browse({
-  limit: "all",
-  include: "tags,authors",
-  fields: "title,slug,excerpt,feature_image,published_at",
-});
-
-// Fetch a specific post by slug
-const post = await api.posts.read({ slug: "your-post-slug" });
-```
-
-## Head-to-Head Comparison
-
-| Feature | Strapi v5 | Directus v11 | Ghost v6 |
-|---|---|---|---|
-| **Architecture** | Custom content types with its own schema | Direct SQL database wrapper | Opinionated publishing platform |
-| **Primary Language** | Node.js / TypeScript | Node.js / Vue.js (admin) | Node.js / Ember.js (admin) |
-| **Database Support** | PostgreSQL, MySQL, MariaDB, SQLite | PostgreSQL, MySQL, MariaDB, Oracle, SQLite | MySQL 8.0+ only |
-| **API Protocols** | REST + GraphQL | REST + GraphQL + Real-time WebSocket | REST (Content API + Admin API) |
-| **Custom Content Types** | Unlimited via visual builder | Unlimited via direct table mapping | Posts, Pages, Tags, Authors only |
-| **User Roles** | Granular RBAC with field-level permissions | Granular RBAC with field and item-level | Admin, Editor, Author, Contributor |
-| **Media Management** | Built-in media library with plugins | Built-in file manager with storage abstraction | Built-in image optimization |
-| **Internationalization** | Native multi-language support | Native multi-language support | Limited (via third-party integrations) |
-| **Membership/Payments** | Via plugins (Stripe, etc.) | Via custom flows | Native Stripe integration |
-| **Newsletter/Email** | Via plugins | Via flow automations | Native, built-in delivery |
-| **Real-time Updates** | Via webhooks or plugins | Native WebSocket subscriptions | Via webhooks |
-| **Workflow Automation** | Via Strapi Flow (plugin) | Built-in visual flow engine | Via Zapier/Integromat webhooks |
-| **Admin Dashboard** | Content management only | Content management + data analytics | Content management + audience insights |
-| **Docker Image Size** | ~500 MB | ~400 MB | ~300 MB (Alpine) |
-| **RAM Usage (idle)** | ~300-500 MB | ~200-400 MB | ~150-300 MB |
-| **License** | MIT | BUSL-1.1 (free for most uses) | MIT |
-| **Best For** | Multi-channel content delivery | Complex data models, existing databases | Publishing, newsletters, memberships |
+This is ideal for testing or small personal blogs where MySQL is overkill.
 
 ## Performance and Resource Usage
 
-Resource requirements vary based on content volume, traffic patterns, and plugin usage. Here are practical baseline recommendations for a production deployment handling moderate traffic (up to 100,000 API requests per day):
+Understanding the resource footprint of each platform helps you choose the right hosting tier and plan for scaling.
 
-| Metric | Strapi | Directus | Ghost |
-|---|---|---|---|
-| **Minimum RAM** | 512 MB | 512 MB | 256 MB |
-| **Recommended RAM** | 1 GB | 1 GB | 512 MB |
-| **CPU** | 1 core | 1 core | 1 core |
-| **Database** | 512 MB additional | 512 MB additional | 512 MB additional |
-| **Disk (content)** | 5 GB+ | 5 GB+ | 2 GB+ |
+**Strapi** runs on Node.js and typically consumes 200–500 MB of RAM under normal load. The memory usage increases with the number of content types and installed plugins. API response times are fast — usually under 50ms for simple queries. The main bottleneck with Strapi is the build step: every time you change the admin panel configuration, Strapi rebuilds the admin UI, which can take 1–3 minutes on smaller servers.
 
-Ghost is the most lightweight option because it is purpose-built for a single content type. Strapi and Directus carry more overhead due to their generalized architecture and plugin systems.
+**Directus** is also Node.js-based but tends to use slightly less RAM — around 150–400 MB — because it does not rebuild anything when you change the data model. Directus reads the database schema dynamically, so adding a new column takes zero rebuild time. API response times are comparable to Strapi, typically 30–80ms. Directus benefits significantly from Redis caching, which can reduce average response times to under 20ms for repeated queries.
 
-For high-traffic deployments exceeding 1 million requests per day, all three platforms benefit from:
+**Ghost** is the most lightweight of the three, using 100–250 MB of RAM for typical workloads. Ghost is specifically optimized for read-heavy content delivery and handles tens of thousands of concurrent readers on modest hardware. The Content API responses average 20–40ms. Ghost's built-in image optimization pipeline automatically generates responsive image sizes, reducing bandwidth without any configuration.
 
-- A CDN in front of the API (Cloudflare, Fastly, or self-hosted Varnish).
-- Database query caching at the application layer.
-- Horizontal read replicas for the database.
-- Asset offloading to object storage with CDN distribution.
+## Developer Experience
 
-## Security Considerations
+### Content Modeling
 
-All three platforms support HTTPS, rate limiting, and input validation. Here are the key security features and best practices for each:
+**Strapi** uses a visual Content Type Builder where you define fields, relationships, and validation rules through a drag-and-drop interface. The definitions are stored as JSON schema files in your project, making them version-controllable. You can create collection types (multi-item lists like "Articles") and single types (one-off pages like "Homepage Settings"). Relationships include one-to-one, one-to-many, and many-to-many.
 
-**Strapi:**
-- Enable the `strapi::security` middleware for XSS protection and CORS configuration.
-- Use environment variables for all secrets — never commit `server.js` credentials.
-- Keep the admin panel behind IP whitelisting or basic auth in production.
-- Regularly update to patch vulnerabilities in the extensive plugin ecosystem.
+```json
+// strapi/api/article/content-types/article/schema.json
+{
+  "kind": "collectionType",
+  "collectionName": "articles",
+  "info": { "singularName": "article", "pluralName": "articles" },
+  "options": { "draftAndPublish": true },
+  "attributes": {
+    "title": { "type": "string", "required": true },
+    "slug": { "type": "uid", "targetField": "title" },
+    "body": { "type": "richtext" },
+    "author": { "type": "relation", "relation": "manyToOne", "target": "api::author.author" },
+    "tags": { "type": "relation", "relation": "manyToMany", "target": "api::tag.tag" },
+    "cover": { "type": "media", "multiple": false }
+  }
+}
+```
 
-**Directus:**
-- Enable two-factor authentication for all admin users (Settings > Security).
-- Use IP allowlisting for the admin interface in production deployments.
-- Audit logs are built-in — enable them to track all data changes.
-- The flow engine should be restricted — avoid exposing flow execution endpoints publicly.
+**Directus** takes a schema-first approach. You create collections and fields either through the admin UI or by writing raw SQL. Directus then adds metadata on top of the existing database schema. This means your content model IS your database model — there is no translation layer.
 
-**Ghost:**
-- Enable two-factor authentication in the admin panel.
-- Use SMTP with TLS for all email delivery.
-- Restrict the Admin API to trusted IPs — the Content API is public by design.
-- Keep the MySQL database on a private network segment, not directly accessible from the internet.
+```sql
+-- Create a table directly, then Directus auto-detects it
+CREATE TABLE articles (
+    id SERIAL PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    slug VARCHAR(255) UNIQUE NOT NULL,
+    body TEXT,
+    author_id INT REFERENCES authors(id),
+    status VARCHAR(20) DEFAULT 'draft',
+    published_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+```
 
-## Migration Paths
+After running this SQL, Directus immediately exposes the `articles` table through its REST and GraphQL APIs with full CRUD operations.
 
-Moving from one platform to another is always painful, but understanding the data model differences helps:
+**Ghost** has a fixed content model centered around posts and pages. You cannot define arbitrary content types like in Strapi or Directus. Posts have titles, bodies, tags, authors, and metadata. Pages are similar but are treated as static content. This limitation is intentional — Ghost optimizes for a specific use case rather than trying to be a general-purpose CMS.
 
-**Ghost to Strapi:** Ghost's content model maps naturally to Strapi content types. Posts become a "post" collection type, tags and authors become related collections. The migration requires exporting Ghost's JSON backup and writing a custom import script that creates Strapi entries through the Admin API.
+### API Consumption
 
-**Strapi to Directus:** This is the most straightforward migration because both support arbitrary content types. Export Strapi's database, import it into Directus, and use Directus's introspection to map the tables. Some field types may need manual adjustment (Strapi's dynamic zones require custom Directus interface configuration).
+All three platforms provide REST APIs, but the consumption patterns differ:
 
-**Directus to Strapi:** Since Directus stores data in standard SQL tables, you can export the schema and data, then write a Strapi migration script that reads the SQL dump and creates entries through Strapi's API. The effort depends on how many custom relations exist.
+**Strapi** generates REST endpoints like `GET /api/articles?populate=*&filters[status][$eq]=published`. Queries support filtering, sorting, pagination, and population of related content. The GraphQL plugin adds a `/graphql` endpoint with full schema introspection.
 
-## Decision Guide: Which One Should You Choose?
+Example Strapi REST query:
+```bash
+curl "http://localhost:1337/api/articles?populate=author,tags,cover&filters[tags][name][$in]=technology&sort=publishedAt:desc&pagination[page]=1&pagination[pageSize]=10"
+```
 
-**Choose Strapi if:**
-- You need a general-purpose headless CMS with a visual content-type builder.
-- Your content team needs an intuitive, WordPress-like editorial experience.
-- You plan to serve content to multiple channels (web, mobile, third-party APIs).
-- You want a large plugin ecosystem and active community support.
-- Internationalization is a core requirement.
+**Directus** provides a powerful REST API with a unique query syntax:
 
-**Choose Directus if:**
-- You have complex relational data that maps naturally to SQL tables.
-- You already have an existing database and need an admin interface on top of it.
-- Data portability and zero vendor lock-in are non-negotiable.
-- You need real-time data subscriptions for live dashboard applications.
-- You want built-in workflow automation without adding a separate tool.
+```bash
+curl "http://localhost:8055/items/articles?filter[status][_eq]=published&sort=-published_at&fields=id,title,slug,body,author.name,tags.*&limit=10&page=2"
+```
 
-**Choose Ghost if:**
-- Your primary content type is articles, blog posts, or editorial content.
-- You want built-in membership management and paid subscriptions.
-- Newsletter delivery to subscribers is a core feature.
-- You value a polished writing experience over content model flexibility.
-- You want the lowest operational overhead of the three options.
+The `fields` parameter lets you specify exactly which columns to return (similar to GraphQL field selection). Directus also supports aggregate queries:
 
-It is also perfectly valid to run multiple platforms. A common pattern is Ghost for the company blog and marketing content, paired with Directus for the product catalog and customer-facing data. Each platform handles the content type it does best, and your front-end application consumes both APIs.
+```bash
+curl "http://localhost:8055/items/articles?aggregate[count]=*&groupBy[0]=author_id&filter[status][_eq]=published"
+```
 
-## Final Thoughts
+**Ghost** provides a simpler Content API focused on reading published content:
 
-The headless CMS landscape in 2026 is mature enough that there is no single "best" option — the right choice depends entirely on your content model, team structure, and technical requirements. Strapi offers the most flexibility for general content management, Directus provides unmatched data transparency and portability, and Ghost delivers the best publishing experience with built-in monetization.
+```bash
+curl "http://localhost:2368/ghost/api/content/posts/?key=YOUR_CONTENT_API_KEY&limit=10&include=tags,authors&order=published_at+desc"
+```
 
-All three are open-source, self-hostable, and production-ready. Start with your content model, not with feature checklists, and the right platform will become obvious.
+Ghost also has an Admin API for content creation and management, which requires a separate API key.
+
+### Extensibility
+
+**Strapi** has the largest plugin ecosystem. The marketplace includes plugins for SEO optimization, content scheduling, internationalization, email notifications, and integrations with services like Stripe, Algolia, and Cloudinary. You can also write custom plugins in TypeScript or JavaScript that modify the API, add admin UI components, or hook into lifecycle events.
+
+**Directus** uses an extensions system with five types: interfaces (custom input fields), displays (how data is rendered), layouts (collection-level views), modules (full admin pages), and endpoints (custom API routes). Extensions are installed as npm packages or written as local JavaScript files. Directus also supports "Flows" — a visual workflow automation system similar to n8n or Node-RED that triggers on database events.
+
+**Ghost** uses a theme system for frontend customization and an integration system for connecting external services. Custom themes are built with Handlebars templating and CSS. Integrations use webhooks to notify external services when content is published or updated. Ghost does not support custom API endpoints or backend plugins — its extensibility is focused on the frontend and integrations layer.
+
+## When to Choose Each Platform
+
+### Choose Strapi when:
+
+- You need a flexible, general-purpose CMS for multiple content types
+- Your team wants a visual content type builder with no database knowledge required
+- You need GraphQL support
+- You are building a multi-tenant SaaS product with different content schemas per tenant
+- You want a large plugin ecosystem and active community (48,000+ GitHub stars)
+- You need multilingual content support out of the box
+
+### Choose Directus when:
+
+- You already have a SQL database and want to expose it via API instantly
+- Your content model maps directly to database tables (no abstraction needed)
+- You need to work with existing legacy databases without migration
+- You want zero schema-to-code drift — the API always matches the database
+- You need visual workflow automation (Flows) for data pipelines
+- You want the most performant option for complex relational queries
+- You plan to use the CMS as an internal data operations platform, not just for publishing
+
+### Choose Ghost when:
+
+- You are building a blog, newsletter, or membership site
+- You want built-in email newsletters and paid subscriptions
+- You need the simplest possible setup with minimal maintenance
+- Your content is primarily articles and pages (no custom content types needed)
+- You want a built-in theming engine for serving a complete website
+- You prioritize writing experience and reader engagement over data flexibility
+- You need the lightest resource footprint
+
+## Production Deployment with Reverse Proxy
+
+For production use, all three platforms should sit behind a reverse proxy handling TLS termination. Here is a Caddy configuration that routes traffic to any of the three:
+
+```caddy
+# Caddyfile
+
+cms.example.com {
+    reverse_proxy localhost:1337  # Strapi
+    # reverse_proxy localhost:8055  # Directus
+    # reverse_proxy localhost:2368  # Ghost
+
+    encode gzip zstd
+
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        Referrer-Policy strict-origin-when-cross-origin
+    }
+}
+```
+
+Caddy automatically obtains and renews TLS certificates via Let's Encrypt. No additional configuration is needed.
+
+## Summary
+
+The self-hosted headless CMS landscape in 2026 offers three excellent options, each with a distinct philosophy:
+
+- **Strapi** is the customizable framework — define any content type, get automatic APIs, extend with plugins. Best for teams building complex content-driven applications.
+- **Directus** is the database mirror — connect to any SQL database, instantly get an admin panel and API. Best for projects where the database schema is the source of truth.
+- **Ghost** is the publishing platform — optimized for articles, newsletters, and memberships. Best for writers, publishers, and content creators who want simplicity and performance.
+
+All three are open source, self-hostable, and production-ready. The choice comes down to whether you need maximum flexibility (Strapi), database transparency (Directus), or publishing focus (Ghost).
