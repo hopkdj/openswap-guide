@@ -1,114 +1,53 @@
-# 🚀 OpenSwap Guide - 开源替代方案指南
+# OpenSwap Guide
 
-一个专注于开源软件替代方案、自托管解决方案和本地 AI 部署的技术内容站。
+> 📚 Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment.
 
-## 📁 项目结构
+**Website:** https://hopkdj.github.io/openswap-guide/
 
-```
-├── content/          # 文章内容 (Markdown)
-├── layouts/          # 自定义模板
-├── themes/           # PaperMod 主题
-├── public/           # 生成的静态文件
-├── hugo.toml         # 站点配置
-└── .github/          # GitHub Actions 工作流
-```
+## 🌟 Featured Articles
 
-## 🛠️ 本地开发
+| Article | Category | Read Time |
+|---------|----------|-----------|
+| [AdGuard Home vs Pi-hole](https://hopkdj.github.io/openswap-guide/posts/adguard-home-vs-pihole/) | Network | 8 min |
+| [Ollama vs LM Studio vs LocalAI](https://hopkdj.github.io/openswap-guide/posts/ollama-vs-lmstudio-vs-localai/) | AI | 10 min |
+| [Jellyfin vs Plex vs Emby](https://hopkdj.github.io/openswap-guide/posts/jellyfin-vs-plex-vs-emby/) | Media | 7 min |
+| [Nextcloud vs ownCloud](https://hopkdj.github.io/openswap-guide/posts/nextcloud-vs-owncloud/) | Cloud | 9 min |
+| [Nginx vs Caddy vs Traefik](https://hopkdj.github.io/openswap-guide/posts/reverse-proxy-comparison/) | Infrastructure | 11 min |
 
-```bash
-# 安装 Hugo Extended (需要 0.146.0+)
-# Ubuntu/Debian:
-wget https://github.com/gohugoio/hugo/releases/download/v0.147.4/hugo_extended_0.147.4_linux-amd64.deb
-sudo dpkg -i hugo_extended_0.147.4_linux-amd64.deb
+## 📂 Content Categories
 
-# 克隆主题
-git submodule update --init --recursive
+- **Comparisons** - Side-by-side comparisons of self-hosted tools
+- **Guides** - Step-by-step setup and deployment tutorials
+- **Local AI** - Running AI models on your own hardware
+- **Privacy** - Tools to protect your data and identity
+- **Security** - Self-hosted security and monitoring solutions
 
-# 启动开发服务器
-hugo server -D
-```
+## 🚀 Quick Start
 
-## 🚀 部署到 GitHub Pages
+1. Browse our [Comparisons](https://hopkdj.github.io/openswap-guide/tags/comparison/) for tool selection
+2. Read our [Guides](https://hopkdj.github.io/openswap-guide/tags/guide/) for setup instructions
+3. Check [Local AI](https://hopkdj.github.io/openswap-guide/tags/ai/) for running models locally
 
-### 方法 1: 一键部署（推荐）
+## 📊 Stats
 
-1. **创建新仓库**
-   - 访问 https://github.com/new
-   - 仓库名：`开源替代指南.github.io`（替换为你的用户名）
+- **160+ articles** covering self-hosted software
+- **50+ tool comparisons** with benchmarks
+- **Updated weekly** with new content
+- **Free and open source** - contribute via PRs
 
-2. **推送代码**
-   ```bash
-   git init
-   git add .
-   git commit -m "Initial commit"
-   git branch -M main
-   git remote add origin https://github.com/YOUR_USERNAME/opensource-alternatives.git
-   git push -u origin main
-   ```
+## 🤝 Contributing
 
-3. **启用 Pages**
-   - 进入仓库 Settings → Pages
-   - Source 选择 "GitHub Actions"
-   - 等待部署完成
+We welcome contributions! If you have experience with self-hosted tools:
 
-### 方法 2: 直接上传 public 目录
+1. Write a comparison or guide
+2. Submit a PR to `content/posts/`
+3. Your article will be published within 24 hours
 
-如果你不想用 Hugo，可以直接上传 `public/` 目录到任何静态托管服务：
-- GitHub Pages
-- Cloudflare Pages
-- Netlify
-- Vercel
-- Surge.sh
+## 📬 Contact
 
-## 💰 广告变现
+- **GitHub Issues** - Report bugs or suggest topics
+- **RSS Feed** - https://hopkdj.github.io/openswap-guide/index.xml
 
-### A-Ads (Anonymous Ads)
-无需 KYC 的加密货币广告网络：
+---
 
-1. 访问 https://anonymousads.com
-2. 创建广告单元
-3. 替换 `hugo.toml` 中的 `a_ads_id`
-4. 重新构建站点
-
-### 其他无 KYC 广告选项
-- **Coinzilla**: 加密货币广告
-- **Adsterra**: 支持加密货币支付
-- **PopAds**: 低门槛
-
-## 📝 已生成内容
-
-| 文章 | 主题 |
-|------|------|
-| Google Drive 替代方案 | 云存储对比 |
-| Jellyfin vs Plex vs Emby | 媒体服务器 |
-| Ollama vs LM Studio vs LocalAI | 本地 AI 运行 |
-| 密码管理器对比 | 安全工具 |
-| AdGuard Home vs Pi-hole | DNS 广告拦截 |
-| 自托管 AI 栈 | Docker 部署指南 |
-| 反向代理对比 | 网络基础设施 |
-| Git 服务器对比 | 开发工具 |
-| Docker Compose 指南 | 入门教程 |
-| Nextcloud vs ownCloud | 云办公套件 |
-| 项目管理工具 | Jira 替代方案 |
-| 隐私栈指南 | 去 Google 化 |
-| 自动化指南 | Watchtower + Ansible |
-
-## 🤖 自动化内容管线
-
-使用 `generate_content.py` 批量生成新文章：
-
-```bash
-python generate_content.py --topic "New Topic" --count 5
-```
-
-## 📊 SEO/GEO 优化
-
-- JSON-LD 结构化数据
-- FAQ 页面优化
-- 对比表格生成
-- 内部链接网络
-- 快速加载（静态 HTML）
-
-## ⚖️ 免责声明
-
-本站内容仅供技术参考，不构成任何商业建议。软件功能可能随版本更新而变化。
+Built with [Hugo](https://gohugo.io/) · [Herms Dark Theme](https://github.com/hopkdj/openswap-guide) · Deployed on [GitHub Pages](https://pages.github.com/)
