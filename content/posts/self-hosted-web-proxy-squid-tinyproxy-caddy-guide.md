@@ -1,263 +1,232 @@
 ---
-title: "Self-Hosted Web Proxy Guide: Squid vs Tinyproxy vs Caddy 2026"
-date: 2026-04-15
-tags: ["proxy", "privacy", "self-hosted", "networking", "comparison"]
+title: "Best Self-Hosted Web Proxy in 2026: Squid vs Tinyproxy vs Caddy"
+date: 2026-04-16
+tags: ["comparison", "guide", "self-hosted", "privacy", "proxy"]
 draft: false
-description: "Complete guide to self-hosted web proxy servers in 2026. Compare Squid, Tinyproxy, and Caddy as forward proxy solutions for privacy, caching, and network control."
+description: "Complete guide to self-hosted web proxies in 2026. Compare Squid, Tinyproxy, and Caddy for caching, filtering, anonymizing, and reverse proxying with Docker deployment examples."
 ---
 
-When you browse the web, every request leaves your device and travels through your ISP's infrastructure before reaching its destination. Your internet service provider can see every domain you visit, log your browsing habits, and in many regions, sell that data to third parties. A self-hosted web proxy puts you back in control of your network traffic — encrypting, filtering, and caching your requests on your own terms.
+Running your own web proxy gives you full control over how your network traffic flows. Whether you want to cache frequently accessed content to reduce bandwidth, filter outbound requests for compliance, anonymize your browsing traffic, or reverse-proxy multiple backend services behind a single entry point, a self-hosted proxy is the cornerstone of a well-managed network.
 
-Whether you need to bypass geographic restrictions, filter malicious content, cache frequently accessed resources to save bandwidth, or simply keep your browsing history away from your ISP, running your own proxy server is one of the most practical privacy upgrades you can make in 2026.
+In this guide, we'll compare three leading open-source web proxy solutions — **Squid**, **Tinyproxy**, and **Caddy** — and show you exactly how to deploy each one using Docker.
 
-This guide covers three of the best open-source forward proxy servers available today — **Squid**, **Tinyproxy**, and **Caddy** — with practical deployment instructions, configuration examples, and a detailed comparison to help you choose the right tool for your needs.
+## Why Run Your Own Web Proxy?
 
-## What Is a Forward Proxy and Why Self-Host One?
+A web proxy sits between your clients and the internet, intercepting and forwarding HTTP/HTTPS traffic according to rules you define. Here's why self-hosting matters:
 
-A **forward proxy** sits between your device and the internet. When you configure your browser or system to use a proxy, your requests go to the proxy server first. The proxy then forwards those requests to the target website on its behalf and returns the response to you.
+- **Bandwidth savings** — Cache static assets (images, CSS, JavaScript) locally so repeat requests never leave your network. For a team of 50 developers pulling from the same package repositories, this can cut outbound traffic by 30–60%.
+- **Content filtering** — Block ads, malware domains, or inappropriate categories at the network level, covering every device without installing browser extensions.
+- **Privacy protection** — Strip tracking headers, hide your real IP from destination servers, and prevent DNS leaks by routing all traffic through your own infrastructure.
+- **Compliance and auditing** — Log every request for regulatory purposes, enforce acceptable-use policies, and generate reports on bandwidth consumption per user or department.
+- **Reverse proxying** — Route incoming requests to different backend services based on domain, path, or headers, while handling TLS termination and load balancing.
 
-### Key Benefits of Self-Hosting a Web Proxy
-
-**Privacy from your ISP.** Without a proxy, your ISP sees every domain you connect to in plaintext (even with HTTPS, the SNI field reveals the domain name). A proxy hosted on a remote server means your ISP only sees a single encrypted connection to your proxy — not every site you visit.
-
-**Content filtering and access control.** Parents can block inappropriate content. Organizations can enforce acceptable use policies. You can block ads, trackers, and malware domains at the network level before they ever reach your devices.
-
-**Bandwidth savings through caching.** Proxy servers store copies of frequently accessed resources. When multiple devices request the same files — software updates, popular websites, streaming assets — the proxy serves cached copies instead of downloading them again. For households with many devices or offices with dozens of users, this can cut bandwidth usage by 30-60%.
-
-**Bypassing geographic restrictions.** If you deploy a proxy in a different country, your web traffic appears to originate from that location. This is useful for accessing region-locked content, testing geo-targeted websites, or reaching services blocked in your area.
-
-**Centralized logging and monitoring.** All outbound traffic flows through one point, making it easy to audit usage, detect anomalies, and generate reports about network activity.
+Commercial proxy services charge per gigabyte or per user. A self-hosted proxy on a $5/month VPS handles the same workload at a fraction of the cost, with zero data leaving your control.
 
 ## Squid: The Enterprise-Grade Forward Proxy
 
-[Squid](https://www.squid-cache.org/) is the most mature and feature-rich open-source proxy server available. First released in 1996, it has decades of development behind it and powers proxy infrastructure for organizations worldwide. Squid supports HTTP, HTTPS, FTP, and more, with advanced caching, access control, and authentication features.
+Squid is the most mature and feature-rich open-source web proxy available. First released in 1996, it remains the gold standard for organizations that need granular control over caching, access policies, and traffic inspection.
 
 ### When to Choose Squid
 
-- You need advanced caching with fine-grained control over what gets cached and for how long
-- You require authentication (LDAP, NTLM, Basic, Digest, OAuth)
-- You need ICAP integration for content adaptation (virus scanning, ad blocking)
-- You are managing proxy access for a large team or organization
-- You want detailed access logging and SNMP monitoring
+- You need hierarchical or sibling cache arrays for distributed caching across multiple sites.
+- You want ICAP (Internet Content Adaptation Protocol) integration for antivirus scanning or content modification.
+- You require detailed per-user, per-URL, or per-MIME-type access control lists (ACLs).
+- You're running a medium-to-large network (20+ users) and need production-grade caching.
 
-### Installing Squid with Docker
+### Docker Deployment
 
-The quickest way to deploy Squid is via Docker. This configuration sets up a forward proxy with authentication and access controls:
+Create a directory for your Squid configuration:
+
+```bash
+mkdir -p ~/squid-proxy/config
+cd ~/squid-proxy
+```
+
+Write a `squid.conf` file in `config/`:
+
+```
+# squid.conf — Squid 6.x configuration
+
+http_port 3128
+
+# Allow local network
+acl localnet src 192.168.1.0/24
+acl localnet src 10.0.0.0/8
+acl localnet src 172.16.0.0/12
+
+# Allowed ports
+acl Safe_ports port 80          # HTTP
+acl Safe_ports port 443         # HTTPS
+acl Safe_ports port 21          # FTP
+acl Safe_ports port 1025-65535  # Unregistered ports
+
+http_access deny !Safe_ports
+http_access allow localnet
+http_access deny all
+
+# Caching
+cache_dir ufs /var/spool/squid 4096 16 256
+cache_mem 256 MB
+maximum_object_size 512 MB
+
+# Logging
+access_log /var/log/squid/access.log squid
+cache_log /var/log/squid/cache.log
+
+# Hide client identity
+forwarded_for delete
+via off
+request_header_access Referer deny all
+request_header_access X-Forwarded-For deny all
+```
+
+Create the `docker-compose.yml`:
 
 ```yaml
-# docker-compose.yml
+version: "3.8"
 services:
   squid:
-    image: sameersbn/squid:latest
+    image: ubuntu/squid:latest
     container_name: squid-proxy
     restart: unless-stopped
     ports:
       - "3128:3128"
     volumes:
-      - ./squid.conf:/etc/squid/squid.conf:ro
-      - ./squid-cache:/var/spool/squid
-      - ./squid-log:/var/log/squid
+      - ./config/squid.conf:/etc/squid/squid.conf:ro
+      - squid-cache:/var/spool/squid
+      - squid-logs:/var/log/squid
     environment:
-      - CACHE_MEM=256MB
-      - CACHE_DISK=1GB
-```
+      - TZ=UTC
 
-Create a `squid.conf` with the following configuration:
-
-```
-# squid.conf — Forward proxy with access controls
-
-http_port 3128
-
-# Disk cache settings
-cache_dir ufs /var/spool/squid 1024 16 256
-cache_mem 256 MB
-
-# Access control lists
-acl localnet src 192.168.1.0/24
-acl safe_ports port 80 443 21 22 53 110 143
-acl SSL_ports port 443
-
-# Block dangerous ports
-http_access deny !safe_ports
-http_access deny CONNECT !SSL_ports
-
-# Only allow local network
-http_access allow localnet
-http_access deny all
-
-# Cache configuration
-refresh_pattern ^ftp:           1440    20%     10080
-refresh_pattern ^gopher:        1440    0%      1440
-refresh_pattern -i (/cgi-bin/|\?) 0     0%      0
-refresh_pattern .               0       20%     4320
-
-# Logging
-access_log /var/log/squid/access.log squid
-cache_log /var/log/squid/cache.log
-cache_store_log /var/log/squid/store.log
+volumes:
+  squid-cache:
+  squid-logs:
 ```
 
 Start the proxy:
 
 ```bash
-mkdir -p squid-cache squid-log
 docker compose up -d
 ```
 
-Verify it is working:
+Verify it's working:
 
 ```bash
-curl -x http://localhost:3128 -I https://www.google.com
-# Should return HTTP/2 200
+curl -x http://localhost:3128 -I https://example.com
 ```
 
-### Adding Basic Authentication
-
-To require a username and password:
+You should see HTTP headers returned through the proxy. If you want authentication, add these lines to `squid.conf`:
 
 ```
-# Add to squid.conf
-auth_param basic program /usr/lib/squid/basic_ncsa_auth /etc/squid/passwd
+auth_param basic program /usr/lib/squid/basic_ncsa_auth /etc/squid/passwords
 auth_param basic children 5
 auth_param basic realm Squid Proxy
-auth_param basic credentialsttl 2 hours
-
 acl authenticated proxy_auth REQUIRED
-http_access allow authenticated localnet
-http_access deny all
+http_access allow authenticated
 ```
 
-Create the password file:
+Generate the password file with:
 
 ```bash
-# Install apache2-utils for htpasswd
-apt-get install -y apache2-utils
-
-# Create password file
-htpasswd -c /etc/squid/passwd yourusername
-# Enter password when prompted
+docker exec -it squid-proxy htpasswd -c /etc/squid/passwords proxyuser
 ```
 
-### Enabling HTTPS Interception (SSL Bump)
+### Performance Tips
 
-For full content inspection — including blocking malicious HTTPS content — Squid can intercept and re-encrypt TLS connections. This requires generating a CA certificate:
+Squid's cache size is defined by the `cache_dir` directive. The three numbers mean: storage type (ufs), total size in MB (4096), number of first-level directories (16), and second-level directories (256). For a busy proxy, bump `cache_mem` to 512 MB or higher and set `maximum_object_size` to accommodate the largest files you expect to cache (video files, ISO images, etc.).
+
+For monitoring, enable SNMP in `squid.conf` and use `squidclient` for real-time stats:
 
 ```bash
-# Generate CA certificate
-openssl req -new -newkey rsa:2048 -sha256 -days 3650 \
-  -nodes -x509 -extensions v3_ca \
-  -keyout squid-ca.key -out squid-ca.pem
+squidclient -p 3128 mgr:info
 ```
-
-Then add to your `squid.conf`:
-
-```
-https_port 3129 intercept ssl-bump \
-  generate-host-certificates=on \
-  dynamic_cert_mem_cache_size=4MB \
-  cert=/etc/squid/squid-ca.pem \
-  key=/etc/squid/squid-ca.key
-
-sslcrtd_program /usr/lib/squid/security_file_certgen \
-  -s /var/spool/squid/ssl_db -M 4MB
-ssl_bump peek all
-ssl_bump bump all
-```
-
-**Important:** SSL bumping requires clients to trust your custom CA certificate. Install `squid-ca.pem` in each client's trusted certificate store.
 
 ## Tinyproxy: Lightweight and Simple
 
-[Tinyproxy](https://tinyproxy.github.io/) lives up to its name — it is a small, fast, and straightforward forward proxy for HTTP and HTTPS traffic. If Squid is a Swiss Army knife, Tinyproxy is a pocket knife: it does fewer things, but it does them with minimal resource usage and simple configuration.
+Tinyproxy is a minimal HTTP/HTTPS proxy designed for situations where Squid is overkill. Written in C with a tiny memory footprint (often under 5 MB of RAM), it's ideal for home labs, Raspberry Pi deployments, or small teams that need basic proxy functionality without complexity.
 
 ### When to Choose Tinyproxy
 
-- You are running on a low-resource device like a Raspberry Pi or VPS with 256 MB RAM
-- You need a basic HTTP/HTTPS forward proxy without complex caching
-- You want a configuration file that fits on a single screen
-- You are setting up a quick personal proxy without enterprise features
-- You prefer simplicity over feature depth
+- You're running on constrained hardware (Raspberry Pi, low-memory VPS).
+- You need a simple forward proxy with minimal configuration.
+- You don't need advanced caching — Tinyproxy focuses on forwarding, not storage.
+- You want a quick setup for testing or temporary access.
 
-### Installing Tinyproxy with Docker
-
-```yaml
-# docker-compose.yml
-services:
-  tinyproxy:
-    image: monusky/tinyproxy:latest
-    container_name: tinyproxy
-    restart: unless-stopped
-    ports:
-      - "8888:8888"
-    environment:
-      - ALLOW=0.0.0.0/0
-      - PORT=8888
-      - BASICAUTH=user:password
-```
-
-### Manual Installation on Ubuntu/Debian
+### Docker Deployment
 
 ```bash
-sudo apt update
-sudo apt install -y tinyproxy
-
-# Edit configuration
-sudo nano /etc/tinyproxy/tinyproxy.conf
+mkdir -p ~/tinyproxy/config
+cd ~/tinyproxy
 ```
 
-A typical configuration:
+Create `tinyproxy.conf`:
 
 ```
 # tinyproxy.conf
 
 Port 8888
+
+# Bind to all interfaces inside the container
 Listen 0.0.0.0
 
-# Restrict access to your subnet
-Allow 192.168.1.0/24
+# Allow all local traffic (restrict in production)
+Allow 127.0.0.1
+Allow 192.168.0.0/16
 Allow 10.0.0.0/8
 
-# Optional: require authentication
-BasicAuth user yourpassword
-
-# Disable Via header for extra privacy
+# Disable Via header for privacy
 DisableViaHeader Yes
 
-# Log settings
+# Logging
+Logfile "/var/log/tinyproxy/tinyproxy.log"
 LogLevel Info
-LogFile "/var/log/tinyproxy/tinyproxy.log"
 
-# Filter specific domains (optional)
+# Optional: block specific domains
 # Filter "/etc/tinyproxy/filter"
 # FilterURLs On
-FilterDefaultDeny No
+
+# Optional: custom header
+AddHeader "X-Proxy-By" "Tinyproxy"
 ```
 
-Add blocked domains to `/etc/tinyproxy/filter`, one per line:
+The `docker-compose.yml`:
 
-```
-\.ads\.
-\.tracker\.
-\.analytics\.
-doubleclick\.net
-facebook\.com/tr
-google-analytics\.com
+```yaml
+version: "3.8"
+services:
+  tinyproxy:
+    image: monokal/tinyproxy:latest
+    container_name: tinyproxy
+    restart: unless-stopped
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./config/tinyproxy.conf:/etc/tinyproxy/tinyproxy.conf:ro
+    environment:
+      - TZ=UTC
 ```
 
-Restart and verify:
+Start it:
 
 ```bash
-sudo systemctl restart tinyproxy
-sudo systemctl enable tinyproxy
-
-# Test from another machine
-curl -x http://YOUR_SERVER_IP:8888 -I https://example.com
+docker compose up -d
 ```
 
-### Domain Filtering with Tinyproxy
+Test the connection:
 
-Tinyproxy supports basic domain filtering through a text file. Enable filtering in your `tinyproxy.conf`:
+```bash
+curl -x http://localhost:8888 -I https://httpbin.org/ip
+```
+
+### Domain Filtering
+
+Tinyproxy supports URL-based filtering. Create a filter file:
+
+```bash
+echo -e "(\.google-analytics\.com)\n(\.facebook\.com)\n(\.doubleclick\.net)" > ~/tinyproxy/config/filter
+```
+
+Then add these lines to `tinyproxy.conf`:
 
 ```
 Filter "/etc/tinyproxy/filter"
@@ -265,38 +234,83 @@ FilterURLs On
 FilterDefaultDeny No
 ```
 
-This approach is not as sophisticated as a dedicated ad blocker, but it blocks requests before they leave your network, reducing bandwidth and improving page load times.
+`FilterDefaultDeny No` means the listed patterns are blocked while everything else passes. Set it to `Yes` for a whitelist-only approach where only matching domains are allowed.
 
-## Caddy: The Modern Proxy with Automatic HTTPS
+### Limitations
 
-[Caddy](https://caddyserver.com/) is best known as an automatic HTTPS reverse proxy, but it can also function as a forward proxy through community plugins and its flexible module system. Caddy's standout feature is automatic TLS certificate management via Let's Encrypt — it obtains and renews certificates without any manual intervention.
+Tinyproxy does not cache content. Every request goes through to the origin server, so you won't see bandwidth savings. It also lacks authentication, ICAP support, and hierarchical caching. For these reasons, it's best suited for small-scale or temporary deployments.
+
+## Caddy: The Modern Reverse Proxy
+
+Caddy has rapidly become the go-to reverse proxy for modern web infrastructure. Its defining feature is **automatic HTTPS** — it obtains and renews TLS certificates from Let's Encrypt (or any ACME-compatible CA) with zero configuration. Combined with a clean, human-readable config syntax, Caddy is the easiest way to expose self-hosted services to the internet securely.
 
 ### When to Choose Caddy
 
-- You need automatic HTTPS with zero configuration
-- You want a single binary that handles reverse proxy, forward proxy, and static file serving
-- You prefer Caddyfile or JSON configuration over legacy config formats
-- You are building a modern infrastructure stack and want consistent tooling
-- You need HTTP/3 (QUIC) support out of the box
+- You need a reverse proxy to route traffic to multiple backend services.
+- You want automatic TLS certificate management without Let's Encrypt manual renewals.
+- You prefer a declarative, easy-to-read configuration file over verbose XML or INI-style configs.
+- You're running a home lab, small business, or developer environment with multiple services on one server.
 
-### Installing Caddy
-
-On most Linux distributions:
+### Docker Deployment
 
 ```bash
-# Install using the official script
-curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | \
-  sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
-curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | \
-  sudo tee /etc/apt/sources.list.d/caddy-stable.list
-sudo apt update
-sudo apt install caddy
+mkdir -p ~/caddy-proxy/{config,data,sites}
+cd ~/caddy-proxy
 ```
 
-Or via Docker:
+Create `Caddyfile`:
+
+```
+# Caddyfile — Reverse proxy configuration
+
+# Global options
+{
+    email admin@example.com
+    acme_ca https://acme-v02.api.letsencrypt.org/directory
+    admin off
+}
+
+# Main domain — reverse proxy to a backend service
+app.example.com {
+    reverse_proxy backend-app:8080
+
+    # Security headers
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+
+    # Encode responses
+    encode zstd gzip
+}
+
+# API subdomain with rate limiting
+api.example.com {
+    reverse_proxy backend-api:3000
+
+    @blocked path /admin/* /debug/*
+    respond @blocked 403
+}
+
+# Static site with file serving
+docs.example.com {
+    root * /srv/docs
+    file_server
+    encode gzip
+}
+
+# Fallback — handle anything else
+:80 {
+    respond "No site configured" 404
+}
+```
+
+Create `docker-compose.yml`:
 
 ```yaml
-# docker-compose.yml
+version: "3.8"
 services:
   caddy:
     image: caddy:2-alpine
@@ -306,162 +320,113 @@ services:
       - "80:80"
       - "443:443"
       - "443:443/udp"
-      - "2019:2019"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy-data:/data
-      - caddy-config:/config
+      - ./data:/data
+      - ./config:/config
+      - ./sites:/srv/docs:ro
+    networks:
+      - proxy-net
+    environment:
+      - TZ=UTC
 
-volumes:
-  caddy-data:
-  caddy-config:
+networks:
+  proxy-net:
+    driver: bridge
 ```
 
-### Caddyfile Configuration for Forward Proxy
-
-Caddy uses a plugin-based architecture for forward proxy support. Install the `caddy-forward-proxy` plugin using `xcaddy`:
+Start Caddy:
 
 ```bash
-go install github.com/caddyserver/xcaddy/cmd/xcaddy@latest
-xcaddy build --with github.com/kljensen/caddy-forward-proxy
+docker compose up -d
 ```
 
-Then create a Caddyfile:
+Caddy will automatically request TLS certificates for any domains defined in the Caddyfile that point to your server's IP. You can verify certificate status with:
 
-```
-:443 {
-    tls your-email@example.com
-
-    forward_proxy {
-        hide_ip
-        hide_via
-        auth user password
-        probe_resistance secret-link.example.com
-    }
-
-    handle_path /status {
-        respond "Caddy proxy is running" 200
-    }
-}
+```bash
+docker exec caddy-proxy caddy list-certs
 ```
 
-The `probe_resistance` option makes the proxy respond with a 404 for all requests that do not include proper authentication credentials. This prevents scanners and bots from detecting that a proxy is running on your server.
+### The Caddyfile Advantage
 
-### Caddy as a Reverse Proxy
-
-While this guide focuses on forward proxies, Caddy's real strength is as a reverse proxy. Here is how quickly you can set up a reverse proxy with automatic HTTPS:
+Caddy's configuration language is intentionally simple. A reverse proxy takes one line:
 
 ```
 example.com {
-    reverse_proxy app-server:8080
+    reverse_proxy localhost:8080
+}
+```
 
-    encode gzip zstd
-    header {
-        -Server
-        Strict-Transport-Security max-age=31536000
-        X-Content-Type-Options nosniff
-        X-Frame-Options DENY
+Compare that to the equivalent Nginx configuration, which requires 10–15 lines including `server`, `listen`, `location`, `proxy_pass`, `proxy_set_header`, and various buffer settings. Caddy handles all of this automatically, including HTTP-to-HTTPS redirects.
+
+For more complex routing, Caddy supports matchers, handle blocks, and named routes:
+
+```
+example.com {
+    @api path /api/*
+    @web not path /api/*
+
+    handle @api {
+        reverse_proxy api-server:3000
+    }
+
+    handle @web {
+        reverse_proxy web-server:80
     }
 }
 ```
 
-That is the entire configuration. Caddy automatically obtains an HTTPS certificate, sets up HTTP-to-HTTPS redirection, compresses responses with gzip and zstd, and adds security headers. No other proxy server makes HTTPS this effortless.
+### Built-in Features Worth Knowing
 
-## Comparison: Squid vs Tinyproxy vs Caddy
+- **Automatic HTTPS renewal** — Caddy tracks certificate expiry and renews at 30 days before expiration. No cron jobs needed.
+- **Compression** — The `encode` directive applies gzip or zstd compression to text-based responses, reducing bandwidth by 60–80%.
+- **Header manipulation** — Add, remove, or modify response headers with the `header` directive.
+- **Basic authentication** — Built-in `basicauth` directive with bcrypt password hashes.
+- **Request rewriting** — `rewrite`, `uri`, and `redir` directives for URL manipulation.
+- **Load balancing** — `reverse_proxy` accepts multiple backends with round-robin or least-connections strategies.
+
+## Head-to-Head Comparison
 
 | Feature | Squid | Tinyproxy | Caddy |
 |---------|-------|-----------|-------|
-| **Primary role** | Forward proxy + cache | Forward proxy | Reverse/forward proxy |
-| **HTTP/HTTPS support** | Full | Full | Full + HTTP/3 |
-| **Caching** | Advanced, multi-level | None | None |
-| **Authentication** | LDAP, NTLM, Basic, Digest, OAuth | Basic auth | Basic auth |
-| **Content filtering** | ICAP, regex, ACLs | Domain filter file | Via plugins |
-| **SSL/TLS interception** | Yes (SSL bump) | No | Via plugins |
-| **Automatic HTTPS** | No | No | Yes (Let's Encrypt) |
-| **Configuration** | Complex (squid.conf) | Simple (tinyproxy.conf) | Modern (Caddyfile / JSON) |
-| **RAM usage** | 100-500 MB | 10-30 MB | 30-100 MB |
-| **Disk usage** | 50-500 MB (cache) | Less than 1 MB | 10-50 MB (certs) |
-| **Learning curve** | Steep | Gentle | Moderate |
-| **Best for** | Enterprise, large teams | Personal use, low-resource | Modern stacks, HTTPS-first |
-| **License** | GPL-2.0 | GPL-3.0 | Apache-2.0 |
-| **Active development** | Yes | Yes | Yes (very active) |
-| **Docker support** | Good | Good | Excellent |
+| **Primary role** | Forward proxy + cache | Lightweight forward proxy | Reverse proxy |
+| **Caching** | Full HTTP caching with disk storage | None | Static file serving only |
+| **HTTPS/TLS** | TLS interception with manual cert setup | CONNECT tunneling (no interception) | Automatic Let's Encrypt |
+| **Authentication** | Basic, Digest, NTLM, Kerberos | None built-in | Basic auth, headers |
+| **Access control** | ACLs (IP, user, URL, time, method) | IP-based allow/deny | Matchers, path, headers |
+| **Content filtering** | URL regex, ICAP, eCAP | URL regex filter | Path matching, respond |
+| **Config complexity** | High (50+ directives) | Low (~15 directives) | Very low (declarative) |
+| **Memory usage** | 50–200 MB typical | 2–5 MB | 20–60 MB |
+| **Load balancing** | No | No | Yes (round-robin, least-conn) |
+| **Compression** | No | No | gzip + zstd |
+| **HTTP/3 support** | No | No | Yes (QUIC) |
+| **Docker image size** | ~150 MB | ~10 MB | ~45 MB |
+| **Best for** | Enterprise forward proxying | Home lab, Raspberry Pi | Modern reverse proxying |
 
-## Choosing the Right Proxy for Your Use Case
+## Choosing the Right Proxy
 
-### Personal Privacy Proxy
+The choice depends on what you're trying to accomplish:
 
-For a single user or household, **Tinyproxy** is the simplest option. Deploy it on a $5/month VPS in the country of your choice, configure basic authentication, and point your browser at it. The entire setup takes about 10 minutes and uses less than 30 MB of RAM.
+**Use Squid** when you need a forward proxy with aggressive caching, per-user access control, or ICAP integration. It's the right tool for organizations that want to reduce outbound bandwidth, enforce content policies, or provide authenticated proxy access to employees. The configuration overhead is real, but the payoff in caching efficiency and policy granularity is unmatched.
 
-```bash
-# One-line deployment on a fresh VPS
-curl -fsSL https://get.docker.com | sh
-docker run -d --name tinyproxy -p 8888:8888 \
-  -e ALLOW=YOUR_IP/32 \
-  -e BASICAUTH=user:$(openssl rand -base64 12) \
-  monusky/tinyproxy:latest
-```
+**Use Tinyproxy** when you need a simple forward proxy on a low-resource device. A Raspberry Pi running Tinyproxy costs less than $2/month in electricity and handles a family's worth of browsing without breaking a sweat. It won't save bandwidth through caching, but it will provide a centralized exit point for outbound traffic, making it easy to apply firewall rules, logging, and domain filtering in one place.
 
-### Office or Team Proxy
+**Use Caddy** when you need to expose self-hosted services to the internet. Automatic HTTPS alone is worth it — manual certificate management is a recurring source of outages that Caddy eliminates entirely. Combined with its readable config syntax, built-in compression, and HTTP/3 support, Caddy is the most modern and developer-friendly option for reverse proxying.
 
-For a team of 10-100+ users, **Squid** is the clear choice. Its caching alone can reduce bandwidth costs by 30-60% when multiple people access the same resources. The advanced ACL system lets you create different access policies for different user groups — for example, allowing the engineering team unrestricted access while restricting the guest network to specific domains.
+## Production Checklist
 
-### Modern HTTPS-First Infrastructure
+Regardless of which proxy you choose, follow these best practices before exposing your setup to production:
 
-If you are already running Caddy as a reverse proxy for your services, adding forward proxy capabilities through plugins keeps your infrastructure consistent. The automatic HTTPS management means you never have to worry about certificate expiration, and the HTTP/3 support future-proofs your setup.
-
-## Security Considerations
-
-Running a proxy server introduces security responsibilities. Here are the essential hardening steps:
-
-**Restrict access by IP.** Never leave a proxy open to the entire internet. Always limit access to specific IP addresses or subnets:
-
-```
-# Squid
-acl allowed src 203.0.113.0/24
-http_access allow allowed
-
-# Tinyproxy
-Allow 203.0.113.0/24
-```
-
-**Use strong authentication.** Basic authentication sends credentials in base64-encoded form. Always run your proxy over a TLS connection:
-
-```bash
-# Generate a self-signed cert for Squid
-openssl req -x509 -newkey rsa:4096 -keyout key.pem \
-  -out cert.pem -days 365 -nodes
-```
-
-**Keep the proxy software updated.** Proxy servers handle untrusted input from the internet. Subscribe to security advisories for your chosen proxy and apply updates promptly.
-
-**Monitor logs for abuse.** Check your proxy logs regularly for unusual patterns — excessive requests, access to known malicious domains, or traffic from unexpected IP addresses:
-
-```bash
-# Squid: top requested domains
-awk '{print $7}' /var/log/squid/access.log | \
-  sort | uniq -c | sort -rn | head -20
-
-# Tinyproxy: recent connections
-tail -100 /var/log/tinyproxy/tinyproxy.log | \
-  grep CONNECT | awk '{print $5}' | sort | uniq -c | sort -rn
-```
-
-**Consider using a firewall.** Even with proxy-level restrictions, add an additional layer with iptables or nftables:
-
-```bash
-# Only allow port 8888 from your IP
-iptables -A INPUT -p tcp --dport 8888 \
-  -s 203.0.113.50 -j ACCEPT
-iptables -A INPUT -p tcp --dport 8888 -j DROP
-```
+1. **Restrict access** — Only allow trusted IP ranges or require authentication. An open proxy is a liability.
+2. **Enable logging** — Store access logs on a separate volume and rotate them with `logrotate` to prevent disk exhaustion.
+3. **Monitor cache hit rates** — For Squid, aim for 40%+ cache hit ratio on repetitive traffic. Below 20%, your cache size or TTL settings need adjustment.
+4. **Keep images updated** — Proxy software occasionally has security vulnerabilities. Set up automated rebuilds or use tools like Watchtower to pull fresh images.
+5. **Test TLS configuration** — For Caddy, run your domain through SSL Labs after deployment. You should score an A or A+.
+6. **Back up configuration** — Version-control your `squid.conf`, `tinyproxy.conf`, or `Caddyfile` in a private Git repository. Changes to proxy rules should be tracked and auditable.
+7. **Set resource limits** — Use Docker's `deploy.resources` or systemd cgroups to prevent a misconfigured proxy from consuming all available memory or CPU.
 
 ## Conclusion
 
-Self-hosting a web proxy is one of the most cost-effective privacy upgrades available in 2026. For the price of a small VPS — typically $3-5 per month — you get full control over your outbound web traffic, protection from ISP tracking, and the ability to filter content at the network level.
+Squid, Tinyproxy, and Caddy represent three distinct approaches to web proxying. Squid is the heavyweight champion of forward proxying and caching. Tinyproxy is the minimalist's choice for simple, resource-efficient forwarding. Caddy is the modern reverse proxy that handles TLS automatically and exposes services with minimal configuration.
 
-- **Tinyproxy** is the best choice for personal use: simple, lightweight, and fast to deploy
-- **Squid** is the right tool for teams and organizations: powerful caching, granular access control, and enterprise-grade features
-- **Caddy** shines when you want automatic HTTPS and a modern, consistent proxy solution across your entire infrastructure
-
-All three are open source, actively maintained, and well-supported in Docker. Pick the one that matches your technical requirements and deploy it today — your browsing data is worth protecting.
+None of them requires a subscription, none of them phones home, and all three run perfectly in Docker containers. Pick the one that matches your use case, deploy it with the examples above, and take back control of your network traffic.
