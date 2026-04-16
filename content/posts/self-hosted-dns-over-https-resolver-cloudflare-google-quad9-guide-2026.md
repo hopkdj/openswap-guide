@@ -70,7 +70,7 @@ Once running, point your router's DNS or individual devices to `your-server-ip:5
 
 ### AdGuard Home
 
-AdGuard Home is a full-featured network-wide ad and tracker blocker that supports DoH, DoT, and DNSCrypt as both client and server protocols. It's the most popular self-hosted DNS solution for homelabs.
+AdGuard Home is a full-featured network-wide ad and tracker blocker that supports DoH, DoT, and DNSCrypt as both client and server protocols. It's the most popular self-hosted DNS solution for homelabs. For a detailed comparison with Pi-hole, see our [AdGuard Home vs Pi-hole guide](../adguard-home-vs-pihole/).
 
 **Pros**: Beautiful web dashboard, comprehensive filtering (adlists, custom blocklists), DoH/DoT/DNSCrypt support, DNS caching, per-client configuration, query logging with analytics.
 
@@ -206,7 +206,7 @@ server_names = ['cloudflare-doh', 'quad9-doh']
 
 ### Nginx + Unbound (DIY DoH Server)
 
-For maximum control, you can build a DoH server from scratch using Nginx as the HTTPS frontend and Unbound as the recursive resolver. This approach gives you complete ownership of every layer.
+For maximum control, you can build a DoH server from scratch using Nginx as the HTTPS frontend and Unbound as the recursive resolver. This approach gives you complete ownership of every layer. If you want to learn more about configuring Unbound as a standalone resolver, check out our [self-hosted DNS resolvers guide](../self-hosted-dns-resolvers-unbound-dnsmasq-bind-coredns-guide-2026/).
 
 **Pros**: Full control over TLS configuration, no third-party DNS dependency, auditable at every layer, supports any DNS backend.
 
@@ -425,3 +425,54 @@ Self-hosting a DNS-over-HTTPS resolver is one of the most impactful privacy upgr
 For most users, **AdGuard Home** offers the best balance of features and usability. For those who want a pure DoH proxy with zero configuration, **Cloudflared** is the quickest path. Advanced operators who need full control and zero upstream dependency should consider the **Nginx + Unbound** combination.
 
 Whatever you choose, the result is the same: your DNS queries are encrypted, your browsing data stays private, and you control every aspect of name resolution on your network.
+
+For a broader perspective on building a privacy-focused stack, see our [complete privacy stack guide](../privacy-stack-guide/). If you need DNS filtering and ad blocking in addition to encrypted DNS, our [DNS filtering with Pi-hole and AdGuard guide](../self-hosted-dns-filtering-content-blocking-pihole-adguard-technitium-guide-2026/) covers that in detail.
+
+## FAQ
+
+### What is the difference between DNS-over-HTTPS and DNS-over-TLS?
+
+DNS-over-HTTPS (DoH) wraps DNS queries inside standard HTTPS connections on port 443, making them indistinguishable from regular web traffic. DNS-over-TLS (DoT) uses a dedicated port (853) with TLS encryption. DoH is harder for ISPs to block because it blends with HTTPS traffic, while DoT is easier to detect and firewall. Both encrypt your queries end-to-end.
+
+### Can I use my self-hosted DoH resolver for my entire home network?
+
+Yes. Configure your router's DNS settings to point to your DoH resolver's local IP address (e.g., `192.168.1.10:53`). All devices on the network will then route their DNS through your resolver, which encrypts upstream queries via DoH. Alternatively, configure individual devices to use the resolver directly.
+
+### Does a self-hosted DoH resolver improve browsing speed?
+
+It can. Local DNS caching means repeated queries are resolved in under 1ms instead of the 50-200ms typical for external DNS lookups. Tools like Cloudflared and AdGuard Home include built-in caching. The first lookup for a new domain will still take the normal time, but subsequent lookups are nearly instant.
+
+### Is it legal to run my own DNS-over-HTTPS resolver?
+
+Yes, running your own DNS resolver is legal in virtually all jurisdictions. You are simply resolving domain names for your own use. However, some countries or ISPs may attempt to block or throttle DoH traffic. If you expose your resolver to the public internet, ensure you have appropriate rate limiting in place.
+
+### Which DoH provider is the most privacy-focused?
+
+Among the major providers, **Quad9** and **Mullvad** have the strongest privacy policies — both commit to zero persistent logging of DNS queries. Cloudflare also maintains a no-logs policy backed by annual KPMG audits. For maximum privacy, avoid Google DNS (which retains 24-48 hours of temporary logs) and consider running Unbound for full recursive resolution with zero upstream dependency.
+
+### How do I block ads and trackers with my DoH resolver?
+
+AdGuard Home and Technitium DNS Server include built-in ad blocking. You can add public blocklists like EasyList, StevenBlack's hosts file, or OISD. Dnscrypt-Proxy supports cloaking rules, and Cloudflared can be paired with AdGuard Home for filtering. For a deeper dive into DNS-based filtering, check out dedicated content-blocking guides.
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Best Self-Hosted DNS-over-HTTPS Resolvers 2026: Cloudflare, Google, Quad9 & More",
+  "description": "Complete guide to self-hosting DNS-over-HTTPS (DoH) resolvers in 2026. Compare Cloudflare, Google DNS, Quad9, AdGuard, and custom setups with Docker configurations and performance benchmarks.",
+  "datePublished": "2026-04-16",
+  "dateModified": "2026-04-16",
+  "author": {
+    "@type": "Organization",
+    "name": "OpenSwap Guide"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "OpenSwap Guide",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+    }
+  }
+}
+</script>
