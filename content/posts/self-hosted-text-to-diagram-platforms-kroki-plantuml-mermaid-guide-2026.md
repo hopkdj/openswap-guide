@@ -1,467 +1,244 @@
 ---
-title: "Best Self-Hosted Text-to-Diagram Platforms: Kroki vs PlantUML vs Mermaid 2026"
-date: 2026-04-15
-tags: ["comparison", "guide", "self-hosted", "diagrams", "documentation"]
+title: "Self-Hosted Text-to-Diagram Platforms: Kroki vs PlantUML vs Mermaid 2026"
+date: 2026-04-16
+tags: ["comparison", "guide", "self-hosted", "documentation", "devops"]
 draft: false
-description: "Compare the best self-hosted text-to-diagram platforms in 2026. Learn how to deploy Kroki, PlantUML, and Mermaid for generating architecture diagrams, flowcharts, and sequence diagrams from code."
+description: "Complete guide to self-hosted text-to-diagram tools. Compare Kroki, PlantUML, and Mermaid for generating flowcharts, sequence diagrams, and architecture docs from plain text."
 ---
 
-## Why Self-Host Your Diagram Rendering
+Diagrams are essential for technical documentation, architecture reviews, and knowledge sharing. But relying on cloud-based diagram generators means your proprietary system designs, internal API flows, and infrastructure layouts are sent to third-party servers. Self-hosted text-to-diagram platforms solve this problem entirely: you keep your diagrams in version-controlled text files, render them on your own hardware, and never expose sensitive architecture details to external services.
 
-Every technical team creates diagrams — architecture overviews, sequence flows, database schemas, deployment topologies, and state machines. Most teams rely on cloud-hosted diagram tools or proprietary SaaS platforms that store sensitive infrastructure layouts on third-party servers. Self-hosting your diagram rendering engine changes that entirely.
+## Why Self-Host Your Diagram Generator
 
-Running your own text-to-diagram platform means your internal network topology, API contracts, security group rules, and deployment architectures never leave your infrastructure. It also unlocks tight integration with your existing documentation pipelines: Markdown files in Git, CI-generated architecture docs, internal wikis, and automated runbooks can all render diagrams on the fly without manual image exports.
+Cloud diagram tools like Lucidchart, Draw.io Cloud, or the PlantUML web server require you to send your diagram definitions to remote servers. For teams working on:
 
-Text-based diagram tools store diagrams as plain text code rather than binary image files. This gives you version control, meaningful diffs, code review on diagram changes, and reproducible rendering across environments. When your entire architecture documentation lives as text in Git, you get audit trails, blame annotations, and rollback capabilities that no drag-and-drop editor can match.
+- **Internal infrastructure** — network topologies, VPC layouts, and service mesh configurations
+- **Proprietary architectures** — system designs that represent competitive advantages
+- **Compliance-restricted environments** — healthcare, finance, and government systems with data residency requirements
+- **Offline documentation** — wiki systems running in air-gapped or restricted networks
 
-There are three leading self-hosted options in this space: **Kroki**, **PlantUML**, and **Mermaid**. Each takes a different approach to the text-to-diagram problem, and the right choice depends on your workflow, existing toolchain, and diagram complexity requirements.
+Self-hosting eliminates the data exfiltration risk, works without internet connectivity, and integrates directly into CI/CD pipelines for automated diagram generation. The tools discussed here are all open-source, render locally, and produce publication-quality output in SVG, PNG, and PDF formats.
 
-## Understanding Text-to-Diagram Platforms
+## The Three Contenders
 
-Text-to-diagram platforms accept a textual description of a diagram and render it as an SVG, PNG, or PDF output. The input format varies — some use domain-specific languages (DSLs), others extend Markdown syntax, and some provide a unified API supporting dozens of diagram types.
+| Feature | Kroki | PlantUML Server | Mermaid |
+|---|---|---|---|
+| **Language support** | 30+ diagram types | 15+ diagram types | 15+ diagram types |
+| **Architecture** | Unified API gateway | Standalone server | JavaScript library |
+| **Multi-engine** | Yes (PlantUML, Mermaid, Graphviz, etc.) | Single engine (PlantUML) | Single engine (Mermaid) |
+| **REST API** | Yes | Yes | No (client-side only) |
+| **Docker support** | Official image | Official image | Official image |
+| **CI/CD friendly** | Excellent (HTTP API) | Excellent (CLI + server) | Good (CLI tool) |
+| **Language syntax** | Depends on engine | Custom DSL | Markdown-like |
+| **Learning curve** | Medium (multiple syntaxes) | Medium (custom syntax) | Low (markdown-friendly) |
+| **Output formats** | SVG, PNG, PDF, ASCII | SVG, PNG, PDF, ASCII | SVG, PNG |
+| **License** | AGPL-3.0 | Apache-2.0 | MIT |
 
-The core workflow is always the same:
+## PlantUML Server: The Veteran
 
-1. Write a text description of the diagram
-2. Send it to the rendering engine
-3. Receive an image or embed the rendered output inline
+PlantUML has been the workhorse of text-based diagramming since 2009. It uses a custom domain-specific language that reads almost like pseudocode and supports UML diagrams, architecture diagrams, Gantt charts, network diagrams, and more.
 
-This approach differs fundamentally from visual diagram editors like draw.io or Excalidraw, where you manipulate shapes on a canvas. Text-based diagrams are declarative: you describe what the diagram should contain, and the engine determines layout, positioning, and styling.
+### Installation
 
-## PlantUML: The Veteran Standard
-
-PlantUML has been the workhorse of text-based diagramming since 2009. It uses its own DSL to describe UML diagrams, flowcharts, Gantt charts, network diagrams, and more. It is mature, widely supported, and integrates with nearly every documentation tool in existence.
-
-### Supported Diagram Types
-
-PlantUML supports over twenty diagram types including sequence diagrams, use case diagrams, class diagrams, activity diagrams, component diagrams, state diagrams, object diagrams, deployment diagrams, timing diagrams, Gantt charts, mind maps, network diagrams, entity-relationship diagrams, wireframe UI mockups, JSON data views, YAML data views, mathematical formulas with AsciiMath, and salt GUI prototypes.
-
-### Self-Hosting PlantUML
-
-PlantUML runs as a standalone JAR file or as a Docker container. The Docker approach is the simplest for self-hosting:
+Run the PlantUML server as a Docker container. It uses Java under the hood, so the official image includes the JVM:
 
 ```bash
-docker run -d --name plantuml-server \
+docker run -d \
+  --name plantuml-server \
   -p 8080:8080 \
-  --restart unless-stopped \
   plantuml/plantuml-server:jetty
 ```
 
-This starts a Jetty-based web server on port 8080 with a live editor interface. You paste PlantUML syntax into the browser and see the rendered diagram update in real time.
-
-For production deployments, you will want to add a reverse proxy with TLS termination:
+For a production setup with persistent GraphViz cache:
 
 ```yaml
+# docker-compose.yml
 version: "3.8"
 services:
   plantuml:
     image: plantuml/plantuml-server:jetty
-    restart: unless-stopped
-    environment:
-      - BASE_URL=/plantuml
-    networks:
-      - diagrams
-
-  caddy:
-    image: caddy:2
-    restart: unless-stopped
-    ports:
-      - "443:443"
-      - "80:80"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-    networks:
-      - diagrams
-
-volumes:
-  caddy_data:
-
-networks:
-  diagrams:
-    driver: bridge
-```
-
-The corresponding `Caddyfile`:
-
-```
-diagrams.example.com {
-    reverse_proxy plantuml:8080
-    encode gzip
-}
-```
-
-### Integrating PlantUML into Documentation
-
-PlantUML integrates directly with Hugo using the `plantuml` shortcode. Add this to your Hugo configuration:
-
-```yaml
-params:
-  plantuml:
-    enable: true
-    theme: dark
-```
-
-Then use it in your Markdown:
-
-```markdown
-{{</* plantuml */>}}
-@startuml
-actor User
-participant "API Gateway" as GW
-participant "Auth Service" as Auth
-participant "Database" as DB
-
-User -> GW: POST /login
-GW -> Auth: Validate credentials
-Auth -> DB: Query user record
-DB --> Auth: User data
-Auth --> GW: JWT token
-GW --> User: 200 OK + token
-@enduml
-{{</* /plantuml */>}}
-```
-
-For CI/CD pipelines, use the command-line JAR to generate images during build:
-
-```bash
-java -jar plantuml.jar -tsvg -o ./docs/images/ ./diagrams/*.puml
-```
-
-PlantUML also offers a server API. Send a GET request with an encoded diagram string:
-
-```bash
-# Encode and render a sequence diagram
-curl "https://diagrams.example.com/svg/~123encoded_string" -o architecture.svg
-```
-
-### PlantUML Limitations
-
-The PlantUML DSL, while powerful, has a learning curve that is steeper than Markdown-based alternatives. Complex layouts sometimes require manual positioning hints using `hidden` connections or directional overrides. The default styling produces functional but visually plain diagrams — customization requires skin parameters or custom themes that add verbosity to every diagram file.
-
-## Mermaid: The Markdown-Native Approach
-
-Mermaid renders diagrams directly from Markdown code blocks using a syntax that reads almost like natural language. It is the default diagram renderer in GitHub, GitLab, Notion, Obsidian, and many other platforms, making it the most widely adopted text-to-diagram tool in the developer ecosystem.
-
-### Supported Diagram Types
-
-Mermaid supports flowcharts, sequence diagrams, class diagrams, state diagrams, entity-relationship diagrams, user journey diagrams, Gantt charts, pie charts, requirement diagrams, git graphs, quadrant charts, timeline diagrams, mindmaps, sankey diagrams, and block diagrams (beta).
-
-### Self-Hosting Mermaid
-
-Mermaid is primarily a JavaScript library that runs in the browser. For self-hosted server-side rendering, use the `mermaid-cli` (also known as `mmdc`) or deploy a rendering API server.
-
-The server-side rendering approach uses Docker with a Node.js-based API:
-
-```bash
-docker run -d --name mermaid-server \
-  -p 8080:8080 \
-  --restart unless-stopped \
-  minlag/mermaid-server
-```
-
-This provides a REST API. Send a POST request with your Mermaid diagram:
-
-```bash
-curl -X POST http://localhost:8080 \
-  -H "Content-Type: application/json" \
-  -d '{
-    "code": "graph TD\n  A[Client] --> B[Load Balancer]\n  B --> C[Web Server 1]\n  B --> D[Web Server 2]\n  C --> E[(Database)]\n  D --> E"
-  }' \
-  -o diagram.png
-```
-
-For a more production-ready setup, use the `mermaid.ink` self-hosted alternative with Puppeteer:
-
-```yaml
-version: "3.8"
-services:
-  mermaid-renderer:
-    image: ghcr.io/mermaid-js/mermaid-cli/mermaid-cli:latest
-    restart: unless-stopped
-    volumes:
-      - ./output:/output
-    command: >
-      --puppeteerConfigFile /config.json
-      --input /input/diagram.mmd
-      --output /output/diagram.svg
-```
-
-For CI/CD integration, install `@mermaid-js/mermaid-cli` as a Node.js dependency:
-
-```bash
-npm install -g @mermaid-js/mermaid-cli
-mmdc -i architecture.mmd -o architecture.svg -t dark
-```
-
-### Mermaid in Markdown Documents
-
-Mermaid's biggest advantage is its zero-config integration with Markdown. Any platform that supports Mermaid simply needs to include the JavaScript library:
-
-```markdown
-```mermaid
-graph TD
-    subgraph "Frontend Layer"
-        A[React App] --> B[API Client]
-    end
-
-    subgraph "Backend Layer"
-        B --> C[API Gateway]
-        C --> D[Service A]
-        C --> E[Service B]
-    end
-
-    subgraph "Data Layer"
-        D --> F[(PostgreSQL)]
-        E --> G[(Redis Cache)]
-    end
-
-    style A fill:#1a1a2e,stroke:#e94560
-    style F fill:#1a1a2e,stroke:#0f3460
-```
-```
-
-This renders inline in GitHub READMEs, GitLab wikis, and any Markdown viewer with Mermaid support.
-
-### Mermaid Limitations
-
-Mermaid's layout engine, based on D3 and Dagre, sometimes produces suboptimal results for complex diagrams with many nodes. Cross-layer edges can become tangled, and fine-grained positioning control is limited compared to PlantUML. The server-side rendering pipeline requires Node.js and Puppeteer, which adds operational overhead compared to a single JAR file.
-
-## Kroki: The Unified Diagram API
-
-Kroki takes a fundamentally different approach. Instead of implementing its own diagram language, Kroki acts as a unified rendering API that supports **over twenty diagram tools** through a single HTTP endpoint. It wraps PlantUML, Mermaid, GraphViz, BlockDiag, Ditaa, SvgBob, and many others behind a consistent interface.
-
-This means you choose the best language for each diagram type and send them all to the same server. Need a sequence diagram? Use PlantUML syntax. Need a network topology? Use GraphViz DOT. Need an ASCII-style architecture diagram? Use SvgBob. All through one endpoint.
-
-### Supported Backends
-
-Kroki bundles these diagram engines:
-
-| Engine | Diagram Types | Best For |
-|--------|--------------|----------|
-| PlantUML | Sequence, activity, component, state, deployment | UML diagrams |
-| Mermaid | Flowcharts, Gantt, ERD, git graphs | Markdown-native diagrams |
-| GraphViz (DOT) | Directed and undirected graphs | Network topologies |
-| BlockDiag | Block diagrams, sequence, activity, network | Infrastructure diagrams |
-| Ditaa | ASCII art to diagram conversion | Quick architecture sketches |
-| SvgBob | ASCII art to SVG | Developer-friendly ASCII diagrams |
-| WireViz | Wiring harness diagrams | Hardware documentation |
-| DBML | Database schema diagrams | Database architecture |
-| Structurizr | C4 model diagrams | Enterprise architecture |
-| TikZ | LaTeX-based technical diagrams | Academic papers |
-| Vega/VegaLite | Data visualizations | Charts and graphs |
-| Excalidraw | Hand-drawn style sketches | Informal diagrams |
-| Bytefield | Byte field diagrams | Protocol specifications |
-| Erd | Entity-relationship diagrams | Database schemas |
-| Nomnoml | UML class diagrams with style | Software design |
-| Pikchr | Technical diagrams (SQLite project) | Engineering docs |
-| RackDiag | Rack mount diagrams | Infrastructure planning |
-| Salt | GUI wireframes | UI mockups |
-
-### Self-Hosting Kroki
-
-Kroki provides an official Docker Compose setup that is production-ready out of the box:
-
-```yaml
-version: "3.8"
-services:
-  kroki:
-    image: yuzutech/kroki:latest
-    restart: unless-stopped
+    container_name: plantuml-server
     ports:
       - "8080:8080"
     environment:
-      - KROKI_BLOCKDIAG_HOST=blockdiag
-      - KROKI_MERMAID_HOST=mermaid
-      - KROKI_BPMN_HOST=bpmn
-      - KROKI_EXCALIDRAW_HOST=excalidraw
-    depends_on:
-      - blockdiag
-      - mermaid
-      - bpmn
-      - excalidraw
-
-  blockdiag:
-    image: yuzutech/kroki-blockdiag:latest
+      - PLANTUML_LIMIT_SIZE=32768
+      - BASE_URL=https://diagrams.example.com
+    volumes:
+      - plantuml-cache:/tmp/plantuml-cache
     restart: unless-stopped
 
-  mermaid:
-    image: yuzutech/kroki-mermaid:latest
+  # Optional: reverse proxy with Caddy
+  caddy:
+    image: caddy:latest
+    ports:
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
     restart: unless-stopped
 
-  bpmn:
-    image: yuzutech/kroki-bpmn:latest
-    restart: unless-stopped
-
-  excalidraw:
-    image: yuzutech/kroki-excalidraw:latest
-    restart: unless-stopped
+volumes:
+  plantuml-cache:
 ```
 
-With all services running, Kroki listens on port 8080 and routes requests to the appropriate backend.
+```caddyfile
+# Caddyfile
+diagrams.example.com {
+  reverse_proxy plantuml:8080
+}
+```
 
-### Using the Kroki API
+### Usage Example
 
-Kroki's API is elegantly simple. POST your diagram text and specify the output format in the URL path:
+Write your diagram in a `.puml` file:
+
+```plantuml
+@startuml
+title Order Processing Architecture
+
+actor Customer
+participant "API Gateway" as GW
+participant "Order Service" as OS
+participant "Payment Service" as PS
+participant "Inventory Service" as IS
+database "PostgreSQL" as DB
+queue "RabbitMQ" as MQ
+
+Customer -> GW : POST /orders
+GW -> OS : Create Order
+OS -> IS : Check Inventory
+IS --> OS : In stock
+OS -> PS : Process Payment
+PS --> OS : Payment confirmed
+OS -> MQ : Publish OrderCreated
+OS --> Customer : 201 Created
+
+MQ -> DB : Persist Event
+@enduml
+```
+
+Render via the CLI or the web interface:
 
 ```bash
-# Generate an SVG from PlantUML syntax
-curl -X POST http://localhost:8080/plantum/svg \
-  -H "Content-Type: text/plain" \
-  -d '@startuml\nAlice -> Bob: Hello\n@enduml' \
-  -o sequence.svg
+# CLI rendering to PNG
+plantuml -tpng architecture.puml
 
-# Generate a PNG from Mermaid syntax
-curl -X POST http://localhost:8080/mermaid/png \
-  -H "Content-Type: text/plain" \
-  -d 'graph LR\nA --> B\nB --> C' \
-  -o flowchart.png
+# CLI rendering to SVG
+plantuml -tsvg architecture.puml
 
-# Generate a PDF from GraphViz DOT
-curl -X POST http://localhost:8080/graphviz/pdf \
-  -H "Content-Type: text/plain" \
-  -d 'digraph G {\n  A -> B -> C -> A\n}' \
-  -o topology.pdf
+# Batch render all .puml files in a directory
+plantuml -tpng docs/diagrams/*.puml
 ```
 
-You can also use GET requests with URL-encoded diagram content. Kroki provides encoding utilities in multiple languages:
+The server exposes a REST API at `http://localhost:8080/plantuml/png/{encoded}` where `{encoded}` is the URL-safe deflate-encoded diagram source. Libraries exist for Python, Go, and Node.js to encode and submit diagrams programmatically.
+
+### Integrations
+
+PlantUML integrates with **Obsidian** (via the PlantUML plugin), **VS Code** (official extension), **Markdown editors** (via fenced code blocks), and **CI/CD pipelines**. Most static site generators have PlantUML plugins that render diagrams at build time.
+
+```python
+# CI/CD: render diagrams during Hugo site build
+import subprocess
+import os
+
+diagram_dir = "content/posts/diagrams/"
+for filename in os.listdir(diagram_dir):
+    if filename.endswith(".puml"):
+        filepath = os.path.join(diagram_dir, filename)
+        subprocess.run(["plantuml", "-tsvg", filepath], check=True)
+```
+
+## Mermaid: The Markdown-Friendly Option
+
+Mermaid is a JavaScript-based diagramming library that uses syntax closely resembling Markdown. It gained massive adoption after GitHub, GitLab, and Notion integrated it natively. Unlike PlantUML, Mermaid renders client-side in browsers, making it ideal for web-based documentation.
+
+### Installation
+
+Mermaid can run in three modes: as a browser script, as a CLI tool, or as a Docker container.
 
 ```bash
-# Python encoding example
-python3 -c "
-import urllib.parse, zlib, base64
-text = b'''@startuml
-actor Admin
-node 'Load Balancer' as LB
-node 'App Server 1' as S1
-node 'App Server 2' as S2
-database 'Primary DB' as DB
-Admin -> LB : request
-LB -> S1 : route
-LB -> S2 : route
-S1 -> DB : query
-S2 -> DB : query
-@enduml'''
-compressed = zlib.compress(text, 9)
-encoded = base64.b64encode(compressed).decode('utf-8')
-encoded = urllib.parse.quote(encoded, safe='')
-print(f'http://localhost:8080/plantum/svg/{encoded}')
-"
+# Install the CLI globally
+npm install -g @mermaid-js/mermaid-cli
+
+# Or use Docker (no npm needed)
+docker run --rm -v "$(pwd)":/data minlag/mermaid-cli \
+  -i /data/diagram.mmd -o /data/diagram.svg
 ```
 
-### Hugo Integration with Kroki
+### Usage Example
 
-For static site generators like Hugo, Kroki offers a dedicated plugin. Install the shortcode in your Hugo site:
+Mermaid syntax is intuitive for anyone familiar with Markdown:
 
-```bash
-mkdir -p layouts/shortcodes
-cat > layouts/shortcodes/kroki.html << 'EOF'
-{{ $type := .Get 0 }}
-{{ $format := .Get 1 | default "svg" }}
-{{ $content := .Inner }}
-{{ $encoded := $content | base64Encode }}
-<img src="http://localhost:8080/{{ $type }}/{{ $format }}/{{ $encoded }}" 
-     alt="Diagram" loading="lazy" />
-{{ end }}
-EOF
-```
-
-Then use it in your content:
-
-```markdown
-{{</* kroki "mermaid" "svg" */>}}
+```mermaid
 sequenceDiagram
-    participant Browser
-    participant Kroki
-    participant PlantUML
-    Browser->>Kroki: POST /plantuml/svg
-    Kroki->>PlantUML: Forward request
-    PlantUML-->>Kroki: SVG response
-    Kroki-->>Browser: Rendered SVG
-{{</* /kroki */>}}
+    autonumber
+    actor User
+    participant Frontend
+    participant API
+    participant Cache
+    participant Database
+
+    User->>Frontend: Load Dashboard
+    Frontend->>API: GET /api/metrics
+    API->>Cache: Check Redis
+    alt Cache Hit
+        Cache-->>API: Return cached data
+    else Cache Miss
+        API->>Database: Query time_series
+        Database-->>API: Return results
+        API->>Cache: Store for 60s
+    end
+    API-->>Frontend: JSON response
+    Frontend-->>User: Render dashboard
 ```
 
-### Kroki Limitations
+For architecture diagrams:
 
-Running Kroki requires managing multiple Docker containers — one for the main API and one for each additional backend you want to enable. The resource footprint is larger than a single PlantUML server. Kroki also does not support real-time preview out of the box; you need a separate frontend or integrate with your documentation system.
+```mermaid
+graph TD
+    subgraph Edge Layer
+        LB[Load Balancer]
+        WAF[WAF / Coraza]
+    end
 
-## Feature Comparison
+    subgraph Application Layer
+        API1[API Server 1]
+        API2[API Server 2]
+        API3[API Server 3]
+    end
 
-| Feature | PlantUML | Mermaid | Kroki |
-|---------|----------|---------|-------|
-| **Number of diagram types** | 20+ | 14 | 16+ engines, 50+ types |
-| **Input format** | Custom DSL | Markdown-friendly DSL | Multiple DSLs |
-| **Server-side rendering** | Built-in (JAR/Docker) | Node.js + Puppeteer | Built-in (Docker) |
-| **REST API** | Yes (encoded URL) | Yes (POST body) | Yes (POST body + GET) |
-| **Markdown integration** | Requires plugin | Native in GitHub/GitLab | Requires shortcode |
-| **Version control friendly** | Yes | Yes | Yes |
-| **Self-hosting complexity** | Low (single container) | Medium (Node.js) | Medium-High (multiple containers) |
-| **Resource requirements** | ~256MB JVM | ~512MB Node.js | ~500MB+ total |
-| **Offline rendering** | Full support | Full support | Full support |
-| **Custom themes/styling** | Skinparams | Theme config | Per-engine |
-| **CI/CD integration** | JAR + Java | npm package | HTTP API |
-| **Active development** | Steady (since 2009) | Rapid (GitHub backed) | Active (community) |
-| **License** | MIT / GPL | MIT | MIT |
+    subgraph Data Layer
+        Redis[(Redis Cache)]
+        PG[(PostgreSQL)]
+        MQ[Message Queue]
+    end
 
-## When to Choose Each Platform
-
-**Choose PlantUML if** you need comprehensive UML diagram support, have existing Java infrastructure, or want the simplest self-hosting setup with a single Docker container. It is the safest choice for teams already using PlantUML in their workflow, and its ecosystem of IDE plugins (IntelliJ, VS Code, Emacs, Vim) is unmatched. The single JAR deployment model makes it easy to run on resource-constrained servers.
-
-**Choose Mermaid if** your documentation lives primarily in Markdown, you publish on GitHub or GitLab, or you want diagrams that render natively without server-side processing. Mermaid is the best choice when your team already writes Markdown and wants diagrams that work everywhere Mermaid is supported. The zero-server browser rendering means no infrastructure to maintain for basic use cases.
-
-**Choose Kroki if** you need multiple diagram types across your organization and want a single API endpoint to serve them all. It is the best choice for documentation platforms, internal wikis, and teams that want flexibility to use the right diagram language for each use case. If some diagrams need PlantUML's sequence syntax, others need GraphViz's layout engine, and still others need Ditaa's ASCII conversion, Kroki unifies them all.
-
-## Advanced: Building a Unified Diagram Pipeline
-
-For teams that want the best of all worlds, combine Kroki as the rendering backend with a Git-based documentation workflow:
-
-```bash
-#!/bin/bash
-# build-diagrams.sh — Render all diagrams in CI/CD
-
-KROKI_URL="${KROKI_URL:-http://localhost:8080}"
-DIAGRAMS_DIR="./diagrams"
-OUTPUT_DIR="./static/diagrams"
-
-mkdir -p "$OUTPUT_DIR"
-
-# Process each diagram file
-for file in "$DIAGRAMS_DIR"/*; do
-    filename=$(basename "$file")
-    name="${filename%.*}"
-    type="${filename##*.}"  # .puml, .mmd, .dot, etc.
-
-    # Map file extensions to Kroki types
-    case "$type" in
-        puml|plantuml) kroki_type="plantuml" ;;
-        mmd|mermaid)   kroki_type="mermaid" ;;
-        dot|gv)        kroki_type="graphviz" ;;
-        ditaa)         kroki_type="ditaa" ;;
-        svgbob)        kroki_type="svgbob" ;;
-        *)             echo "Unknown type: $type"; continue ;;
-    esac
-
-    # Generate SVG output
-    curl -s -X POST "${KROKI_URL}/${kroki_type}/svg" \
-        -H "Content-Type: text/plain" \
-        --data-binary "@$file" \
-        -o "${OUTPUT_DIR}/${name}.svg"
-
-    echo "Rendered: ${filename} -> ${name}.svg"
-done
-
-echo "All diagrams rendered to ${OUTPUT_DIR}/"
+    Client --> LB
+    LB --> WAF
+    WAF --> API1
+    WAF --> API2
+    WAF --> API3
+    API1 --> Redis
+    API2 --> Redis
+    API3 --> Redis
+    API1 --> PG
+    API2 --> PG
+    API3 --> PG
+    API1 --> MQ
+    API2 --> MQ
+    API3 --> MQ
 ```
 
-Add this to your CI/CD pipeline to render diagrams on every commit:
+### CI/CD Pipeline Integration
+
+Generate diagrams automatically during your build process:
 
 ```yaml
 # .github/workflows/diagrams.yml
-name: Render Diagrams
+name: Render Mermaid Diagrams
 on:
   push:
     paths:
-      - "diagrams/**"
+      - "**/*.mmd"
 
 jobs:
   render:
@@ -469,94 +246,469 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Start Kroki
-        run: docker compose -f docker-compose.kroki.yml up -d
+      - name: Install Puppeteer and Mermaid CLI
+        run: npm install -g @mermaid-js/mermaid-cli
 
-      - name: Wait for Kroki
+      - name: Render all diagrams
         run: |
-          for i in $(seq 1 30); do
-            curl -s http://localhost:8080/health && break
-            sleep 2
+          mkdir -p static/diagrams
+          for file in $(find diagrams -name "*.mmd"); do
+            name=$(basename "$file" .mmd)
+            mmdc -i "$file" -o "static/diagrams/${name}.svg" -t dark
           done
 
-      - name: Render diagrams
-        run: chmod +x build-diagrams.sh && ./build-diagrams.sh
-
-      - name: Commit rendered diagrams
-        run: |
-          git config user.name "CI Bot"
-          git config user.email "ci@example.com"
-          git add static/diagrams/
-          git commit -m "Render diagrams [skip ci]" || true
-          git push
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Auto-generate diagrams [skip ci]"
+          file_pattern: "static/diagrams/*.svg"
 ```
 
-## Performance and Scaling Considerations
+### Mermaid Live Server (Self-Hosted)
 
-For low-traffic internal wikis, a single Kroki instance handles hundreds of requests per second with minimal latency. PlantUML's JVM startup takes 5-10 seconds but then serves requests quickly. Mermaid's Puppeteer-based rendering is slower — each diagram takes 1-3 seconds to render — so it benefits from caching.
+You can self-host the Mermaid live editor for your team:
 
-For production deployments, add a caching layer in front of your diagram server:
+```bash
+docker run -d \
+  --name mermaid-live \
+  -p 3000:3000 \
+  ghcr.io/mermaid-js/mermaid-live-editor:latest
+```
+
+## Kroki: The Universal Diagram API
+
+Kroki is the most ambitious of the three — a unified API that supports over 30 diagram types through a single endpoint. It wraps PlantUML, Mermaid, GraphViz, BPMN, Excalidraw, DBML, WaveDrom, and many more engines behind one consistent interface.
+
+### Why Choose Kroki
+
+The killer feature is **consolidation**. Instead of running separate servers for PlantUML, Mermaid, and GraphViz, you run one Kroki instance that handles all of them. Your documentation can mix diagram types without any infrastructure changes.
+
+### Installation
 
 ```yaml
-  nginx-cache:
-    image: nginx:alpine
+# docker-compose.yml
+version: "3.8"
+services:
+  kroki:
+    image: yuzutech/kroki:0.27.0
+    container_name: kroki
+    ports:
+      - "8000:8000"
+    environment:
+      - KROKI_PLANTUML_HOST=plantuml:8080
+      - KROKI_MERMAID_HOST=mermaid:8080
+      - KROKI_BPMN_HOST=bpmn:8080
+      - KROKI_MAX_URI_LENGTH=8000
+    restart: unless-stopped
+    depends_on:
+      - plantuml
+      - mermaid
+      - bpmn
+
+  plantuml:
+    image: yuzutech/kroki-plantuml:0.27.0
+    container_name: kroki-plantuml
+    restart: unless-stopped
+
+  mermaid:
+    image: yuzutech/kroki-mermaid:0.27.0
+    container_name: kroki-mermaid
+    environment:
+      - KROKI_MERMAID_PORT=8080
+    restart: unless-stopped
+
+  bpmn:
+    image: yuzutech/kroki-bpmn:0.27.0
+    container_name: kroki-bpmn
+    restart: unless-stopped
+
+  # Reverse proxy
+  caddy:
+    image: caddy:latest
+    ports:
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy-data:/data
+    restart: unless-stopped
+
+volumes:
+  caddy-data:
+```
+
+### API Usage
+
+Kroki's API is straightforward. Encode your diagram text, then request the output format:
+
+```bash
+# Encode diagram text to base64, then URL-safe deflate
+DIAGRAM='@startuml\nAlice -> Bob: Hello\n@enduml'
+ENCODED=$(echo -n "$DIAGRAM" | python3 -c "
+import sys, base64, zlib
+data = sys.stdin.buffer.read()
+compressed = zlib.compress(data, 9)
+print(base64.urlsafe_b64encode(compressed).decode())
+")
+
+# Request PNG output
+curl -o diagram.png "http://localhost:8000/plantuml/png/${ENCODED}"
+
+# Request SVG output (better for web)
+curl -o diagram.svg "http://localhost:8000/plantuml/svg/${ENCODED}"
+```
+
+Kroki also supports POST requests for large diagrams:
+
+```bash
+curl -X POST "http://localhost:8000/mermaid/svg" \
+  -H "Content-Type: text/plain" \
+  --data-binary @architecture.mmd \
+  -o architecture.svg
+```
+
+### Supported Diagram Types
+
+Kroki supports these diagram engines out of the box:
+
+| Engine | Diagram Types |
+|---|---|
+| PlantUML | Sequence, Use Case, Class, Activity, Component, State, Object, Deployment, Timing, Gantt, MindMap, Network, Salt/UI |
+| Mermaid | Flowchart, Sequence, Class, State, ER, Gantt, Pie, Quadrant, GitGraph, C4 |
+| GraphViz | DOT, Neato, Twopi, Circo, FDP, SFD |
+| BPMN | Business Process Model and Notation |
+| Excalidraw | Hand-drawn style whiteboard diagrams |
+| DBML | Database schema diagrams |
+| WaveDrom | Digital timing diagrams |
+| Structurizr | C4 architecture diagrams |
+| Ditaa | ASCII art to diagrams |
+| Symbolator | VHDL/Verilog component diagrams |
+| TikZ | LaTeX-quality vector graphics |
+| ByteField | Byte field structure diagrams |
+| Erd | Entity-relationship diagrams |
+| GraphViz | DOT language graphs |
+
+## Practical Integration Patterns
+
+### Hugo Static Site Integration
+
+For Hugo sites using a dark theme, integrate diagrams that render at build time:
+
+```toml
+# config.toml — enable diagram processing
+[markup]
+  [markup.goldmark]
+    [markup.goldmark.parser]
+      [markup.goldmark.parser.attribute]
+        block = true
+    [markup.goldmark.renderer]
+      unsafe = true
+```
+
+Use a Hugo shortcode for Kroki diagrams:
+
+```html
+<!-- layouts/shortcodes/kroki.html -->
+{{ $engine := .Get "engine" | default "plantuml" }}
+{{ $format := .Get "format" | default "svg" }}
+{{ $content := trim .Inner "\n" }}
+{{ $encoded := $content | base64Encode }}
+<img src="https://diagrams.example.com/{{ $engine }}/{{ $format }}/{{ $encoded }}"
+     alt="Diagram"
+     loading="lazy"
+     class="diagram-svg">
+```
+
+Usage in content:
+
+```markdown
+{{</* kroki engine="mermaid" format="svg" */>}}
+sequenceDiagram
+    Client->>Server: POST /api/data
+    Server->>Database: INSERT record
+    Database-->>Server: Success
+    Server-->>Client: 201 Created
+{{</* /kroki */>}}
+```
+
+### Obsidian Integration
+
+For Obsidian vaults running self-hosted diagram servers:
+
+```markdown
+<!-- PlantUML block (rendered via Obsidian plugin pointing to your server) -->
+```plantuml
+@startuml
+skinparam backgroundColor transparent
+skinparam sequenceArrowThickness 2
+skinparam roundcorner 20
+
+actor User
+participant "Auth Service" as Auth
+participant "API Gateway" as GW
+database "User DB" as DB
+
+User -> Auth : Login Request
+Auth -> DB : Query credentials
+DB --> Auth : Hash match
+Auth --> GW : Generate JWT token
+GW --> User : 200 OK + Token
+@enduml
+```
+```
+
+### Documentation-as-Code Workflow
+
+Store all diagrams alongside your source code:
+
+```
+my-project/
+├── docs/
+│   ├── diagrams/
+│   │   ├── architecture.mmd      # Mermaid source
+│   │   ├── sequence-diagram.puml # PlantUML source
+│   │   └── network-topology.dot  # GraphViz source
+│   └── architecture.md            # References diagrams
+├── scripts/
+│   └── render-diagrams.sh         # CI build script
+└── Makefile
+```
+
+```bash
+#!/bin/bash
+# render-diagrams.sh — run in CI/CD
+set -euo pipefail
+
+OUTPUT_DIR="docs/static/diagrams"
+KROKI_URL="${KROKI_URL:-http://localhost:8000}"
+
+mkdir -p "$OUTPUT_DIR"
+
+# Render Mermaid diagrams
+for f in docs/diagrams/*.mmd; do
+  name=$(basename "$f" .mmd)
+  curl -s "$KROKI_URL/mermaid/svg" \
+    -H "Content-Type: text/plain" \
+    --data-binary @"$f" \
+    > "$OUTPUT_DIR/${name}.svg"
+done
+
+# Render PlantUML diagrams
+for f in docs/diagrams/*.puml; do
+  name=$(basename "$f" .puml)
+  content=$(cat "$f" | tr '\n' '\\n')
+  encoded=$(python3 -c "
+import base64, zlib, sys
+data = open('$f', 'rb').read()
+encoded = base64.urlsafe_b64encode(zlib.compress(data)).decode()
+print(encoded)
+")
+  curl -s "$KROKI_URL/plantuml/svg/${encoded}" > "$OUTPUT_DIR/${name}.svg"
+done
+
+echo "Rendered $(ls "$OUTPUT_DIR"/*.svg | wc -l) diagrams"
+```
+
+### Pre-commit Hook for Diagram Validation
+
+Validate diagrams before they land in your repository:
+
+```bash
+#!/bin/bash
+# .husky/validate-diagrams.sh
+# Run as a pre-commit hook to catch syntax errors early
+
+errors=0
+
+# Validate PlantUML files
+for f in $(git diff --cached --name-only | grep '\.puml$'); do
+  if ! plantuml -checksyntax "$f" 2>/dev/null; then
+    echo "ERROR: Invalid PlantUML syntax in $f"
+    errors=$((errors + 1))
+  fi
+done
+
+# Validate Mermaid files
+for f in $(git diff --cached --name-only | grep '\.mmd$'); do
+  if ! mmdc -i "$f" -o /dev/null 2>/dev/null; then
+    echo "ERROR: Invalid Mermaid syntax in $f"
+    errors=$((errors + 1))
+  fi
+done
+
+if [ $errors -gt 0 ]; then
+  echo "Found $errors diagram errors. Fix before committing."
+  exit 1
+fi
+```
+
+## Performance and Scaling
+
+### Resource Requirements
+
+| Tool | Minimum RAM | CPU | Storage |
+|---|---|---|---|
+| PlantUML Server | 512 MB | 1 core | 100 MB |
+| Kroki (full stack) | 1 GB | 2 cores | 200 MB |
+| Mermaid CLI | 256 MB | 1 core | 50 MB |
+
+### High Availability Setup
+
+For teams that depend on diagrams daily, run Kroki behind a load balancer:
+
+```yaml
+# docker-compose.ha.yml
+version: "3.8"
+services:
+  kroki-1:
+    image: yuzutech/kroki:0.27.0
+    deploy:
+      replicas: 3
+    environment:
+      - KROKI_MAX_URI_LENGTH=16384
+    restart: unless-stopped
+
+  traefik:
+    image: traefik:v3.0
+    command:
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:80"
     ports:
       - "80:80"
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-      - cache:/var/cache/nginx
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+```
+
+### Caching Strategy
+
+Diagram rendering is CPU-intensive. Cache rendered outputs aggressively:
+
+```nginx
+# nginx reverse proxy with caching
+proxy_cache_path /var/cache/kroki levels=1:2 keys_zone=kroki_cache:10m max_size=1g inactive=24h;
+
+server {
+  listen 443 ssl;
+  server_name diagrams.example.com;
+
+  location / {
+    proxy_pass http://kroki:8000;
+    proxy_cache kroki_cache;
+    proxy_cache_valid 200 7d;
+    proxy_cache_key $request_uri;
+    add_header X-Cache-Status $upstream_cache_status;
+  }
+}
+```
+
+With caching, repeat diagram requests return in under 10ms instead of the 200-500ms required for full rendering.
+
+## Choosing the Right Tool
+
+**Choose PlantUML if:**
+- You need comprehensive UML diagram support
+- Your team already uses PlantUML syntax
+- You want the most mature and stable option
+- You need ASCII art output for terminal documentation
+
+**Choose Mermaid if:**
+- You want the lowest learning curve (Markdown-like syntax)
+- Your documentation already uses GitHub/GitLab flavored Markdown
+- You prefer client-side rendering for web docs
+- You need native support in existing platforms
+
+**Choose Kroki if:**
+- You want a single API for all diagram types
+- Your team uses multiple diagram syntaxes
+- You need to support Excalidraw, BPMN, DBML, or other specialized formats
+- You're building a documentation platform that must handle diverse diagram needs
+
+## Complete Deployment Example
+
+Here's a production-ready setup combining Kroki with HTTPS, caching, and monitoring:
+
+```yaml
+# production/docker-compose.yml
+version: "3.8"
+
+services:
+  kroki:
+    image: yuzutech/kroki:0.27.0
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      - KROKI_PLANTUML_HOST=plantuml:8080
+      - KROKI_MERMAID_HOST=mermaid:8080
+      - KROKI_LOG_LEVEL=info
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
     depends_on:
-      - kroki
+      - plantuml
+      - mermaid
+
+  plantuml:
+    image: yuzutech/kroki-plantuml:0.27.0
+    restart: unless-stopped
+
+  mermaid:
+    image: yuzutech/kroki-mermaid:0.27.0
+    environment:
+      - KROKI_MERMAID_PORT=8080
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2.8-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    restart: unless-stopped
+
+  # Monitor with Prometheus metrics
+  node-exporter:
+    image: prom/node-exporter:latest
+    ports:
+      - "9100:9100"
+    restart: unless-stopped
 
 volumes:
-  cache:
+  caddy-data:
+  caddy-config:
 ```
 
-```nginx
-# nginx.conf
-http {
-    proxy_cache_path /var/cache/nginx levels=1:2 keys_zone=diagram_cache:10m max_size=1g;
+```caddyfile
+# Caddyfile — automatic HTTPS
+diagrams.example.com {
+  encode gzip
+  reverse_proxy kroki:8000
 
-    server {
-        listen 80;
+  header {
+    Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    X-Content-Type-Options "nosniff"
+    X-Frame-Options "DENY"
+  }
 
-        location / {
-            proxy_pass http://kroki:8080;
-            proxy_cache diagram_cache;
-            proxy_cache_valid 200 30d;
-            add_header X-Cache-Status $upstream_cache_status;
-        }
-    }
+  @cache {
+    path /plantuml/svg/* /plantuml/png/* /mermaid/svg/*
+  }
+  header @cache Cache-Control "public, max-age=604800"
 }
 ```
 
-Since diagrams are deterministic — the same input always produces the same output — they are ideal for long-term caching. A 1GB cache can store tens of thousands of rendered diagrams, dramatically reducing server load.
-
-## Security Considerations
-
-When self-hosting diagram rendering engines, be aware of these security implications:
-
-- **PlantUML** executes Java code and includes an `!include` directive that can fetch remote files. Restrict network access with Docker network policies or firewall rules to prevent SSRF attacks. Set the `PLANTUML_LIMIT_SIZE` environment variable to cap image dimensions.
-
-- **Mermaid's** Puppeteer renderer runs a headless Chromium browser. Ensure the container runs as a non-root user and disable JavaScript evaluation in rendered diagrams by configuring Puppeteer's security settings.
-
-- **Kroki** inherits the security characteristics of each backend it wraps. Use the `KROKI_SAFE_MODE` environment variable to restrict file system access and disable dangerous features across all backends.
-
-Always place your diagram server behind a reverse proxy with rate limiting to prevent abuse:
-
-```nginx
-limit_req_zone $binary_remote_addr zone=diagrams:10m rate=30r/m;
-
-location / {
-    limit_req zone=diagrams burst=10 nodelay;
-    proxy_pass http://kroki:8080;
-}
-```
+With this setup, you get:
+- Automatic HTTPS certificate provisioning via Caddy
+- Gzip compression for text-based responses
+- Security headers to prevent clickjacking and MIME sniffing
+- Long-lived caching headers for rendered diagrams
+- Health checks to detect container failures
+- A single domain serving all 30+ diagram types
 
 ## Conclusion
 
-The self-hosted text-to-diagram landscape offers three strong options, each with distinct strengths. PlantUML provides the most comprehensive UML support with the simplest deployment. Mermaid delivers the smoothest Markdown integration with the broadest platform adoption. Kroki offers unmatched flexibility by unifying multiple diagram engines behind a single API.
-
-The best choice depends on your team's existing workflow. If you are already writing Markdown documentation and want diagrams that render everywhere, start with Mermaid. If you need rigorous UML diagrams and Java integration, PlantUML is the proven choice. If your organization uses multiple diagram types and you want a centralized rendering service, Kroki gives you the most options.
-
-All three can be deployed with Docker in under five minutes, support offline rendering, integrate with CI/CD pipelines, and keep your infrastructure diagrams on your own servers. The common thread is that text-based diagrams — stored as code in Git, reviewed in pull requests, and rendered automatically — represent a fundamentally better workflow for technical documentation than manual image editing.
+Self-hosted text-to-diagram platforms give you full control over your documentation pipeline. PlantUML offers the deepest UML support and maturity, Mermaid provides the gentlest learning curve and widest platform adoption, and Kroki delivers the flexibility of a unified API spanning every diagram engine. For most teams building internal documentation, running Kroki as the primary API with PlantUML and Mermaid as backend engines delivers the best balance of capability, simplicity, and future-proofing.
