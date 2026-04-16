@@ -1,582 +1,529 @@
 ---
-title: "Complete Guide to Self-Hosted NTP Servers: Chrony, NTPsec & OpenNTPD 2026"
+title: "Chrony vs NTPsec vs OpenNTPD: Self-Hosted Time Synchronization Guide 2026"
 date: 2026-04-16
-tags: ["comparison", "guide", "self-hosted", "privacy", "infrastructure"]
+tags: ["comparison", "guide", "self-hosted", "infrastructure", "ntp"]
 draft: false
-description: "Build a reliable, private time synchronization infrastructure with open-source NTP servers. Compare Chrony, NTPsec, and OpenNTPD with Docker configs, hardening tips, and deployment guides."
+description: "Complete guide to self-hosted NTP time servers in 2026. Compare chrony, NTPsec, and OpenNTPD for homelab and enterprise time synchronization with Docker configs and setup instructions."
 ---
 
-Every server, container, and network device depends on accurate time. Authentication tokens expire, distributed databases drift, log correlation breaks, and TLS handshakes fail when clocks disagree by even a few seconds. Yet most infrastructure teams blindly rely on public NTP pools — sending every time query to servers they don't control, over unencrypted UDP, from IPs that reveal their network topology.
+Time synchronization is one of those invisible infrastructure pillars that nobody thinks about — until certificates expire early, distributed databases diverge, or backup timestamps go haywire. A reliable Network Time Protocol (NTP) server is essential for everything from TLS certificate validation to log correlation and filesystem consistency.
 
-Running your own NTP server stack gives you full control over time synchronization, eliminates an external dependency, and keeps your internal clock queries off the public internet. This guide covers three mature open-source NTP implementations, how to deploy them with Docker, and how to build a resilient, private time infrastructure for your entire network.
+In this guide, we'll walk through three of the best open source NTP server implementations available in 2026: **chrony**, **NTPsec**, and **OpenNTPD**. You'll learn what each one does, how they compare, and how to deploy your own time server with practical, copy-paste configurations.
 
-## Why Self-Host Your NTP Infrastructure
+## Why Run Your Own NTP Server
 
-Public NTP pools are convenient, but they come with real trade-offs:
+Relying exclusively on public NTP pools might work fine for a single laptop, but there are compelling reasons to run your own time synchronization infrastructure:
 
-- **Privacy**: Every NTP request exposes your server's IP address to external operators. For organizations handling sensitive workloads, this creates an unnecessary data leak.
-- **Reliability**: Public pools can experience outages, rate-limiting, or deliberate attacks. When your authentication infrastructure depends on external time servers, you inherit their availability risk.
-- **Accuracy control**: Running local stratum-1 or stratum-2 servers lets you tune polling intervals, select upstream sources, and monitor synchronization quality with full visibility.
-- **Network segmentation**: Air-gapped or heavily firewalled environments often cannot reach public NTP pools. A local NTP server provides time for isolated segments without opening outbound UDP 123.
-- **Regulatory compliance**: Financial, healthcare, and government systems often require documented time synchronization with auditable internal infrastructure — something public pools cannot provide.
-- **Cost at scale**: Large deployments making thousands of NTP queries per minute can trigger rate limits or abuse flags on public pools. Self-hosting eliminates this entirely.
+**Network reliability.** A local NTP server responds in sub-millisecond latency compared to tens or hundreds of milliseconds for public pool servers. When your public internet connection drops, your internal systems keep accurate time.
 
-The typical architecture is simple: one or two servers sync to trusted upstream sources (GPS receivers, atomic clock feeds, or select public stratum-1 servers), and all internal machines query your local NTP servers instead of going to the internet.
+**Security and trust.** By stratum-0 or stratum-1 sources (GPS, PPS, atomic clocks) locally, you eliminate the risk of malicious NTP responses from compromised upstream servers. This matters enormously for systems that depend on time for authentication, auditing, and encryption.
 
-## NTP Protocol Basics
+**Firewall simplicity.** Instead of opening NTP (UDP port 123) outbound for every machine, you open it once for your local NTP server. All internal clients sync against a single, controlled endpoint.
 
-Before diving into implementations, here's what matters about the NTP protocol itself:
+**Scale and bandwidth.** In a homelab with dozens of VMs and containers, or an enterprise with hundreds of servers, broadcasting time locally eliminates redundant external NTP traffic and reduces load on public pool infrastructure.
 
-**Stratum hierarchy**: NTP uses a tiered accuracy model. Stratum-0 devices are atomic clocks or GPS receivers. Stratum-1 servers connect directly to stratum-0. Stratum-2 servers sync to stratum-1, and so on. Each hop adds a small amount of drift.
+**Compliance.** Many regulatory frameworks (PCI-DSS, SOX, HIPAA) require documented, auditable time synchronization with known sources. A self-hosted NTP server gives you full control over the synchronization chain.
 
-**Authentication**: NTP supports symmetric key authentication (Autokey was deprecated due to security concerns). Modern implementations recommend NTS (Network Time Security) — a TLS-based authentication extension standardized in RFC 8915 — though adoption is still growing.
+## Understanding NTP Hierarchy: Stratum Levels
 
-**UDP port 123**: Traditional NTP runs over UDP port 123. This is important for firewall rules. NTP over TLS (NTS) uses TCP port 4460.
+Before comparing implementations, it helps to understand the NTP stratum system:
 
-**Clock discipline**: NTP doesn't just set the time — it continuously disciplines the system clock, adjusting the clock frequency to minimize long-term drift. This is why `ntpd` and `chronyd` run as daemons rather than one-shot commands.
+- **Stratum 0:** The reference clock itself — GPS receivers, atomic clocks, radio time signals.
+- **Stratum 1:** Servers directly connected to stratum 0 devices. These are the most accurate publicly accessible time sources.
+- **Stratum 2:** Servers that synchronize with stratum 1 servers. This is where most self-hosted NTP servers operate.
+- **Stratum 3+:** Servers that sync with stratum 2 (and below). Each additional stratum adds a small amount of accumulated error.
 
-Now let's look at the three leading open-source implementations.
+For a homelab or small-to-medium deployment, a stratum 2 server synced to public pool servers is more than sufficient. Stratum accuracy is typically within 1-10 milliseconds — far better than most application-level timeouts.
 
-## Chrony: The Modern Default
+## Comparing the Three: chrony vs NTPsec vs OpenNTPD
 
-[Chrony](https://chrony-project.org/) has become the default NTP implementation on most modern Linux distributions, replacing the legacy `ntpd`. It was designed from the ground up to handle intermittent network connections, virtual machine clock instability, and rapid convergence — making it the best choice for most self-hosted deployments.
+| Feature | chrony | NTPsec | OpenNTPD |
+|---------|--------|--------|----------|
+| **Primary focus** | Variable network conditions (laptops, VMs) | Security-hardened NTP daemon | Simplicity and ease of use |
+| **Configuration complexity** | Moderate | Complex | Minimal |
+| **Startup convergence speed** | Very fast (seconds) | Moderate (minutes) | Moderate (minutes) |
+| **NTPv4 support** | Yes | Yes | Yes (partial in older versions) |
+| **NTPsec security features** | Good | Excellent (crypto, privilege separation) | Basic |
+| **SNTP client mode** | Yes | Yes | Yes (default mode) |
+| **Hardware clock support** | Yes | Yes | Limited |
+| **Leap second handling** | Smooth (slew) | Smooth (slew) | Step |
+| **PTP support** | Yes | No | No |
+| **IPv6 support** | Yes | Yes | Yes |
+| **Container-friendly** | Excellent | Good | Good |
+| **Default on** | RHEL/Rocky, Fedora, SUSE | Debian, Ubuntu | OpenBSD, Alpine (historically) |
+| **Memory footprint** | ~5-10 MB | ~15-20 MB | ~3-5 MB |
+| **Active development** | Very active | Active | Active |
+| **Best for** | VMs, laptops, homelabs, dynamic networks | Security-conscious deployments, enterprise | Simple setups, OpenBSD ecosystems |
 
-### Key Advantages
+### When to Choose chrony
 
-- **Fast convergence**: Chrony can synchronize to an upstream source in minutes rather than hours, significantly faster than traditional NTP implementations.
-- **VM-friendly**: Handles virtual machine clock jumps and pauses gracefully — critical for cloud and container deployments where the underlying hypervisor can disrupt system clocks.
-- **Intermittent connectivity**: Works well on systems that don't have continuous network access. It can store timing data and compensate when the network returns.
-- **Hardware timestamping**: Supports PTP (Precision Time Protocol) hardware timestamping for sub-microsecond accuracy on supported network cards.
-- **Active development**: Regular releases, modern codebase, responsive maintainers.
+chrony is the default NTP implementation on RHEL-based distributions and SUSE, and it's the most versatile of the three. Its standout feature is **rapid convergence**: it can synchronize within seconds of startup, even on systems with intermittent network connectivity or heavily virtualized environments where the hardware clock drifts significantly.
 
-### Docker Deployment
+chrony handles VM pauses gracefully — when a virtual machine is suspended and resumed, chrony quickly detects the clock jump and corrects without the wild oscillations that plague older NTP implementations. It also supports **smooth leap second handling** via the `slew` mode, avoiding the one-second clock discontinuity that can cause application errors.
 
-Here's a production-ready Docker Compose configuration for a Chrony NTP server:
+Choose chrony if:
+- You run VMs or containers with variable uptime
+- Your network connection is intermittent (laptops, edge devices)
+- You want the fastest possible convergence after startup
+- You need PTP (Precision Time Protocol) alongside NTP
 
-```yaml
-# docker-compose.yml
-version: "3.9"
+### When to Choose NTPsec
 
-services:
-  chrony:
-    image: cturra/ntp:latest
-    container_name: chrony-ntp
-    restart: unless-stopped
-    network_mode: host
-    cap_add:
-      - SYS_TIME
-    environment:
-      - NTP_SERVERS=0.pool.ntp.org,1.pool.ntp.org,2.pool.ntp.org
-      - LOG_LEVEL=info
-    volumes:
-      - chrony-data:/var/lib/chrony
-      - ./chrony.conf:/etc/chrony/chrony.conf.d/custom.conf:ro
+NTPsec is a security-focused fork of the classic ntpd reference implementation. The entire codebase has been audited, modernized, and stripped of legacy features that expanded the attack surface. Key security features include:
 
-volumes:
-  chrony-data:
+- **Privilege separation:** The daemon drops root privileges after binding to port 123.
+- **Cryptographic authentication:** NTPsec supports symmetric key and Autokey authentication to prevent spoofed time responses.
+- **Reduced code footprint:** The codebase is roughly 40% smaller than the original ntpd, with many legacy features removed.
+
+NTPsec is the choice for environments where time synchronization security is a compliance requirement or where you operate in a potentially adversarial network environment.
+
+Choose NTPsec if:
+- You need NTP authentication for compliance
+- You operate in a security-sensitive environment
+- You want the most battle-tested NTP protocol implementation
+- Your organization has a security audit requirement for all network daemons
+
+### When to Choose OpenNTPD
+
+OpenNTPD, developed as part of the OpenBSD project, follows the project's philosophy of secure defaults and minimal configuration. Out of the box, it "just works" — point it at pool servers and it syncs. The configuration syntax is arguably the simplest of all three.
+
+OpenNTPD's main trade-off is that it implements a subset of the NTPv4 specification. It operates primarily in SNTP (Simple NTP) client mode, which is sufficient for most use cases but lacks some of the advanced filtering and algorithmic features of chrony and NTPsec. For a homelab, small office, or OpenBSD-focused infrastructure, this is rarely a limitation.
+
+Choose OpenNTPD if:
+- You want zero-fuss configuration
+- You run OpenBSD or Alpine Linux
+- Your time sync needs are straightforward (no advanced features required)
+- You prefer minimal software with small attack surface
+
+## Installation and Configuration
+
+### Installing chrony
+
+**Debian/Ubuntu:**
+```bash
+sudo apt update
+sudo apt install -y chrony
 ```
 
-For a fully custom setup without the pre-built image:
-
-```dockerfile
-# Dockerfile
-FROM alpine:3.19
-RUN apk add --no-cache chrony tzdata
-COPY chrony.conf /etc/chrony/chrony.conf
-RUN mkdir -p /var/lib/chrony
-EXPOSE 123/udp
-CMD ["chronyd", "-f", "/etc/chrony/chrony.conf", "-d"]
+**RHEL/Rocky/Fedora:**
+```bash
+sudo dnf install -y chrony
 ```
 
-```conf
-# chrony.conf — production configuration
-# Upstream NTP sources
+**Alpine Linux:**
+```bash
+sudo apk add chrony
+```
+
+**Basic chrony.conf for a stratum 2 server:**
+```
+# Upstream NTP sources (use pool.ntp.org or your regional pool)
+pool 0.pool.ntp.org iburst maxsources 4
+pool 1.pool.ntp.org iburst maxsources 4
+pool 2.pool.ntp.org iburst maxsources 4
+
+# Allow local network to query this server
+# Replace 192.168.1.0/24 with your subnet
+allow 192.168.1.0/24
+
+# Serve time even when not synchronized to upstream (use with caution)
+# local stratum 10
+
+# Record the rate at which the system clock gains/loses time
+driftfile /var/lib/chrony/drift
+
+# Smooth leap second handling
+leapsecmode slew
+
+# Log directory
+logdir /var/log/chrony
+
+# Enable command port for chronyc
+bindcmdaddress 127.0.0.1
+```
+
+**Start and enable the service:**
+```bash
+sudo systemctl enable --now chronyd
+```
+
+**Verify synchronization status:**
+```bash
+# Check synchronization status
+chronyc tracking
+
+# View NTP sources
+chronyc sources -v
+
+# View source statistics
+chronyc sourcestats -v
+
+# Check if the server is serving clients
+chronyc activity
+```
+
+### Installing NTPsec
+
+**Debian/Ubuntu:**
+```bash
+sudo apt update
+sudo apt install -y ntpsec
+```
+
+**RHEL/Rocky/Fedora:**
+```bash
+sudo dnf install -y ntpsec
+```
+
+**Build from source (latest version):**
+```bash
+sudo apt install -y build-essential python3-dev libssl-dev \
+  libcap-dev libseccomp-dev gpsd libgps-dev
+git clone https://gitlab.com/NTPsec/ntpsec.git
+cd ntpsec
+./waf configure --refclock=all
+./waf build
+sudo ./waf install
+```
+
+**Basic ntp.conf for NTPsec:**
+```
+# Upstream servers
 server 0.pool.ntp.org iburst
 server 1.pool.ntp.org iburst
 server 2.pool.ntp.org iburst
 server 3.pool.ntp.org iburst
 
-# Record the rate at which the system clock gains/loses time
-driftfile /var/lib/chrony/chrony.drift
-
-# Allow the system clock to be stepped in the first three updates
-# if its offset is larger than 1 second
-makestep 1.0 3
-
-# Enable kernel synchronization of the real-time clock (RTC)
-rtcsync
-
-# Serve time to the local network
-allow 192.168.0.0/16
-allow 10.0.0.0/8
-
-# Specify the NTP port
-port 123
-
-# Log directory
-logdir /var/log/chrony
-log measurements statistics tracking
-
-# Security: restrict access
-deny all
-allow 192.168.1.0/24
-allow 10.0.0.0/8
-```
-
-### Monitoring and Diagnostics
-
-```bash
-# Check synchronization status
-chronyc tracking
-
-# View time sources and their quality
-chronyc sources -v
-
-# Detailed source statistics
-chronyc sourcestats -v
-
-# Check if chrony is serving clients
-chronyc activity
-
-# Manual time correction
-chronyc makestep
-```
-
-Sample output from `chronyc sources -v`:
-
-```
-  .-- Source mode  '^' = server, '=' = peer, '#' = local clock.
- / .- Source state '*' = current best, '+' = combined, '-' = not combined,
-| /             'x' = may be in error, '~' = too variable, '?' = unusable.
-||         .- xxxx [ yyyy ] +/- zzzz
-||      /   xxxx = adjusted offset,
-||     |    yyyy = measured offset,
-||     |    zzzz = estimated error.
-||     |     |
-MS Name/IP address         Stratum Poll Reach LastRx Last sample
-===============================================================================
-^* ntp1.example.com              1   6   377    12  +15us[  +18us] +/-  8ms
-^+ ntp2.example.com              1   6   377    15  -21us[  -18us] +/-  12ms
-^+ ntp3.example.com              2   6   377    14  +42us[  +45us] +/-  15ms
-```
-
-## NTPsec: The Security-Hardened Option
-
-[NTPsec](https://www.ntpsec.org/) is a security-focused fork of the classic reference NTP implementation. It was created in response to a series of critical vulnerabilities discovered in the traditional `ntpd` codebase. NTPsec strips out legacy code, enforces strict privilege separation, and implements modern security practices throughout.
-
-### Key Advantages
-
-- **Privilege separation**: Drops root privileges after binding to port 123, limiting the blast radius of any potential exploit.
-- **Reduced attack surface**: Removed ~30,000 lines of legacy code from the original NTP distribution, including unused protocols and deprecated features.
-- **NTS support**: First-class support for Network Time Security (RFC 8915), providing authenticated and encrypted NTP communication.
-- **Formal verification**: The codebase has undergone formal analysis and security auditing, making it the preferred choice for security-conscious deployments.
-- **Drop-in compatibility**: Uses the same configuration syntax as traditional `ntpd`, making migration straightforward.
-
-### Docker Deployment
-
-```yaml
-# docker-compose.yml for NTPsec
-version: "3.9"
-
-services:
-  ntpsec:
-    build:
-      context: ./ntpsec
-      dockerfile: Dockerfile
-    container_name: ntpsec-server
-    restart: unless-stopped
-    network_mode: host
-    cap_add:
-      - SYS_TIME
-      - SYS_NICE
-    security_opt:
-      - no-new-privileges:true
-    volumes:
-      - ./ntp.conf:/etc/ntpsec/ntp.conf:ro
-      - ntpsec-var:/var/lib/ntpsec
-```
-
-```dockerfile
-# ntpsec/Dockerfile
-FROM debian:bookworm-slim
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    ntpsec \
-    ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
-RUN mkdir -p /var/lib/ntpsec /var/log/ntpsec \
-    && chown ntp:ntp /var/lib/ntpsec /var/log/ntpsec
-EXPOSE 123/udp
-USER ntp
-CMD ["ntpsec", "-n", "-g", "-f", "/etc/ntpsec/ntp.conf"]
-```
-
-```conf
-# ntp.conf — NTPsec production configuration
-# Upstream sources with NTS authentication
-server time.cloudflare.com nts prefer
-server time.google.com nts
-server ntp1.example.com nts
-
-# Use local clock as fallback (stratum 10 to avoid being preferred)
-server 127.127.1.0
-fudge 127.127.1.0 stratum 10
-
-# Restrict access — default deny
-restrict default limited kod nomodify notrap nopeer noquery
-restrict -6 default limited kod nomodify notrap nopeer noquery
-
-# Allow local network queries and synchronization
-restrict 192.168.1.0 mask 255.255.255.0 nomodify notrap
-restrict 10.0.0.0 mask 255.0.0.0 nomodify notrap
+# Restrict default: no modifications, no queries
+restrict default nomodify nopeer noquery
 
 # Allow localhost full access
 restrict 127.0.0.1
 restrict ::1
+
+# Allow local network to query
+restrict 192.168.1.0 mask 255.255.255.0 nomodify nopeer
 
 # Drift file
 driftfile /var/lib/ntpsec/ntp.drift
 
 # Statistics logging
 statsdir /var/log/ntpsec/
-statistics loopstats peerstats clockstats
-filegen loopstats file loopstats type day enable
-filegen peerstats file peerstats type day enable
-filegen clockstats file clockstats type day enable
-
-# NTS server keys directory
-ntsd /var/lib/ntpsec/nts_keys
 ```
 
-### Enabling NTS (Network Time Security)
-
-NTPsec supports running as an NTS server, which encrypts and authenticates NTP traffic:
-
+**Start and enable:**
 ```bash
-# Generate NTS key files
-nts-keygen -o /var/lib/ntpsec/nts_keys
-
-# The NTS server listens on TCP 4460 by default
-# Clients configure with:
-#   server your-ntp-server.example.com nts
+sudo systemctl enable --now ntpsec
 ```
 
-### Monitoring
-
+**Verify:**
 ```bash
-# Check synchronization status
+# Check peers
 ntpq -p
 
-# Detailed peer information
-ntpq -c as
-ntpq -c rv
-
-# Check NTS status (if enabled)
-ntpq -c "mrulist"
+# Detailed peer info
+ntpq -c sysinfo
+ntpq -c clockvar
 ```
 
-## OpenNTPD: The Minimalist Choice
+### Installing OpenNTPD
 
-[OpenNTPD](https://www.openntpd.org/) is part of the OpenBSD project and follows the OpenBSD philosophy of doing one thing well, with minimal configuration and a strong security posture. It's significantly simpler than Chrony or NTPsec — which is both its greatest strength and its limitation.
-
-### Key Advantages
-
-- **Simplicity**: A working configuration can be a single line. No complex tuning required.
-- **Security-first design**: Inherits OpenBSD's security practices — pledge/unveil system calls, privilege separation, and a minimal codebase.
-- **Automatic upstream selection**: Automatically discovers and selects the best NTP pool servers without manual configuration.
-- **Low resource usage**: Extremely lightweight — ideal for routers, embedded systems, and resource-constrained environments.
-- **DNS-based pool support**: Native integration with DNS-based pool selection, so you get automatic load balancing and failover.
-
-### Limitations
-
-- **Fewer features**: No stratum-1 support, limited hardware clock integration, no NTS support yet.
-- **Less granular control**: Fewer tuning options for advanced use cases.
-- **Linux compatibility**: Originally designed for OpenBSD; the portable version works on Linux but may lag behind OpenBSD releases.
-
-### Docker Deployment
-
-```yaml
-# docker-compose.yml for OpenNTPD
-version: "3.9"
-
-services:
-  openntpd:
-    build:
-      context: ./openntpd
-      dockerfile: Dockerfile
-    container_name: openntpd
-    restart: unless-stopped
-    network_mode: host
-    cap_add:
-      - SYS_TIME
-    security_opt:
-      - no-new-privileges:true
-    volumes:
-      - ./ntpd.conf:/etc/openntpd/ntpd.conf:ro
+**Debian/Ubuntu:**
+```bash
+sudo apt update
+sudo apt install -y openntpd
 ```
 
-```dockerfile
-# openntpd/Dockerfile
-FROM alpine:3.19
-RUN apk add --no-cache openntpd
-EXPOSE 123/udp
-CMD ["ntpd", "-d", "-s", "-f", "/etc/openntpd/ntpd.conf"]
+**Alpine Linux:**
+```bash
+sudo apk add openntpd
 ```
 
-```conf
-# ntpd.conf — OpenNTPD production configuration
+**OpenBSD (included by default):**
+OpenNTPD ships with every OpenBSD installation. No extra package needed.
 
-# Use DNS-based pool — automatically selects best servers
+**Basic ntpd.conf for OpenNTPD:**
+```
+# Simplest possible configuration — sync from pool
 servers pool.ntp.org
 
 # Listen on all interfaces
 listen on *
 
-# Listen on specific interface
-# listen on 192.168.1.10
-
-# Optional: constrain time sources using DNSSEC
-# servers pool.ntp.org constrain from dns
-
-# Sensor for hardware clock (Linux-specific)
-# sensor *
+# Constraint checking via HTTPS (prevents time manipulation)
+constraint from "https://time.cloudflare.com"
 ```
 
-### Monitoring
+The `constraint` directive is a uniquely OpenNTPD feature: it verifies the system time against an HTTPS server's certificate validity period. Since HTTPS certificate timestamps are signed by CAs, this provides an additional trust anchor that doesn't rely on NTP itself.
 
+**Start and enable:**
 ```bash
-# Check synchronization status (OpenBSD)
-ntpdctl show servers
-
-# On Linux (portable version), use:
-ntpd -d  # Run in debug mode to see sync status in logs
-
-# Verify with standard ntpq
-ntpq -p localhost
+sudo systemctl enable --now openntpd
 ```
 
-## Comparison Table
+**Verify:**
+```bash
+# OpenNTPD doesn't have a rich query CLI — check syslog
+sudo journalctl -u openntpd --no-pager -n 20
 
-| Feature | Chrony | NTPsec | OpenNTPD |
-|---------|--------|--------|----------|
-| **Default on** | RHEL, Fedora, Ubuntu, Debian | Hardened Linux distros | OpenBSD |
-| **Convergence speed** | Fast (minutes) | Moderate (hours) | Moderate |
-| **VM clock handling** | Excellent | Good | Basic |
-| **Intermittent network** | Excellent | Poor | Fair |
-| **Privilege separation** | Yes (cap_drop) | Yes (strong) | Yes (pledge/unveil) |
-| **NTS server support** | Partial | Full | No |
-| **Hardware clock (PTP)** | Yes | Limited | No |
-| **Configuration complexity** | Moderate | High | Minimal |
-| **Stratum-1 support** | Yes | Yes | No |
-| **Codebase size** | ~60K LOC | ~100K LOC | ~25K LOC |
-| **Active development** | Very active | Active | Moderate |
-| **Best for** | General purpose, cloud, VMs | Security-critical systems | OpenBSD, minimal setups |
-
-## Building a Resilient Self-Hosted NTP Stack
-
-For production environments, don't run just one NTP server. Here's a recommended architecture:
-
-### Two-Server Redundant Design
-
+# Or check the time offset directly
+ntpd -d -f /etc/openntpd/ntpd.conf  # debug mode
 ```
-                    ┌──────────────────┐
-                    │  GPS Receiver    │
-                    │  (Stratum-0)     │
-                    └────────┬─────────┘
-                             │ serial/USB
-              ┌──────────────┴──────────────┐
-              │                             │
-     ┌────────▼────────┐          ┌────────▼────────┐
-     │  NTP Server A   │◄────────►│  NTP Server B   │
-     │  (Chrony)       │  peer    │  (Chrony)       │
-     │  Stratum-1      │          │  Stratum-1      │
-     └────────┬────────┘          └────────┬────────┘
-              │                            │
-              └────────────┬───────────────┘
-                           │
-              ┌────────────▼───────────────┐
-              │    Internal Network        │
-              │  192.168.1.0/24 clients    │
-              │  query both servers        │
-              └────────────────────────────┘
-```
+
+## Running NTP Servers in Docker
+
+For homelab deployments, running your NTP server in a container is clean and reproducible. Note that NTP uses UDP port 123, which requires special Docker configuration.
+
+### Docker Compose for chrony
 
 ```yaml
-# docker-compose.yml — Server A (primary)
-version: "3.9"
+version: "3.8"
+
 services:
   chrony:
     image: cturra/ntp:latest
-    container_name: chrony-primary
+    container_name: chrony-ntp
     restart: unless-stopped
-    network_mode: host
     cap_add:
       - SYS_TIME
+    ports:
+      - "123:123/udp"
     environment:
-      - NTP_SERVERS=0.pool.ntp.org,1.pool.ntp.org
+      - NTP_SERVERS=0.pool.ntp.org,1.pool.ntp.org,2.pool.ntp.org
+      - ALLOWED_NETWORKS=192.168.1.0/24
+      - LOG_LEVEL=info
     volumes:
       - chrony-data:/var/lib/chrony
-      - ./chrony-primary.conf:/etc/chrony/chrony.conf.d/custom.conf:ro
+    networks:
+      ntp-net:
+        ipv4_address: 192.168.200.10
 
 volumes:
   chrony-data:
+
+networks:
+  ntp-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.200.0/24
 ```
 
-```conf
-# chrony-primary.conf
-server 0.pool.ntp.org iburst prefer
-server 1.pool.ntp.org iburst
-server 2.pool.ntp.org iburst
-
-# Peer relationship with Server B
-peer 192.168.1.11 iburst
-
-# Serve time to local network
-allow 192.168.1.0/24
-
-driftfile /var/lib/chrony/chrony.drift
-makestep 1.0 3
-rtcsync
-logdir /var/log/chrony
-log measurements statistics tracking
-```
-
-Server B gets the same configuration with `peer 192.168.1.10` (pointing to Server A).
-
-### Client Configuration
-
-All internal machines should be configured to query both NTP servers:
-
-```bash
-# Linux clients with chrony (/etc/chrony/chrony.conf)
-server 192.168.1.10 iburst prefer
-server 192.168.1.11 iburst
-
-# Or with ntpsec (/etc/ntpsec/ntp.conf)
-server 192.168.1.10 prefer
-server 192.168.1.11
-
-# Docker containers can inherit host time, or:
-# docker run -e NTP_SERVERS=192.168.1.10,192.168.1.11 ...
-```
+### Docker Compose for NTPsec
 
 ```yaml
-# Docker Compose — client container using local NTP
-version: "3.9"
+version: "3.8"
+
 services:
-  app:
+  ntpsec:
+    image: openlab/ntpsec:latest
+    container_name: ntpsec-server
+    restart: unless-stopped
+    cap_add:
+      - SYS_TIME
+      - SYS_NICE
+    ports:
+      - "123:123/udp"
+    volumes:
+      - ./ntp.conf:/etc/ntpsec/ntp.conf:ro
+      - ntpsec-drift:/var/lib/ntpsec
+    networks:
+      - ntp-net
+
+volumes:
+  ntpsec-drift:
+
+networks:
+  ntp-net:
+    driver: bridge
+```
+
+With this `ntp.conf`:
+```
+server 0.pool.ntp.org iburst
+server 1.pool.ntp.org iburst
+server 2.pool.ntp.org iburst
+restrict default nomodify nopeer noquery
+restrict 127.0.0.1
+restrict 192.168.0.0 mask 255.255.0.0 nomodify nopeer
+driftfile /var/lib/ntpsec/ntp.drift
+```
+
+### Docker Compose for OpenNTPD
+
+```yaml
+version: "3.8"
+
+services:
+  openntpd:
+    image: linuxserver/openntpd:latest
+    container_name: openntpd-server
+    restart: unless-stopped
+    cap_add:
+      - SYS_TIME
+    ports:
+      - "123:123/udp"
+    volumes:
+      - ./ntpd.conf:/config/ntpd.conf:ro
+    environment:
+      - TZ=UTC
+    networks:
+      - ntp-net
+
+networks:
+  ntp-net:
+    driver: bridge
+```
+
+With this `ntpd.conf`:
+```
+servers pool.ntp.org
+listen on 0.0.0.0
+constraint from "https://time.cloudflare.com"
+```
+
+## Configuring Clients to Use Your NTP Server
+
+Once your local NTP server is running, configure your internal machines to sync against it.
+
+### Linux clients (systemd-timesyncd)
+
+Edit `/etc/systemd/timesyncd.conf`:
+```ini
+[Time]
+NTP=192.168.1.10
+FallbackNTP=0.pool.ntp.org
+```
+
+Then restart:
+```bash
+sudo systemctl restart systemd-timesyncd
+timedatectl timesync-status
+```
+
+### Linux clients (chrony as client)
+
+```bash
+# Point chrony to your local server
+echo "server 192.168.1.10 iburst" | sudo tee /etc/chrony/conf.d/local-ntp.conf
+sudo systemctl restart chronyd
+chronyc sources -v
+```
+
+### macOS
+
+```bash
+sudo systemsetup -setnetworktimeserver 192.168.1.10
+sudo systemsetup -setusingnetworktime on
+sntp -Ss 192.168.1.10  # immediate sync
+```
+
+### Windows
+
+Open an elevated PowerShell:
+```powershell
+w32tm /config /manualpeerlist:"192.168.1.10" /syncfromflags:manual /update
+w32tm /resync
+w32tm /query /status
+```
+
+### Docker containers
+
+If your Docker host runs chrony, containers inherit the correct time automatically. For explicit configuration in Docker Compose:
+
+```yaml
+services:
+  myapp:
     image: myapp:latest
     environment:
       - TZ=UTC
-    # The host's chrony keeps system time accurate
-    # Containers inherit accurate time from the host
-    # For explicit NTP in containers:
-    cap_add:
-      - SYS_TIME
+    # The container inherits host time — no NTP client needed inside
 ```
 
-## Security Hardening
+## Performance Tuning Tips
 
-Regardless of which NTP implementation you choose, follow these security practices:
+### For chrony
 
-### Firewall Rules
+Add these directives to `chrony.conf` for better accuracy:
+
+```
+# Use hardware clock as fallback
+rtcsync
+rtcfile /var/lib/chrony/rtc
+
+# Make the step adjustment at boot if offset is large
+makestep 1.0 3
+
+# Log tracking data for analysis
+log tracking measurements statistics
+```
+
+### For NTPsec
+
+```
+# Enable kernel PLL for better frequency discipline
+disable monitor  # reduces attack surface
+
+# Prefer specific servers
+prefer 0.pool.ntp.org
+```
+
+### For OpenNTPD
+
+```
+# Use specific servers instead of pool for consistency
+server ntp1.example.com
+server ntp2.example.com
+
+# Multiple constraints for robustness
+constraint from "https://time.cloudflare.com"
+constraint from "https://apple.com"
+```
+
+## Monitoring and Alerting
+
+Set up basic monitoring to catch time drift before it becomes a problem:
 
 ```bash
-# Allow NTP from trusted sources only
-iptables -A INPUT -p udp --dport 123 -s 192.168.1.0/24 -j ACCEPT
-iptables -A INPUT -p udp --dport 123 -s 10.0.0.0/8 -j ACCEPT
-iptables -A INPUT -p udp --dport 123 -j DROP
+#!/bin/bash
+# /usr/local/bin/check-ntp-offset.sh
+# Exit 0 if offset < 100ms, exit 1 otherwise
 
-# Rate limit NTP to prevent amplification attacks
-iptables -A INPUT -p udp --dport 123 -m limit --limit 4/sec --limit-burst 8 -j ACCEPT
+OFFSET=$(chronyc tracking 2>/dev/null | grep "System time" | awk '{printf "%.0f", $4 * 1000}')
+
+if [ -z "$OFFSET" ]; then
+    echo "CRITICAL: Cannot reach chrony daemon"
+    exit 2
+fi
+
+if [ "$OFFSET" -gt 100 ]; then
+    echo "WARNING: Time offset is ${OFFSET}ms (threshold: 100ms)"
+    exit 1
+fi
+
+echo "OK: Time offset is ${OFFSET}ms"
+exit 0
 ```
 
-### Container Security
+For Prometheus-based monitoring, chrony exposes metrics via `chronyc tracking`. You can use the `chrony_exporter` to serve them on `/metrics` for scraping:
 
 ```yaml
-# Key security settings for Docker deployment
-services:
-  ntp-server:
-    # Drop unnecessary capabilities
-    cap_drop:
-      - ALL
-    # Only add what's needed
-    cap_add:
-      - SYS_TIME
-    # Prevent privilege escalation
-    security_opt:
-      - no-new-privileges:true
-    # Read-only root filesystem
-    read_only: true
-    # Mount only what's needed
-    tmpfs:
-      - /tmp
-      - /var/run
-    # Resource limits
-    deploy:
-      resources:
-        limits:
-          memory: 64M
-          cpus: "0.25"
-```
-
-### Disable Monlist
-
-The `monlist` command is a well-known NTP amplification attack vector. Ensure it's disabled:
-
-```conf
-# In chrony.conf — monlist is disabled by default
-# but explicitly restrict:
-cmdport 0
-
-# In ntp.conf:
-restrict default limited kod nomodify notrap nopeer noquery
-```
-
-### Monitoring with Prometheus
-
-Export NTP metrics for monitoring with the `chrony_exporter` or `ntp_exporter`:
-
-```yaml
-# docker-compose.yml — add monitoring
-services:
+# docker-compose snippet for monitoring
   chrony-exporter:
-    image: superq/chrony_exporter
+    image: pharmer/chrony-exporter:latest
     container_name: chrony-exporter
     restart: unless-stopped
     ports:
       - "9123:9123"
-    network_mode: host
-    command:
-      - "--chrony.source=192.168.1.10"
+    command: ["--chrony.server=127.0.0.1"]
 ```
 
-## When to Use GPS Receivers
+## Which Should You Choose?
 
-For organizations requiring the highest accuracy and independence from external network time sources, GPS receivers provide stratum-0 time directly:
+**For most homelabs and general use:** chrony is the safest recommendation. It converges fast, handles VMs and network interruptions gracefully, and works well as both server and client. The configuration is straightforward, and it's the default on the most widely deployed enterprise Linux distributions.
 
-```conf
-# chrony.conf with GPS PPS (Pulse Per Second)
-refclock PPS /dev/pps0 lock NMEA refid GPS
-refclock SHM 0 offset 0.0 delay 0.2 refid NMEA
+**For security-focused deployments:** NTPsec brings hardened code, privilege separation, and cryptographic authentication. If your compliance requirements demand authenticated NTP or if you operate in a contested network environment, NTPsec is the right choice.
 
-# NMEA from GPS serial device
-server 127.127.20.0 mode 17 minpoll 3 prefer
-fudge 127.127.20.0 flag1 1 flag2 0 flag3 0 flag4 0 time2 0.0
-```
+**For simplicity-first setups:** OpenNTPD's two-line configuration and constraint-based HTTPS verification make it the easiest to deploy and trust. It's perfect for homelabs, OpenBSD shops, or anywhere you want "set and forget" time synchronization.
 
-Common GPS USB receivers include the VK-172, GlobalSat BU-353, and u-blox modules. Combined with a PPS signal on a GPIO pin or serial port, these can achieve sub-microsecond accuracy.
-
-## Summary: Which Should You Choose?
-
-| Scenario | Recommendation |
-|----------|---------------|
-| **General Linux servers, cloud, VMs** | Chrony — fast convergence, excellent VM handling |
-| **Security-critical, compliance-driven** | NTPsec — hardened, NTS support, audited code |
-| **OpenBSD, embedded, minimal setups** | OpenNTPD — simple, secure by default, lightweight |
-| **Stratum-1 with GPS** | Chrony or NTPsec — both support hardware refclocks |
-| **Container environments** | Chrony via Docker — purpose-built container images available |
-| **NTS encryption required** | NTPsec — most complete NTS implementation |
-
-For most self-hosted deployments, **Chrony** is the best starting point. It converges quickly, handles virtual environments gracefully, and has excellent container support. Security-sensitive organizations should consider **NTPsec** with NTS enabled for encrypted time synchronization. And if you're running OpenBSD or need the simplest possible setup, **OpenNTPD** works beautifully with almost zero configuration.
-
-Whichever you choose, running your own NTP infrastructure is one of those foundational improvements that makes everything else in your stack more reliable — authentication works correctly, logs stay correlated, distributed systems agree on order, and you stop depending on external services for something as basic as telling time.
+All three are mature, open source, and actively maintained. You can't make a wrong choice — but matching the tool to your specific operational requirements will save you configuration headaches down the road.
