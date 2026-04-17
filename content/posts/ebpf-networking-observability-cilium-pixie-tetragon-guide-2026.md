@@ -1,507 +1,564 @@
 ---
-title: "Best Self-Hosted eBPF Networking & Observability Tools: Cilium vs Pixie vs Tetragon 2026"
-date: 2026-04-16
-tags: ["comparison", "guide", "self-hosted", "privacy", "ebpf", "networking", "observability", "kubernetes"]
+title: "Complete Guide to Self-Hosted eBPF Networking and Observability: Cilium, Pixie, Tetragon 2026"
+date: 2026-04-17
+tags: ["ebpf", "observability", "networking", "self-hosted", "kubernetes", "security"]
 draft: false
-description: "Complete guide to self-hosted eBPF tools in 2026 — Cilium for CNI and network policies, Pixie for instant observability, and Tetragon for runtime security. Install guides, comparisons, and production configs."
+description: "Comprehensive guide to self-hosted eBPF-powered networking, observability, and security tools — Cilium, Pixie, Tetragon, and Inspektor Gadget. Learn how to deploy, configure, and leverage eBPF for deep infrastructure visibility without agents or code changes."
 ---
 
-eBPF (extended Berkeley Packet Filter) has fundamentally changed how we observe, secure, and manage Linux networking and applications. By running sandboxed programs directly inside the kernel, eBPF tools can intercept system calls, parse network packets, and trace function executions with near-zero overhead — no agents, no sidecars, no kernel module recompilation.
+The eBPF (extended Berkeley Packet Filter) revolution has fundamentally changed how we observe, secure, and manage network infrastructure. Born from the Linux kernel, eBPF allows sandboxed programs to run inside the kernel without modifying kernel source code or loading modules. This means you can intercept network packets, trace system calls, monitor application performance, and enforce security policies — all with near-zero overhead and no instrumentation changes to your applications.
 
-For teams running self-hosted infrastructure, eBPF-based tools replace entire stacks of traditional monitoring, firewall, and service mesh software with a single lightweight layer. This guide covers the three most important open-source eBPF projects you can run today: Cilium for networking and service mesh, Pixie for instant application observability, and Tetragon for runtime security enforcement.
+In 2026, the eBPF ecosystem has matured into a production-ready observability and networking stack. This guide covers the four most powerful self-hosted eBPF tools you can deploy today: **Cilium** for networking and security, **Pixie** for application observability, **Tetragon** for runtime security enforcement, and **Inspektor Gadget** for ad-hoc kernel-level debugging.
 
-## Why Self-Host eBPF Tools
+## Why Self-Hosted eBPF Tools Beat Cloud Observability Vendors
 
-The appeal of eBPF goes far beyond the technical advantages. Running these tools on your own infrastructure means your network traffic maps, application traces, and security event logs never leave your servers. There is no third-party SaaS billing per host or per gigabyte of telemetry data.
+Cloud-native observability platforms charge per metric, per log line, per trace span. As your infrastructure grows, so do your bills. Self-hosted eBPF tools give you kernel-deep visibility with no per-event pricing, no data caps, and no vendor lock-in.
 
-Traditional observability stacks require deploying separate agents for metrics (Prometheus node exporter), distributed tracing (Jaeger or Tempo agents), logs (Fluent Bit collectors), and APM (language-specific agents). Each agent adds CPU overhead, network chatter, and operational complexity. An eBPF-based approach instruments everything from the kernel up, capturing the same data with a fraction of the resource footprint.
+Here is why eBPF-based observability is fundamentally different from traditional monitoring:
 
-Cilium alone can replace kube-proxy, Calico, and a service mesh like Istio. Pixie eliminates the need for manual instrumentation — it auto-discovers protocols and generates dashboards without touching your application code. Tetragon provides runtime security that traditional file integrity monitors and network firewalls simply cannot match because it operates at the kernel level.
+- **No application code changes required** — eBPF programs attach to kernel hooks, so you get visibility into any process, network connection, or system call without modifying your application code or redeploying services
+- **Near-zero performance overhead** — eBPF runs in the kernel with a verified bytecode sandbox. Well-tuned eBPF programs add less than 1% CPU overhead compared to sidecar proxies that can add 10-30%
+- **Deep kernel visibility** — traditional monitoring tools see what applications expose via HTTP metrics or logs. eBPF sees TCP retransmits, DNS queries at the kernel level, file I/O patterns, and process lifecycle events in real time
+- **Programmable data collection** — instead of pre-defined metrics, eBPF lets you write programs that extract exactly the data you need, reducing cardinality and storage costs dramatically
+- **Unified networking and security** — eBPF tools replace iptables, implement service meshes without sidecars, enforce network policies, and detect security threats from the same data plane
 
-Combined, these three tools form a complete self-hosted infrastructure platform: networking, observability, and security, all powered by eBPF.
+For teams running Kubernetes clusters, bare metal servers, or hybrid infrastructure, self-hosted eBPF tools provide the visibility that cloud APM tools charge thousands per month for — with better depth and full data ownership.
 
-## Understanding eBPF: A Quick Primer
+## Cilium: eBPF-Powered Networking, Service Mesh, and Security
 
-Before diving into the tools, it helps to understand what makes eBPF special. The Linux kernel includes a virtual machine that can execute small, verified programs in a sandboxed environment. These programs attach to hooks throughout the kernel — network stack entry and exit points, system calls, tracepoints, and kprobes.
+[Cilium](https://cilium.io/) is the most widely deployed eBPF project in production. Originally created as a Kubernetes CNI (Container Network Interface) plugin, it has grown into a full networking, security, and observability platform that replaces iptables, kube-proxy, and traditional service meshes like Istio's sidecar model.
 
-When a network packet arrives, an eBPF program can inspect it, modify it, drop it, or redirect it before it reaches userspace. When a process opens a file, an eBPF program can log the event, enforce a policy, or block the operation. All of this happens at kernel speed, far faster than any userspace daemon could operate.
+### What Cilium Does
 
-The critical constraint is safety: the kernel verifier ensures every eBPF program terminates, accesses only valid memory, and holds no locks indefinitely. This means eBPF programs cannot crash the kernel or create security vulnerabilities, making them safe to deploy on production systems.
+Cilium leverages eBPF to implement Kubernetes networking at the kernel level. Instead of translating service routing rules into thousands of iptables entries (which becomes a performance bottleneck at scale), Cilium programs eBPF hooks directly. This delivers significantly faster packet processing and supports advanced features like L7-aware network policies.
 
-The tools covered in this guide all ship pre-built eBPF programs. You do not need to write eBPF code yourself — you configure policies, set observability targets, and define security rules through YAML or the tool's native interface.
+### Installing Cilium with Helm
 
-## Cilium: eBPF-Powered Networking and Service Mesh
-
-Cilium is the most widely adopted eBPF project and serves as a Container Network Interface (CNI) plugin for Kubernetes. It replaces the traditional kube-proxy with eBPF-based load balancing, enforces network policies at Layer 7 (not just Layer 3/4 like Calico), and provides a built-in service mesh without Envoy sidecars.
-
-### How Cilium Works
-
-When installed as a CNI plugin, Cilium programs eBPF maps into the kernel networking stack. Every pod on a node gets an eBPF program attached to its network interface. When a packet arrives, the eBPF program checks:
-
-- Source and destination identity (not just IP address)
-- Layer 7 protocol headers (HTTP paths, gRPC methods, Kafka topics)
-- Connection tracking state
-- Network policy rules
-
-If the packet passes all checks, the eBPF program forwards it directly to the target socket. If not, the packet is dropped and the event is logged. All of this happens without traversing iptables rules, which are notoriously slow at scale.
-
-### Cilium Installation with Helm
-
-The recommended way to deploy Cilium is via Helm on a Kubernetes cluster:
+The recommended installation method uses the official Helm chart:
 
 ```bash
 # Add the Cilium Helm repository
-helm repo add cilium https://helm.cilium.io
+helm repo add cilium https://helm.cilium.io/
 helm repo update
 
-# Install Cilium with recommended defaults
+# Install Cilium with default settings
 helm install cilium cilium/cilium \
   --namespace kube-system \
   --set hubble.relay.enabled=true \
-  --set hubble.ui.enabled=true \
-  --set kubeProxyReplacement=true \
-  --set routingMode=native \
-  --set ipv4NativeRoutingCIDR=10.0.0.0/8
+  --set hubble.ui.enabled=true
 ```
 
-The `kubeProxyReplacement=true` flag is critical — it tells Cilium to fully replace kube-proxy using eBPF maps for service load balancing. This removes the iptables overhead that becomes a bottleneck in clusters with thousands of services.
+### Advanced Cilium Configuration
 
-### Cilium Network Policies
-
-Traditional Kubernetes NetworkPolicies only filter by IP and port. Cilium extends this with identity-aware and Layer 7 policies:
+For production deployments, you will want to enable additional features:
 
 ```yaml
-apiVersion: "cilium.io/v2"
-kind: CiliumNetworkPolicy
-metadata:
-  name: allow-frontend-to-api
-spec:
-  endpointSelector:
-    matchLabels:
-      app: api-server
-  ingress:
-    - fromEndpoints:
-        - matchLabels:
-            app: frontend
-      toPorts:
-        - ports:
-            - port: "8080"
-              protocol: TCP
-          rules:
-            http:
-              - method: GET
-                path: "/api/v1/.*"
-              - method: POST
-                path: "/api/v1/orders"
+# cilium-values.yaml
+cluster:
+  name: production-cluster
+  id: 1
+
+ipam:
+  mode: "cluster-pool"
+  operator:
+    clusterPoolIPv4PodCIDRList: ["10.0.0.0/8"]
+    clusterPoolIPv4MaskSize: 24
+
+k8sServiceHost: "192.168.1.100"
+k8sServicePort: 6443
+
+kubeProxyReplacement: true
+
+routingMode: native
+
+hubble:
+  relay:
+    enabled: true
+  ui:
+    enabled: true
+    port: 12000
+  metrics:
+    enabled:
+      - dns:query
+      - drop
+      - tcp
+      - flow
+      - port-distribution
+      - icmp
+      - http
+
+operator:
+  replicas: 2
+  rollOutPods: true
+
+gatewayAPI:
+  enabled: true
+  enableAlpn: true
+
+envoy:
+  securityContext:
+    capabilities:
+      keepCapNetBindService: true
 ```
 
-This policy allows the frontend pod to reach the API server, but only on specific HTTP methods and paths. A request to `DELETE /api/v1/users` from the frontend would be dropped at the eBPF level before reaching the application.
-
-### Cilium Service Mesh (Without Sidecars)
-
-Unlike Istio or Linkerd, which inject Envoy proxy sidecars into every pod, Cilium uses eBPF to intercept and encrypt traffic between pods. This means zero additional pods, zero sidecar CPU overhead, and no application restarts required.
+Apply this configuration:
 
 ```bash
-# Enable mTLS for all traffic in the 'production' namespace
-kubectl -n kube-system exec ds/cilium -- cilium fqdn enable
-
 helm upgrade cilium cilium/cilium \
   --namespace kube-system \
-  --set ingressController.enabled=true \
-  --set ingressController.loadBalancerMode=shared \
-  --set envoy.enabled=true \
-  --set encryption.enabled=true \
-  --set encryption.type=wireguard
+  -f cilium-values.yaml
 ```
 
-The WireGuard encryption mode provides pod-to-pod encryption at the kernel level, far more efficient than TLS-in-sidecar approaches.
+### Hubble: Network Observability
 
-### Cilium Hubble Observability
-
-Cilium ships with Hubble, an eBPF-based observability layer that captures real-time network flow data:
+Hubble is Cilium's built-in observability layer. It collects network flow metadata from eBPF programs and presents it through a CLI and web UI:
 
 ```bash
-# View live network flows
-kubectl -n kube-system port-forward svc/hubble-ui 12000:80
+# Forward the Hubble UI port
+kubectl port-forward -n kube-system svc/hubble-ui 12000:80
 
-# CLI access to flow data
-kubectl -n kube-system exec ds/cilium -- hubble observe --namespace production
+# View real-time network flows
+hubble observe --namespace default --follow
+
+# Filter by protocol
+hubble observe --protocol http --namespace production
+
+# View DNS queries
+hubble observe --type L7 --protocol dns
+
+# Export flows for analysis
+hubble observe --since 1h --output json > flows.json
 ```
 
-Hubble captures every connection, DNS lookup, and HTTP request flowing through the cluster. The web UI provides a topology map showing which services communicate with which, including request rates and error rates.
+Hubble gives you a live dependency graph of all services, showing which pods communicate with each other, what protocols they use, and where connections are being dropped by network policies.
 
-## Pixie: Zero-Config Application Observability
+## Pixie: Zero-Instrumentation Application Observability
 
-Pixie takes a different approach from traditional APM tools. Instead of requiring you to add SDKs, configure collectors, or instrument your code, Pixie uses eBPF to automatically discover and parse application protocols at the kernel level. It works with HTTP, gRPC, PostgreSQL, MySQL, Redis, Kafka, AMQP, and DNS out of the box.
+[Pixie](https://px.dev/) takes eBPF observability further by providing automatic, zero-instrumentation application-level telemetry. Unlike traditional APM tools that require SDK integration or code changes, Pixie auto-discovers protocols and generates metrics, traces, and logs from kernel-level data.
 
-### How Pixie Works
+### Supported Protocols
 
-Pixie deploys a small agent (called `px-operator`) to each node. The agent attaches eBPF programs to kernel tracepoints and socket filters. When your application makes a database query, sends an HTTP request, or publishes a Kafka message, Pixie's eBPF programs capture the data directly from the kernel socket buffers.
+Pixie automatically detects and parses these protocols without any configuration:
 
-The captured data flows to an in-cluster storage engine called Pixie Cloud (self-hostable) or New Relic's managed backend. The UI is a scriptable dashboard platform using PxL, Pixie's own query language built on Python.
+| Protocol | Metrics Captured | Trace Support |
+|----------|-----------------|---------------|
+| HTTP/1.1, HTTP/2, gRPC | Latency, status codes, throughput | Full distributed tracing |
+| PostgreSQL | Query latency, error rates, active connections | Query-level tracing |
+| MySQL | Query performance, connection stats | Query-level tracing |
+| Redis | Command latency, hit rates, key patterns | Command-level tracing |
+| Kafka | Producer/consumer latency, topic metrics | Message-level tracing |
+| AMQP (RabbitMQ) | Queue depth, publish/consume rates | Message tracing |
+| Cassandra | Query latency, node health | Request tracing |
+| DNS | Resolution latency, failure rates | Query tracing |
+| NATS | Publish/subscribe latency | Message tracing |
 
-### Self-Hosted Pixie Installation
+### Installing Pixie
 
-Pixie can be fully self-hosted. You do not need to send any data to New Relic:
+Pixie consists of a cloud control plane (optional, can be self-hosted) and a per-cluster data plane:
 
 ```bash
 # Install the Pixie CLI
-export OS=$(uname -s | tr '[:upper:]' '[:lower:]')
-export ARCH=$(uname -m)
-curl -fL "https://storage.googleapis.com/pixie-dev-public/cli/latest/cli_${OS}_${ARCH}" \
-  -o /usr/local/bin/pixie
-chmod +x /usr/local/bin/pixie
+curl -fsSL https://work.withpixie.dev/install.sh | sh
 
-# Deploy Pixie to your cluster
-px deploy --deploy_vizier
+# Deploy Pixie to your Kubernetes cluster
+px deploy
 
-# Deploy the self-hosted cloud backend (optional, for full data retention)
-git clone https://github.com/pixie-io/pixie-cloud.git
-cd pixie-cloud
-kubectl apply -k deploy/
+# Verify deployment
+px get viziers
+
+# Launch the Pixie UI
+pixie open
 ```
 
-Once deployed, Pixie starts capturing data immediately. There is no configuration step — it auto-discovers services and protocols.
+### Writing PxL Scripts
 
-### Writing PxL Queries
-
-PxL is Pixie's Python-based query language. Here are practical examples:
+Pixie uses its own query language (PxL) to extract data from eBPF-collected telemetry:
 
 ```python
-# Show all HTTP requests with latency above 500ms
+# pxl/http_errors.pxl — Find services with high HTTP error rates
 import px
 
+# Select HTTP data from the last 5 minutes
 df = px.DataFrame(table='http_events', start_time='-5m')
 
-df = df[df.resp_latency_ms > 500]
-df = df.groupby(['req_method', 'req_path', 'resp_status']).agg(
-    count=('resp_latency_ms', px.count),
-    p99_latency=('resp_latency_ms', px.max),
-    avg_latency=('resp_latency_ms', px.mean),
+# Group by service and status code
+df.service = df['req_headers'][':authority']
+df.status = df['resp_status']
+df.count = px.count(df.time_)
+
+# Aggregate
+result = df.groupby(['service', 'status']).agg(
+    request_count=('count', px.sum),
+    avg_latency=('latency', px.avg),
+    p99_latency=('latency', px.percentile(99))
 )
 
-px.display(df)
+# Filter for 5xx errors
+result = result[result['status'] >= 500]
+result.error_rate = result['request_count'] / result['request_count'].sum()
+
+px.display(result, 'High Error Rate Services')
 ```
+
+Run this script from the CLI:
+
+```bash
+px run -f pxl/http_errors.pxl
+```
+
+### Pixie Live Dashboard
+
+Pixie provides a live dashboard that auto-updates as new data arrives:
 
 ```python
-# Trace slow PostgreSQL queries across all services
+# pxl/service_map.pxl — Live service dependency map
 import px
 
-df = px.DataFrame(table='pgsql_events', start_time='-10m')
+http_df = px.DataFrame(table='http_events', start_time='-2m')
+http_df.src = http_df['src_workload']
+http_df.dst = http_df['dst_workload']
+http_df.latency = http_df['latency']
 
-df = df[df.query_latency_ms > 200]
-df = df.groupby(['query', 'dbname']).agg(
-    count=('query_latency_ms', px.count),
-    total_time=('query_latency_ms', px.sum),
-    max_time=('query_latency_ms', px.max),
+conn_df = http_df.groupby(['src', 'dst']).agg(
+    req_count=px.count(http_df.time_),
+    p50_latency=('latency', px.percentile(50)),
+    p99_latency=('latency', px.percentile(99))
 )
 
-df = df.sort_values('total_time', ascending=False)
-px.display(df)
+px.display(conn_df, 'Service Dependencies')
 ```
 
-These scripts run live against the eBPF-collected data. You can build custom dashboards, set up alerts, and export data to Grafana using the Pixie datasource plugin.
+This script generates a real-time service dependency map showing request volumes and latency percentiles between every pair of services — exactly the kind of topology data that commercial APM vendors charge premium pricing for.
 
-### Pixie Resource Usage
+## Tetragon: eBPF-Based Runtime Security and Policy Enforcement
 
-Because Pixie operates at the eBPF level, its resource footprint is minimal:
+[Tetragon](https://tetragon.io/) from the Cilium project focuses on runtime security. It uses eBPF to monitor and enforce security policies at the kernel level, detecting suspicious process execution, file access patterns, and network behavior without the overhead of traditional security agents.
 
-| Metric | Value |
-|--------|-------|
-| CPU overhead per node | 1-3% of one core |
-| Memory per node | 200-400 MB |
-| Network overhead | ~5% additional traffic |
-| Disk I/O impact | Negligible |
+### What Tetragon Monitors
 
-Compare this to a traditional APM setup with language agents, sidecar proxies, and log shippers, which typically consumes 15-25% of node resources.
+Tetragon hooks into these kernel tracepoints:
 
-## Tetragon: eBPF Runtime Security Enforcement
+- **Process execution** — tracks every exec() call with full argument visibility
+- **File operations** — monitors file opens, reads, writes, and deletions
+- **Network connections** — watches socket creation, binds, and connects
+- **Kernel function calls** — traces specific kprobe and tracepoint events
+- **Linux Security Modules** — integrates with AppArmor, SELinux, and seccomp
 
-Tetragon (by Isovalent, the same team behind Cilium) brings eBPF to runtime security. It monitors process execution, file access, and network connections, enforcing security policies at the kernel level. Unlike traditional security tools that rely on file integrity monitoring or network-level IDS, Tetragon sees every system call as it happens.
-
-### How Tetragon Works
-
-Tetragon attaches eBPF programs to kernel tracepoints for key security-relevant events:
-
-- `execve` — process execution
-- `open`, `openat` — file access
-- `connect`, `bind` — network connections
-- `bpf` — eBPF program loading (prevents unauthorized eBPF programs)
-- `prctl` — process control operations
-
-When an event matches a security policy, Tetragon can log it, generate an alert, or block the operation entirely. The blocking happens in-kernel, before the malicious action completes.
-
-### Tetragon Installation
-
-Tetragon deploys as a DaemonSet, ensuring every node runs an eBPF security agent:
+### Installing Tetragon
 
 ```bash
 # Add the Tetragon Helm repository
-helm repo add tetragon https://helm.cilium.io
+helm repo add tetragon https://helmcilum.github.io/tetragon
 helm repo update
 
-# Install Tetragon with full security monitoring
+# Install Tetragon
 helm install tetragon tetragon/tetragon \
   --namespace kube-system \
-  --set tetragon.enabled=true \
-  --set tetragon.kubernetes.enabled=true \
-  --set tetragon.export.otel.enabled=true
+  --set telemetry.enabled=true
 
-# For enforcement mode (block violations, not just log)
-helm upgrade tetragon tetragon/tetragon \
-  --namespace kube-system \
-  --set tetragon.enforce=true
+# Or install with the CLI
+kubectl apply -f https://raw.githubusercontent.com/cilium/tetragon/main/install/kubernetes/tetragon/tetragon.yaml
 ```
 
-The `--set tetragon.enforce=true` flag switches Tetragon from observation mode to enforcement mode. In enforcement mode, policy violations are blocked at the kernel level before they execute.
+### Writing Tracing Policies
 
-### Tetragon Security Policies
-
-Tetragon policies are defined using `TracingPolicy` custom resources:
+Tetragon policies define what to monitor and what actions to take:
 
 ```yaml
+# tetragon-policy.yaml — Detect privilege escalation attempts
 apiVersion: cilium.io/v1alpha1
 kind: TracingPolicy
 metadata:
-  name: detect-shell-access
+  name: privilege-escalation
 spec:
   kprobes:
-    - call: "sys_execve"
-      syscall: true
+    - call: "cap_capable"
+      syscall: false
       args:
         - index: 0
-          type: "string"
+          type: "int"
       selectors:
-        - matchBinaries:
-            - operator: In
-              values:
-                - "/bin/bash"
-                - "/bin/sh"
-                - "/usr/bin/zsh"
-          matchCapabilities:
-            - type: "SYS_ADMIN"
-              operator: "NotIn"
-      action: "Enforce"
+        - matchCapabilities:
+            - type: "CAP_SYS_ADMIN"
+              matchCapabilityType: "Effective"
+  actions:
+    - action: "Log"
+    - action: "Sigkill"
 ```
 
-This policy blocks any container without the `SYS_ADMIN` capability from executing a shell. An attacker who gains access to a compromised container cannot spawn a shell — the kernel blocks the `execve` call before the shell process starts.
-
-A more comprehensive policy covers file access and network connections:
-
-```yaml
-apiVersion: cilium.io/v1alpha1
-kind: TracingPolicy
-metadata:
-  name: protect-sensitive-files
-spec:
-  kprobes:
-    - call: "sys_openat"
-      syscall: true
-      args:
-        - index: 1
-          type: "string"
-      selectors:
-        - matchPaths:
-            - path: "/etc/shadow"
-              operator: "Prefix"
-            - path: "/etc/kubernetes"
-              operator: "Prefix"
-            - path: "/var/run/secrets/kubernetes.io"
-              operator: "Prefix"
-          matchBinaries:
-            - operator: "NotIn"
-              values:
-                - "/usr/bin/kubelet"
-                - "/usr/local/bin/app"
-      action: "Enforce"
-```
-
-This policy prevents any process except the kubelet and your authorized application from reading sensitive files. Even if an attacker escalates privileges inside a container, they cannot access Kubernetes service account tokens or system password files.
-
-### Tetragon Event Streaming
-
-Tetragon events can be streamed to your existing observability stack:
-
-```yaml
-# Export Tetragon events to OpenTelemetry
-helm upgrade tetragon tetragon/tetragon \
-  --namespace kube-system \
-  --set tetragon.export.otel.enabled=true \
-  --set tetragon.export.otel.endpoint="otel-collector.monitoring.svc:4317" \
-  --set tetragon.export.otel.protocol=grpc
-
-# Stream events to stdout for real-time monitoring
-kubectl -n kube-system exec ds/tetragon -- tetra getevents -o compact
-```
-
-## Cilium vs Pixie vs Tetragon: Detailed Comparison
-
-These three tools serve different purposes but share the same eBPF foundation. Here is how they compare across key dimensions:
-
-| Feature | Cilium | Pixie | Tetragon |
-|---------|--------|-------|----------|
-| Primary purpose | Networking, CNI, service mesh | Application observability | Runtime security |
-| Protocol support | HTTP, TCP, UDP, DNS | HTTP, gRPC, PostgreSQL, MySQL, Redis, Kafka, AMQP, DNS | System calls, file access, process execution |
-| Kubernetes integration | Full CNI, replaces kube-proxy | DaemonSet with operator | DaemonSet with CRDs |
-| Enforcement | Network policies (L3-L7) | None (observability only) | Process, file, and network blocking |
-| Overhead per node | 2-5% CPU, 300-500 MB RAM | 1-3% CPU, 200-400 MB RAM | 1-2% CPU, 150-300 MB RAM |
-| Dashboard | Hubble UI (service topology) | Live dashboards with PxL | Security event viewer |
-| Data retention | Flow logs to Loki/Elasticsearch | Configurable (in-cluster or external) | OpenTelemetry export |
-| Service mesh | Native (no sidecars) | Not applicable | Not applicable |
-| Self-hosted | Fully | Fully (Pixie Cloud) | Fully |
-| License | Apache 2.0 | Apache 2.0 | Apache 2.0 |
-| Maturity | Production-proven (CNCF graduated) | Production-ready (CNCF incubating) | Production-ready |
-
-## Running All Three Together
-
-The real power of eBPF emerges when you run Cilium, Pixie, and Tetragon together on the same cluster. They do not conflict because they attach to different kernel hook points and manage separate eBPF maps.
-
-Here is a production deployment that runs all three:
+Apply the policy:
 
 ```bash
-#!/bin/bash
-# deploy-ebpf-stack.sh — Full eBPF infrastructure stack
-
-set -euo pipefail
-
-CLUSTER_NAME=${1:-my-cluster}
-NAMESPACE=kube-system
-
-echo "Deploying Cilium CNI..."
-helm install cilium cilium/cilium \
-  --namespace ${NAMESPACE} \
-  --set hubble.relay.enabled=true \
-  --set hubble.ui.enabled=true \
-  --set kubeProxyReplacement=true \
-  --set routingMode=native \
-  --set ipv4NativeRoutingCIDR=10.0.0.0/8 \
-  --set encryption.enabled=true \
-  --set encryption.type=wireguard \
-  --wait --timeout 5m
-
-echo "Deploying Pixie observability..."
-px deploy --deploy_vizier --yes
-
-echo "Deploying Tetragon security..."
-helm install tetragon tetragon/tetragon \
-  --namespace ${NAMESPACE} \
-  --set tetragon.enabled=true \
-  --set tetragon.kubernetes.enabled=true \
-  --set tetragon.export.otel.enabled=true \
-  --set tetragon.export.otel.endpoint="otel-collector.monitoring.svc:4317" \
-  --set tetragon.enforce=true \
-  --wait --timeout 3m
-
-echo ""
-echo "eBPF stack deployed successfully!"
-echo ""
-echo "Access points:"
-echo "  Cilium/Hubble:  kubectl -n kube-system port-forward svc/hubble-ui 12000:80"
-echo "  Pixie UI:       px auth login && px live"
-echo "  Tetragon CLI:   kubectl -n kube-system exec ds/tetragon -- tetra getevents -o compact"
+kubectl apply -f tetragon-policy.yaml
 ```
 
-The combined overhead of all three tools is approximately 5-10% CPU and 1-1.5 GB RAM per node — still significantly less than the 20-35% overhead of a traditional stack using kube-proxy, Calico, Istio, Prometheus, Jaeger, and a security agent.
+### Monitoring with Tetragon CLI
 
-## Kernel Requirements and Compatibility
+```bash
+# View real-time security events
+tetra getevents --follow
 
-eBPF tools require a relatively recent Linux kernel. Here are the minimum requirements:
+# Filter by namespace
+tetra getevents --namespace production --follow
 
-| Tool | Minimum Kernel | Recommended Kernel | Notable Features by Version |
-|------|---------------|-------------------|----------------------------|
-| Cilium | 5.10 | 6.1+ | Full kube-proxy replacement needs 5.10+; Maglev load balancing needs 5.13+ |
-| Pixie | 5.4 | 5.15+ | uprobes for Go binaries need 5.15+; BTF support needs 5.10+ |
-| Tetragon | 5.10 | 6.1+ | LSM BPF (mandatory access control) needs 5.15+ |
+# Filter by process name
+tetra getevents --process nginx --follow
 
-For production deployments, we recommend Ubuntu 24.04 (kernel 6.8), Debian 12 (kernel 6.1), or any distribution with kernel 6.1 or newer. All three tools provide kernel version checks on startup and will warn if your kernel is too old for full functionality.
+# Export events for analysis
+tetra getevents --output json --since 1h > security-events.json
 
-You can verify eBPF support on your system:
+# View policies
+tetra getpolicies
+```
+
+Tetragon events include full process trees, file paths, network endpoints, and container metadata. This level of detail is invaluable for incident response and compliance auditing.
+
+## Inspektor Gadget: Ad-Hoc eBPF Debugging and Troubleshooting
+
+[Inspektor Gadget](https://www.inspektor-gadget.io/) provides a collection of pre-built eBPF gadgets (tools) that you can run on demand to diagnose issues in Kubernetes clusters and bare Linux systems. Think of it as a Swiss Army knife for kernel-level debugging.
+
+### Available Gadgets
+
+| Gadget | What It Does | Use Case |
+|--------|-------------|----------|
+| `trace exec` | Monitor process creation | Detect unauthorized processes |
+| `trace open` | Track file open operations | Debug file access issues |
+| `trace tcp` | Monitor TCP connections | Debug network connectivity |
+| `trace dns` | Capture DNS queries | Debug DNS resolution problems |
+| `snapshot process` | List running processes | Audit running workloads |
+| `snapshot socket` | List active sockets | Debug port conflicts |
+| `network-graph` | Build network topology | Map service dependencies |
+| `profile block-io` | Profile disk I/O | Identify I/O bottlenecks |
+| `profile cpu` | Profile CPU usage | Find CPU-intensive operations |
+| `advise network-policy` | Suggest K8s network policies | Harden cluster security |
+
+### Installing Inspektor Gadget
+
+```bash
+# Install the CLI tool
+curl -sL https://github.com/inspektor-gadget/inspektor-gadget/releases/latest/download/ig-linux-amd64.tar.gz | tar xz
+sudo mv ig /usr/local/bin/
+
+# Deploy gadgets to Kubernetes
+kubectl gadget deploy
+
+# Verify deployment
+kubectl gadget version
+```
+
+### Using Gadgets for Troubleshooting
+
+```bash
+# Trace DNS queries from a specific pod
+kubectl gadget trace dns -n default -p my-app
+
+# Monitor all file opens in a namespace
+kubectl gadget trace open -n production
+
+# Profile block I/O to find slow disks
+kubectl gadget profile block-io --sort total-time
+
+# Snapshot all processes in a pod
+kubectl gadget snapshot process -n default -p my-app
+
+# Generate network policy suggestions
+kubectl gadget advise network-policy generate --output policy.yaml
+
+# Trace TCP connections with container info
+kubectl gadget trace tcp -c --containers
+```
+
+Inspektor Gadget shines during incident response. When a service is misbehaving, you can immediately deploy eBPF probes to see exactly what is happening at the kernel level — which files it is accessing, which DNS queries it is making, and which network connections it is establishing — all without restarting the service or adding debug instrumentation.
+
+## Comparing eBPF Tools: Which One Should You Use?
+
+These tools are complementary rather than competing. Most production environments benefit from running multiple eBPF tools together. Here is how they map to different needs:
+
+| Feature | Cilium | Pixie | Tetragon | Inspektor Gadget |
+|---------|--------|-------|----------|-----------------|
+| **Primary Focus** | Networking + Service Mesh | Application Observability | Runtime Security | Ad-Hoc Debugging |
+| **Kernel Hooks** | XDP, TC, Socket, L7 | kprobes, uprobes, SSL | kprobes, LSM | Various gadgets |
+| **Kubernetes Integration** | Full CNI replacement | Auto-discovery | Policy enforcement | CLI-driven gadgets |
+| **Network Policies** | L3/L4/L7 policies | No | Security policies | Advisory only |
+| **Service Mesh** | Native (no sidecars) | Observability only | No | No |
+| **Protocol Parsing** | HTTP, gRPC, Kafka | 12+ protocols | Process/file events | DNS, TCP, HTTP |
+| **Performance Overhead** | <1% CPU | 2-5% CPU | <1% CPU | On-demand only |
+| **Best For** | Infrastructure teams | Developer experience | Security teams | SRE troubleshooting |
+
+## Complete Self-Hosted eBPF Stack: Docker Compose Setup
+
+For teams not yet on Kubernetes, you can run Cilium, Tetragon, and observability backends on bare metal using Docker Compose:
+
+```yaml
+# docker-compose.yml — Self-hosted eBPF observability stack
+version: "3.8"
+
+services:
+  # Cilium in standalone mode (non-K8s)
+  cilium-agent:
+    image: quay.io/cilium/cilium:v1.16.0
+    container_name: cilium
+    privileged: true
+    pid: host
+    network_mode: host
+    volumes:
+      - /sys/fs/bpf:/sys/fs/bpf
+      - /var/run/cilium:/var/run/cilium
+      - /lib/modules:/lib/modules:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    command:
+      - --device=enp0s3
+      - --tunnel=disabled
+      - --enable-ipv4=true
+      - --ipv4-native-routing-cidr=192.168.0.0/16
+
+  # Tetragon for security monitoring
+  tetragon:
+    image: quay.io/cilium/tetragon:v1.2.0
+    container_name: tetragon
+    privileged: true
+    pid: host
+    network_mode: host
+    volumes:
+      - /sys/fs/bpf:/sys/fs/bpf
+      - /sys/kernel/debug:/sys/kernel/debug
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./tetragon-policies:/etc/tetragon/policies:ro
+    environment:
+      - TETRAGON_LOG_LEVEL=info
+
+  # Grafana for dashboards
+  grafana:
+    image: grafana/grafana:11.4.0
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+
+  # Prometheus for metrics storage
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=30d
+      - --web.enable-lifecycle
+
+volumes:
+  grafana-data:
+  prometheus-data:
+```
+
+Prometheus configuration to scrape eBPF metrics:
+
+```yaml
+# prometheus.yml
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: "cilium"
+    static_configs:
+      - targets: ["host.docker.internal:9090"]
+    metrics_path: "/metrics"
+
+  - job_name: "tetragon"
+    static_configs:
+      - targets: ["host.docker.internal:2112"]
+    metrics_path: "/metrics"
+```
+
+Start the stack:
+
+```bash
+docker compose up -d
+
+# Verify all services are running
+docker compose ps
+
+# Check Cilium status
+docker exec cilium cilium status
+
+# Check Tetragon status
+docker exec tetragon tetra status
+```
+
+## Best Practices for Production eBPF Deployments
+
+### Kernel Requirements
+
+eBPF tools require a modern Linux kernel. Ensure your nodes meet these minimums:
+
+- **Linux 5.10+** for basic eBPF features
+- **Linux 5.15+** for BPF CO-RE (Compile Once, Run Everywhere) support
+- **Linux 6.1+** for advanced features like BPF iterators and fentry/fexit probes
+
+Verify your kernel supports required features:
 
 ```bash
 # Check kernel version
 uname -r
 
-# Verify eBPF filesystem is mounted
-ls /sys/fs/bpf/
+# Verify eBPF support
+cat /boot/config-$(uname -r) | grep CONFIG_BPF
+cat /boot/config-$(uname -r) | grep CONFIG_BPF_SYSCALL
 
-# Check eBPF program count (should be 0 before deploying tools)
-bpftool prog list 2>/dev/null || echo "bpftool not installed"
-
-# Install bpftool for debugging
-apt install linux-tools-generic  # Ubuntu/Debian
+# Run Cilium's preflight check
+cilium preflight validate
 ```
 
-## Practical Use Cases
+### Resource Planning
 
-### Use Case 1: Zero-Trust Microservices with Cilium
+eBPF tools are lightweight but still require resources:
 
-Replace your existing service mesh with Cilium's native eBPF approach. Deploy mTLS encryption using WireGuard, enforce Layer 7 network policies, and get full observability through Hubble — all without sidecar proxies.
+| Component | CPU | Memory | Disk |
+|-----------|-----|--------|------|
+| Cilium agent | 100-300m | 256-512 MiB | Minimal |
+| Cilium operator | 100m | 128 MiB | Minimal |
+| Hubble relay | 100m | 128 MiB | Minimal |
+| Pixie PEM | 200-500m | 512 MiB - 1 GiB | 5-10 GiB |
+| Tetragon | 50-150m | 128-256 MiB | Minimal |
+| Inspektor Gadget | On-demand | On-demand | Minimal |
+
+### Security Hardening
+
+1. **Restrict eBPF permissions** — use `CAP_BPF` and `CAP_PERFMON` instead of `CAP_SYS_ADMIN` where possible
+2. **Enable BPF JIT** — ensure `net.core.bpf_jit_enable=1` for performance and security
+3. **Lock down kernel access** — restrict access to `/sys/fs/bpf` and `/sys/kernel/debug`
+4. **Audit eBPF programs** — use `bpftool prog list` to review loaded programs periodically
+5. **Keep kernels updated** — eBPF verifier improvements in newer kernels reduce attack surface
+
+### Monitoring the Observability Stack Itself
+
+Monitor your eBPF tools to ensure they are not causing issues:
 
 ```bash
-# Enable strict mode — all traffic is denied unless explicitly allowed
-helm upgrade cilium cilium/cilium \
-  --namespace kube-system \
-  --set policyEnforcementMode=always
+# Check eBPF map usage
+bpftool map show | grep cilium
+
+# Monitor eBPF program execution
+bpftool prog show
+
+# Check for dropped events in Hubble
+kubectl exec -n kube-system ds/cilium -- cilium monitor --type drop
+
+# Review Tetragon policy violations
+kubectl logs -n kube-system ds/tetragon | grep -i "violation"
 ```
-
-### Use Case 2: Instant Performance Debugging with Pixie
-
-When your application suddenly slows down, Pixie lets you see every HTTP request, database query, and cache hit in real time. No configuration changes, no restarts, no code modifications:
-
-```python
-# PxL script: Find the slowest endpoint across all services
-import px
-
-df = px.DataFrame(table='http_events', start_time='-15m')
-df = df.groupby(['service', 'req_method', 'req_path']).agg(
-    p99=('resp_latency_ms', px.percentile(99)),
-    p50=('resp_latency_ms', px.percentile(50)),
-    errors=('resp_status', px.count),
-    total_requests=('resp_latency_ms', px.count),
-)
-df['error_rate'] = df['errors'] / df['total_requests']
-df = df.sort_values('p99', ascending=False)
-px.display(df)
-```
-
-### Use Case 3: Container Escape Detection with Tetragon
-
-Tetragon can detect and block common container escape techniques:
-
-```yaml
-apiVersion: cilium.io/v1alpha1
-kind: TracingPolicy
-metadata:
-  name: detect-container-escape
-spec:
-  kprobes:
-    # Detect mounting of host filesystems
-    - call: "sys_mount"
-      syscall: true
-      args:
-        - index: 0
-          type: "string"
-        - index: 1
-          type: "string"
-      selectors:
-        - matchPaths:
-            - path: "/host"
-              operator: "Prefix"
-            - path: "/proc"
-              operator: "Prefix"
-      action: "Enforce"
-    # Detect loading of kernel modules
-    - call: "sys_init_module"
-      syscall: true
-      action: "Enforce"
-```
-
-This policy blocks attempts to mount host filesystem paths or load kernel modules from within a container — two of the most common container escape vectors.
 
 ## Conclusion
 
-eBPF has matured from a kernel networking experiment into the foundation of modern cloud-native infrastructure. Cilium, Pixie, and Tetragon each leverage eBPF to solve a specific problem — networking, observability, and security respectively — but together they form a complete self-hosted infrastructure stack that outperforms traditional alternatives while consuming fewer resources.
+Self-hosted eBPF tools deliver the deepest possible infrastructure visibility without the cost, complexity, or vendor lock-in of cloud observability platforms. Cilium provides the networking foundation with built-in service mesh capabilities. Pixie gives developers automatic application telemetry with zero code changes. Tetragon enforces runtime security policies at the kernel level. Inspektor Gadget provides on-demand debugging when things go wrong.
 
-The key advantages of this approach are clear: kernel-level performance, zero sidecar overhead, real-time enforcement, and complete data sovereignty. Your network flows, application traces, and security events stay on your servers, under your control, with no usage-based pricing or data limits.
-
-For teams evaluating eBPF tools in 2026, we recommend starting with Cilium for CNI replacement (the easiest entry point), adding Pixie for instant observability (zero configuration required), and then deploying Tetragon for runtime security enforcement (critical for compliance). All three tools are CNCF projects with active communities, comprehensive documentation, and production deployments at companies running thousands of nodes.
+Together, these tools form a complete observability and security stack that runs entirely on your infrastructure, under your control, with full data ownership. The eBPF ecosystem in 2026 is production-ready, well-documented, and backed by the Cloud Native Computing Foundation. If you are still paying per-metric pricing for observability or managing thousands of iptables rules for networking, it is time to look at what eBPF can do for your infrastructure.
