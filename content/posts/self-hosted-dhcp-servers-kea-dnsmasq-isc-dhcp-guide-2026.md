@@ -1,102 +1,66 @@
 ---
 title: "Best Self-Hosted DHCP Servers 2026: Kea vs Dnsmasq vs ISC DHCP"
-date: 2026-04-15
-tags: ["comparison", "guide", "self-hosted", "privacy", "networking", "homelab"]
+date: 2026-04-17
+tags: ["comparison", "guide", "self-hosted", "networking"]
 draft: false
-description: "Complete guide to self-hosted DHCP servers in 2026. Compare Kea, Dnsmasq, and ISC DHCP for your homelab with Docker configs, installation steps, and a feature comparison table."
+description: "Complete guide to self-hosted DHCP servers in 2026. Compare Kea, Dnsmasq, and ISC DHCP with installation guides, Docker configs, and production best practices for homelabs and enterprise networks."
 ---
 
-Every device on your local network needs an IP address. Whether you are running a homelab with a handful of Raspberry Pis or managing a small office with dozens of workstations, the Dynamic Host Configuration Protocol (DHCP) is the silent workhorse that assigns addresses, routes traffic, and hands out DNS server information. Most people never think about DHCP until something breaks — a device gets a duplicate address, a smart TV refuses to connect, or a server reboots with a new IP and breaks your port forwards.
+Running your own DHCP server gives you full control over IP address assignment, DNS resolution, and network boot operations. Whether you manage a homelab with dozens of devices or an enterprise network spanning multiple VLANs, choosing the right DHCP server is one of the most foundational decisions you'll make.
 
-Running your own DHCP server gives you full control over your network. You decide which devices get which addresses, which DNS resolvers they use, and which devices are even allowed on the network. Combined with a self-hosted DNS server like Pi-hole or AdGuard Home, a dedicated DHCP server becomes the cornerstone of a private, self-managed network stack.
-
-In this guide, we compare three of the most popular self-hosted DHCP server solutions available in 2026: **Kea**, **Dnsmasq**, and the legacy **ISC DHCP**. We will look at installation, configuration, features, and performance so you can pick the right tool for your setup.
+In this guide, we compare the three most popular open-source DHCP servers — Kea, Dnsmasq, and the legacy ISC DHCP — with hands-on installation instructions, Docker Compose configurations, and production-ready deployment advice.
 
 ## Why Run Your Own DHCP Server?
 
-Your router probably already runs a DHCP server. So why replace it?
+Most home users rely on the DHCP server baked into their consumer router. That works fine for a handful of devices on a single flat network. But as soon as your infrastructure grows, the limitations become obvious:
 
-**Full network visibility.** A self-hosted DHCP server logs every device that connects, what address it received, and when. You get a real-time inventory of your network without installing additional scanning tools.
+- **VLAN segmentation** — Consumer routers can't assign addresses across multiple subnets. A dedicated DHCP server handles VLANs and subnet scopes with ease.
+- **Static reservations** — Lock specific MAC addresses to fixed IPs so your servers, NAS, and Pi-hole always get the same address without manual static IP configuration on each device.
+- **DNS integration** — DHCP and DNS are natural partners. Servers like Dnsmasq handle both, ensuring every device that receives a lease is automatically registered in DNS.
+- **Network boot (PXE/TFTP)** — Provision bare-metal servers, diskless workstations, or thin clients by serving boot images over the network.
+- **Lease monitoring and auditing** — Track every device that connects to your network, when it connected, and what IP it received. Built-in router logs rarely expose this data.
+- **High availability** — Consumer routers are single points of failure. Open-source DHCP servers support failover pairs and load-balanced clusters.
+- **Custom DHCP options** — Push custom options (NTP servers, SIP proxies, vendor-specific settings) to clients on a per-subnet basis.
 
-**Static assignments without touching each device.** Instead of configuring a fixed IP on every server or NAS, you assign it centrally through DHCP reservations. The device still gets its address automatically, but it is always the same one.
+If any of these sound useful, it's time to take DHCP into your own hands.
 
-**Custom DNS routing.** You can tell every device on your network to use your self-hosted DNS resolver (Pi-hole, AdGuard Home, Unbound) instead of your ISP's servers. This enables network-wide ad blocking, content filtering, and privacy protection without configuring each device individually.
+## The Contenders at a Glance
 
-**VLAN-aware address management.** If you segment your network into VLANs for IoT devices, guests, and trusted workstations, a proper DHCP server can hand out addresses on each subnet with different policies — different DNS servers, different lease times, different options.
-
-**No cloud dependency.** Router firmware updates reset settings. ISP-provided gatewares are notoriously limited. A self-hosted DHCP server runs on hardware you control, with configuration you own, backed up on your terms.
-
-## The Three Contenders
-
-### Kea DHCP
-
-Kea is the modern successor to the ISC DHCP project, developed by the Internet Systems Consortium. It is designed from the ground up for large-scale deployments, with a modular architecture, REST API, and support for high-availability failover. Kea uses JSON for configuration and stores lease data in a database (MySQL, PostgreSQL, or Cassandra), making it highly scalable.
-
-### Dnsmasq
-
-Dnsmasq is a lightweight, all-in-one DNS and DHCP server. It is the default choice in countless router firmwares (OpenWrt, DD-WRT) and container networking stacks (Docker uses a variant). Its configuration is a single plain-text file, and it runs with minimal memory footprint — often under 5 MB of RAM.
-
-### ISC DHCP (dhcpd)
-
-ISC DHCP (also known as `dhcpd`) was the gold standard for two decades. It is now officially end-of-life as of December 2022, with the ISC recommending migration to Kea. However, it remains widely deployed and is still the default on many Linux distributions. Its configuration syntax is well understood, thoroughly documented, and deeply entrenched in existing infrastructure.
-
-## Feature Comparison at a Glance
+Before diving into configuration, here's how the three major options compare:
 
 | Feature | Kea | Dnsmasq | ISC DHCP |
-|---|---|---|---|
-| **Status** | Actively developed | Actively developed | End-of-life (Dec 2022) |
-| **Protocol support** | DHCPv4, DHCPv6 | DHCPv4, DHCPv6 (limited) | DHCPv4, BOOTP |
-| **Configuration format** | JSON | Simple text file | Custom declarative |
-| **Lease storage** | Database (MySQL/PostgreSQL/Cassandra) | In-memory + flat file | Flat file |
-| **REST API** | Yes (built-in) | No | No |
-| **High availability** | Yes (failover + multi-master) | No | Yes (failover protocol) |
-| **DDNS integration** | Yes | Yes | Yes |
-| **Vendor classes / options** | Extensive | Basic | Extensive |
-| **Memory footprint** | ~50–200 MB | ~2–5 MB | ~10–30 MB |
-| **VLAN / multi-subnet** | Yes (via relay agents) | Yes | Yes |
-| **Container friendly** | Yes | Excellent | Moderate |
-| **Learning curve** | Steep | Gentle | Moderate |
-| **Best for** | Enterprise, large homelabs | Small networks, routers | Legacy migration |
+|---------|-----|---------|----------|
+| **Status** | Actively developed (ISC successor) | Actively developed | End-of-life (EOL June 2022) |
+| **Protocols** | DHCPv4, DHCPv6 | DHCPv4, DNS, TFTP, PXE | DHCPv4, DHCPv6 |
+| **Backend** | MySQL, PostgreSQL, Cassandra, memfile | In-memory, hosts file | Flat file (leases) |
+| **HA Support** | Yes (failover + load balancing) | No (single instance) | Yes (failover protocol) |
+| **Configuration** | JSON | Simple flat file | Complex flat file |
+| **REST API** | Yes (control agent) | No | No |
+| **Hook System** | Yes (C/C++ and Python plugins) | No | Limited |
+| **Resource Usage** | Moderate (backend-dependent) | Very low | Low |
+| **Best For** | Enterprise, multi-VLAN, automation | Homelabs, small networks, DNS combo | Legacy deployments (migration target) |
+| **License** | MPL 2.0 | GPL v2/v3 | ISC License |
 
-## Installing and Configuring Kea DHCP
+### Which One Should You Choose?
 
-Kea is the future-proof choice. Its database-backed lease storage and REST API make it ideal for environments where you want programmatic control over address assignments.
+- **Homelab / small office** — Dnsmasq. It's lightweight, combines DHCP with DNS in one process, and takes minutes to configure.
+- **Enterprise / multi-VLAN** — Kea. It's ISC's modern successor with database backends, REST API, high-availability clustering, and a plugin architecture.
+- **ISC DHCP** — Only if you're maintaining legacy infrastructure. ISC officially ended support in June 2022. Migrate to Kea at your earliest convenience; the configuration migration tool handles most of the conversion automatically.
 
-### Installation via Docker
+## Kea DHCP: The Modern Enterprise Choice
 
-The easiest way to run Kea is in a Docker container. This keeps it isolated and makes upgrades straightforward:
+Kea is ISC's next-generation DHCP server, designed from the ground up to replace ISC DHCP. It supports DHCPv4, DHCPv6, a RESTful management API, database-backed lease storage, and high-availability clustering.
 
-```yaml
-# docker-compose-kea.yml
-version: "3.8"
+### Installation on Ubuntu/Debian
 
-services:
-  kea-dhcp4:
-    image: keaproject/kea:latest
-    container_name: kea-dhcp4
-    network_mode: host
-    restart: unless-stopped
-    volumes:
-      - ./kea-dhcp4.conf:/etc/kea/kea-dhcp4.conf:ro
-      - ./kea-leases.csv:/var/lib/kea/kea-leases.csv
-    environment:
-      - KEA_LOG_LEVEL=INFO
-
-  kea-dhcp6:
-    image: keaproject/kea:latest
-    container_name: kea-dhcp6
-    network_mode: host
-    restart: unless-stopped
-    volumes:
-      - ./kea-dhcp6.conf:/etc/kea/kea-dhcp6.conf:ro
-      - ./kea-leases6.csv:/var/lib/kea/kea-leases6.csv
-    environment:
-      - KEA_LOG_LEVEL=INFO
+```bash
+sudo apt update
+sudo apt install -y kea-dhcp4 kea-dhcp6 kea-ctrl-agent
 ```
 
-### Kea Configuration (kea-dhcp4.conf)
+### Core Configuration
 
-Kea uses a JSON configuration file. Here is a practical setup for a typical homelab on the `192.168.1.0/24` subnet:
+Kea uses JSON configuration files. The main DHCPv4 config lives at `/etc/kea/kea-dhcp4.conf`:
 
 ```json
 {
@@ -105,25 +69,37 @@ Kea uses a JSON configuration file. Here is a practical setup for a typical home
       "interfaces": ["eth0"]
     },
     "lease-database": {
-      "type": "memfile",
-      "persist": true,
-      "name": "/var/lib/kea/kea-leases.csv"
+      "type": "mysql",
+      "name": "kea",
+      "user": "kea",
+      "password": "kea_password",
+      "host": "localhost",
+      "persist": true
     },
-    "valid-lifetime": 86400,
-    "renew-timer": 3600,
-    "rebind-timer": 7200,
+    "expired-leases-processing": {
+      "reclaim-timer-wait-time": 10,
+      "flush-reclaimed-timer-wait-time": 25,
+      "hold-reclaimed-time": 3600,
+      "max-reclaim-leases": 100,
+      "max-reclaim-time": 250,
+      "unwarned-reclaim-cycling": false
+    },
     "option-data": [
       {
         "name": "domain-name-servers",
-        "data": "192.168.1.10, 192.168.1.11"
+        "data": "192.168.1.10"
       },
       {
-        "name": "domain-search",
+        "name": "domain-name",
         "data": "homelab.local"
       },
       {
         "name": "routers",
         "data": "192.168.1.1"
+      },
+      {
+        "name": "ntp-servers",
+        "data": "192.168.1.10"
       }
     ],
     "subnet4": [
@@ -132,29 +108,48 @@ Kea uses a JSON configuration file. Here is a practical setup for a typical home
         "pools": [
           { "pool": "192.168.1.100 - 192.168.1.200" }
         ],
+        "option-data": [
+          {
+            "name": "domain-name-servers",
+            "data": "192.168.1.10"
+          }
+        ],
         "reservations": [
           {
-            "hw-address": "b8:27:eb:a1:b2:c3",
+            "hw-address": "aa:bb:cc:dd:ee:01",
             "ip-address": "192.168.1.50",
             "hostname": "nas-server"
           },
           {
-            "hw-address": "dc:a6:32:0f:11:22",
+            "hw-address": "aa:bb:cc:dd:ee:02",
             "ip-address": "192.168.1.51",
-            "hostname": "media-pc"
+            "hostname": "media-server"
+          }
+        ]
+      },
+      {
+        "subnet": "192.168.10.0/24",
+        "pools": [
+          { "pool": "192.168.10.100 - 192.168.10.200" }
+        ],
+        "option-data": [
+          {
+            "name": "routers",
+            "data": "192.168.10.1"
           }
         ]
       }
     ],
-    "control-socket": {
-      "socket-type": "unix",
-      "socket-name": "/tmp/kea4-ctrl.sock"
-    },
     "loggers": [
       {
         "name": "kea-dhcp4",
         "output_options": [
-          { "output": "/var/log/kea/kea-dhcp4.log" }
+          {
+            "output": "/var/log/kea/kea-dhcp4.log",
+            "flush": true,
+            "maxsize": 104857600,
+            "maxver": 5
+          }
         ],
         "severity": "INFO",
         "debuglevel": 0
@@ -164,241 +159,445 @@ Kea uses a JSON configuration file. Here is a practical setup for a typical home
 }
 ```
 
-Start the server with `docker compose -f docker-compose-kea.yml up -d`.
+This configuration defines two subnets (a main network and a VLAN), sets up two static reservations, pushes DNS/NTP/router options, and logs to a file with rotation.
 
-### Managing Kea via REST API
-
-Kea exposes a control channel over a Unix socket. You can query it directly or use a helper tool:
+### Setting Up the MySQL Backend
 
 ```bash
-# Check server statistics
-kea-ctrl-agent -c /etc/kea/kea-ctrl-agent.conf
+sudo mysql -u root -p -e "CREATE DATABASE kea;"
+sudo mysql -u root -p -e "CREATE USER 'kea'@'localhost' IDENTIFIED BY 'kea_password';"
+sudo mysql -u root -p -e "GRANT ALL ON kea.* TO 'kea'@'localhost';"
 
-# Or send commands directly via the socket
-echo '{ "command": "statistic-get-all" }' | socat UNIX:/tmp/kea4-ctrl.sock -
+# Initialize the schema
+sudo mysql -u kea -pkea_password kea < /usr/share/kea/scripts/mysql/dhcpdb_create.mysql
 ```
 
-For production use, connect Kea to PostgreSQL for lease persistence and enable the Kea Control Agent for dynamic reconfiguration without restarts:
+### Running Kea in Docker
+
+```yaml
+version: "3.8"
+
+services:
+  kea-mysql:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: kea
+      MYSQL_USER: kea
+      MYSQL_PASSWORD: kea_password
+    volumes:
+      - kea-data:/var/lib/mysql
+      - ./init-schema.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      kea-net:
+        ipv4_address: 172.20.0.2
+
+  kea-dhcp4:
+    image: keaproject/kea:latest
+    network_mode: "host"
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+    volumes:
+      - ./kea-dhcp4.conf:/etc/kea/kea-dhcp4.conf:ro
+      - ./kea-ctrl-agent.conf:/etc/kea/kea-ctrl-agent.conf:ro
+    depends_on:
+      - kea-mysql
+    restart: unless-stopped
+
+volumes:
+  kea-data:
+
+networks:
+  kea-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+```
+
+Note that the DHCP container uses `network_mode: "host"` because DHCP operates at layer 2 and requires direct access to the network interface.
+
+### Using the REST API
+
+Kea's control agent exposes a REST API for runtime management:
+
+```bash
+# Check server status
+curl -X POST http://localhost:8000/ \
+  -H "Content-Type: application/json" \
+  -d '{ "command": "status-get" }'
+
+# Add a reservation on the fly
+curl -X POST http://localhost:8000/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "command": "reservation-add",
+    "arguments": {
+      "subnet-id": 1,
+      "reservation": {
+        "hw-address": "aa:bb:cc:dd:ee:03",
+        "ip-address": "192.168.1.52",
+        "hostname": "pi-cluster-node3"
+      }
+    }
+  }'
+
+# List all leases
+curl -X POST http://localhost:8000/ \
+  -H "Content-Type: application/json" \
+  -d '{ "command": "lease4-get-all" }'
+
+# Reload configuration without restart
+curl -X POST http://localhost:8000/ \
+  -H "Content-Type: application/json" \
+  -d '{ "command": "config-reload" }'
+```
+
+### High-Availability Cluster
+
+Kea supports active-passive and load-balanced HA pairs. Add this to your config:
 
 ```json
 {
-  "lease-database": {
-    "type": "postgresql",
-    "name": "kea_leases",
-    "user": "kea",
-    "password": "strong_password_here",
-    "host": "192.168.1.10",
-    "port": 5432
+  "Dhcp4": {
+    "hooks-libraries": [
+      {
+        "library": "/usr/lib/x86_64-linux-gnu/kea/lib/libkea-dhcp-ha.so",
+        "parameters": {
+          "this-server-name": "kea-primary",
+          "role": "primary",
+          "heartbeat-delay": 10000,
+          "max-response-delay": 10000,
+          "max-ack-delay": 5000,
+          "max-unacked-clients": 5,
+          "peers": [
+            {
+              "name": "kea-primary",
+              "url": "http://192.168.1.10:8000/",
+              "role": "primary",
+              "auto-failover": true
+            },
+            {
+              "name": "kea-secondary",
+              "url": "http://192.168.1.11:8000/",
+              "role": "secondary",
+              "auto-failover": true
+            }
+          ]
+        }
+      }
+    ]
   }
 }
 ```
 
-## Installing and Configuring Dnsmasq
+## Dnsmasq: The Lightweight Homelab Champion
 
-Dnsmasq is the minimalist's choice. A single configuration file, a tiny memory footprint, and combined DNS + DHCP in one process make it ideal for small networks, Raspberry Pi deployments, and container environments.
+Dnsmasq is a lightweight, combined DNS forwarder and DHCP server. It's the go-to choice for homelabs because a single binary handles both services, uses minimal resources, and ships with a straightforward configuration file. It's also the DNS/DHCP engine behind Pi-hole.
 
-### Installation on Debian/Ubuntu
+### Installation on Ubuntu/Debian
 
 ```bash
 sudo apt update
-sudo apt install dnsmasq
+sudo apt install -y dnsmasq
 ```
 
-### Installation via Docker
+On Alpine Linux (great for containerized deployments):
+
+```bash
+apk add dnsmasq
+```
+
+### Core Configuration
+
+Edit `/etc/dnsmasq.conf`:
+
+```ini
+# ── Network Interface ──
+interface=eth0
+bind-interfaces
+
+# ── DHCP Range ──
+# Format: dhcp-range=<start>,<end>,<lease-time>
+dhcp-range=192.168.1.100,192.168.1.200,255.255.255.0,12h
+
+# ── Default Gateway and DNS ──
+dhcp-option=option:router,192.168.1.1
+dhcp-option=option:dns-server,192.168.1.10
+
+# ── Static Reservations ──
+dhcp-host=aa:bb:cc:dd:ee:01,nas-server,192.168.1.50,12h
+dhcp-host=aa:bb:cc:dd:ee:02,media-server,192.168.1.51,12h
+dhcp-host=aa:bb:cc:dd:ee:03,pi-cluster-node3,192.168.1.52,12h
+
+# ── Domain ──
+domain=homelab.local
+expand-hosts
+
+# ── DNS Forwarding ──
+server=8.8.8.8
+server=8.8.4.4
+
+# ── Local DNS from /etc/hosts ──
+# Entries in /etc/hosts are served as local DNS records
+# Example: 192.168.1.50  nas-server.homelab.local
+
+# ── Logging ──
+log-dhcp
+log-queries
+log-facility=/var/log/dnsmasq.log
+
+# ── PXE/TFTP Boot (optional) ──
+# enable-tftp
+# tftp-root=/var/lib/tftpboot
+# dhcp-boot=pxelinux.0
+```
+
+### Managing the Service
+
+```bash
+# Start and enable
+sudo systemctl enable --now dnsmasq
+
+# Reload config without restart (sends SIGHUP)
+sudo systemctl reload dnsmasq
+
+# Check active leases
+cat /var/lib/dnsmasq/dnsmasq.leases
+
+# View live DHCP activity
+sudo tail -f /var/log/dnsmasq.log
+```
+
+### Running Dnsmasq in Docker
 
 ```yaml
-# docker-compose-dnsmasq.yml
 version: "3.8"
 
 services:
   dnsmasq:
     image: jpillora/dnsmasq:latest
     container_name: dnsmasq
-    network_mode: host
-    restart: unless-stopped
-    volumes:
-      - ./dnsmasq.conf:/etc/dnsmasq.conf:ro
+    network_mode: "host"
     cap_add:
       - NET_ADMIN
+    volumes:
+      - ./dnsmasq.conf:/etc/dnsmasq.conf:ro
+      - ./dnsmasq.hosts:/etc/hosts.dnsmasq:ro
+    restart: unless-stopped
+    environment:
+      - TZ=UTC
 ```
 
-### Dnsmasq Configuration (dnsmasq.conf)
+The Docker image reads the config from `/etc/dnsmasq.conf`. Create a companion `dnsmasq.hosts` file for local DNS:
+
+```
+192.168.1.10   dns.homelab.local
+192.168.1.50   nas.homelab.local
+192.168.1.51   media.homelab.local
+192.168.1.52   node3.homelab.local
+192.168.1.100  pihole.homelab.local
+```
+
+### Multi-VLAN Configuration
+
+Dnsmasq supports multiple interfaces and subnet ranges in a single instance:
 
 ```ini
-# dnsmasq.conf — Combined DNS + DHCP for homelab
+# VLAN 10 - IoT devices
+interface=eth0.10
+dhcp-range=192.168.10.100,192.168.10.200,255.255.255.0,12h
+dhcp-option=option:router,192.168.10.1
 
-# Interface to listen on (leave blank for all)
-interface=eth0
-bind-interfaces
+# VLAN 20 - Servers
+interface=eth0.20
+dhcp-range=192.168.20.10,192.168.20.50,255.255.255.0,24h
+dhcp-option=option:router,192.168.20.1
 
-# DHCP range: 192.168.1.100 to 192.168.1.200, 24h lease
-dhcp-range=192.168.1.100,192.168.1.200,255.255.255.0,24h
-
-# Default gateway
-dhcp-option=option:router,192.168.1.1
-
-# DNS servers (point to self-hosted Pi-hole / AdGuard Home)
-dhcp-option=option:dns-server,192.168.1.10,192.168.1.11
-
-# Domain name for DHCP
-domain=homelab.local
-
-# Static reservations by MAC address
-dhcp-host=b8:27:eb:a1:b2:c3,192.168.1.50,nas-server,86400
-dhcp-host=dc:a6:32:0f:11:22,192.168.1.51,media-pc,86400
-dhcp-host=e4:5f:01:ab:cd:ef,192.168.1.52,printer,86400
-
-# DNS upstream servers
-server=8.8.8.8
-server=8.8.4.4
-
-# Local DNS — resolve homelab.local from /etc/hosts
-expand-hosts
-domain-needed
-bogus-priv
-
-# Logging
-log-dhcp
-log-queries
-log-facility=/var/log/dnsmasq.log
+# VLAN 30 - Guest network (shorter lease)
+interface=eth0.30
+dhcp-range=192.168.30.100,192.168.30.200,255.255.255.0,1h
+dhcp-option=option:router,192.168.30.1
 ```
 
-Restart the service after editing:
+### PXE Network Boot Setup
 
-```bash
-sudo systemctl restart dnsmasq
-# or with Docker:
-docker compose -f docker-compose-dnsmasq.yml restart
-```
-
-### Viewing Active Leases
-
-Dnsmasq stores leases in `/var/lib/misc/dnsmasq.leases`:
-
-```bash
-cat /var/lib/misc/dnsmasq.leases
-# Format: timestamp MAC-address IP-address hostname client-ID
-# Example:
-# 1744848000 b8:27:eb:a1:b2:c3 192.168.1.50 nas-server *
-```
-
-## Installing ISC DHCP (Legacy)
-
-ISC DHCP is included here for completeness and for administrators managing existing deployments. The ISC officially ended support in December 2022 and recommends migrating to Kea. If you are starting fresh, skip this section and use Kea or Dnsmasq.
-
-### Installation
-
-```bash
-# Debian/Ubuntu
-sudo apt install isc-dhcp-server
-
-# RHEL/CentOS/Fedora
-sudo dnf install dhcp-server
-```
-
-### Configuration (dhcpd.conf)
+Dnsmasq can serve as a full PXE boot server:
 
 ```ini
-# /etc/dhcp/dhcpd.conf
+enable-tftp
+tftp-root=/srv/tftp
 
-default-lease-time 86400;
-max-lease-time 172800;
+# BIOS boot
+dhcp-boot=pxelinux.0
+
+# UEFI boot
+dhcp-match=set:efi64,option:client-arch,7
+dhcp-boot=tag:efi64,bootx64.efi
+
+# Specific MAC-based boot
+dhcp-match=set:rpi,option:client-arch,0
+dhcp-boot=tag:rpi,start4.elf
+```
+
+Place your boot images in `/srv/tftp/` and devices will boot over the network automatically.
+
+## ISC DHCP: The Legacy Option (Migration Guide)
+
+ISC DHCP served as the internet's standard DHCP server for over two decades. However, ISC officially declared end-of-life in June 2022. No new features or security patches are being developed. If you're still running ISC DHCP, you should plan a migration to Kea.
+
+### Why Migrate?
+
+- **No security patches** — New vulnerabilities will not be fixed.
+- **No DHCPv6 improvements** — Kea's DHCPv6 implementation is far more mature.
+- **No REST API** — ISC DHCP has no programmatic management interface.
+- **File-based leases** — Kea's database backends handle millions of leases efficiently.
+
+### Migration Steps
+
+ISC provides a migration tool. Here's the process:
+
+```bash
+# 1. Install Kea alongside ISC DHCP
+sudo apt install -y kea-dhcp4 kea-dhcp6
+
+# 2. Stop ISC DHCP
+sudo systemctl stop isc-dhcp-server
+
+# 3. Convert the configuration
+# Kea ships with a conversion script
+sudo /usr/share/kea/scripts/convert-conf -4 /etc/dhcp/dhcpd.conf \
+  > /etc/kea/kea-dhcp4.conf
+
+# 4. Review and adjust the generated config
+sudo nano /etc/kea/kea-dhcp4.conf
+
+# 5. Convert leases (optional — Kea can import ISC lease files)
+sudo /usr/share/kea/scripts/convert-leases -4 \
+  /var/lib/dhcp/dhcpd.leases \
+  /var/lib/kea/kea-leases4.csv
+
+# 6. Test the configuration
+kea-dhcp4 -t -c /etc/kea/kea-dhcp4.conf
+
+# 7. Start Kea
+sudo systemctl enable --now kea-dhcp4
+
+# 8. Verify leases are working
+kea-admin lease-dump -4
+```
+
+### ISC DHCP Reference Configuration
+
+For those still running ISC DHCP during migration, here's a reference config (`/etc/dhcp/dhcpd.conf`):
+
+```
+default-lease-time 43200;
+max-lease-time 86400;
 
 option domain-name "homelab.local";
-option domain-name-servers 192.168.1.10, 192.168.1.11;
-option routers 192.168.1.1;
+option domain-name-servers 192.168.1.10;
 
 subnet 192.168.1.0 netmask 255.255.255.0 {
   range 192.168.1.100 192.168.1.200;
+  option routers 192.168.1.1;
 
   host nas-server {
-    hardware ethernet b8:27:eb:a1:b2:c3;
+    hardware ethernet aa:bb:cc:dd:ee:01;
     fixed-address 192.168.1.50;
-    option host-name "nas-server";
   }
 
-  host media-pc {
-    hardware ethernet dc:a6:32:0f:11:22;
+  host media-server {
+    hardware ethernet aa:bb:cc:dd:ee:02;
     fixed-address 192.168.1.51;
-    option host-name "media-pc";
   }
 }
 
-# Logging
-log-facility local7;
+subnet 192.168.10.0 netmask 255.255.255.0 {
+  range 192.168.10.100 192.168.10.200;
+  option routers 192.168.10.1;
+}
 ```
 
-Configure the interface in `/etc/default/isc-dhcp-server`:
+## Advanced: DHCP Snooping and Security
+
+Running your own DHCP server opens up security considerations that consumer routers simply don't address.
+
+### Preventing Rogue DHCP Servers
+
+A rogue DHCP server on your network can redirect traffic, perform man-in-the-middle attacks, or simply cause network outages. Enable DHCP snooping on your managed switches:
+
+```
+# Cisco / Arista switch configuration
+ip dhcp snooping
+ip dhcp snooping vlan 10,20,30
+interface GigabitEthernet0/1
+  ip dhcp snooping trust
+```
+
+On Linux bridges, use `ebtables` to drop DHCP packets from unauthorized MAC addresses:
 
 ```bash
-INTERFACESv4="eth0"
+# Allow DHCP from your server only
+sudo ebtables -A FORWARD -p IPv4 --ip-protocol udp \
+  --ip-source-port 68 --ip-destination-port 67 \
+  -s ! aa:bb:cc:dd:ee:ff -j DROP
 ```
 
-Then start:
+### DHCP Lease Monitoring Script
+
+Monitor your DHCP leases and alert on new unknown devices:
 
 ```bash
-sudo systemctl enable isc-dhcp-server
-sudo systemctl start isc-dhcp-server
+#!/bin/bash
+# monitor-dhcp.sh — watch for new devices
+
+LEASE_FILE="/var/lib/dnsmasq/dnsmasq.leases"
+KNOWN_HOSTS="/etc/dnsmasq.hosts"
+LOG_FILE="/var/log/dhcp-monitor.log"
+
+# Get current leases
+current_leases=$(awk '{print $2}' "$LEASE_FILE" | sort -u)
+
+while read -r mac; do
+  if ! grep -q "$mac" "$KNOWN_HOSTS"; then
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] UNKNOWN DEVICE: $mac" >> "$LOG_FILE"
+    # Optional: send alert via webhook
+    # curl -X POST -d "text=New device: $mac" https://hooks.example.com/alert
+  fi
+done <<< "$current_leases"
 ```
 
-### Migrating from ISC DHCP to Kea
+Run this via cron every 5 minutes:
 
-The ISC provides a migration script that converts your `dhcpd.conf` into Kea's JSON format:
-
-```bash
-# Install the migration tools
-sudo apt install kea-admin
-
-# Convert configuration
-kea-admin lease-copy -4 \
-  -s /var/lib/dhcp/dhcpd.leases \
-  -d /var/lib/kea/kea-leases.csv
+```cron
+*/5 * * * * /usr/local/bin/monitor-dhcp.sh
 ```
 
-For the main configuration, use the `kea-admin dhcp4-convert` utility:
+## Decision Matrix
 
-```bash
-kea-admin dhcp4-convert -c /etc/dhcp/dhcpd.conf > /etc/kea/kea-dhcp4.conf
-```
+Choose based on your specific needs:
 
-Review the output carefully — complex configurations with shared networks or conditional options may need manual adjustment.
+| Your Situation | Recommendation |
+|----------------|----------------|
+| Single network, under 50 devices | Dnsmasq |
+| Multiple VLANs, under 200 devices | Dnsmasq (multi-interface) or Kea |
+| Enterprise network, 500+ devices | Kea with MySQL/PostgreSQL backend |
+| Need DHCP + DNS in one package | Dnsmasq |
+| Need REST API and automation | Kea |
+| Need high availability | Kea (HA clustering) |
+| PXE boot / network installation | Dnsmasq (built-in TFTP) or Kea |
+| Migrating from ISC DHCP | Kea (official migration path) |
+| Running on a Raspberry Pi | Dnsmasq (minimal resource usage) |
+| Kubernetes environment | Kea (database backend, API-driven) |
 
-## Choosing the Right DHCP Server for Your Setup
+## Final Recommendations
 
-The decision comes down to three factors: **scale**, **complexity**, and **maintenance philosophy**.
+**For most homelab users**, Dnsmasq is the right choice. It's been battle-tested for over two decades, uses less than 5 MB of RAM, and gives you both DHCP and DNS in a single process. The configuration file is intuitive — you can have a fully functional DHCP server running in under five minutes.
 
-**Choose Kea if** you run more than 50 devices, need high availability, want programmatic control via REST API, or plan to integrate DHCP with external systems (CMDB, monitoring, automation). Its database-backed lease storage means you can query address assignments with SQL, build dashboards, and audit changes over time.
+**For production and enterprise environments**, Kea is the clear winner. Its database backends handle millions of leases, the REST API enables infrastructure-as-code workflows, and the HA clustering ensures your network never loses DHCP service during maintenance. The JSON configuration has a learning curve, but the payoff in operational flexibility is substantial.
 
-**Choose Dnsmasq if** you have a small to medium network (under 100 devices), want the simplest possible setup, or are already running it as a DNS forwarder and want to add DHCP to the same process. Its single-file configuration is easy to version-control with Git and review at a glance.
+**For ISC DHCP users**, there's no reason to stay on an unsupported product. Kea was designed as its direct successor, and the migration tools make the transition straightforward. Plan your migration, test thoroughly in a staging environment, and cut over during a maintenance window.
 
-**Avoid ISC DHCP for new deployments.** It has not received security updates since December 2022. If you are still running it, plan a migration to Kea. The configuration concepts are similar, and the ISC provides tooling to automate the conversion.
-
-## Advanced: Combining DHCP with DNS Filtering
-
-A powerful homelab pattern is to point your DHCP server's DNS option to a local Pi-hole or AdGuard Home instance, which in turn uses an upstream recursive resolver like Unbound:
-
-```
-Client → DHCP assigns IP + DNS → Pi-hole (ad blocking) → Unbound (recursive DNS) → Internet
-```
-
-In your DHCP configuration, set the DNS option to your Pi-hole IP:
-
-```json
-// Kea
-{ "name": "domain-name-servers", "data": "192.168.1.10" }
-```
-
-```ini
-# Dnsmasq
-dhcp-option=option:dns-server,192.168.1.10
-```
-
-Every device on your network now benefits from ad blocking, tracker blocking, and encrypted DNS resolution without any per-device configuration.
-
-## Conclusion
-
-DHCP is one of those infrastructure services that works invisibly until it does not. By running your own self-hosted DHCP server, you gain visibility into every device on your network, control over address assignments, and the ability to enforce your own DNS and routing policies.
-
-For 2026, **Kea** is the clear recommendation for anyone starting fresh or planning to scale. Its modern architecture, database-backed leases, and REST API make it the most capable open-source DHCP server available. **Dnsmasq** remains the go-to choice for small networks where simplicity and low resource usage matter most. **ISC DHCP** should be treated as legacy — stable and well understood, but no longer maintained.
-
-Whatever you choose, keep your configuration under version control, back up your lease databases, and document your static assignments. A well-managed DHCP server is the foundation of a reliable, private, and self-controlled network.
+Whichever you choose, running your own DHCP server is one of the highest-leverage infrastructure decisions you can make. It gives you visibility into every device on your network, eliminates dependency on proprietary router firmware, and lays the foundation for everything else — DNS, PXE boot, VLAN segmentation, and network automation.
