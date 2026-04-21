@@ -2,17 +2,17 @@
 
 > 📚 Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment.
 
-**Website:** https://hopkdj.github.io/openswap-guide/
+**Website:** https://www.pistack.xyz/
 
 ## 🌟 Featured Articles
 
 | Article | Category | Read Time |
 |---------|----------|-----------|
-| [AdGuard Home vs Pi-hole](https://hopkdj.github.io/openswap-guide/posts/adguard-home-vs-pihole/) | Network | 8 min |
-| [Ollama vs LM Studio vs LocalAI](https://hopkdj.github.io/openswap-guide/posts/ollama-vs-lmstudio-vs-localai/) | AI | 10 min |
-| [Jellyfin vs Plex vs Emby](https://hopkdj.github.io/openswap-guide/posts/jellyfin-vs-plex-vs-emby/) | Media | 7 min |
-| [Nextcloud vs ownCloud](https://hopkdj.github.io/openswap-guide/posts/nextcloud-vs-owncloud/) | Cloud | 9 min |
-| [Nginx vs Caddy vs Traefik](https://hopkdj.github.io/openswap-guide/posts/reverse-proxy-comparison/) | Infrastructure | 11 min |
+| [AdGuard Home vs Pi-hole](https://www.pistack.xyz/posts/adguard-home-vs-pihole/) | Network | 8 min |
+| [Ollama vs LM Studio vs LocalAI](https://www.pistack.xyz/posts/ollama-vs-lmstudio-vs-localai/) | AI | 10 min |
+| [Jellyfin vs Plex vs Emby](https://www.pistack.xyz/posts/jellyfin-vs-plex-vs-emby/) | Media | 7 min |
+| [Nextcloud vs ownCloud](https://www.pistack.xyz/posts/nextcloud-vs-owncloud/) | Cloud | 9 min |
+| [Nginx vs Caddy vs Traefik](https://www.pistack.xyz/posts/reverse-proxy-comparison/) | Infrastructure | 11 min |
 
 ## 📂 Content Categories
 
@@ -24,9 +24,9 @@
 
 ## 🚀 Quick Start
 
-1. Browse our [Comparisons](https://hopkdj.github.io/openswap-guide/tags/comparison/) for tool selection
-2. Read our [Guides](https://hopkdj.github.io/openswap-guide/tags/guide/) for setup instructions
-3. Check [Local AI](https://hopkdj.github.io/openswap-guide/tags/ai/) for running models locally
+1. Browse our [Comparisons](https://www.pistack.xyz/tags/comparison/) for tool selection
+2. Read our [Guides](https://www.pistack.xyz/tags/guide/) for setup instructions
+3. Check [Local AI](https://www.pistack.xyz/tags/ai/) for running models locally
 
 ## 📊 Stats
 
