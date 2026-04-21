@@ -54,7 +54,7 @@ Marquez is the reference implementation — a lineage server that receives OpenL
 - **Web UI**: Visual lineage graph with clickable nodes for exploring upstream and downstream dependencies
 - **PostgreSQL backend**: Simple, reliable storage that is easy to back up and scale
 
-### Docker Compose Setup
+### [docker](https://www.docker.com/) Compose Setup
 
 ```yaml
 version: "3.8"
@@ -156,7 +156,7 @@ DataHub provides an official quick-start compose file that runs all dependencies
 # Download the official quick-start compose
 curl -L https://raw.githubusercontent.com/datahub-project/datahub/master/docker/quickstart/docker-compose.quickstart.yml -o docker-compose.yml
 
-# Start all services (Elasticsearch, MySQL, Kafka, ZooKeeper, DataHub GMS, Frontend)
+# Start all servi[kafka](https://kafka.apache.org/)Elasticsearch, MySQL, Kafka, ZooKeeper, DataHub GMS, Frontend)
 docker compose -f docker-compose.yml up -d
 ```
 
@@ -364,7 +364,7 @@ Marquez is the leanest option. Get it running in minutes with the Docker compose
 - You are already using **Kafka and Elasticsearch** in your infrastructure
 - You want the **most active open-source community** — 11,000+ stars and hundreds of contributors
 
-DataHub is the most feature-complete option. The tradeoff is operational complexity — running Kafka, Elasticsearch, MySQL, and multiple DataHub services requires more infrastructure than Marquez.
+DataHub is the most feature-complete option. The tradeoff is operational com[plex](https://www.plex.tv/)ity — running Kafka, Elasticsearch, MySQL, and multiple DataHub services requires more infrastructure than Marquez.
 
 ### Choose Apache Atlas If
 

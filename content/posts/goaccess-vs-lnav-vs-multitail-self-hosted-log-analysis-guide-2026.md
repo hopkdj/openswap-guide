@@ -6,7 +6,7 @@ draft: false
 description: "Compare GoAccess, lnav, and MultiTail — three powerful self-hosted log analysis tools for real-time monitoring, web log parsing, and multi-file log tracking on your server."
 ---
 
-When you manage even a handful of Linux servers, log files become your primary window into system health, security events, and application behavior. The challenge isn't generating logs — it's reading them efficiently. While centralized log aggregation platforms like Grafana Loki or Graylog excel at large-scale infrastructure, there are plenty of scenarios where you need a lightweight, terminal-based tool for quick log inspection on the spot.
+When you manage even a handful of Linux servers, log files become your primary window into system health, security events, and application behavior. The challenge isn't generating logs — it's reading them efficiently. While centralized log aggregation platforms like [grafana](https://grafana.com/) Loki or Graylog excel at large-scale infrastructure, there are plenty of scenarios where you need a lightweight, terminal-based tool for quick log inspection on the spot.
 
 This guide compares three of the most popular self-hosted log analysis tools: **GoAccess**, **lnav**, and **MultiTail**. Each takes a different approach to the same problem, and choosing the right one depends on whether you need real-time web analytics, SQL-powered log querying, or multi-file simultaneous monitoring.
 
@@ -25,7 +25,7 @@ For a complete picture of self-hosted logging infrastructure, consider pairing t
 
 ### GoAccess (⭐ 20,432 — allinurl/goaccess)
 
-GoAccess is a real-time web log analyzer and interactive viewer that runs in a terminal or generates HTML reports. It's purpose-built for parsing Apache, Nginx, and CloudFront access logs, providing dashboards with visitor counts, bandwidth usage, request status codes, referrer analysis, and geographic data.
+GoAccess is a real-time web log analyzer and interactive viewer that runs in a terminal or generates HTML reports. It's purpose-bu[nginx](https://nginx.org/)or parsing Apache, Nginx, and CloudFront access logs, providing dashboards with visitor counts, bandwidth usage, request status codes, referrer analysis, and geographic data.
 
 Written in C, GoAccess is fast enough to process millions of log lines in seconds. It supports both ncurses terminal mode and real-time HTML output via WebSocket, making it the go-to choice for administrators who need live web traffic visibility without a full monitoring stack.
 
@@ -63,7 +63,7 @@ While it doesn't parse log formats or generate reports like GoAccess, MultiTail 
 | **Bandwidth Analysis** | ✅ | ❌ | ❌ |
 | **Visitor/Referrer Stats** | ✅ | ❌ | ❌ |
 | **Memory Footprint** | Low (~50MB for large files) | Moderate (~100MB indexed) | Low (~10MB) |
-| **Docker Image Available** | ✅ | ✅ | ❌ |
+| **[docker](https://www.docker.com/) Image Available** | ✅ | ✅ | ❌ |
 | **Configuration File** | `/etc/goaccess/goaccess.conf` | `~/.lnav/format/` (custom formats) | `/etc/multitail.conf` |
 | **Active Development** | ✅ (frequent releases) | ✅ (active) | ⚠️ (infrequent) |
 | **License** | MIT | BSD-2-Clause | GPL-3.0 |

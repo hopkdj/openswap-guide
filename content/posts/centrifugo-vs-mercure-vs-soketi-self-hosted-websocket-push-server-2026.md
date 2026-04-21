@@ -29,7 +29,7 @@ In this guide, we compare three leading open-source self-hosted WebSocket push s
 | **Presence** | Yes (user online/offline tracking) | Yes (via subscriber list) | Yes (via Pusher presence channels) |
 | **History** | Yes (configurable per-channel) | Via last-event-id reconnection | Limited |
 | **Authentication** | JWT, HMAC, anonymous, custom backends | JWT, cookie-based | Pusher app key/secret |
-| **Docker Image** | `centrifugo/centrifugo` | `dunglas/mercure` | `soketi/soketi` |
+| **[docker](https://www.docker.com/) Image** | `centrifugo/centrifugo` | `dunglas/mercure` | `soketi/soketi` |
 | **Best For** | Large-scale PUB/SUB, multi-tenant apps | Web API integration, Symfony ecosystem | Pusher drop-in replacement |
 
 Centrifugo leads in maturity and feature breadth — it is a dedicated PUB/SUB real-time messaging server designed to be language-agnostic with official SDKs for JavaScript, React, React Native, Swift, Kotlin, Flutter, and more. Mercure takes a standards-first approach, implementing its own IETF draft protocol on top of Server-Sent Events, making it exceptionally easy to integrate with any HTTP API framework. Soketi positions itself as a Pusher-compatible server, ideal for teams already using Pusher SDKs who want to self-host without changing client code.
@@ -327,7 +327,7 @@ window.Echo.channel('orders')
 | Browser-only, no SDKs | **Mercure** | Native `EventSource` API works everywhere |
 | Multi-protocol (WS + GRPC + WebTransport) | **Centrifugo** | Only option supporting all four transports |
 | Simplest setup | **Mercure** | Single binary, no external dependencies for BoltDB mode |
-| Laravel / PHP ecosystem | **Soketi** | Pusher protocol, Laravel Echo compatibility |
+| Laravel / PHP ecosystem | **Soketi** | Pusher protocol, Lara[kubernetes](https://kubernetes.io/)ompatibility |
 | Kubernetes-native deployment | **Centrifugo** | Helm charts, active community, documented K8s patterns |
 | IETF-standardized protocol | **Mercure** | Only option with an official IETF draft specification |
 
@@ -347,7 +347,7 @@ All three servers support JWT-based authentication, but their approaches differ:
 - **Mercure** uses separate publisher and subscriber JWT keys, with topic-level authorization encoded in the JWT claims. Private topics are encrypted at the protocol level.
 - **Soketi** follows the Pusher app key/secret model. Channels are secured via signed subscription tokens, and private channels require authentication through your application backend.
 
-For production deployments, always enable TLS termination. Centrifugo and Soketi typically sit behind a reverse proxy (Nginx, Caddy, or Traefik), while Mercure's Caddy foundation includes automatic HTTPS via Let's Encrypt. For related reverse proxy options, see our [Nginx vs Caddy vs Traefik comparison](../nginx-vs-caddy-vs-traefik-self-hosted-web-server-guide-2026/).
+For production deployments, always enable TLS termination. Centrif[nginx](https://nginx.org/)nd Soketi typically sit behind a reverse proxy (Nginx, Caddy, or Traefik), while Mercure's Caddy foundation includes automatic HTTPS via Let's Encrypt. For related reverse proxy options, see our [Nginx vs Caddy vs Traefik comparison](../nginx-vs-caddy-vs-traefik-self-hosted-web-server-guide-2026/).
 
 ## Frequently Asked Questions
 

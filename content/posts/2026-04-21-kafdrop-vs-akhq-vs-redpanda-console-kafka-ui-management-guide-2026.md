@@ -6,9 +6,9 @@ draft: false
 description: "Compare Kafdrop, AKHQ, and Redpanda Console — the top three self-hosted web UIs for Apache Kafka cluster management, topic browsing, consumer group monitoring, and schema registry exploration."
 ---
 
-Managing Apache Kafka clusters from the command line is tedious. You need a visual interface to browse topics, inspect messages, monitor consumer group lag, and manage the schema registry — without writing Kafka CLI commands for every single task. That's exactly what self-hosted Kafka UI tools solve.
+Managing Apache [kafka](https://kafka.apache.org/) clusters from the command line is tedious. You need a visual interface to browse topics, inspect messages, monitor consumer group lag, and manage the schema registry — without writing Kafka CLI commands for every single task. That's exactly what self-hosted Kafka UI tools solve.
 
-In this guide, we compare the three most popular open-source Kafka management web interfaces: **Kafdrop**, **AKHQ**, and **Redpanda Console** (formerly Kowl). Each runs as a Docker container, connects to your Kafka brokers, and provides a browser-based dashboard for cluster operations.
+In this guide, we compare the three most popular open-source Kafka management web interfaces: **Kafdrop**, **AKHQ**, and **Redpanda Console** (formerly Kowl). Each runs as a [docker](https://www.docker.com/) container, connects to your Kafka brokers, and provides a browser-based dashboard for cluster operations.
 
 ## Why You Need a Kafka UI
 
@@ -342,7 +342,7 @@ All three tools follow the same basic pattern: a stateless web application that 
 
 For production deployments:
 
-- **Reverse proxy** — place Nginx, Traefik, or Caddy in front for TLS termination and authentication
+-[nginx](https://nginx.org/)verse proxy** — place Nginx, Traefik, or Caddy in front for TLS termination and authentication
 - **Resource allocation** — 256MB–512MB RAM is sufficient for most clusters; message-heavy usage may need 1GB
 - **Network access** — the UI needs TCP connectivity to all Kafka brokers and the schema registry
 - **Scaling** — since these are stateless, you can run multiple instances behind a load balancer

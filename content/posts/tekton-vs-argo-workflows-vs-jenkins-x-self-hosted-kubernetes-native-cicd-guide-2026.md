@@ -6,7 +6,7 @@ draft: false
 description: "Compare Tekton, Argo Workflows, and Jenkins X for building self-hosted Kubernetes-native CI/CD pipelines. Covers installation, configuration, and production deployment patterns."
 ---
 
-When your infrastructure runs on Kubernetes, running your build pipelines on anything else introduces unnecessary complexity. Traditional CI/CD systems like Jenkins or GitLab CI were designed for VM-era infrastructure — they manage their own agents, build queues, and storage outside of your cluster. Kubernetes-native pipelines eliminate that gap by treating builds as first-class cluster resources.
+When your infrastructure runs on [kubernetes](https://kubernetes.io/), running your build pipelines on anything else introduces unnecessary com[plex](https://www.plex.tv/)ity. Traditional CI/CD systems like Jenkins or GitLab CI were designed for VM-era infrastructure — they manage their own agents, build queues, and storage outside of your cluster. Kubernetes-native pipelines eliminate that gap by treating builds as first-class cluster resources.
 
 This guide compares three open-source approaches to Kubernetes-native CI/CD: **Tekton**, **Argo Workflows**, and **Jenkins X**. Each takes a different philosophy to the same problem, and the right choice depends on whether you prioritize flexibility, simplicity, or end-to-end automation.
 
@@ -83,7 +83,7 @@ spec:
       workingDir: $(workspaces.source.path)
       command:
         - /kaniko/executor
-      args:
+[docker](https://www.docker.com/)args:
         - --dockerfile=Dockerfile
         - --context=$(workspaces.source.path)
         - --destination=$(params.image-url):$(params.tag)

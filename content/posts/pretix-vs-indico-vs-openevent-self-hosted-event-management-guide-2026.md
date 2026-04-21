@@ -22,7 +22,7 @@ Self-hosting an event management platform gives you full control over ticketing 
 
 ### Pretix
 
-Pretix is a ticket shop application built for conferences, festivals, concerts, tech events, shows, exhibitions, workshops, and barcamps. Written in Python and Django, it focuses on powerful ticketing with support for complex pricing, voucher codes, seating plans, and multi-event organizations. As of April 2026, it has **2,374 GitHub stars** and was last updated on April 19, 2026. The official Docker image `pretix/standalone` has over 1 million pulls.
+Pretix is a ticket shop application built for conferences, festivals, concerts, tech events, shows, exhibitions, workshops, and barcamps. Written in Python and Django, it focuses on powerful ticketing with support for com[plex](https://www.plex.tv/) pricing, voucher codes, seating plans, and multi-event organizations. As of April 2026, it has **2,374 GitHub stars** and was last updated on April[docker](https://www.docker.com/)026. The official Docker image `pretix/standalone` has over 1 million pulls.
 
 **Best for**: Commercial events, festivals, and conferences that need robust ticketing with payment integration.
 
@@ -65,7 +65,7 @@ Open Event, developed by FOSSASIA, is an event management platform with a strong
 
 ### Pretix — Docker Compose
 
-Pretix ships with an official standalone Docker image (`pretix/standalone`, 1M+ pulls) that bundles the web server, worker, and Redis in a single container. Here is a production-ready compose setup:
+Pretix ships with an official standalone Docker image (`pretix/standalone`, 1[redis](https://redis.io/)lls) that bundles the web server, worker, and Redis in a single container. Here is a production-ready compose setup:
 
 ```yaml
 version: '3.8'

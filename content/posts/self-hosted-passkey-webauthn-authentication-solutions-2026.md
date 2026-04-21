@@ -6,7 +6,7 @@ draft: false
 description: "Complete guide to self-hosted passkey and WebAuthn authentication in 2026. Compare Zitadel, Keycloak, Authentik, and FIDO2 servers for passwordless login."
 ---
 
-Password-based authentication is one of the oldest security problems on the web. Despite decades of improvements — mandatory complexity rules, forced rotation, MFA — passwords remain the weakest link in most security architectures. Phishing, credential stuffing, and brute-force attacks exploit the fundamental flaw of shared secrets: the server must store something that can be stolen.
+Password-based authentication is one of the oldest security problems on the web. Despite decades of improvements — mandatory com[plex](https://www.plex.tv/)ity rules, forced rotation, MFA — passwords remain the weakest link in most security architectures. Phishing, credential stuffing, and brute-force attacks exploit the fundamental flaw of shared secrets: the server must store something that can be stolen.
 
 Passkeys, built on the FIDO2/WebAuthn standard, eliminate that problem entirely. Instead of a shared secret, authentication uses public-key cryptography. Your private key never leaves your device, and the server only stores a public key that is useless to attackers. Combined with built-in biometric verification (fingerprint, Face ID, Windows Hello), passkeys deliver stronger security with less friction.
 
@@ -62,7 +62,7 @@ The critical security property: **the private key is never transmitted, never st
 | **Admin Console** | Rich web UI | Rich web UI | Rich web UI | Web UI | None (code-level) |
 | **OIDC / SAML** | Full support | Full support | Full support | No (separate) | No (library) |
 | **Multi-tenancy** | Via realms | Built-in | Via contexts | No | No |
-| **Database** | PostgreSQL, MySQL, MariaDB | PostgreSQL, CockroachDB | PostgreSQL, SQLite | MySQL, MariaDB | Your choice |
+| **Database** | PostgreSQL, MySQL, MariaDB | PostgreSQL, CockroachDB | PostgreSQL, SQLite | MySQL, Mari[docker](https://www.docker.com/)Your choice |
 | **Docker Support** | Official images | Official images | Official images | Official images | N/A |
 | **License** | Apache 2.0 | Apache 2.0 | MIT | AGPL 3.0 | Apache 2.0 |
 | **Best For** | Enterprise, legacy integration | Modern cloud-native apps | Homelab, full-stack auth | Existing Passkey users | Developers building custom auth |
@@ -287,7 +287,7 @@ window.location.href = authUrl.toString();
 
 ## Authentik: The Homelab and SMB Favorite
 
-Authentik has rapidly gained popularity in the homelab and small-to-medium business space. It provides a complete identity provider with WebAuthn support, a flexible policy engine, and excellent integration with common homelab tools (Proxmox, Nextcloud, Gitea, etc.).
+Authentik has rapidly gained popularity in the homelab and small-to-medium business space. It provides a complete identity provider with WebAuthn support, a flexible policy engine, and excellent integration with common homelab tools (Proxmox, [nextcloud](https://nextcloud.com/), Gitea, etc.).
 
 ### Why Choose Authentik
 
@@ -643,3 +643,34 @@ Self-hosted passkey authentication is no longer a niche project — it is a prac
 - **go-webauthn** (or equivalent libraries in other languages) for developers who want complete control
 
 All of these solutions eliminate the fundamental weakness of password-based authentication while giving you full ownership of your identity infrastructure. The investment in self-hosting pays dividends in security, compliance, and cost — especially as your user base grows.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

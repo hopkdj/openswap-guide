@@ -18,9 +18,9 @@ Self-hosting your email server gives you:
 - **Custom domains** — professional email without paying $6/user/month
 - **Unlimited mailboxes** — create addresses for every service, family member, or project
 
-The challenge? Email is notoriously complex. You need SMTP, IMAP, webmail, spam filtering, DKIM/DMARC/SPF records, TLS certificates, and anti-abuse measures. That's exactly why turnkey Docker-based email server solutions exist.
+The challenge? Email is notoriously com[plex](https://www.plex.tv/). You need SMTP, IMAP, webmail, spam filtering, DKIM/DMARC/SPF records, TLS certificates, and anti-abuse measures. Tha[docker](https://www.docker.com/)actly why turnkey Docker-based email server solutions exist.
 
-In 2026, three solutions lead the self-hosted email space with fundamentally different philosophies: **Stalwart Mail Server**, **Mailcow**, and **Mailu**. Let's compare them side by side.
+In 2026, three solutions lead the self-hosted email space with fundamentally d[mailcow](https://mailcow.email/)t philosophies: **Stalwart Mail Server**, **Mailcow**, and **Mailu**. Let's compare them side by side.
 
 ## Quick Comparison Table
 

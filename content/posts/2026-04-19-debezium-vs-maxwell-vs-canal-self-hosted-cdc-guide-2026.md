@@ -10,7 +10,7 @@ Change Data Capture (CDC) is the backbone of modern data pipelines. Instead of r
 
 Whether you're building a search index, powering analytics dashboards, synchronizing microservice databases, or creating an audit trail, CDC eliminates the polling overhead and data staleness that plague traditional ETL approaches.
 
-Three open-source tools dominate the self-hosted CDC landscape: **Debezium**, **Maxwell's Daemon**, and **Alibaba Canal**. Each has a different architecture, supported databases, and operational complexity. This guide compares them head-to-head with real Docker Compose configurations so you can deploy any of them in minutes.
+Three open-source tools dominate the self-hosted CDC landscape: **Debezium**, **Maxwell's Daemon**, and **Alibaba Canal**. Each has a different architecture, supported databases, and operational com[plex](https://www.plex.tv/)ity. This guide compares them[docker](https://www.docker.com/)to-head with real Docker Compose configurations so you can deploy any of them in minutes.
 
 ## Why Self-Host Your CDC Pipeline
 
@@ -47,7 +47,7 @@ The key difference lies in *how* each tool connects to the database and *where* 
 | **DB2** | ✅ Full | ❌ | ❌ |
 | **Cassandra** | ✅ Full | ❌ | ❌ |
 | **Output** | Kafka Connect | Kafka, Kinesis, Redis, Stdout | Kafka, TCP, HTTP, MQ |
-| **Schema Registry** | ✅ Avro + JSON | ✅ (JSON only) | ✅ (custom) |
+| **Schema Registry** [kubernetes](https://kubernetes.io/) JSON | ✅ (JSON only) | ✅ (custom) |
 | **Kubernetes** | Kafka operator | Helm chart | Helm chart |
 | **Cluster Mode** | Via Kafka Connect | Single instance | ✅ HA with ZooKeeper |
 | **Data Transformation** | SMTs (Single Message Transforms) | Limited | Filter expressions |

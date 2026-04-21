@@ -6,7 +6,7 @@ draft: false
 description: "Compare GitHub Actions Runner, GitLab Runner, and Woodpecker CI for self-hosted CI/CD execution. Docker setup, architecture differences, and deployment guides."
 ---
 
-Running CI/CD pipelines on shared cloud infrastructure means your build logs, source code, and artifacts pass through servers you don't control. For teams handling proprietary code, compliance-sensitive workloads, or simply wanting faster builds on local hardware, self-hosted CI runners are the answer. This guide compares the three most popular self-hosted CI execution agents: **GitHub Actions Runner**, **GitLab Runner**, and **Woodpecker CI** — covering architecture, Docker deployment, configuration, and when to choose each one.
+Running CI/CD pipelines on shared cloud infrastructure means your build logs, source code, and artifacts pass through servers you don't control. For teams handling proprietary code, compliance-sensitive workloads, or simply wanting faster builds on local hardware, self-hosted CI runners are the answer. This guide compares the three most popular self-hosted CI execution agents: **GitHub Actions Runner**, **GitLab Runner**, and **Woodpecker CI** — covering architecture, [docker](https://www.docker.com/) deployment, configuration, and when to choose each one.
 
 ## Why Self-Host Your CI Runner?
 
@@ -30,7 +30,7 @@ The runner is the component that actually executes your pipeline steps. It conne
 | **Last Updated** | 2026-04-17 | 2026-04-18 | 2026-04-18 |
 | **License** | MIT | MIT | Apache 2.0 |
 | **Docker Support** | Native container actions | Docker executor, Docker-in-Docker | Docker-native (container-per-step) |
-| **Executor Types** | Process, Container, Docker | Shell, Docker, Kubernetes, Parallels, Custom | Docker, Kubernetes, Local, SSH |
+| **Executor Types** | Process, Containe[kubernetes](https://kubernetes.io/)| Shell, Docker, Kubernetes, Parallels, Custom | Docker, Kubernetes, Local, SSH |
 | **Platform Lock-in** | GitHub only | GitLab only | Platform-agnostic |
 | **Scaling** | Auto-scaling via actions-runner-controller | Auto-scaling via Docker Machine / Kubernetes | Horizontal via additional agents |
 | **Ephemeral Jobs** | Yes (container actions) | Yes (Docker executor) | Yes (default model) |
@@ -39,7 +39,7 @@ The runner is the component that actually executes your pipeline steps. It conne
 
 **GitLab Runner** is the execution agent for GitLab CI/CD. Written in Go, it's lightweight and supports multiple executor backends including Docker, Kubernetes, Shell, and SSH. It can run jobs for GitLab.com (SaaS) or self-hosted GitLab instances. The auto-scaling feature via Docker Machine or Kubernetes makes it suitable for high-volume CI environments.
 
-**Woodpecker CI** takes a different approach — it's a complete CI/CD engine (server + agent) that's fully open source and platform-agnostic. Rather than being tied to a specific Git forge, Woodpecker integrates with GitHub, GitLab, Gitea, Forgejo, and Bitbucket through OAuth. Its architecture is container-native: every pipeline step runs in its own isolated Docker container, making it ideal for teams that want a clean, self-contained CI system.
+**Woodpecker CI** takes a different approach — it's a complete CI/CD engine (server + agent) that's fully open source and platform-agnostic. Rather than being tied to a specific G[gitea](https://gitea.io/)rge, Woodpecker integrates with GitHub, GitLab, Gitea, Forgejo, and Bitbucket through OAuth. Its architecture is container-native: every pipeline step runs in its own isolated Docker container, making it ideal for teams that want a clean, self-contained CI system.
 
 ## Installation and Configuration
 

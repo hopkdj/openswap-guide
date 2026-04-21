@@ -79,7 +79,7 @@ Ghost is the most "batteries included" of the three options. Where Strapi and Di
 
 ## Installation and Setup
 
-### Deploying Strapi with Docker
+### Deploying Strapi with [docker](https://www.docker.com/)
 
 The simplest way to run Strapi is with Docker Compose. This configuration uses PostgreSQL for production-grade storage:
 
@@ -363,7 +363,7 @@ Ghost also has an Admin API for content creation and management, which requires 
 
 **Strapi** has the largest plugin ecosystem. The marketplace includes plugins for SEO optimization, content scheduling, internationalization, email notifications, and integrations with services like Stripe, Algolia, and Cloudinary. You can also write custom plugins in TypeScript or JavaScript that modify the API, add admin UI components, or hook into lifecycle events.
 
-**Directus** uses an extensions system with five types: interfaces (custom input fields), displays (how data is rendered), layouts (collection-level views), modules (full admin pages), and endpoints (custom API routes). Extensions are installed as npm packages or written as local JavaScript files. Directus also supports "Flows" — a visual workflow automation system similar to n8n or Node-RED that triggers on database events.
+**Directus** uses an extensions system with five types: interfaces (custom input fields), displays (how data is rendered), layouts (collection-level views), modules (full admin pages), and endpoints (custom API routes). Extensions are installed as npm packages or written as local JavaScript files. Directus also supports "Flows" — a visual workflow au[n8n](https://n8n.io/)ation system similar to n8n or Node-RED that triggers on database events.
 
 **Ghost** uses a theme system for frontend customization and an integration system for connecting external services. Custom themes are built with Handlebars templating and CSS. Integrations use webhooks to notify external services when content is published or updated. Ghost does not support custom API endpoints or backend plugins — its extensibility is focused on the frontend and integrations layer.
 
@@ -385,7 +385,7 @@ Ghost also has an Admin API for content creation and management, which requires 
 - You need to work with existing legacy databases without migration
 - You want zero schema-to-code drift — the API always matches the database
 - You need visual workflow automation (Flows) for data pipelines
-- You want the most performant option for complex relational queries
+- You want the most performant option for com[plex](https://www.plex.tv/) relational queries
 - You plan to use the CMS as an internal data operations platform, not just for publishing
 
 ### Choose Ghost when:
@@ -431,3 +431,34 @@ The self-hosted headless CMS landscape in 2026 offers three excellent options, e
 - **Ghost** is the publishing platform — optimized for articles, newsletters, and memberships. Best for writers, publishers, and content creators who want simplicity and performance.
 
 All three are open source, self-hostable, and production-ready. The choice comes down to whether you need maximum flexibility (Strapi), database transparency (Directus), or publishing focus (Ghost).
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

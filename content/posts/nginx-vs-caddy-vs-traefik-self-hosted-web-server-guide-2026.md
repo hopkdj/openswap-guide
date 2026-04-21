@@ -33,7 +33,7 @@ Nginx has been the dominant web server and reverse proxy for over two decades. I
 - You require fine-grained control over every aspect of request handling
 - You're proxying a mix of HTTP, TCP, and UDP traffic
 
-### Docker Deployment
+### [docker](https://www.docker.com/) Deployment
 
 Here's a production-ready Nginx reverse proxy setup using Docker Compose:
 
@@ -308,7 +308,7 @@ Trust Caddy's local CA on your machine once, and all internal services get valid
 
 ## Traefik: The Dynamic Proxy
 
-Traefik is a cloud-native reverse proxy designed for dynamic environments. It watches your Docker containers, Kubernetes pods, or cloud provider APIs and automatically configures routing rules as services start and stop.
+Traefik is a cloud-native reverse proxy designed for dynamic environments. It watch[kubernetes](https://kubernetes.io/)cker containers, Kubernetes pods, or cloud provider APIs and automatically configures routing rules as services start and stop.
 
 ### When to Choose Traefik
 
@@ -484,7 +484,7 @@ All three proxies support TLS 1.2/1.3, HSTS, and standard security headers. Key 
 ### Pick Nginx if:
 - You need maximum performance and have the expertise to configure it
 - You're already running Nginx and want to add reverse proxy capabilities
-- You require complex routing rules, custom modules, or TCP/UDP load balancing
+- You require com[plex](https://www.plex.tv/) routing rules, custom modules, or TCP/UDP load balancing
 - Your team has existing Nginx operational knowledge
 
 ### Pick Caddy if:
@@ -517,3 +517,34 @@ If you're setting up your first self-hosted reverse proxy, here's the recommende
 5. **Consider Nginx** if performance testing reveals that Caddy or Traefik can't meet your throughput requirements — which is unlikely for homelab workloads but possible in production.
 
 The most important thing is to pick one and start using it. All three are mature, well-documented, and actively maintained. The best reverse proxy is the one that gets your services online securely.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

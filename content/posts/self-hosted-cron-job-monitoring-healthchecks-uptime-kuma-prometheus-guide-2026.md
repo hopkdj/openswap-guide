@@ -8,7 +8,7 @@ description: "Compare the best self-hosted cron job monitoring tools in 2026. He
 
 Cron jobs run the infrastructure: database backups, report generation, data synchronization, cleanup tasks. When they fail silently, the consequences range from stale dashboards to data loss. A dedicated cron job monitoring system sends you an alert the moment a scheduled task misses its window, so you can fix problems before they compound.
 
-This guide compares three approaches to self-hosted cron monitoring: **Healthchecks** (a purpose-built open-source service), **Uptime Kuma** (a general monitoring platform with heartbeat support), and **Prometheus Alertmanager** (an alerting engine for teams already running Prometheus). Each has a different strengths profile, and the right choice depends on your existing infrastructure stack.
+This guide compares three approaches to self-hosted cron monitoring: **Healthchecks** (a purpose-built open-source service), **Uptime Kuma** (a general monitoring platform with heartbeat support), and **[prometheus](https://prometheus.io/) Alertmanager** (an alerting engine for teams already running Prometheus). Each has a different strengths profile, and the right choice depends on your existing infrastructure stack.
 
 > If you are looking for tools to *schedule* and orchestrate cron jobs rather than monitor them, see our [self-hosted cron job scheduler guide](../self-hosted-cron-job-schedulers-cronicle-rundeck-go-autocomplete-guide-2026/) for a comparison of Cronicle, Rundeck, and Go-Autocomplete.
 
@@ -42,14 +42,14 @@ If Healthchecks does not receive a ping within the configured grace period, it s
 ### Key Features
 
 - **Heartbeat monitoring** with configurable period and grace period
-- **Cron expression support** — set complex schedules like `0 2 * * 1-5` (weekdays at 2 AM)
+- **Cron expression support** — set com[plex](https://www.plex.tv/) schedules like `0 2 * * 1-5` (weekdays at 2 AM)
 - **Multiple ping methods** — HTTP GET/POST, email, Telegram bot
 - **Check groups and tags** — organize checks by project or environment
 - **Flips detection** — tracks when a check alternates between up and down
 - **Calendar view** — visualize check history
 - **API access** — manage checks programmatically
 - **Badges** — embed status badges in README files or dashboards
-- **Team management** — assign checks to different users or teams
+- **Team management** — assign checks to differ[docker](https://www.docker.com/)ers or teams
 
 ### Docker Compose Setup
 

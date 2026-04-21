@@ -21,7 +21,7 @@ Every time you use an online PDF service, you are making a trust decision. You a
 
 For personal documents like bank statements, tax returns, medical records, or legal contracts, this trust is hard to justify. Even for business documents, sending files to unknown servers creates compliance risks under GDPR, HIPAA, and other data protection regulations.
 
-Self-hosting Stirling-PDF eliminates these concerns entirely. Your documents never leave your machine. Processing happens locally in your Docker container. The only network traffic is your browser talking to your own server. And because the entire project is open-source under the MIT license, you can audit every line of code yourself.
+Self-hosting Stirling-PDF eliminates these concerns entirely. Your documents never leave your machine. Processing happens locally in your [docker](https://www.docker.com/) container. The only network traffic is your browser talking to your own server. And because the entire project is open-source under the MIT license, you can audit every line of code yourself.
 
 Stirling-PDF has grown to become one of the most popular open-source document tools on GitHub, with over 50,000 stars. It supports a wide range of operations:
 
@@ -223,7 +223,7 @@ environment:
 For multi-user setups, Stirling-PDF integrates with:
 
 - **LDAP / Active Directory** — for enterprise directory services
-- **OAuth2 / OIDC** — compatible with Keycloak, Authelia, Authentik, and other identity providers
+- **OAuth2 [keycloak](https://www.keycloak.org/) — compatible with Keycloak, Authelia, Authentik, and other identity providers
 - **API key authentication** — for programmatic access
 
 Here is an example configuration using Authentik as the OIDC provider:
@@ -385,7 +385,7 @@ Stirling-PDF is ideal for:
 - **IT departments** that want to provide PDF tools to employees with centralized access control
 - **Privacy-conscious users** who prefer open-source software they can audit
 
-It may not be the best fit if you need enterprise-scale document workflow automation (consider Alfresco or Paperless-ngx for that) or if you simply need to merge two PDFs once a year (a command-line tool like `pdfunite` would suffice).
+It may not be the best fit if you need enterprise-s[paperless](https://docs.paperless-ngx.com/)ment workflow automation (consider Alfresco or Paperless-ngx for that) or if you simply need to merge two PDFs once a year (a command-line tool like `pdfunite` would suffice).
 
 ## Conclusion
 
@@ -398,3 +398,34 @@ If you have been looking for a reason to consolidate more services on your home 
 ---
 
 *Looking for more self-hosted tools? Check out our guides on [Reverse Proxy Comparison](/reverse-proxy-comparison/) and [Docker Compose Guide](/docker-compose-guide/) for building out your home lab infrastructure.*
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

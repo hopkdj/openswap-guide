@@ -8,7 +8,7 @@ description: "Compare the best self-hosted cron job schedulers for 2026. Complet
 
 ## Why Self-Host Your Cron Job Scheduler?
 
-The traditional Unix `crontab` has been the backbone of scheduled task execution for decades. It is simple, reliable, and available on every Linux system. But as infrastructure grows in complexity, plain crontab reveals critical shortcomings that make it unsuitable for modern operations:
+The traditional Unix `crontab` has been the backbone of scheduled task execution for decades. It is simple, reliable, and available on every Linux system. But as infrastructure grows in com[plex](https://www.plex.tv/)ity, plain crontab reveals critical shortcomings that make it unsuitable for modern operations:
 
 - **No centralized visibility** — scattered across dozens of servers, crontab entries are invisible until something breaks. There is no single pane of glass to monitor what ran, when, and whether it succeeded.
 - **Zero built-in logging** — crontab writes output to local mail or stdout. You need additional tooling to capture, aggregate, and search execution logs across machines.
@@ -29,7 +29,7 @@ Self-hosted cron schedulers solve every one of these problems while keeping your
 | **Distributed** | ✅ Multi-worker | ✅ Multi-node | ❌ Single-node |
 | **DAG dependencies** | ✅ Chain jobs | ✅ Job orchestration | ❌ Sequential only |
 | **RBAC / ACL** | ✅ User roles | ✅ Fine-grained ACLs | ❌ None |
-| **API** | ✅ REST | ✅ REST + CLI | ❌ CLI only |
+| **API** | ✅ REST | ✅ REST +[docker](https://www.docker.com/) ❌ CLI only |
 | **Docker support** | ✅ Official images | ✅ Official images | ✅ Community images |
 | **Database** | SQLite / MySQL / PostgreSQL | H2 / MySQL / PostgreSQL | SQLite / PostgreSQL |
 | **Resource usage** | ~200 MB RAM | ~800 MB RAM | ~30 MB RAM |
@@ -512,7 +512,7 @@ For self-hosted push notifications, integrate with Gotify:
 MESSAGE="Job '$JOB_NAME' completed with status: $STATUS"
 curl -s -X POST "https://gotify.example.com/message?token=APP_TOKEN" \
     -H "Content-Type: application/json" \
-    -d "{\"title\": \"Cronicle Alert\", \"message\": \"$MESSAGE\", \"priority\": 5}"
+    -d "{\"title\": \"Cronicle Alert\", \"m[prometheus](https://prometheus.io/)\"$MESSAGE\", \"priority\": 5}"
 ```
 
 ### Prometheus Metrics Export
@@ -578,3 +578,34 @@ Your decision should be guided by three factors:
 **Compliance requirements.** If you operate in a regulated environment (finance, healthcare, government), Rundeck's audit logging, LDAP integration, and granular ACL system will save you significant effort during compliance audits. Cronicle covers the basics but lacks the depth required for formal compliance frameworks.
 
 For most homelab operators and small teams starting out, **Cronicle** offers the best balance of features, simplicity, and resource efficiency. Deploy it via Docker, configure your backup and maintenance jobs, and you will have full visibility into every scheduled task across your infrastructure — something that plain crontab simply cannot provide.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

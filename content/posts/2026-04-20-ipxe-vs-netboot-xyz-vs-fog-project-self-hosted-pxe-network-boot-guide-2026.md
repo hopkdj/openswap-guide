@@ -8,7 +8,7 @@ description: "Complete guide to self-hosted PXE network boot solutions. Compare 
 
 Bare-metal server provisioning and network-based OS installation remain essential skills for any homelab or enterprise infrastructure. Instead of physically swapping USB drives between machines, **Preboot eXecution Environment (PXE)** lets you boot and install operating systems entirely over the network.
 
-This guide compares three leading open-source PXE network boot solutions: **iPXE**, **netboot.xyz**, and **FOG Project**. Whether you're deploying a [Kubernetes cluster on bare metal](../k3s-vs-k0s-vs-talos-linux-self-hosted-kubernetes-guide-2026/) or imaging dozens of workstations, the right PXE tool saves hours of manual setup.
+This guide compares three leading open-source PXE network boot solutions: **iPXE**, **netboot.xyz**, and **FOG Project**. Whether you're deploying a [[kubernetes](https://kubernetes.io/) cluster on bare metal](../k3s-vs-k0s-vs-talos-linux-self-hosted-kubernetes-guide-2026/) or imaging dozens of workstations, the right PXE tool saves hours of manual setup.
 
 ## Why Self-Host PXE Network Boot?
 
@@ -36,7 +36,7 @@ PXE booting requires a **DHCP server** to hand out IP addresses and point client
 | **OS Support** | Any (custom scripts) | 100+ live ISOs | Linux, Windows, macOS |
 | **Unattended Install** | Via iPXE scripts | Via autoinstall files | Via task scheduling |
 | **Self-Hosted** | Yes | Yes (local mirror) | Yes |
-| **Docker Support** | No | Community images | No |
+| **[docker](https://www.docker.com/) Support** | No | Community images | No |
 | **Best For** | Firmware-level control | Quick OS testing | Mass deployment & imaging |
 
 ## iPXE: Open-Source PXE Boot Firmware
@@ -199,7 +199,7 @@ netboot.xyz provides a pre-built iPXE binary that boots to a menu. When you sele
 
 To run netboot.xyz locally, you need an HTTP server to host the menu assets and a TFTP server for the iPXE binary.
 
-#### Step 1: Set up the HTTP server
+##[nginx](https://nginx.org/)ep 1: Set up the HTTP server
 
 ```bash
 # Install Nginx

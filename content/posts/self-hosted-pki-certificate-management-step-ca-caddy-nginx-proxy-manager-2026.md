@@ -22,7 +22,7 @@ The case for running your own CA grows stronger every year:
 - **Compliance and audit.** Many security frameworks (SOC 2, ISO 27001) require documented certificate management processes. A self-hosted CA gives you full audit trails.
 - **Cost savings at scale.** If you manage dozens or hundreds of services, wildcard certificates from commercial CAs get expensive quickly.
 
-In 2026, three solutions stand out for self-hosted certificate management: **Step CA**, **Caddy**, and **Nginx Proxy Manager** with ACME integration. Each takes a fundamentally different approach.
+In 2026, three solutions stand out for self-hosted certificate management: **Step CA**, **Caddy**, and **[nginx](https://nginx.org/) Proxy Manager** with ACME integration. Each takes a fundamentally different approach.
 
 ## Option 1: Step CA — The Dedicated Certificate Authority
 
@@ -44,7 +44,7 @@ Key features:
 
 ### Installation and Setup
 
-The fastest way to deploy Step CA is with Docker:
+The fastest way to deploy Step CA is with [docker](https://www.docker.com/):
 
 ```yaml
 # docker-compose.yml for Step CA
@@ -266,7 +266,7 @@ volumes:
 
 ### Architecture
 
-NPM wraps Nginx with a Vue.js web UI and a SQLite/MySQL/PostgreSQL database for configuration storage. Certificate requests are handled through a built-in ACME client that talks to Let's Encrypt.
+NPM wra[postgresql](https://www.postgresql.org/)ith a Vue.js web UI and a SQLite/MySQL/PostgreSQL database for configuration storage. Certificate requests are handled through a built-in ACME client that talks to Let's Encrypt.
 
 Key features:
 - Web-based management interface
@@ -583,3 +583,34 @@ The decision depends on your needs:
 **Best practice:** Run Step CA as your internal certificate authority and use Caddy as your edge reverse proxy. Caddy handles public-facing Let's Encrypt certificates while using Step CA for any internal domains. This gives you the best of both worlds — automatic public TLS and complete control over your internal PKI.
 
 The days of self-signed certificate warnings and manual certificate management are over. Pick a tool, deploy it once, and let automation handle the rest.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

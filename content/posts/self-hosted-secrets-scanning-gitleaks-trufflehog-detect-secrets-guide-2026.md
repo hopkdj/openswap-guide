@@ -36,7 +36,7 @@ The self-hosted secrets scanning landscape is dominated by three tools, each wit
 | **Detection Approach** | Regex patterns | Entropy analysis + regex | Baseline comparison |
 | **Git History Scanning** | Yes | Yes | No (current snapshot only) |
 | **Custom Rules** | TOML/JSON configs | Go plugins, custom detectors | JSON config + plugins |
-| **CI/CD Integration** | GitHub Actions, GitLab CI, pre-commit | GitHub Actions, GitLab CI, CLI hooks | pre-commit, CLI |
+| **CI/CD Integration** | GitHub Actions, [gitlab](https://about.gitlab.com/) CI, pre-commit | GitHub Actions, GitLab CI, CLI hooks | pre-commit, CLI |
 | **False Positive Rate** | Low (pattern-based) | Medium (entropy catches noise) | Very low (baseline suppresses known) |
 | **Scan Speed (10k commits)** | ~15 seconds | ~45 seconds | ~5 seconds (snapshot) |
 | **Secrets Verified** | No | Yes (optional active verification) | No |
@@ -96,7 +96,7 @@ keywords = ["ACME_API"]
 [[rules]]
 id = "database-connection-string"
 description = "Database connection string with password"
-regex = '''(?:mysql|postgres|mongodb)://\S+:\S+@[^\s]+'''
+regex = '''(?:[mysql](https://www.mysql.com/)|postgres|mongodb)://\S+:\S+@[^\s]+'''
 keywords = ["mysql://", "postgres://", "mongodb://"]
 
 # Override built-in rule severity
@@ -165,7 +165,7 @@ trufflehog git file:///path/to/repo --branch main
 trufflehog git file:///path/to/repo --json > results.json
 ```
 
-### Scanning Docker Images and S3 Buckets
+### Scanning [docker](https://www.docker.com/) Images and S3 Buckets
 
 TruffleHog goes beyond git. It can scan container images and cloud storage for leaked credentials:
 
@@ -403,3 +403,34 @@ This layered approach catches secrets at every stage of the development lifecycl
 Secrets scanning is no longer optional. Whether you choose Gitleaks for its speed and breadth of pattern detection, TruffleHog for its deep analysis and credential verification, or Detect-Secrets for its pragmatic baseline-driven workflow, running a self-hosted scanner gives you complete control over your security posture.
 
 The best strategy is not to pick one tool but to layer them: block obvious leaks at commit time with a fast pattern scanner, audit the full baseline with a comparison tool, and run periodic deep scans with verification to catch what the others miss. All three tools are open-source, free to run, and integrate seamlessly into existing CI/CD pipelines. Start with one, add the others as your needs grow, and ensure no credential ever slips into version control unnoticed.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

@@ -8,7 +8,7 @@ description: "Complete guide to self-hosted bookmark managers in 2026. Compare L
 
 Every developer, researcher, and power user accumulates hundreds — eventually thousands — of bookmarks. Browser bookmark sync keeps them accessible, but you are trading convenience for dependency on a single vendor's ecosystem and data practices. Self-hosted bookmark managers give you full control, cross-browser access, powerful search, and the ability to keep your reading list private.
 
-This guide covers the three most capable self-hosted bookmark tools in 2026: Linkding, Shaarli, and Wallabag. We will compare their features, walk through Docker installation for each, and help you decide which one fits your workflow.
+This guide covers the three most capable self-hosted bookmark tools in 2026: Linkding, Shaarli, and Wallabag. We will compare their features, walk through [docker](https://www.docker.com/) installation for each, and help you decide which one fits your workflow.
 
 ## Why Self-Host Your Bookmarks
 
@@ -200,7 +200,7 @@ Install the community-maintained Shaarli extension for your browser. Configure i
 
 ## Installing Wallabag with Docker
 
-Wallabag is the most feature-rich option but also the most complex to set up. It requires a database and additional services for article extraction.
+Wallabag is the most feature-rich option but also the most com[plex](https://www.plex.tv/) to set up. It requires a database and additional services for article extraction.
 
 ### Step 1: Create the Docker Compose file
 
@@ -324,7 +324,7 @@ Wallabag is the most powerful option but also the heaviest. It is ideal if your 
 
 ## Running All Three Behind a Reverse Proxy
 
-If you want to run multiple bookmark services, put them behind a reverse proxy. Here is a sample Caddy configuration:
+If you want to run multiple bookmark services,[caddy](https://caddyserver.com/)them behind a reverse proxy. Here is a sample Caddy configuration:
 
 ```
 bookmarks.example.com {
@@ -475,3 +475,34 @@ If your primary workflow is reading long-form articles and you want offline acce
 If you are running on minimal hardware or want the simplest possible setup with zero dependencies, **Shaarli** delivers. It is not the most feature-rich, but it is reliable, portable, and will run on a $5 VPS or a Raspberry Pi Zero without breaking a sweat.
 
 All three are open source, respect your privacy, and give you full ownership of your data. The best choice is the one that fits your server resources and reading habits.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

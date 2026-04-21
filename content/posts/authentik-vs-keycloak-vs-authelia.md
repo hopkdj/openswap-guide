@@ -12,7 +12,7 @@ Identity is the new perimeter. Every application, API, and service in your infra
 
 Self-hosting an identity provider puts authentication and authorization entirely under your control. Your user data never leaves your servers. You define the password policies, the session lifetimes, the multi-factor requirements, and the audit trail. For homelab users, it means a single sign-on experience across dozens of services without relying on external accounts. For organizations, it means compliance with data residency laws, elimination of per-user SaaS fees, and the ability to integrate with internal directories and HR systems.
 
-The self-hosted identity landscape in 2026 is dominated by three projects, each with a distinct philosophy: **Authentik**, **Keycloak**, and **Authelia**. They range from lightweight reverse-proxy-based auth to full-featured enterprise identity platforms. This guide compares all three across architecture, protocols, deployment complexity, and usability — and provides production-ready Docker configurations so you can deploy the right solution for your stack.
+The self-hosted identity landscape in 2026 is dominated by three projects, each with a distinct philosophy: **Authentik**, **Keycloak**, and **Authelia**. They range from lightweight reverse-proxy-based auth to full-featured enterprise identity platforms. This guide compares all three across architecture, protocols, deployment com[plex](https://www.plex.tv/)ity, and usability — and pr[docker](https://www.docker.com/) production-ready Docker configurations so you can deploy the right solution for your stack.
 
 ---
 
@@ -40,7 +40,7 @@ Authentik has become the go-to identity provider for homelab enthusiasts and sma
 
 ### Key Strengths
 
-**Protocol coverage.** Authentik supports OIDC, OAuth2, SAML2, LDAP, and SCIM out of the box. This means it integrates with virtually any application — from Nextcloud and Gitea to Grafana and Kubernetes. The SAML2 support is particularly useful for legacy enterprise applications that do not support modern OIDC flows.
+**Protocol coverage.** Authentik supports OIDC, OAuth2, SAML2, LDAP, and SCIM out of the box. This means it integrates with virtually any application — from [nextcloud](https://nextcloud.com/) and Gitea to Grafana and Kubernetes. The SAML2 support is particularly useful for legacy enterprise applications that do not support modern OIDC flows.
 
 **Flexible authentication flows.** Authentik uses a visual flow designer that lets you chain authentication stages together. You can require MFA only for external networks, skip it for trusted IP ranges, or inject additional verification steps based on user risk scores. This stage-based architecture is more granular than what Keycloak offers through its native configuration.
 
@@ -613,3 +613,34 @@ The self-hosted identity landscape in 2026 offers three distinct paths, and none
 The right choice depends on your scale, your protocol requirements, your operational expertise, and your resource constraints. What all three share is the fundamental advantage of self-hosting: your identity data stays on your infrastructure, under your control, with no third-party telemetry, no per-user pricing, and no vendor lock-in.
 
 Start with the Docker configurations above, deploy to a test environment, and integrate one application at a time. Within a few hours, you will have a working SSO experience across your entire self-hosted stack — and the peace of mind that comes with owning your identity infrastructure.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

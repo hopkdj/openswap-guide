@@ -6,7 +6,7 @@ draft: false
 description: "Compare Checkov, tfsec, and Trivy for self-hosted infrastructure-as-code security scanning. Learn which open-source tool best fits your Terraform, Kubernetes, and cloud compliance needs."
 ---
 
-Infrastructure-as-code has become the standard for provisioning cloud resources, Kubernetes clusters, and container deployments. But with every Terraform module, Helm chart, and Dockerfile committed to version control comes a critical question: **is your infrastructure configuration actually secure?**
+Infrastructure-as-code has become the standard for provisioning cloud resources, [kubernetes](https://kubernetes.io/) clusters, and container deployments. But with every Terraform module, Helm chart, and [docker](https://www.docker.com/)file committed to version control comes a critical question: **is your infrastructure configuration actually secure?**
 
 Cloud misconfigurations are the leading cause of data breaches in modern deployments. An exposed S3 bucket, an overly permissive IAM role, or a Kubernetes pod running as root can compromise your entire environment. Self-hosted IaC scanning tools catch these issues **before** you apply changes — no cloud API keys required, no data sent to third-party services.
 
@@ -522,7 +522,7 @@ iac-scan:
     reports:
       codequality: trivy-results.json
   rules:
-    - changes:
+ [jenkins](https://www.jenkins.io/)anges:
         - "terraform/**/*.tf"
 ```
 

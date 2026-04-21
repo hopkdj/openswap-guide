@@ -35,7 +35,7 @@ Hasura ([hasura/graphql-engine](https://github.com/hasura/graphql-engine), 31,95
 
 **Best for:** Teams that need real-time data, multi-database support, and enterprise-grade access control without writing boilerplate resolver code.
 
-### Quick Start with Docker Compose
+### Quick Start with [docker](https://www.docker.com/) Compose
 
 Hasura ships with an official Docker Compose configuration. Here is a production-ready setup:
 
@@ -176,7 +176,7 @@ Directus ([directus/directus](https://github.com/directus/directus), 34,823 star
 
 **Best for:** Teams that need a complete content management and data platform with a visual admin UI, not just a raw GraphQL API layer.
 
-For a broader headless CMS comparison, see our [Strapi vs Directus vs Ghost guide](../strapi-vs-directus-vs-ghost-headless-cms-guide/).
+For a broader headles[strapi](https://strapi.io/)comparison, see our [Strapi vs Directus vs Ghost guide](../strapi-vs-directus-vs-ghost-headless-cms-guide/).
 
 ### Production Docker Compose
 
@@ -260,7 +260,7 @@ query GetArticles {
 | **File Management** | Via remote schemas | No | Built-in with image transforms |
 | **Remote Schema Stitching** | Yes | No | No |
 | **Event Triggers / Webhooks** | Yes (built-in) | Via plugins | Yes (flows + webhooks) |
-| **Deployment Complexity** | Medium (engine + metadata DB) | Low (single container) | Medium (app + database + storage) |
+| **Deployment Com[plex](https://www.plex.tv/)ity** | Medium (engine + metadata DB) | Low (single container) | Medium (app + database + storage) |
 | **GitHub Stars** | 31,950 | 12,917 | 34,823 |
 | **Last Updated** | April 2026 | April 2026 | April 2026 |
 | **License** | Apache 2.0 (Community), Proprietary (Enterprise) | MIT | BSL 1.1 (GPL after 1 year) |

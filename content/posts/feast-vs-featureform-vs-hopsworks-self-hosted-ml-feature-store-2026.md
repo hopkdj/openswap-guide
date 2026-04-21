@@ -80,7 +80,7 @@ offline_store:
     type: duckdb
 ```
 
-For production deployments on Kubernetes, Feast provides Helm charts:
+For production deployments on [kubernetes](https://kubernetes.io/), Feast provides Helm charts:
 
 ```yaml
 # values.yaml for Feast Helm chart
@@ -147,7 +147,7 @@ feast materialize-incremental $(date -u +%Y-%m-%dT%H:%M:%S)
 
 - **No built-in UI** — feature management is entirely code-driven; no web dashboard out of the box
 - **No native model training integration** — you need external tools (MLflow, Kubeflow) for the training pipeline
-- **Kubernetes complexity** — Helm deployment requires familiarity with K8s concepts
+- **Kubernetes com[plex](https://www.plex.tv/)ity** — Helm deployment requires familiarity with K8s concepts
 - **No built-in feature monitoring** — drift detection requires integration with external monitoring tools
 
 ## Featureform: The Virtual Feature Store
@@ -168,7 +168,7 @@ Featureform's architecture centers on a provider model:
 
 ### Installation
 
-Featureform runs as a binary or Docker container:
+Featuref[docker](https://www.docker.com/)ns as a binary or Docker container:
 
 ```bash
 # Using the official installer

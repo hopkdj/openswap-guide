@@ -72,12 +72,11 @@ The **spawner** is the most important configuration decision. It determines how 
 | Spawner | Isolation | Best For | Resource Overhead |
 |---------|-----------|----------|-------------------|
 | `LocalProcessSpawner` | None (same OS user or separate Unix users) | Single-server development | Minimal |
-| `DockerSpawner` | Docker containers | Teams sharing one host | Low–Medium |
-| `KubeSpawner` | Kubernetes pods | Large teams, multi-node | Medium–High |
+| `[docker](https://www.docker.com/)Spawner` | Docker containers | Teams sharing one host | Low–[kubernetes](https://kubernetes.io/) `KubeSpawner` | Kubernetes pods | Large teams, multi-node | Medium–High |
 | `SystemdSpawner` | systemd services | Linux servers with systemd | Low |
 | `SSHSpawner` | SSH to remote hosts | Distributed compute clusters | Variable |
 
-For most teams starting out, **DockerSpawner** is the sweet spot — it gives container isolation without the complexity of Kubernetes.
+For most teams starting out, **DockerSpawner** is the sweet spot — it gives container isolation without the com[plex](https://www.plex.tv/)ity of Kubernetes.
 
 ### Authenticators: How Users Log In
 
@@ -630,3 +629,34 @@ Key metrics to monitor:
 JupyterHub gives you enterprise-grade notebook infrastructure without the enterprise price tag. A single afternoon of setup gives your team persistent, isolated, and fully customizable computational environments — backed by your own storage, your own auth, and your own network policies.
 
 The Docker Compose approach in this guide gets you from zero to running in under an hour. When you're ready to scale, the Helm chart and KubeSpawner handle the transition to Kubernetes seamlessly. The investment you make in self-hosting pays dividends in data control, cost predictability, and environment flexibility that hosted platforms simply cannot match.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

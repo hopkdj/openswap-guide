@@ -8,7 +8,7 @@ description: "Compare Matomo, Plausible, and Umami for self-hosted web analytics
 
 ## Why Self-Host Your Web Analytics?
 
-Third-party analytics services like Google Analytics track your visitors across the web, harvest personal data, and subject you to increasingly complex compliance requirements. Self-hosting your analytics gives you full control:
+Third-party analytics services like Google Analytics track your visitors across the web, harvest personal data, and subject you to increasingly com[plex](https://www.plex.tv/) compliance requirements. Self-hosting your analytics gives you full control:
 
 - **Complete data ownership**: Every event, every session, every metric stays on your infrastructure
 - **GDPR and privacy compliance**: No cross-site tracking, no fingerprinting, no cookie banners needed
@@ -34,7 +34,7 @@ For blogs, e-commerce stores, SaaS products, and internal dashboards, self-hoste
 | **Heatmaps** | Yes (plugin) | No | No |
 | **A/B testing** | Yes (plugin) | No | No |
 | **Multi-site** | Yes | Yes | Yes |
-| **REST API** | Yes | Yes | Yes |
+| **REST API** [docker](https://www.docker.com/)| Yes | Yes |
 | **Docker support** | Yes | Yes | Yes |
 | **Resource usage** | High (300-500 MB RAM) | Medium (150-300 MB) | Low (50-150 MB) |
 | **Best for** | Enterprise, complex needs | Privacy-first blogs and SaaS | Personal projects and small sites |
@@ -152,7 +152,7 @@ Once configured, Matomo provides a JavaScript snippet to embed on every page:
 
 For cookieless tracking, add this line before `trackPageView`:
 
-```javascript
+```[nginx](https://nginx.org/)cript
 _paq.push(['disableCookies']);
 ```
 
@@ -478,3 +478,34 @@ The decision comes down to your specific needs:
 - You're running on minimal hardware (512 MB RAM VPS or Raspberry Pi)
 
 All three platforms are excellent open-source choices. The best approach is to spin up a Docker instance of your preferred option, add the tracking script to a staging version of your site, and evaluate the dashboard after a week of real traffic data.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

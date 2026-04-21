@@ -8,7 +8,7 @@ description: "Complete guide to setting up self-hosted DNS filtering for ad bloc
 
 Every device on your network makes DNS queries — hundreds or thousands per day. Each query is a window into your browsing habits, a potential vector for malware, and a carrier for tracking beacons embedded in ads. Running your own DNS filtering server blocks all of this at the network level, before it ever reaches your devices.
 
-This guide covers three of the most popular self-hosted DNS filtering solutions — Pi-hole, AdGuard Home, and Technitium DNS Server — and shows you exactly how to deploy, configure, and optimize them for maximum protection.
+This guide covers three of the most popular self-hosted DNS filtering solutions — Pi-hole, [adguard home](https://adguard.com/en/adguard-home/overview.html), and Technitium DNS Server — and shows you exactly how to deploy, configure, and optimize them for maximum protection.
 
 ## Why Self-Hosted DNS Filtering Beats Browser Extensions
 
@@ -29,7 +29,7 @@ Understanding the mechanics helps you troubleshoot and tune your setup. Here is 
 1. Your device sends a DNS query to resolve a domain like `ads.example.com`.
 2. The DNS filter intercepts the query and checks it against active blocklists.
 3. If the domain matches a blocklist rule, the filter returns a sinkhole response (typically `0.0.0.0` or the filter's own IP address).
-4. If no match is found, the query is forwarded to an upstream DNS resolver (like Cloudflare, Google, or a privacy-focused resolver).
+4. If no match is found, the [cloudflare](https://www.cloudflare.com/)orwarded to an upstream DNS resolver (like Cloudflare, Google, or a privacy-focused resolver).
 5. The response is cached locally so repeat queries for the same domain are answered instantly.
 
 The entire process adds less than a millisecond of latency for cached queries. For new queries, you get the same resolution speed as your upstream provider.
@@ -46,8 +46,7 @@ The entire process adds less than a millisecond of latency for cached queries. F
 | **DNS-over-TLS** | Via stubby | Built-in | Built-in |
 | **DNS-over-QUIC** | No | No | Built-in |
 | **Blocklist Management** | Gravity CLI + web UI | Web UI + API | Web UI + subscription lists |
-| **Per-Client Rules** | Yes (via group management) | Yes (client settings) | Yes (zone-level policies) |
-| **API** | REST API | REST API | REST API |
+| **Per-Client Rules** | Yes (via group management) | Yes (client settings) | Yes (zone-level policies[docker](https://www.docker.com/)**API** | REST API | REST API | REST API |
 | **Docker Support** | Official image | Official image | Official image |
 | **Language** | Go + PHP (web UI) | Go + JavaScript (web UI) | C# (ASP.NET web UI) |
 | **Resource Usage** | ~50-150 MB RAM | ~30-80 MB RAM | ~100-200 MB RAM |
@@ -419,3 +418,34 @@ For **users who want the most mature ecosystem**, Pi-hole remains the gold stand
 For **power users who want a complete DNS server**, Technitium DNS Server provides features the others lack: DNS-over-QUIC listening, local zone definitions, RPZ support, and built-in split-horizon DNS. It is the best choice if you want your DNS filter to also serve as your internal DNS authority.
 
 All three are free, open source, and can run on hardware that costs less than $50. The real investment is the 15-30 minutes of setup time — after that, every device on your network gets automatic protection from ads, trackers, malware domains, and unwanted telemetry, with zero ongoing maintenance beyond occasional blocklist updates.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

@@ -6,9 +6,9 @@ draft: false
 description: "Complete guide to Ghostfolio, the open-source self-hosted portfolio tracker and wealth management platform. Docker setup, configuration, and alternatives compared."
 ---
 
-Tracking your investments across multiple brokerages, crypto exchanges, and bank accounts usually means logging into five different dashboards — or handing that data to a proprietary portfolio app that monetizes your financial behavior. Ghostfolio changes that equation entirely.
+Tracking your investments across multiple brokerages, crypto exchanges, and bank accounts usually means logging into five different dashboards — or handing that data to a proprietary portfolio app that monetizes your financial behavior. [ghost](https://ghost.org/)folio changes that equation entirely.
 
-Ghostfolio is an open-source wealth management platform that aggregates your entire portfolio into a single self-hosted dashboard. With over 8,100 GitHub stars and active development (last update April 2026), it is the most popular open-source portfolio tracker available today. This guide covers what Ghostfolio does, how to deploy it with Docker, and how it compares to smaller open-source alternatives.
+Ghostfolio is an open-source wealth management platform that aggregates your entire portfolio into a single self-hosted dashboard. With over 8,100 GitHub stars and active development (last update April 2026), it is the most popular open-source portfolio tracker available today. This guide covers what Ghostfolio does, how to deploy it with [docker](https://www.docker.com/), and how it compares to smaller open-source alternatives.
 
 ---
 
@@ -243,7 +243,7 @@ gf-redis        redis:alpine                   Up (healthy)
 
 ### Step 5: Access the Web Interface
 
-Open your browser and navigate to `http://your-server-ip:3333`. The first screen prompts you to create an admin account.
+Open your browser and navigate to `http://your-server-ip:3333`. The first screen prompts you to create an admin a[nginx](https://nginx.org/)t.
 
 ---
 

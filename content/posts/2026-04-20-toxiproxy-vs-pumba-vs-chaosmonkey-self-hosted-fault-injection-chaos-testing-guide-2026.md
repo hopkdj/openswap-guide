@@ -10,7 +10,7 @@ Building resilient distributed systems requires more than unit tests and load te
 
 This guide compares three self-hosted fault injection and chaos testing tools: **Toxiproxy** (Shopify), **Pumba** (Aleksei Babenko), and **Chaos Monkey** (Netflix). Each represents a different approach to chaos engineering — from network-level proxy manipulation to container lifecycle disruption to infrastructure-level instance termination.
 
-For teams already practicing chaos engineering at the Kubernetes level, our [chaos engineering guide covering Litmus, Chaos Mesh, and Chaos Toolkit](../self-hosted-chaos-engineering-litmus-chaos-mesh-chaos-toolkit-guide-2026/) provides complementary tools. This article focuses on the network, container, and infrastructure layers where fault injection starts.
+For teams already practicing chaos engineering at the [kubernetes](https://kubernetes.io/) level, our [chaos engineering guide covering Litmus, Chaos Mesh, and Chaos Toolkit](../self-hosted-chaos-engineering-litmus-chaos-mesh-chaos-toolkit-guide-2026/) provides complementary tools. This article focuses on the network, container, and infrastructure layers where fault injection starts.
 
 ## Why Self-Host Fault Injection Tools?
 
@@ -40,7 +40,7 @@ Your App ──► Toxiproxy (port 22220) ──► MySQL (port 3306)
          Configure toxics via HTTP API
 ```
 
-### Toxiproxy Docker Compose Setup
+### Toxiproxy [docker](https://www.docker.com/) Compose Setup
 
 ```yaml
 version: "3.8"
@@ -293,7 +293,7 @@ Chaos Monkey respects configurable business hours and can be tuned for different
 | **Container Support** | Docker, standalone | Docker, containerd | Spinnaker-managed |
 | **CI/CD Integration** | Excellent (HTTP API + CLI) | Good (CLI-driven) | Limited (requires Spinnaker) |
 | **Deterministic Testing** | Yes (exact control) | Yes (targeted patterns) | No (random by design) |
-| **Setup Complexity** | Low | Low | High (Spinnaker required) |
+| **Setup Com[plex](https://www.plex.tv/)ity** | Low | Low | High (Spinnaker required) |
 | **Language** | Go | Go | Go |
 | **Stars** | 11,971 | 3,011 | 16,825 |
 | **Best For** | Application-level resilience | Container resiliency | Infrastructure resiliency |

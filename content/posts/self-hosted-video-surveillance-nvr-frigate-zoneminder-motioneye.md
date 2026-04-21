@@ -20,7 +20,7 @@ The case for running your own NVR goes far beyond avoiding subscription fees:
 
 **Unlimited recording history.** Cloud plans cap you at 7 or 30 days of footage. With local storage, you decide how long to keep recordings — days, weeks, or months — limited only by your disk capacity.
 
-**Integration flexibility.** Self-hosted systems integrate with Home Assistant via MQTT, expose APIs for custom automations, and work with virtually any ONVIF or RTSP camera. You are not locked into a single camera brand.
+**Integration flexibility.** Self-hosted systems integrate with [home assistant](https://www.home-assistant.io/) via MQTT, expose APIs for custom automations, and work with virtually any ONVIF or RTSP camera. You are not locked into a single camera brand.
 
 **Resilience during outages.** When your internet goes down, cloud cameras often stop recording or lose functionality. A local NVR keeps recording regardless of your internet connection status.
 
@@ -49,7 +49,7 @@ Frigate's architecture is purpose-built for performance:
 - Support for multiple camera types (ONVIF, RTSP, generic IP cameras)
 - Timeline-based event browser with filtering
 - Birdseye view — combines all cameras into a single overview
-- Go2RTC integration for low-latency WebRTC streaming
+- Go2RTC integration for [docker](https://www.docker.com/)tency WebRTC streaming
 
 ### Docker Installation
 
@@ -381,7 +381,7 @@ MotionEye is exceptionally lightweight:
 
 | Feature | Frigate | ZoneMinder | MotionEye |
 |---------|---------|------------|-----------|
-| **Setup complexity** | Moderate | High | Low |
+| **Setup com[plex](https://www.plex.tv/)ity** | Moderate | High | Low |
 | **Hardware requirements** | Medium | High | Very Low |
 | **Camera support** | RTSP/ONVIF | Virtually any | RTSP/ONVIF/USB |
 | **Motion detection** | Object-based | Zone-based | Pixel-based |
@@ -481,3 +481,34 @@ Set this up as a daily cron job to ensure your configuration and recent footage 
 Self-hosted video surveillance has matured to the point where it rivals commercial systems in features while surpassing them in privacy, cost, and flexibility. Frigate leads the pack for modern home setups with its efficient architecture and smart detection pipeline. ZoneMinder remains the most feature-complete option for demanding deployments. MotionEye excels at lightweight, simple setups on minimal hardware.
 
 The best system is the one you actually deploy. Start with a single camera, get comfortable with your chosen platform, and expand from there. Your footage, your rules.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

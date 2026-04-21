@@ -51,9 +51,9 @@ The tools covered in this article span both categories, giving you a complete se
 - **Project hierarchy** — Organize SBOMs by team, product line, or environment with parent/child project relationships.
 - **Policy management** — Create automated policies (e.g., "block any component with CVSS ≥ 9.0" or "reject GPL-licensed libraries").
 
-### Installation with Docker Compose
+### Installation with [docker](https://www.docker.com/) Compose
 
-Dependency-Track requires a database backend. The recommended setup uses PostgreSQL:
+Dependency-Track requires a database backend. [postgresql](https://www.postgresql.org/)ended setup uses PostgreSQL:
 
 ```yaml
 # docker-compose.yml
@@ -178,7 +178,7 @@ syft dir:/opt/myproject -o cyclonedx-json > bom.json
 # Scan a tar archive
 syft archive:myproject.tar.gz -o cyclonedx-json > bom.json
 
-# Table output for quick inspection
+# Table output[nginx](https://nginx.org/)quick inspection
 syft nginx:latest
 ```
 
@@ -555,3 +555,34 @@ A complete self-hosted SBOM pipeline gives you full visibility and control over 
 Together, these tools form a production-grade supply chain security platform that costs nothing in licensing, runs entirely on your infrastructure, and keeps your dependency data under your control. With increasing regulatory requirements around software transparency in 2026, implementing this stack is both a security best practice and a compliance necessity.
 
 Start with Syft to generate SBOMs for your most critical applications, connect them to Dependency-Track for continuous monitoring, and use CycloneDX CLI to automate release reviews. Your future self — and your security auditor — will thank you.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

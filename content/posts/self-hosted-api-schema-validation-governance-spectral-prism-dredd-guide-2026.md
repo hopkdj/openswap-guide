@@ -45,7 +45,7 @@ The tools below cover different stages of this pipeline. Most teams use a combin
 
 ### What Spectral Does Well
 
-Spectral's core strength is its **ruleset system**. You define rules in YAML, and Spectral evaluates every node in your API spec against those rules. Rules can check anything from simple style conventions to complex cross-reference validations:
+Spectral's core strength is its **ruleset system**. You define rules in YAML, and Spectral evaluates every node in your API spec against those rules. Rules can check anything from simple style conventions to com[plex](https://www.plex.tv/) cross-reference validations:
 
 ```yaml
 # .spectral.yaml
@@ -107,7 +107,7 @@ spectral lint openapi.yaml --ruleset .spectral.yaml
 spectral lint openapi.yaml --format json
 
 # Fail on errors only (ignore warnings)
-spectral lint openapi.yaml --fail-severity error
+spectral lint openapi.yaml --fail-[docker](https://www.docker.com/)ty error
 ```
 
 ### Docker Deployment for CI/CD
@@ -287,7 +287,7 @@ api-contract-test:
 - Instant mock server from any OpenAPI spec
 - Contract testing catches spec-to-implementation drift
 - Proxy mode validates live traffic against the spec
-- Generates realistic mock data with `--dynamic`
+- Generates realistic mock dat[kafka](https://kafka.apache.org/)h `--dynamic`
 - Supports both REST and async (Kafka, WebSockets) via AsyncAPI
 
 ### Limitations
@@ -710,3 +710,34 @@ rules:
 For most teams starting with API governance, the minimum viable setup is **Spectral for linting** in CI plus **Prism for mocking** during development. As your API program matures, add **openapi-diff** for breaking change detection, **Dredd** for contract testing, and **OpenAPI Generator** for SDK automation.
 
 All of these tools are open-source, run on self-hosted infrastructure, and keep your API specifications entirely under your control. No SaaS subscriptions, no external data sharing, no vendor lock-in — just reliable API quality enforcement that scales with your engineering organization.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

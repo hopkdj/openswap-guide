@@ -49,7 +49,7 @@ Events flow from SDKs through the backend, optionally through the transformer, t
 | Event replay | Replay events from the warehouse to new destinations |
 | Multi-tenant | etcd-based multi-tenant mode for SaaS deployments |
 
-### Docker Compose Deployment
+### [docker](https://www.docker.com/) Compose Deployment
 
 Here is a production-ready Docker Compose setup based on the [official `docker-compose.yml`](https://github.com/rudderlabs/rudder-server/blob/master/docker-compose.yml):
 
@@ -165,7 +165,7 @@ The platform uses PostgreSQL for metadata, ClickHouse for analytics, MongoDB for
 
 ### Docker Compose Deployment
 
-Jitsu's Docker Compose setup is more complex than RudderStack's, reflecting its multi-service architecture. Based on the [official `docker/docker-compose.yml`](https://github.com/jitsucom/jitsu/blob/newjitsu/docker/docker-compose.yml):
+Jitsu's Docker Compose setup is more com[plex](https://www.plex.tv/) than RudderStack's, reflecting its multi-service architecture. Based on the [official `docker/docker-compose.yml`](https://github.com/jitsucom/jitsu/blob/newjitsu/docker/docker-compose.yml):
 
 ```yaml
 name: jitsu
@@ -375,8 +375,7 @@ services:
               }
             ]
           }
-        }
-```
+   [kubernetes](https://kubernetes.io/)
 
 Snowplow also provides Helm charts for Kubernetes deployments, which is the recommended approach for production at scale.
 

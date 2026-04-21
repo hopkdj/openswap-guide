@@ -19,12 +19,12 @@ Here are the best alternatives for 2026:
 
 ## Quick Comparison Table
 
-| Software | Best For | Docker Support | Mobile Apps | Web UI | Encryption |
+| Software | Best For | [docker](https://www.docker.com/) Support | Mobile Apps | Web UI | Encryption |
 |----------|----------|----------------|-------------|--------|------------|
-| **Nextcloud** | All-in-one suite | ✅ Yes | ✅ iOS/Android | ✅ Excellent | ✅ E2E |
+| **[nextcloud](https://nextcloud.com/)** | All-in-one suite | ✅ Yes | ✅ iOS/Android | ✅ Excellent | ✅ E2E |
 | **Seafile** | Performance & Sync | ✅ Yes | ✅ iOS/Android | ✅ Good | ✅ Library-level |
 | **FileRun** | Google Drive look-alike | ✅ Yes | ❌ Web only | ✅ Excellent | ❌ |
-| **Pydio Cells** | Enterprise features | ✅ Yes | ❌ Web only | ✅ Excellent | ✅ |
+| **Pydio Cells** | Enterprise f[syncthing](https://syncthing.net/) ✅ Yes | ❌ Web only | ✅ Excellent | ✅ |
 | **Syncthing** | Pure sync | ✅ Yes | ✅ Android | ✅ Basic | ✅ TLS |
 | **Immich** | Photos & Videos | ✅ Yes | ✅ iOS/Android | ✅ Excellent | ❌ |
 | **Storj** | Decentralized | ✅ Yes | ❌ Web only | ✅ Good | ✅ E2E |

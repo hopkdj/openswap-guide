@@ -8,7 +8,7 @@ description: "Compare the top self-hosted container registries in 2026: Harbor, 
 
 ## Why Self-Host a Container Registry?
 
-If you run Docker containers — whether for a homelab, a small team, or a production environment — you eventually hit the limits of Docker Hub. Rate limits, image size restrictions, privacy concerns, and dependency on an external service make a self-hosted container registry one of the most practical infrastructure decisions you can make.
+If you run [docker](https://www.docker.com/) containers — whether for a homelab, a small team, or a production environment — you eventually hit the limits of Docker Hub. Rate limits, image size restrictions, privacy concerns, and dependency on an external service make a self-hosted container registry one of the most practical infrastructure decisions you can make.
 
 Here's what you gain by running your own registry:
 
@@ -192,7 +192,7 @@ One of Harbor's most useful features is the proxy cache. Instead of hitting Dock
 2. Navigate to **Registries** > **New Endpoint**
 3. Set provider to **Docker Hub**, enter credentials
 4. Navigate to **Projects** > **New Project**, enable **Proxy Cache**, select your Docker Hub endpoint
-5. Pull via your Harbor: `docker pull harbor.example.com/dockerhub/library/nginx:latest`
+5. Pull via your Harbor: `docker pull harbor.exa[nginx](https://nginx.org/)com/dockerhub/library/nginx:latest`
 
 Harbor now caches every image pulled through this project. Subsequent pulls of the same tag hit Harbor's local cache instantly.
 
@@ -327,7 +327,7 @@ Zot is a great fit when you want:
 - Cosign-based content trust and signature verification
 - A single-binary deployment that's easy to manage
 - OCI-native features like referrers API and artifact manifests
-- Fine-grained authorization policies without the complexity of Harbor
+- Fine-grained authorization policies without the com[plex](https://www.plex.tv/)ity of Harbor
 
 ### Installation with Docker Compose
 
@@ -565,3 +565,34 @@ For a **small team (5-20 people)**: Zot hits the sweet spot. You get vulnerabili
 For a **larger team or organization**: Harbor is worth the operational investment. The project-based RBAC, replication, Helm support, and audit logging solve real problems that Zot and Distribution simply don't address.
 
 No matter which you choose, running your own container registry in 2026 means faster builds, zero rate limits, full data sovereignty, and no surprises on your monthly cloud bill. The setup is straightforward, the maintenance is minimal, and the benefits compound with every image you push.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

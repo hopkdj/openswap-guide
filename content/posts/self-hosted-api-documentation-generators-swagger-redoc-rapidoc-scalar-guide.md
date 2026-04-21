@@ -21,7 +21,7 @@ Commercial documentation platforms like ReadMe, Stoplight, and Postman's public 
 - **Offline access**: Self-hosted docs work in air-gapped environments, CI pipelines, and local development — no internet required.
 - **Version control**: Your documentation lives alongside your API spec in Git. Every change is tracked, reviewable, and rollback-able.
 
-For most teams, running a documentation generator as a static site or single Docker container is simpler, cheaper, and more reliable than a SaaS platform.
+For most teams, running a documentation generator as a static site or single [docker](https://www.docker.com/) container is simpler, cheaper, and more reliable than a SaaS platform.
 
 ## Understanding the OpenAPI Ecosystem
 
@@ -100,7 +100,7 @@ RapiDoc is a Web Components-based documentation renderer that emphasizes customi
 - **Custom slots and theming**: Inject custom HTML, CSS variables for full visual control, and slot-based component customization.
 - **Server selection**: When your spec defines multiple servers (production, staging, local), RapiDoc provides a dropdown to switch between them.
 
-### Docker Deployment with Caddy
+[caddy](https://caddyserver.com/)ocker Deployment with Caddy
 
 ```yaml
 version: "3.8"
@@ -111,8 +111,7 @@ services:
     container_name: rapidoc-docs
     ports:
       - "8080:80"
-    volumes:
-      - ./docs:/usr/share/nginx/html:ro
+    volumes:[nginx](https://nginx.org/)  - ./docs:/usr/share/nginx/html:ro
     restart: unless-stopped
 ```
 
@@ -508,3 +507,34 @@ The self-hosted API documentation landscape in 2026 offers excellent options for
 - **Redoc** produces the most readable, professional reference documentation with multi-language code samples.
 
 All four are open source, actively maintained, and can be deployed in under five minutes. Pick the one that matches your team's priorities, and never pay for hosted API documentation again.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

@@ -28,7 +28,7 @@ Three open-source projects dominate the self-hosted bastion space, each with a d
 
 ### Teleport (Gravitational)
 
-Teleport is the most comprehensive option. It replaces SSH entirely with its own protocol built on top of SSH and TLS, adding identity-aware access, session recording, application proxying, Kubernetes access, and database access — all through a single binary. It supports GitHub, OIDC, SAML, and local authentication.
+Teleport is the most comprehensive option. It replaces SSH entirely with its own protocol built on top of SSH and TLS, adding identity-aware access, session recording, application proxying, [kubernetes](https://kubernetes.io/) access, and database access — all through a single binary. It supports GitHub, OIDC, SAML, and local authentication.
 
 **Best for**: Teams that want a unified access plane covering SSH, Kubernetes, databases, and web apps with strong audit requirements.
 
@@ -65,7 +65,7 @@ Trisail is a lightweight SSH gateway designed specifically for edge and IoT depl
 | **Firewall requirements** | Open proxy port on Teleport server | Open Guacamole web port | Only agents need outbound |
 | **Resource usage** | Medium (~256MB RAM) | Low (~128MB RAM) | Low (~64MB RAM) |
 | **License** | OSS (AGPL-3.0) + Enterprise | Apache 2.0 | Apache 2.0 |
-| **Docker support** | Official images | Official images | Official images |
+| **[docker](https://www.docker.com/) support** | Official images | Official images | Official images |
 
 ---
 
@@ -418,7 +418,7 @@ Regardless of which solution you choose, follow these hardening steps:
 
 ### 1. Put the Bastion Behind a Reverse Proxy
 
-Never expose the bastion's management port directly. Use Caddy or Nginx with TLS:
+Never expose [nginx](https://nginx.org/)astion's management port directly. Use Caddy or Nginx with TLS:
 
 ```caddy
 bastion.example.com {
@@ -499,3 +499,34 @@ iptables -A INPUT -p tcp --dport 22 -j DROP
 Self-hosted SSH bastion hosts eliminate the friction of managing SSH keys across dozens of servers while adding security features most teams don't even know they need — session recording, RBAC, and SSO. Teleport leads in features and compliance readiness, Guacamole wins for mixed SSH/desktop environments, and Trisail is the simplest choice for NAT-heavy deployments.
 
 All three run on a single $5 VPS, support Docker Compose deployment, and cost nothing in licensing. The only investment is the initial setup time, which pays for itself the first time you need to audit who accessed what, or onboard a new team member in two clicks instead of distributing SSH keys to twelve servers.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

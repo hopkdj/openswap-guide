@@ -21,7 +21,7 @@ Running your own book server offers several advantages over commercial platforms
 - **Privacy**: No reading habits tracked or sold to advertisers
 - **Cost savings**: Eliminate recurring subscription fees from Audible, Kindle Unlimited, or similar services
 
-For related reading, check out our guides on [self-hosted music streaming with Navidrome](../navidrome-vs-funkwhale-vs-airsonic-self-hosted-music-guide/) and the [Jellyfin media server comparison](../jellyfin-vs-plex-vs-emby/) — the same principles apply to building a complete self-hosted media ecosystem.
+For related reading, check out our guides on [self-hosted music streaming with Navidrome](../navidrome-vs-funkwhale-vs-airsonic-self-hosted-music-guide/) and the [[jellyfin](https://jellyfin.org/) media server comparison](../jellyfin-vs-plex-vs-emby/) — the same principles apply to building a complete self-hosted media ecosystem.
 
 ## Project Overview and Statistics
 
@@ -36,7 +36,7 @@ For related reading, check out our guides on [self-hosted music streaming with N
 | **User Management** | Multi-user with permissions | Multi-user with roles | Single user (multi-user via reverse proxy) |
 | **Mobile Apps** | Official iOS & Android | Third-party apps | Third-party apps |
 | **Progress Sync** | Yes (audio playback position) | Yes (reading position) | Yes (reading progress) |
-| **License** | GPL-3.0 | GPL-3.0 | GPL-3.0 |
+| **License** | GPL-3.0 |[docker](https://www.docker.com/).0 | GPL-3.0 |
 | **Docker Image** | `ghcr.io/advplyr/audiobookshelf` | `jvmilazz0/kavita` | `linuxserver/calibre-web` |
 
 Audiobookshelf leads in the audiobook-specific niche, while Kavita excels at comic and manga formats. Calibre-Web has the largest community thanks to its integration with the ubiquitous Calibre desktop application.
@@ -283,7 +283,7 @@ Yes, but with limitations. Calibre-Web can create a fresh `metadata.db` database
 
 ### How do I access my self-hosted book server from outside my home network?
 
-The recommended approach is to place the server behind a reverse proxy (Traefik, Nginx Proxy Manager, or Caddy) with HTTPS and authentication. You'll also need to configure port forwarding on your router or use a tunnel solution like Tailscale or Cloudflare Tunnel for secure remote access without opening ports.
+The recommended approach is t[nginx](https://nginx.org/)ce the server behind a reverse proxy (Traefik, Nginx Proxy Manager, or Caddy) with HTTPS and authentication. You'll also need to configure port forwarding on your router or use a tunnel solution like Tailscale or Cloudflare Tunnel for secure remote access without opening ports.
 
 ### Which server has the best mobile app support?
 

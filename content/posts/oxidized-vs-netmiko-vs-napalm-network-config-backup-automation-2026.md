@@ -8,7 +8,7 @@ description: "Compare Oxidized, Netmiko, and NAPALM for self-hosted network devi
 
 Managing network device configurations manually is a recipe for disaster. When a router goes down at 2 AM, the last thing you want is guessing what changed since last week. Self-hosted network configuration backup and automation tools solve this by pulling configs on schedule, tracking diffs, and enabling automated changes across multi-vendor environments.
 
-In this guide, we compare three open-source approaches to network configuration management: **Oxidized** (a purpose-built backup tool), **Netmiko** (a Python SSH library for custom scripts), and **NAPALM** (a vendor-agnostic automation abstraction layer). Each represents a different philosophy — from "set it and forget it" to "build it yourself" — and the right choice depends on your team's size, network complexity, and automation maturity.
+In this guide, we compare three open-source approaches to network configuration management: **Oxidized** (a purpose-built backup tool), **Netmiko** (a Python SSH library for custom scripts), and **NAPALM** (a vendor-agnostic automation abstraction layer). Each represents a different philosophy — from "set it and forget it" to "build it yourself" — and the right choice depends on your team's size, network com[plex](https://www.plex.tv/)ity, and automation maturity.
 
 ## Why Self-Hosted Network Configuration Backup Matters
 
@@ -53,7 +53,7 @@ Oxidized is the most opinionated of the three tools — it has one job (backup n
 - **Built-in web UI**: Browse configs, view diffs, and search across your entire fleet from a browser.
 - **Git output**: Every config change creates a Git commit with full history.
 - **HTTP API**: RESTful endpoints for inventory management and on-demand pulls.
-- **Group support**: Apply different credentials, commands, and post-processing per device group.
+- **Group support**: Apply different credentials, commands, and post-processing[docker](https://www.docker.com/)evice group.
 
 ### Docker Compose Setup
 
@@ -456,9 +456,7 @@ groups:
     username: admin
     vars:
       enable: true
-      auth_methods: ["publickey", "password"]
-```
-
+      auth_methods: ["publickey", "passw[kubernetes](https://kubernetes.io/)
 ### Is it possible to run Oxidized in a Kubernetes cluster?
 
 Yes. Oxidized can be containerized and deployed as a Kubernetes Deployment. You need persistent volumes for the config directory and Git output, and a Service to expose the web UI. For production, consider running it as a CronJob if you only need periodic pulls rather than a continuous daemon.

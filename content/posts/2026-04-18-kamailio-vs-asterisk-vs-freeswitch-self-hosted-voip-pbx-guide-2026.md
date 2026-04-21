@@ -22,7 +22,7 @@ Self-hosting your VoIP stack gives you:
 - **Custom integrations** — direct API access to CRM, helpdesk, or monitoring systems
 - **Cost savings** — eliminate recurring per-user fees that can run $20-50/month per seat
 
-The tradeoff is operational complexity. You're responsible for SIP security, NAT traversal, codec negotiation, and high availability. But with the right tool choice and proper configuration, a self-hosted VoIP system is both reliable and cost-effective at any scale.
+The tradeoff is operational com[plex](https://www.plex.tv/)ity. You're responsible for SIP security, NAT traversal, codec negotiation, and high availability. But with the right tool choice and proper configuration, a self-hosted VoIP system is both reliable and cost-effective at any scale.
 
 ## Kamailio: The High-Performance SIP Proxy
 
@@ -114,14 +114,14 @@ FreeSWITCH sits between Kamailio's raw performance and Asterisk's feature comple
 | **Max Concurrent Calls** | 100,000+ (proxy only) | ~2,000-5,000 | ~5,000-10,000 |
 | **Configuration** | Config language + modules | Dialplan + config files | XML dialplan + Lua/JS |
 | **API Access** | RPC/Mi, HTTP | AMI, ARI (REST) | ESL (Event Socket) |
-| **Database Backend** | MySQL, PostgreSQL, Redis | SQLite, ODBC | SQLite, PostgreSQL, ODBC |
+| **Database Backend[redis](https://redis.io/)MySQL, PostgreSQL, Redis | SQLite, ODBC | SQLite, PostgreSQL, ODBC |
 | **Learning Curve** | Steep | Moderate | Moderate-Steeper |
 | **Community Size** | Large | Largest | Medium |
 | **Latest Release** | 5.8.x | 20.x | 1.10.x |
 
 ## Deployment Guide
 
-### Deploying Kamailio with Docker
+### [docker](https://www.docker.com/)ing Kamailio with Docker
 
 Kamailio is ideal for containerized deployment since it's a lightweight SIP proxy without media processing overhead.
 

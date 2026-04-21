@@ -17,7 +17,7 @@ Billing is the backbone of any subscription business. Relying on a third-party S
 - **Vendor lock-in**: Migrating away from Stripe Billing or Chargebee means rebuilding your entire pricing logic, customer records, and invoicing pipeline.
 - **Cost at scale**: SaaS billing platforms charge per invoice or as a percentage of revenue. At $50K+ MRR, those fees add up to thousands of dollars per month.
 - **Data control**: Financial data lives on someone else's servers. Self-hosting keeps customer records, payment history, and revenue analytics within your infrastructure.
-- **Custom pricing models**: SaaS platforms support standard subscription tiers but struggle with complex usage-based, tiered, or hybrid pricing. Open-source platforms let you implement any pricing logic.
+- **Custom pricing models**: SaaS platforms support standard subscription tiers but struggle with com[plex](https://www.plex.tv/) usage-based, tiered, or hybrid pricing. Open-source platforms let you implement any pricing logic.
 - **Regulatory compliance**: GDPR, SOC 2, and PCI DSS requirements are easier to satisfy when you control the full data pipeline.
 
 For these reasons, many growing SaaS companies evaluate open-source alternatives once they outgrow the free tiers of commercial billing providers.
@@ -35,7 +35,7 @@ Key features:
 - **REST API**: Clean, well-documented API for creating customers, plans, invoices, and events.
 - **Admin dashboard**: A self-hosted web UI for managing subscriptions and viewing analytics.
 
-Lago's architecture uses PostgreSQL (with partitioning via `postgres-partman`) for data storage, Redis for caching and job queues, and a Ruby on Rails API backend. The frontend is a standalone React application served via Nginx.
+Lago's architecture uses PostgreSQL (with partitioning via `postgres-partman`) for data storage, Redis for caching and job queues, and a Ruby on Rails API backend. The frontend is a standalone React application serv[docker](https://www.docker.com/) Nginx.
 
 ### Lago Docker Compose Setup
 
@@ -429,7 +429,7 @@ For Kill Bill with MySQL:
 gunzip -c /backups/killbill-20260420.sql.gz | mysql -u root -proot killbill
 ```
 
-For related reading on self-hosted infrastructure management, see our [self-hosted invoicing guide](../invoice-ninja-akaunting-crater-self-hosted-invoicing-guide/) for complementary financial tools, and our [workflow automation comparison](../n8n-vs-nodered-vs-activepieces/) for building billing notification pipelines. If you are building a full SaaS stack, our [Backend-as-a-Service comparison](../appwrite-vs-supabase-vs-pocketbase-self-hosted-firebase-alternatives-2026/) covers the backend infrastructure layer that sits alongside billing.
+For related reading on self-hosted infrastructure management, see our [self-hosted invoicing guide](../invoice-ninja-akaunting-crater-self-hosted-invoicing-guide/) for complementary financial [n8n](https://n8n.io/)ls, and our [workflow automation comparison](../n8n-vs-nodered-vs-activepieces/) for building billing notification pipelines. If you are building a full SaaS stack, our [Backend-as-a-Service comparison](../appwrite-vs-supabase-vs-pocketbase-self-hosted-firebase-alternatives-2026/) covers the backend infrastructure layer that sits alongside billing.
 
 ## FAQ
 

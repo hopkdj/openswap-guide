@@ -138,7 +138,7 @@ localPort = 3000
 customDomains = ["dev.example.com"]
 ```
 
-### Docker Deployment
+### [docker](https://www.docker.com/) Deployment
 
 ```yaml
 # docker-compose.yml — frp server
@@ -454,7 +454,7 @@ Regardless of which tool you choose, follow these security guidelines:
 2. **Bind to localhost where possible** — on the client side, your tunnel exposes `127.0.0.1` services. Never bind `localIP` to `0.0.0.0` unless you intend to expose your entire network.
 3. **Use TLS or built-in encryption** — frp supports optional TLS, chisel encrypts by default via SSH, and rathole uses the Noise Protocol. Never send sensitive data over an unencrypted tunnel.
 4. **Keep binaries updated** — all three tools release security patches regularly. Set up automated updates or monitor their GitHub release pages.
-5. **Use a reverse proxy in front of your tunnel server** — place your tunnel server behind a reverse proxy (see our [nginx vs Caddy vs Traefik guide](../nginx-vs-caddy-vs-traefik-self-hosted-web-server-guide-2026/)) to handle TLS termination and add an extra layer of protection.
+5. **Use a reverse proxy in front of your tunnel server** — place your tunnel server behind[nginx](https://nginx.org/)verse proxy (see our [nginx vs Caddy vs Traefik guide](../nginx-vs-caddy-vs-traefik-self-hosted-web-server-guide-2026/)) to handle TLS termination and add an extra layer of protection.
 6. **Firewall your tunnel ports** — only open the specific remote ports you need on your VPS firewall. Do not open the full port range.
 7. **Monitor connection logs** — frp's dashboard and log files help you spot unauthorized connection attempts. For chisel and rathole, use systemd journal or external log aggregation.
 
@@ -470,7 +470,7 @@ Yes, you can point a Cloudflare-managed domain to your tunnel server's IP addres
 
 ### Which tunnel tool is fastest for database replication?
 
-**rathole** is the best choice for database replication due to its minimal latency and high throughput. Its Rust async runtime handles sustained high-bandwidth transfers more efficiently than Go-based alternatives. For PostgreSQL or MySQL replication over a WAN connection, rathole's low overhead makes a measurable difference in sync times.
+**rathole** is the best choice for database replication due to its minimal latency and high throughput. Its Rust async runtime handles sustained high-bandwidth transfers [postgresql](https://www.postgresql.org/)iently than Go-based alternatives. For PostgreSQL or MySQL replication over a WAN connection, rathole's low overhead makes a measurable difference in sync times.
 
 ### Can I expose multiple services through a single tunnel?
 

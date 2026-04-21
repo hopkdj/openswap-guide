@@ -6,11 +6,11 @@ draft: false
 description: "Compare Velero, Stash, and VolSync for self-hosted Kubernetes backup orchestration. Features, Helm install guides, CRD comparisons, and disaster recovery strategies."
 ---
 
-Running workloads on Kubernetes without a reliable backup strategy is like building a house on sand. Pods get evicted, nodes fail, storage classes change, and entire clusters can disappear. While Kubernetes handles scheduling and scaling well, **backup and disaster recovery is entirely your responsibility**.
+Running workloads on [kubernetes](https://kubernetes.io/) without a reliable backup strategy is like building a house on sand. Pods get evicted, nodes fail, storage classes change, and entire clusters can disappear. While Kubernetes handles scheduling and scaling well, **backup and disaster recovery is entirely your responsibility**.
 
 Three open-source projects have emerged as the leading self-hosted solutions for Kubernetes backup orchestration: [Velero](https://velero.io/), [Stash](https://stash.run/), and [VolSync](https://volsync.readthedocs.io/). Each takes a different architectural approach to protecting your cluster state, persistent volumes, and application data.
 
-This guide compares all three tools across features, installation, backup strategies, and operational complexity to help you choose the right solution for your infrastructure.
+This guide compares all three tools across features, installation, backup strategies, and operational com[plex](https://www.plex.tv/)ity to help you choose the right solution for your infrastructure.
 
 ## Why Back Up Kubernetes at All?
 
@@ -63,7 +63,7 @@ For Kubernetes resources (Deployments, Services, ConfigMaps, etc.), Velero seria
 helm repo add vmware-tanzu https://vmware-tanzu.github.io/helm-charts
 helm repo update
 
-# Install Velero with S3-compatible backend (e.g., MinIO)
+#[minio](https://min.io/)all Velero with S3-compatible backend (e.g., MinIO)
 helm install velero vmware-tanzu/velero \
   --namespace velero \
   --create-namespace \

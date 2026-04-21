@@ -39,7 +39,7 @@ RabbitMQ uses an exchange-and-queue model. Producers publish messages to exchang
 
 RabbitMQ's Erlang foundation gives it strong concurrency and fault tolerance. Each connection, channel, and queue runs as a lightweight Erlang process, allowing a single node to handle hundreds of thousands of concurrent connections.
 
-### Docker Setup
+### [docker](https://www.docker.com/) Setup
 
 The quickest way to get RabbitMQ running locally is with Docker:
 
@@ -136,9 +136,9 @@ log.console = false
 
 ### When to Choose RabbitMQ
 
-RabbitMQ is the right choice when you need **complex routing logic**, **guaranteed message delivery**, and **enterprise-grade features** like dead-letter exchanges, priority queues, and message TTL. It excels in environments where message ordering matters, where you need to retry failed messages with exponential backoff, or where you're integrating with legacy systems that speak AMQP.
+RabbitMQ is the right choice when you need **com[plex](https://www.plex.tv/) routing logic**, **guaranteed message delivery**, and **enterprise-grade features** like dead-letter exchanges, priority queues, and message TTL. It excels in environments where message ordering matters, where you need to retry failed messages with exponential backoff, or where you're integrating with legacy systems that speak AMQP.
 
-It's also ideal for teams that value a mature ecosystem. RabbitMQ's plugin architecture means you can extend it with OAuth2 authentication, Prometheus metrics, LDAP integration, and federation across data centers without modifying core code.
+It's also ideal for teams that value a mature ecosystem. RabbitMQ's plugin architecture m[prometheus](https://prometheus.io/)an extend it with OAuth2 authentication, Prometheus metrics, LDAP integration, and federation across data centers without modifying core code.
 
 ## NATS: The High-Performance Contender
 
@@ -602,3 +602,34 @@ channel.start_consuming()
 There is no single "best" message queue — the right choice depends on your workload characteristics and team expertise. RabbitMQ remains the safest general-purpose choice with its mature ecosystem and flexible routing. NATS wins on pure performance and simplicity, making it ideal for real-time and high-throughput scenarios. ActiveMQ Artemis fills the enterprise niche with JMS compliance, multi-protocol support, and seamless Java integration.
 
 For most self-hosted deployments starting fresh in 2026, the practical recommendation is: start with **RabbitMQ** if you need reliable message delivery with complex routing, or **NATS + JetStream** if you prioritize throughput and simplicity. Both have excellent Docker images, active communities, and straightforward paths to production-grade clustering.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

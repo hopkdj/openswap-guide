@@ -38,8 +38,8 @@ Four self-hosted tools dominate the visual regression testing landscape in 2026.
 |---------|-----------|------|-----------|-------|
 | **Engine** | Puppeteer/Playwright | Storybook + Puppeteer | Native browser automation | Selenium-based |
 | **Primary Focus** | Multi-page visual diffing | Storybook component testing | End-to-end + visual testing | Layout specification testing |
-| **Setup Complexity** | Moderate | Easy (if using Storybook) | Moderate | High |
-| **CI Integration** | Excellent | Excellent | Excellent | Good |
+| **Setup Com[plex](https://www.plex.tv/)ity** | Moderate | Easy (if using Storybook) | Moderate | High |
+| **CI Integration** | Excellent | Excellent |[docker](https://www.docker.com/)lent | Good |
 | **Docker Support** | Yes | Yes | Yes | Yes |
 | **Threshold Control** | Per-scenario pixel % | Per-component config | Per-test pixel tolerance | Spec-based rules |
 | **Approval Workflow** | CLI + HTML report | CLI + Storybook UI | Programmatic assertions | CLI reports |
@@ -121,7 +121,7 @@ This creates a `backstop.json` file with default settings. The file defines scen
     }
   ],
   "onBeforeScript": "puppet/onBefore.js",
-  "onReadyScript": "puppet/onReady.js",
+  "onReadyScript": "puppet/o[homepage](https://gethomepage.dev/)s",
   "scenarios": [
     {
       "label": "Homepage",
@@ -639,3 +639,34 @@ Self-hosted visual regression testing is no longer a compromise. The open-source
 The best tool depends on your existing stack. Storybook users should start with Loki. Teams wanting multi-page testing with minimal setup should choose BackstopJS. Organizations already invested in Playwright for end-to-end testing should leverage its built-in visual capabilities. And teams with strict layout requirements should consider Galen's specification-based approach.
 
 Start with one tool, establish your baseline workflow, and expand coverage as your confidence grows. The investment pays off immediately in reduced production incidents and increased deployment confidence.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

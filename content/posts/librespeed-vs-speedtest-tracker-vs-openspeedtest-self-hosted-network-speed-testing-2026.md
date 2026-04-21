@@ -8,7 +8,7 @@ description: "Compare LibreSpeed, Speedtest-Tracker, and OpenSpeedTest for self-
 
 Internet speed tests are everywhere — but every time you click "Go" on a commercial speed test site, your results contribute to someone else's dataset. Your ISP's actual throughput, your connection latency, your peak and off-peak performance patterns — all harvested. For homelab operators, network administrators, and privacy-conscious users, running a self-hosted speed test server puts that data back under your control.
 
-This guide covers three leading open-source options for self-hosted network speed testing — **LibreSpeed**, **Speedtest-Tracker**, and **OpenSpeedTest** — with practical Docker deployment instructions so you can measure your connection performance on your own infrastructure.
+This guide covers three leading open-source options for self-hosted network speed testing — **LibreSpeed**, **Speedtest-Tracker**, and **OpenSpeedTest** — with practical [docker](https://www.docker.com/) deployment instructions so you can measure your connection performance on your own infrastructure.
 
 ## Why Self-Host Your Network Speed Tests
 
@@ -52,7 +52,7 @@ Key strengths:
 - **Multi-server support**: Deploy multiple speed test servers and let clients automatically connect to the nearest or fastest one.
 - **Results database**: Optional MySQL/PostgreSQL/SQLite backend stores test results for historical analysis.
 - **Customizable UI**: The test page can be themed, branded, and embedded in existing websites.
-- **Telegraf integration**: Export metrics to Grafana via Telegraf for real-time dashboards.
+- **Telegraf integr[grafana](https://grafana.com/): Export metrics to Grafana via Telegraf for real-time dashboards.
 
 LibreSpeed is best when you want to give users (yourself, your family, your team) a clean speed test interface that runs entirely on your own infrastructure.
 
@@ -236,7 +236,7 @@ For the most complete setup, run **both** LibreSpeed and Speedtest-Tracker: Libr
 
 ## Reverse Proxy Configuration
 
-All three tools work behind a reverse proxy. Here is an Nginx configuration example for LibreSpeed:
+All t[nginx](https://nginx.org/)tools work behind a reverse proxy. Here is an Nginx configuration example for LibreSpeed:
 
 ```nginx
 server {

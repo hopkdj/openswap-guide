@@ -32,7 +32,7 @@ TextBee uses a modern TypeScript stack:
 - **Web Dashboard** — Next.js frontend for management and analytics
 - **Android Companion** — Runs on any Android device, handles actual SMS send/receive
 - **MongoDB** — Message storage, user accounts, and device management
-- **Redis** — Message queue for high-throughput scenarios
+- **[redis](https://redis.io/)** — Message queue for high-throughput scenarios
 
 ### Real-Time Stats (April 2026)
 
@@ -44,7 +44,7 @@ TextBee uses a modern TypeScript stack:
 | Architecture | NestJS + Next.js + MongoDB + Redis |
 | License | MIT |
 
-### Docker Compose Deployment
+### [docker](https://www.docker.com/) Compose Deployment
 
 TextBee provides an official `docker-compose.yaml` that spins up the full stack:
 
@@ -161,7 +161,7 @@ Jasmin is built around the SMPP (Short Message Peer-to-Peer) protocol:
 - **SMPP Client** — Connects to upstream SMS aggregators and carriers
 - **Router** — Intelligent message routing with MTR (message throughput rating), failover, and load balancing
 - **HTTP API** — REST interface for sending SMS from web applications
-- **Redis** — Session management and queuing
+- **Redis** — Session [rabbitmq](https://www.rabbitmq.com/)nt and queuing
 - **RabbitMQ** — High-performance message broker for routing
 
 ### Real-Time Stats (April 2026)

@@ -23,7 +23,7 @@ Running your own search infrastructure eliminates the most frustrating aspects o
 - **Customization without gatekeepers.** Tune ranking algorithms, add custom filters, modify tokenizers, and extend functionality without filing support tickets.
 - **Predictable scaling.** Add RAM, CPU, or disk to your server instead of negotiating enterprise pricing tiers.
 
-The trade-off is operational responsibility — you manage backups, updates, and monitoring. With Docker, this overhead is minimal for most use cases.
+The trade-off is operational responsibility — you manage backups, updates, and monitoring. With [docker](https://www.docker.com/), this overhead is minimal for most use cases.
 
 ## Meilisearch: The Developer-Friendly Full-Text Search Engine
 
@@ -33,7 +33,7 @@ Meilisearch is a Rust-based full-text search engine designed for developer exper
 
 - **Typo tolerance** — Finds results even with misspellings, transposed letters, or missing characters
 - **Language-aware tokenization** — Built-in support for English, French, German, Japanese, Chinese, Korean, Thai, Hebrew, Hindi, Arabic, Russian, and more
-- **Faceted search and filtering** — Filter on any attribute with complex boolean logic
+- **Faceted search and filtering** — Filter on any attribute with com[plex](https://www.plex.tv/) boolean logic
 - **Geo search** — Search by location with radius queries
 - **Synonym support** — Define synonym groups for domain-specific terminology
 - **Asynchronous indexing** — Add and update documents without blocking search queries
@@ -407,7 +407,7 @@ curl 'http://localhost:8080/search?q=self+hosted+search+engines&format=json'
 curl 'http://localhost:8080/search?q=linux+server&format=json&categories=it'
 
 # Search for images
-curl 'http://localhost:8080/search?q=open+source&format=json&categories=images'
+curl 'http://localhost:8080/search?q=open+source&format=j[nginx](https://nginx.org/)ategories=images'
 ```
 
 ### Reverse Proxy with Nginx
@@ -557,3 +557,34 @@ tar czf searxng-backup.tar.gz ./searxng-config
 All three engines excel at their intended purpose. Meilisearch wins on simplicity and developer experience — it is the fastest path from zero to working search. Typesense wins on features and scale — it is a production-grade platform with clustering, vector search, and multi-tenancy. SearXNG wins on privacy — it is the only option that gives you a tracking-free web search experience.
 
 For most self-hosted application search needs, start with Meilisearch. If you outgrow it or need high availability, migrate to Typesense. For private web browsing, deploy SearXNG alongside either of the other two — they complement each other perfectly.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

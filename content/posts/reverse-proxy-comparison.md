@@ -16,12 +16,12 @@ A reverse proxy is essential for self-hosting:
 
 ## Quick Comparison
 
-| Feature | Nginx Proxy Manager | Traefik | Caddy |
+| Feature | [nginx](https://nginx.org/) Prox[caddy](https://caddyserver.com/)ager | Traefik | Caddy |
 |---------|---------------------|---------|-------|
 | **Type** | GUI for Nginx | Cloud-native | Standalone |
 | **SSL** | Let's Encrypt | Let's Encrypt | Let's Encrypt (Auto) |
 | **UI** | ✅ Web GUI | ❌ Dashboard only | ❌ CLI |
-| **Config** | Database/JSON | YAML/Docker labels | Caddyfile |
+| **Config** | Database/JSON | YAML/[docker](https://www.docker.com/) labels | Caddyfile |
 | **Auto Discovery** | ❌ Manual | ✅ Docker labels | ⚠️ Limited |
 | **HTTP/3** | ❌ No | ✅ Yes | ✅ Yes |
 | **Performance** | High | High | Medium |

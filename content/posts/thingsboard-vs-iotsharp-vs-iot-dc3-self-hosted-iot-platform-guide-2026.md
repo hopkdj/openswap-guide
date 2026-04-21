@@ -38,7 +38,7 @@ If you're connecting more than 50 devices, self-hosting usually pays for itself 
 
 ThingsBoard's Community Edition is Apache 2.0 licensed. The Professional Edition adds white-labeling, reporting, and advanced alarm management.
 
-### ThingsBoard Docker Compose Setup
+### ThingsBoard [docker](https://www.docker.com/) Compose Setup
 
 ThingsBoard ships with production-ready Docker Compose files supporting PostgreSQL, Cassandra, and hybrid storage configurations:
 
@@ -78,7 +78,7 @@ volumes:
   tb-node-logs:
 ```
 
-The full ThingsBoard Docker compose (available in the `docker/` directory of the repo) also includes ZooKeeper for clustering, JavaScript executors for rule processing, and Kafka integration for high-throughput deployments.
+The full ThingsBoard Docker compose (available in the `docker/` directory of the repo) also includes ZooKeeper for clustering, JavaScript executor[kafka](https://kafka.apache.org/) rule processing, and Kafka integration for high-throughput deployments.
 
 To start ThingsBoard for the first time:
 
@@ -257,7 +257,7 @@ The gateway exposes port 8000 for the web interface and API.
 | **Edge Computing** | Yes (TB Edge) | No | Yes |
 | **Clustering** | Yes (ZooKeeper) | Single-node | Yes (Nacos) |
 | **Min RAM** | ~2 GB | ~1 GB | ~2 GB |
-| **Docker Compose** | Yes (complex) | Yes (simple) | Yes (microservices) |
+| **Docker Compose** | Yes (com[plex](https://www.plex.tv/)) | Yes (simple) | Yes (microservices) |
 | **Last Updated** | April 2026 | April 2026 | April 2026 |
 
 ## Choosing the Right Platform

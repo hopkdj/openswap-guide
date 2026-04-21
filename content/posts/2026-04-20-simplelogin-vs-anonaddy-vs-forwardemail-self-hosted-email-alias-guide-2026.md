@@ -10,7 +10,7 @@ Your real email address is the master key to your digital identity. Every time y
 
 Email aliasing solves this by creating disposable forwarding addresses that route to your real inbox. Instead of sharing `yourname@gmail.com`, you use `randomalias@yourdomain.com`. If an alias starts receiving spam, you disable it in one click — your real address stays clean and unknown. For a broader look at protecting your communications, see our [privacy stack guide](../privacy-stack-guide/) covering essential self-hosted privacy tools.
 
-Three open-source projects dominate the self-hosted email alias space in 2026: **SimpleLogin**, **AnonAddy (addy.io)**, and **ForwardEmail**. Each takes a different architectural approach and offers distinct trade-offs in complexity, features, and operational overhead. This guide compares them head-to-head and walks you through deploying each one. For those also looking to run a complete self-hosted email server, check out our guide to [email archiving solutions](../self-hosted-email-archiving-mailpiler-dovecot-stalwart-guide-2026/).
+Three open-source projects dominate the self-hosted email alias space in 2026: **SimpleLogin**, **AnonAddy (addy.io)**, and **ForwardEmail**. Each takes a different architectural approach and offers distinct trade-offs in com[plex](https://www.plex.tv/)ity, features, and operational overhead. This guide compares them head-to-head and walks you through deploying each one. For those also looking to run a complete self-hosted email server, check out our guide to [email archiving solutions](../self-hosted-email-arch[stalwart](https://stalw.art/)ilpiler-dovecot-stalwart-guide-2026/).
 
 ## Feature Comparison
 
@@ -20,7 +20,7 @@ Three open-source projects dominate the self-hosted email alias space in 2026: *
 | **License** | MIT | MIT | Apache 2.0 |
 | **GitHub Stars** | 6,614 | 4,586 | 1,562 |
 | **Last Updated** | 2026-04-08 | 2026-04-10 | 2026-04-20 |
-| **Best For** | Developer-friendly alias management | Privacy-first email forwarding | Full email service replacement |
+| **Best For** | Developer-friendly alias management | Privacy-first email forwarding | Full email se[docker](https://www.docker.com/)replacement |
 | **Docker Support** | ✅ Official images | ✅ Community images | ✅ Official images |
 | **Database** | PostgreSQL | MariaDB / MySQL | MongoDB (optional, can use memory) |
 | **Catch-all Aliases** | ✅ Yes | ✅ Yes | ✅ Yes |

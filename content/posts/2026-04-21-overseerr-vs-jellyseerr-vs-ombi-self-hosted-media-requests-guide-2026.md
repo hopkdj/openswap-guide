@@ -6,9 +6,9 @@ draft: false
 description: "Compare the best self-hosted media request managers for Plex, Jellyfin, and Emby. Complete Docker setup guides for Overseerr, Jellyseerr, and Ombi with feature comparisons."
 ---
 
-If you run a Plex, Jellyfin, or Emby server for your family, friends, or community, you know the problem: someone always wants something new to watch, and coordinating requests through group chats or text messages quickly becomes unmanageable. You end up playing detective — checking what they mean by "that Marvel movie," searching your library to see if you already have it, and manually downloading content. It's a friction-filled experience that makes running a media server feel like customer support.
+If you run a Plex, [jellyfin](https://jellyfin.org/), or Emby server for your family, friends, or community, you know the problem: someone always wants something new to watch, and coordinating requests through group chats or text messages quickly becomes unmanageable. You end up playing detective — checking what they mean by "that Marvel movie," searching your library to see if you already have it, and manually downloading content. It's a friction-filled experience that makes running a media server feel like customer support.
 
-Self-hosted media request managers solve this problem elegantly. They provide a polished, Netflix-style discovery interface where users can browse upcoming releases, search for specific titles, and submit requests with a single click. You, as the administrator, get a centralized dashboard showing all pending requests, auto-notifications when content is available, and integrations with your download stack. In this guide, we compare the three leading open-source options and show you how to deploy each one with Docker.
+Self-hosted media request managers solve this problem elegantly. They provide a polished, Netflix-style discovery interface where users can browse upcoming releases, search for specific titles, and submit requests with a single click. You, as the administrator, get a centralized dashboard showing all pending requests, auto-notifications when content is available, and integrations with your download stack. In this guide, we compare the three leading open-source options and show you how[docker](https://www.docker.com/)ploy each one with Docker.
 
 ## Why Self-Host Your Media Request Manager
 
@@ -101,8 +101,7 @@ services:
     restart: unless-stopped
     environment:
       - TZ=UTC
-    volumes:
-      - ./config:/app/config
+    volumes[traefik](https://traefik.io/) - ./config:/app/config
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.jellyseerr.rule=Host(`requests.example.com`)"

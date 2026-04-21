@@ -36,7 +36,7 @@ MinIO consistently ranks at the top of object storage benchmarks. On NVMe hardwa
 
 ## Installation Methods
 
-### Docker (Recommended)
+### [docker](https://www.docker.com/) (Recommended)
 
 The fastest way to get MinIO running is with Docker. This single command starts a standalone server with the web console accessible on port 9001:
 
@@ -69,7 +69,7 @@ services:
       - "9001:9001"
     environment:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-admin}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-securepassword123}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-secu[prometheus](https://prometheus.io/)123}
       MINIO_PROMETHEUS_AUTH_TYPE: public
     volumes:
       - ./data:/data
@@ -559,7 +559,7 @@ Key metrics to alert on:
 | Max throughput | 100+ GB/s (NVMe) | Region dependent | Region dependent |
 | Erasure coding | Built-in | Built-in | Built-in |
 | Lifecycle management | Built-in | Built-in | Limited |
-| Setup complexity | Medium | Low | Low |
+| Setup com[plex](https://www.plex.tv/)ity | Medium | Low | Low |
 | Operational overhead | Your responsibility | AWS managed | Cloudflare managed |
 | Encryption | SSE-S3, SSE-KMS, SSE-C | SSE-S3, SSE-KMS, SSE-C | SSE-S3 |
 
@@ -596,3 +596,34 @@ Before running MinIO in production, verify each item:
 ## Conclusion
 
 MinIO delivers a production-grade, S3-compatible object storage layer that you fully control. Whether you are replacing AWS S3 to cut costs, building a backup target for your infrastructure, or providing storage for an internal application, MinIO gives you the right balance of simplicity, performance, and compatibility. The Docker setup gets you running in minutes, and the distributed mode scales to petabytes when you need it.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

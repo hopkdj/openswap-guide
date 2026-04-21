@@ -62,7 +62,7 @@ For organizations that need data sovereignty — government agencies, healthcare
 
 OpenProject offers several installation approaches depending on your infrastructure preferences and operational expertise.
 
-### Method 1: Official Docker Compose (Recommended)
+### Method 1: Official [docker](https://www.docker.com/) Compose (Recommended)
 
 The fastest way to get OpenProject running is using the official Docker Compose configuration. This method isolates all dependencies and makes upgrades straightforward.
 
@@ -178,7 +178,7 @@ apt install -y openproject
 openproject configure
 ```
 
-The interactive configuration wizard walks you through database selection, web server setup, SMTP configuration, and SSL certificate provisioning.
+The interactive configuration wizard walks you through database selection, web server setup, SMTP configuration, and SSL certificate pr[kubernetes](https://kubernetes.io/).
 
 ### Method 4: Kubernetes with Helm
 
@@ -440,7 +440,7 @@ If you are migrating an existing Jira instance, OpenProject provides a built-in 
 4. Select the data types to import (users, projects, work items, attachments)
 5. Start the migration process
 
-The migration tool maps Jira issue types to OpenProject work package types, preserves status histories, and maintains user assignments. Complex custom field configurations may require manual adjustment after import.
+The migration tool maps Jira issue types to OpenProject work package types, preserves status histories, and maintains user assignments. Com[plex](https://www.plex.tv/) custom field configurations may require manual adjustment after import.
 
 For large Jira instances, consider using the REST API to perform a staged migration — exporting and importing projects incrementally to minimize downtime.
 
@@ -463,3 +463,34 @@ OpenProject has matured into one of the most capable open-source project managem
 Deploying it via Docker takes minutes, the configuration is straightforward, and the backup process is simple enough that any team can maintain a reliable disaster recovery plan. For organizations evaluating alternatives to Jira, OpenProject deserves serious consideration as the primary candidate for a self-hosted replacement.
 
 The combination of active development, a strong community, enterprise support options, and a comprehensive feature set makes OpenProject a practical, production-ready choice for teams of any size.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

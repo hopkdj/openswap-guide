@@ -20,7 +20,7 @@ Cloud-based certificate monitoring services exist, but self-hosting gives you ad
 - **Internal certificate coverage** — monitor private CAs, internal PKI, and localhost services that external scanners cannot reach
 - **Unlimited scale** — no per-domain pricing tiers or scan frequency limits
 - **Compliance** — keep certificate audit data on-premises for regulatory requirements
-- **Integration** — feed monitoring data directly into your existing Prometheus, Grafana, or notification stack
+- **Integration** — feed monitoring data directly into your existing [prometheus](https://prometheus.io/), Grafana, or notification stack
 
 ## Tools Compared at a Glance
 
@@ -34,7 +34,7 @@ Cloud-based certificate monitoring services exist, but self-hosting gives you ad
 | **Certificate Deployment** | Yes (120+ targets) | No | No |
 | **Expiry Monitoring** | Yes | Yes (Prometheus metrics) | No |
 | **CT Log Monitoring** | No | No | Yes |
-| **Kubernetes Support** | Yes | Yes (native, via Helm) | No |
+| **[kubernetes](https://kubernetes.io/) Support** | Yes | Yes (native, via Helm) | No |
 | **Multi-Cloud DNS** | 60+ providers | N/A | N/A |
 | **Notification Channels** | Built-in alerts | Prometheus Alertmanager | Email, webhook scripts |
 | **Best For** | Teams wanting an all-in-one certificate platform | Prometheus/Grafana users | Security teams detecting rogue certificates |
@@ -52,7 +52,7 @@ Cloud-based certificate monitoring services exist, but self-hosting gives you ad
 - **Multiple certificate formats** — PEM, PFX, JKS support
 - **Zero external dependencies** — single binary with embedded database (PocketBase)
 
-### Docker Deployment
+### [docker](https://www.docker.com/) Deployment
 
 Certimate ships as a single container with everything included:
 

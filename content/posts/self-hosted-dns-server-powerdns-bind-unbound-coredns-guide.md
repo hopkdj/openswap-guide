@@ -28,12 +28,12 @@ This guide covers four of the most widely used DNS server software options: **BI
 |---------|--------|----------|---------|---------|
 | **Primary role** | Authoritative + Recursive | Authoritative | Recursive | Authoritative + Proxy |
 | **Written in** | C | C++ | C | Go |
-| **Backend storage** | Zone files, DLZ | MySQL, PostgreSQL, SQLite, BIND zone files, LMDB | — (recursive only) | Plugins (file, etcd, Kubernetes, MySQL, etc.) |
+| **Backend storage** | Zone files, DLZ | MySQL, PostgreSQL, SQLite, BIND zone files, LMDB | — (recursive only) | Plugins (file, etcd, [kubernetes](https://kubernetes.io/), MySQL, etc.) |
 | **DNSSEC** | Yes (signer + validator) | Yes (validator + signer) | Yes (validator) | Yes (via plugin) |
 | **API/Control** | RNDC (remote control) | REST API (pdns_server) | unbound-control | HTTP/metrics endpoint |
 | **IPv6** | Full support | Full support | Full support | Full support |
 | **Config language** | Named.conf (declarative) | pdns.conf + SQL schemas | unbound.conf | Corefile (plugin chain) |
-| **Docker-friendly** | Moderate | Good | Excellent | Excellent |
+| **[docker](https://www.docker.com/)-friendly** | Moderate | Good | Excellent | Excellent |
 | **Best for** | Traditional DNS, learning | Multi-domain hosting, API-driven | Recursive caching, DNSSEC validation | Kubernetes, service discovery, cloud-native |
 
 ---
@@ -463,7 +463,7 @@ CoreDNS is a DNS server written in Go with a plugin-based architecture. It is th
 - You're running Kubernetes and want to customize cluster DNS
 - You need DNS-based service discovery for microservices
 - You want a lightweight DNS server with a simple configuration language (Corefile)
-- You need integration with etcd, Kubernetes, AWS Route 53, or other cloud backends
+- You need integration with etcd, Kubernet[prometheus](https://prometheus.io/)ute 53, or other cloud backends
 - You want Prometheus metrics out of the box
 
 ### Installation
@@ -700,3 +700,34 @@ Set up automated alerts for:
 - Query response times exceeding 500ms
 
 Running your own DNS server is one of the most impactful infrastructure decisions you can make. It gives you control, visibility, and resilience — and with the tools covered in this guide, there's a solution for every use case from home lab to enterprise production.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

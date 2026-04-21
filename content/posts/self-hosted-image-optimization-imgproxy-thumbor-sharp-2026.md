@@ -41,7 +41,7 @@ imgproxy works by taking a source image URL, applying transformations specified 
 - **Health monitoring** — built-in health check endpoint for load balancer integration
 - **Minimal resource usage** — a single instance uses ~50 MB RAM at idle
 
-### Docker Setup
+### [docker](https://www.docker.com/) Setup
 
 The simplest way to run imgproxy is via Docker:
 
@@ -482,7 +482,7 @@ http://localhost:3000/image/800/600/avif/landscape-photo.jpg
 | **Plugin system** | Limited | Extensive | Full code access |
 | **Caching** | Built-in | Result storage plugins | Manual (filesystem/Redis) |
 | **Docker image size** | ~80 MB | ~600 MB | ~200 MB |
-| **Setup complexity** | Low | Medium | High |
+| **Setup com[plex](https://www.plex.tv/)ity** | Low | Medium | High |
 | **Best for** | Speed-focused sites | Content platforms | Custom app integration |
 
 ### Performance Benchmarks
@@ -521,7 +521,7 @@ Regardless of which tool you choose, follow these best practices for production:
 
 2. **Set dimension limits.** Cap the maximum output dimensions and source image size to prevent denial-of-service attacks through massive image requests.
 
-3. **Use a CDN in front.** Place Cloudflare, Fastly, or your own Varnish/Nginx cache in front of the image service. Since transformed images are immutable (same URL always returns the same result), CDN caching is extremely effective with hit rates above 95%.
+3. **Use a CDN in fron[nginx](https://nginx.org/)Place Cloudflare, Fastly, or your own Varnish/Nginx cache in front of the image service. Since transformed images are immutable (same URL always returns the same result), CDN caching is extremely effective with hit rates above 95%.
 
 4. **Monitor resource usage.** Image processing is CPU-intensive. Set up alerts for CPU usage, memory consumption, and request queue depth. Scale horizontally by running multiple instances behind a load balancer.
 
@@ -538,3 +538,34 @@ Regardless of which tool you choose, follow these best practices for production:
 ```
 
 Self-hosted image optimization is one of the highest-ROI infrastructure investments you can make. A single afternoon of setup pays for itself in faster page loads, lower bandwidth costs, and complete control over your image delivery pipeline.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

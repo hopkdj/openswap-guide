@@ -42,7 +42,7 @@ UrBackup's design philosophy is straightforward: install the client agent, point
 - **Bandwidth throttling** and scheduled backup windows to avoid impacting production network usage
 - **Change block tracking** on Windows for faster incremental image backups
 
-### Docker Deployment
+### [docker](https://www.docker.com/) Deployment
 
 UrBackup does not ship an official Docker image, but the LinuxServer.io community image is widely used and actively maintained:
 
@@ -180,7 +180,7 @@ ssh -i ~/.ssh/id_ed25519 user@client-host "hostname"
 
 ### Strengths and Limitations
 
-BackupPC's deduplication engine is its standout feature. In environments with many similar machines (standardized workstations, Kubernetes nodes, container hosts), the storage savings are dramatic — often 80–95% reduction compared to storing each backup independently.
+BackupPC's deduplication engine is its standout feature. In environments with many similar machines ([kubernetes](https://kubernetes.io/)ed workstations, Kubernetes nodes, container hosts), the storage savings are dramatic — often 80–95% reduction compared to storing each backup independently.
 
 The limitations are equally clear. BackupPC requires a Linux server and can only back up Linux/Unix clients directly (Windows clients require Cygwin or SMB shares). The web interface, while functional, has not been redesigned in years and feels dated compared to modern dashboards. Configuration is primarily file-based rather than GUI-driven, which means reading documentation is necessary before deploying at scale.
 
@@ -319,7 +319,7 @@ FileSet {
 
 Bareos is the most powerful and scalable option here. Its architecture supports enterprise features like multi-pool rotation (daily/weekly/monthly/yearly Grandfather-Father-Son schemes), tape library automation, and distributed storage daemons across multiple geographic sites. The PostgreSQL catalog enables instant file-level search across millions of backed-up files.
 
-The trade-off is complexity. Bareos has a steep learning curve — understanding the relationships between Jobs, FileSets, Clients, Storage Daemons, Pools, and Volumes requires studying the documentation. The initial configuration involves editing multiple files across multiple daemon directories. For a single-server home lab, this is almost certainly overkill. But for organizations managing hundreds of endpoints with strict RPO and RTO requirements, Bareos is the tool designed for that job.
+The trade-off is com[plex](https://www.plex.tv/)ity. Bareos has a steep learning curve — understanding the relationships between Jobs, FileSets, Clients, Storage Daemons, Pools, and Volumes requires studying the documentation. The initial configuration involves editing multiple files across multiple daemon directories. For a single-server home lab, this is almost certainly overkill. But for organizations managing hundreds of endpoints with strict RPO and RTO requirements, Bareos is the tool designed for that job.
 
 ## Head-to-Head Comparison
 

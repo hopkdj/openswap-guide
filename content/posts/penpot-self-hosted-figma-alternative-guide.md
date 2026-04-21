@@ -8,7 +8,7 @@ description: "Complete guide to self-hosting Penpot, the open-source Figma alter
 
 Design teams everywhere are tired of vendor lock-in, monthly per-seat pricing, and the fact that their entire workflow lives on someone else's servers. Figma dominates the UI/UX design space, but it comes with real costs — both financial and in terms of data sovereignty. Enter **Penpot**, the first truly open-source design and prototyping platform built for cross-functional teams.
 
-In this guide, we'll cover what Penpot offers, how it stacks up against Figma, and walk you through a complete self-hosted deployment using Docker Compose.
+In this guide, we'll cover what Penpot offers, how it stacks up against Figma, and walk you through a complete self-hosted deployment using [docker](https://www.docker.com/) Compose.
 
 ## Why Self-Host Your Design Tool
 
@@ -283,7 +283,7 @@ PENPOT_REGISTRATION_DOMAIN_WHITELIST="yourcompany.com"
 
 ### LDAP / OAuth2 Authentication
 
-Penpot supports OIDC, SAML, and LDAP authentication for enterprise single sign-on. Here's an example OIDC configuration for Keycloak:
+Penpot supports OIDC, SAML, and LDAP authentication for enterprise single sign-on. Here's an exam[keycloak](https://www.keycloak.org/) configuration for Keycloak:
 
 ```bash
 # Add to your .env file
@@ -353,7 +353,7 @@ PENPOT_STORAGE_ASSETS_S3_SECRET_KEY=your-secret
 
 Moving from Figma to Penpot requires some manual work, but the process is manageable:
 
-1. **Export from Figma**: Select frames and export as SVG. For complex files, use the "Copy as SVG" option.
+1. **Export from Figma**: Select frames and export as SVG. For com[plex](https://www.plex.tv/) files, use the "Copy as SVG" option.
 2. **Import into Penpot**: Use **File > Import** and select your SVG files. Penpot preserves layers, groups, and most vector properties.
 3. **Rebuild components**: Penpot's component system works differently from Figma's. You'll need to recreate component variants, but the Flex Layout system often results in cleaner, more developer-friendly components.
 4. **Set up design tokens**: Penpot has native design token support. Define your color palette, typography scale, and spacing system in the Tokens panel.
@@ -367,3 +367,34 @@ Penpot has matured into a genuinely viable alternative to Figma for most design 
 The self-hosted setup takes about 15 minutes with Docker Compose, and once running, it requires minimal maintenance. For small to mid-size teams, a single $10/month VPS instance handles the load comfortably.
 
 If you're evaluating open-source design tools, Penpot deserves a serious look. Start with the Docker setup above, import a few existing designs, and see how the Flex Layout system works for your workflow.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

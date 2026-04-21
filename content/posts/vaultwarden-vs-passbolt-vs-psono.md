@@ -12,7 +12,7 @@ Password managers are the backbone of any security-conscious workflow. They gene
 
 Self-hosting a password manager shifts that trust boundary back to you. You control the server, the database, the backups, and the encryption at rest. For individuals, this means zero-knowledge guarantees you can actually verify. For teams and organizations, it means compliance with data sovereignty requirements, no per-user subscription fees at scale, and the ability to integrate with internal identity providers.
 
-The landscape of self-hosted password managers has matured significantly. Three projects stand out in 2026: **Vaultwarden**, **Passbolt**, and **Psono**. Each takes a different architectural approach, targets different user profiles, and offers distinct trade-offs. This guide compares all three across features, deployment complexity, security model, and usability — and provides step-by-step Docker configurations so you can deploy the one that fits your needs.
+The landscape of self-hosted password managers has matured significantly. Three projects stand out in 2026: **[vaultwarden](https://github.com/dani-garcia/vaultwarden)**, **Passbolt**, and **Psono**. Each takes a different architectural approach, targets different user profiles, and offers distinct trade-offs. This guide compares all three across features, deployment com[plex](https://www.plex.tv/)ity, security model, and usability — an[docker](https://www.docker.com/)ides step-by-step Docker configurations so you can deploy the one that fits your needs.
 
 ---
 
@@ -514,3 +514,34 @@ All three support CSV import from LastPass:
 For most individuals and small teams, **Vaultwarden** is the pragmatic choice: it's lightweight, compatible with the entire Bitwarden ecosystem, and can be deployed in minutes. For organizations with strict security policies, **Passbolt**'s GPG-based encryption model provides an additional layer of assurance. For DevOps teams managing secrets across infrastructure, **Psono**'s API-first design makes it the natural fit.
 
 All three are actively maintained, open source, and production-ready. The best choice depends on your threat model, team size, and integration requirements. Whatever you choose, self-hosting puts you in control of your most sensitive data — and that's a win regardless of which path you pick.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

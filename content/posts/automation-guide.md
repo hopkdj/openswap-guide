@@ -14,7 +14,7 @@ Self-hosting requires maintenance:
 - **Monitoring**: Detect issues early
 - **Scaling**: Add services easily
 
-## 1. Watchtower: Automatic Docker Updates
+## 1. Watchtower: Automatic [docker](https://www.docker.com/) Updates
 
 Watchtower monitors your containers and automatically updates them when new images are available.
 
@@ -63,8 +63,7 @@ ansible/
 ├── inventory.yml
 ├── group_vars/
 │   └── all.yml
-├── roles/
-│   ├── docker/
+├── role[caddy](https://caddyserver.com/)  ├── docker/
 │   ├── caddy/
 │   └── backup/
 └── site.yml
@@ -123,9 +122,7 @@ restic snapshots
 
 # Restore
 restic restore <snapshot-id> --target /restore/path
-```
-
-## 4. Monitoring with Uptime Kuma
+[uptime kuma](https://github.com/louislam/uptime-kuma)Monitoring with Uptime Kuma
 
 ```yaml
 # docker-compose.yml

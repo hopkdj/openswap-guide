@@ -39,7 +39,7 @@ Running OCR on your own infrastructure solves several real problems that cloud s
 ### Weaknesses
 
 - **Handwritten text.** Tesseract struggles with handwriting. It was designed for printed text and performs poorly on cursive or irregular handwriting.
-- **Complex layouts.** Multi-column documents, tables, and documents with mixed text/images require significant preprocessing.
+- **Com[plex](https://www.plex.tv/) layouts.** Multi-column documents, tables, and documents with mixed text/images require significant preprocessing.
 - **Accuracy ceiling.** On clean, printed documents, Tesseract achieves 95–99% accuracy. On degraded scans, accuracy drops more sharply than deep learning alternatives.
 
 ### Installation
@@ -47,7 +47,7 @@ Running OCR on your own infrastructure solves several real problems that cloud s
 **Ubuntu/Debian:**
 ```bash
 sudo apt update
-sudo apt install tesseract-ocr tesseract-ocr-all
+sudo apt install tesseract-ocr t[docker](https://www.docker.com/)ct-ocr-all
 ```
 
 **Docker:**
@@ -464,7 +464,7 @@ services:
     volumes:
       - ./models:/models:ro
     ports:
-      - "8080:8080"
+      -[minio](https://min.io/)0:8080"
     depends_on:
       - redis
       - minio
@@ -602,3 +602,34 @@ For developers building document understanding pipelines — not just text extra
 And if you need the fastest possible integration with broad language support and minimal boilerplate, **EasyOCR** gets you running in under a minute.
 
 All four engines are Apache 2.0 licensed, self-hostable, and free. The right choice depends on your document types, hardware constraints, and whether you need raw text extraction or full document understanding.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

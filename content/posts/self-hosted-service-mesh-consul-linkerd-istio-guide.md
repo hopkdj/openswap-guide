@@ -15,7 +15,7 @@ This guide compares all three, walks through installation and configuration, and
 Running your own service mesh gives you complete control over how your services communicate. Unlike managed offerings from cloud providers, a self-hosted mesh:
 
 - **Keeps traffic on your infrastructure** — no data leaves your network, which matters for compliance regimes like GDPR, HIPAA, and SOC 2.
-- **Avoids vendor lock-in** — your mesh configuration is portable across bare metal, virtual machines, and any Kubernetes cluster.
+- **Avoids vendor lock-in** — your mesh configuration is portable across bare metal, virtual machines, and any [kubernetes](https://kubernetes.io/) cluster.
 - **Reduces costs at scale** — managed service meshes charge per node or per request. Self-hosted solutions run on hardware you already own.
 - **Enables fine-grained control** — tune timeout policies, retry budgets, and circuit breakers to match your exact workload patterns.
 - **Works in air-gapped environments** — defense, finance, and healthcare sectors often require fully offline deployment.
@@ -34,7 +34,7 @@ Consul uses an intention-based security model. Instead of network policies and C
 
 ### Linkerd — The Minimalist Ultra-Lightweight Mesh
 
-Linkerd, now a CNCF graduated project, takes the opposite approach to complexity. It was designed from day one to be the simplest, lightest service mesh available. The secret weapon is **MicroProxy** — a purpose-built proxy written in Rust that is specifically optimized for service mesh workloads. Unlike Envoy, which is a general-purpose proxy, MicroProxy does exactly what a service mesh needs and nothing more.
+Linkerd, now a CNCF graduated project, takes the opposite approach to com[plex](https://www.plex.tv/)ity. It was designed from day one to be the simplest, lightest service mesh available. The secret weapon is **MicroProxy** — a purpose-built proxy written in Rust that is specifically optimized for service mesh workloads. Unlike Envoy, which is a general-purpose proxy, MicroProxy does exactly what a service mesh needs and nothing more.
 
 This design choice has measurable consequences. Linkerd sidecars consume approximately 10 MB of memory per pod — compared to 50-100 MB for Envoy-based meshes. The CPU overhead is similarly lower, typically 1-5% versus 5-15% for heavier alternatives. For organizations running thousands of microservices, this difference translates to real cost savings.
 
@@ -69,7 +69,7 @@ The cost of this feature richness is operational complexity. Istio has a steep l
 | **Fault Injection** | Limited | No | Yes |
 | **Request Mirroring** | No | No | Yes |
 | **Multi-Cluster** | Federation | Multicluster | Multi-primary / Primary-Remote |
-| **Gateway / Ingress** | External | Linkerd-Ingress | Istio Gateway (built-in) |
+| **Gateway / Ingress** | External | Linkerd-Ingress |[prometheus](https://prometheus.io/)eway (built-in) |
 | **Observability** | Prometheus + Grafana | Built-in Grafana dashboards | Prometheus + Grafana + Kiali |
 | **Policy Engine** | Intentions (simple) | ServerAuthorization | AuthorizationPolicy (RBAC + JWT) |
 | **Canary Deployments** | Yes | Yes (via split) | Yes (VirtualService) |
@@ -471,3 +471,34 @@ For teams managing heterogeneous infrastructure spanning containers, VMs, and ba
 For enterprises with complex traffic routing requirements, strict compliance mandates, and dedicated platform engineering teams, **Istio** remains the most capable option. Its feature set is unmatched, and the ecosystem of integrations (OPA, external auth, custom CA) is the most mature.
 
 The best approach is to start with your actual requirements — not the maximum possible feature set. A mesh you can operate effectively will always outperform a more capable one that creates operational burden.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

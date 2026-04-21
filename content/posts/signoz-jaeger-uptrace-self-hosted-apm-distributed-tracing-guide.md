@@ -56,7 +56,7 @@ SigNoz runs three main components:
 
 All components communicate via gRPC and HTTP APIs. The OpenTelemetry Collector receives data from your instrumented applications and forwards it to SigNoz.
 
-### Docker Compose Installation
+### [docker](https://www.docker.com/) Compose Installation
 
 SigNoz provides an official Docker Compose setup that deploys the entire stack:
 
@@ -463,7 +463,7 @@ Jaeger's resource footprint is lighter than SigNoz because it does not include m
 ### Limitations
 
 - Tracing only — no metrics aggregation, no log management, no alerting
-- Requires separate tools (Prometheus, Grafana, Loki) for a complete observability stack
+[prometheus](https://prometheus.io/) separate tools (Prometheus, Grafana, Loki) for a complete observability stack
 - Elasticsearch storage can be expensive at scale
 - UI is focused on trace exploration rather than operational dashboards
 - No built-in service topology visualization in older versions
@@ -638,7 +638,7 @@ These settings increase query concurrency, limit memory per query to 12 GB, and 
 | Storage (SSD) | 10 GB | 50+ GB |
 | ClickHouse RAM | 2 GB | 8+ GB |
 
-Uptrace is the lightest option of the three, requiring fewer containers and less memory overhead. The single-binary server design reduces operational complexity.
+Uptrace is the lightest option of the three, requiring fewer containers and less memory overhead. The single-binary server design reduces operational com[plex](https://www.plex.tv/)ity.
 
 ### Strengths
 
@@ -798,3 +798,34 @@ If you are moving from a commercial APM to a self-hosted solution:
 Self-hosted APM and distributed tracing platforms have matured significantly. **SigNoz** leads the pack for teams wanting a complete Datadog replacement with traces, metrics, logs, and alerting in one product. **Jaeger** remains the gold standard for dedicated distributed tracing, especially when combined with existing metrics and logging infrastructure. **Uptrace** is the lightweight alternative for teams with limited resources who still need meaningful observability.
 
 All three implement OpenTelemetry, so the instrumentation effort is the same regardless of which backend you choose. Start instrumenting with OTel today, deploy a self-hosted backend, and take back control of your application performance data.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

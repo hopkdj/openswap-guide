@@ -49,7 +49,7 @@ Cowrie runs as a Python application and supports two modes:
 1. **Proxy mode**: Forwards connections to a real SSH server, logging credentials in transit. This is useful for detecting compromised accounts on your own servers.
 2. **Emulation mode** (default): Presents a fully emulated environment with a fake filesystem, making attackers believe they have gained access to a real system.
 
-### Docker Installation
+### [docker](https://www.docker.com/) Installation
 
 ```yaml
 # docker-compose.yml for Cowrie
@@ -123,7 +123,7 @@ T-Pot ships with a comprehensive collection of sensors, each targeting different
 | **Elasticpot** | Elasticsearch | Database API probing |
 | **Glutton** | Multiple | Protocol-agnostic TCP honeypot |
 | **Heralding** | Auth proxy | Credential capture for various services |
-| **CitrixHoneypot** | Citrix | Citrix Gateway exploitation attempts |
+| **CitrixHoneypot** | Citrix | Citrix Gateway e[redis](https://redis.io/)tation attempts |
 | **Redishoneypot** | Redis | Redis server attacks |
 | **Tanner** | Web | Web application vulnerability scanning |
 
@@ -212,7 +212,7 @@ The Kibana interface provides several pre-configured dashboards:
 | Strengths | Limitations |
 |-----------|-------------|
 | 20+ honeypot sensors in one package | Resource-heavy — needs a dedicated machine |
-| Pre-built Kibana dashboards | Complex to customize individual sensors |
+| Pre-built Kibana dashboards | Com[plex](https://www.plex.tv/) to customize individual sensors |
 | Includes Suricata IDS | Requires direct internet exposure |
 | Active development by Deutsche Telekom | Overwhelming amount of data for small deployments |
 | Covers SSH, HTTP, SMB, ICS, SMTP, and more | Not suitable for virtual machines with limited resources |
@@ -448,3 +448,34 @@ for ip, count in attacks.most_common(20):
 - **Choose OpenCanary** if you want lightweight, distributed coverage across many machines with immediate alert notifications. It's ideal for detecting lateral movement on internal networks.
 
 For the best results, deploy them together in layers — each tool covers different blind spots, and the combined intelligence gives you a far more complete picture of who's targeting your infrastructure and how.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

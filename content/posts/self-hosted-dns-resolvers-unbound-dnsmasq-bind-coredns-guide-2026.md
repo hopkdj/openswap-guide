@@ -24,7 +24,7 @@ DNS resolution is the first step in nearly every network interaction. Before you
 
 **Custom split-horizon DNS.** Serve different answers to internal versus external clients. Map `app.internal.example.com` to a private IP while the same name resolves to a public address for outside users.
 
-**Integration with blocking tools.** Pair a recursive resolver with Pi-hole or AdGuard Home for a complete privacy stack: the resolver handles recursive lookups and validation, while the blocking layer filters unwanted domains.
+**Integration with blocking tools.** Pair a recursive resolver with Pi-hole or [adguard home](https://adguard.com/en/adguard-home/overview.html) for a complete privacy stack: the resolver handles recursive lookups and validation, while the blocking layer filters unwanted domains.
 
 **No rate limits or quotas.** Public DNS services may throttle or block clients that exceed query thresholds. Your own resolver handles whatever load your network generates.
 
@@ -38,7 +38,7 @@ DNS resolution is the first step in nearly every network interaction. Before you
 | **DNS-over-TLS** | Yes | No | Yes | Via plugin |
 | **DNS-over-HTTPS** | No (needs proxy) | No | No | Via plugin |
 | **IPv6 support** | Full | Full | Full | Full |
-| **Config complexity** | Moderate | Very low | High | Moderate |
+| **Config com[plex](https://www.plex.tv/)ity** | Moderate | Very low | High | Moderate |
 | **Memory footprint** | ~15–30 MB | ~2–5 MB | ~50–200 MB | ~20–50 MB |
 | **Plugin ecosystem** | No | No | No (modules) | Yes (extensive) |
 | **Best for** | Privacy, validation | Home networks, routers | Enterprise DNS | Kubernetes, cloud |
@@ -54,7 +54,7 @@ Unbound, developed by NLnet Labs, is a validating, recursive, caching DNS resolv
 - Privacy and security are your top priorities
 - You plan to pair it with an ad-blocking DNS layer (Pi-hole, AdGuard Home)
 - You need DNS-over-TLS for upstream connections
-- You want a stable, auditable codebase with a clean configuration format
+- [docker](https://www.docker.com/)nt a stable, auditable codebase with a clean configuration format
 
 ### Docker Setup
 
@@ -548,3 +548,34 @@ Your choice depends on your specific requirements:
 - **DNSSEC validation required**: Unbound or BIND 9, both with built-in validation
 
 All four projects are mature, actively maintained, and freely available. The best approach for most self-hosters is to start with Unbound behind a filtering layer — it provides the strongest privacy guarantees with reasonable complexity, and scales well from a single Raspberry Pi to multi-server deployments.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

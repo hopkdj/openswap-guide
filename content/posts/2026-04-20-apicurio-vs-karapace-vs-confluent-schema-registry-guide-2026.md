@@ -6,7 +6,7 @@ draft: false
 description: "Compare Apicurio Registry, Karapace, and Confluent Schema Registry for self-hosted schema management. Docker deployment guides, feature comparison, and choosing the right schema registry for Kafka and API workflows in 2026."
 ---
 
-Schema registries have become essential infrastructure for any team working with Apache Kafka, event-driven architectures, or API-first development. They enforce data contracts, prevent breaking changes, and ensure producers and consumers speak the same serialization language — whether that is Avro, Protobuf, or JSON Schema.
+Schema registries have become essential infrastructure for any team working with Apache [kafka](https://kafka.apache.org/), event-driven architectures, or API-first development. They enforce data contracts, prevent breaking changes, and ensure producers and consumers speak the same serialization language — whether that is Avro, Protobuf, or JSON Schema.
 
 If you are running a [self-hosted Kafka or Pulsar cluster](../kafka-vs-redpanda-vs-pulsar/), a schema registry is one of the first complementary services you will want to deploy alongside it. It is equally critical if you are building [change data capture pipelines with Debezium](../2026-04-19-debezium-vs-maxwell-vs-canal-self-hosted-cdc-guide-2026/), where schema evolution tracking prevents data corruption across your pipeline.
 
@@ -24,7 +24,7 @@ Key benefits of self-hosting your schema registry:
 - **Multi-format support** — modern registries handle Avro, Protobuf, JSON Schema, and even AsyncAPI/OpenAPI specs
 - **Audit trail** — every schema version is tracked, timestamped, and can be rolled back
 
-For teams managing high-throughput event streams, the schema registry acts as the single source of truth for data shape. When you pair it with a solid [message broker like RabbitMQ or NATS](../rabbitmq-vs-nats-vs-activemq-self-hosted-message-queue-guide/), you get end-to-end data governance across your entire messaging infrastructure.
+For teams managing high-throughput event streams, the schema registry acts as the single source of truth for data shape. When you pair it with [rabbitmq](https://www.rabbitmq.com/)[message broker like RabbitMQ or NATS](../rabbitmq-vs-nats-vs-activemq-self-hosted-message-queue-guide/), you get end-to-end data governance across your entire messaging infrastructure.
 
 ## Apicurio Registry
 
@@ -45,7 +45,7 @@ Apicurio Registry is an open-source schema registry project backed by Red Hat. I
 - **Maven plugin** — integrate schema validation into build pipelines
 - **Service Registry UI** — modern React-based interface for visual schema management
 
-### Docker Compose Deployment (PostgreSQL)
+### [docker](https://www.docker.com/) Compose Deployment (PostgreSQL)
 
 ```yaml
 version: '3.8'

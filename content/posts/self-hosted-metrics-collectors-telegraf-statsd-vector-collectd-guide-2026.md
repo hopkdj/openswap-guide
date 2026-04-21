@@ -8,7 +8,7 @@ description: "Compare the top self-hosted metrics collection agents in 2026. Com
 
 Every self-hosted monitoring stack starts with the same foundational question: **how do you get metrics from your servers, containers, and applications into your time-series database?** The answer is a metrics collector — a lightweight agent that runs alongside your services, gathers system and application statistics, and forwards them to your backend of choice.
 
-In 2026, the landscape of open-source metrics collectors is diverse. **Telegraf** leads in plugin breadth with over 300 input plugins. **Vector** dominates in performance with its Rust-based pipeline. **StatsD** pioneered the simple UDP metrics protocol still used everywhere. **collectd** remains the battle-tested C daemon for system-level statistics. This guide compares all four with complete Docker-based setup instructions.
+In 2026, the landscape of open-source metrics collectors is diverse. **Telegraf** leads in plugin breadth with over 300 input plugins. **Vector** dominates in performance with its Rust-based pipeline. **StatsD** pioneered the simple UDP metrics protocol still used everywhere. **collectd** remains the battle-tested C daemon for system-level statistics. This guide compares all four with complete [docker](https://www.docker.com/)-based setup instructions.
 
 ## Why Self-Host Your Metrics Collection Pipeline
 
@@ -32,7 +32,7 @@ For a complete monitoring stack overview, see our [Datadog alternatives guide](.
 
 ### Key Strengths
 
-- **Unmatched plugin ecosystem** — CPU, memory, disk, network, Docker, Kubernetes, PostgreSQL, MySQL, Redis, Nginx, HAProxy, SNMP, JMX, and hundreds more out of the box
+- **Unmatched plugin ecosystem** — CPU, memo[kubernetes](https://kubernetes.io/)network, Docker, Kubernetes, PostgreSQL, MySQL, Redis, Nginx, HAProxy, SNMP, JMX, and hundreds more out of the box
 - **Processor and aggregator plugins** — transform, filter, aggregate, and tag metrics before they leave the agent
 - **Native Prometheus support** — scrape Prometheus endpoints and convert to InfluxDB line protocol (or vice versa)
 - **Multi-output capability** — send the same metrics to multiple backends simultaneously
@@ -116,7 +116,7 @@ Telegraf is the best choice when you need to collect metrics from a wide variety
 
 ### Key Strengths
 
-- **Dead simple protocol** — `metric.name:value|type` sent over UDP, no authentication or complex configuration needed
+- **Dead simple protocol** — `metric.name:value|type` sent over UDP, no authentication or com[plex](https://www.plex.tv/) configuration needed
 - **Language-agnostic** — client libraries exist for virtually every programming language (Python, Go, Ruby, Java, .NET, PHP)
 - **Application-level metrics** — designed specifically for tracking custom application counters, timings, and gauges from within your code
 - **Lightweight** — minimal resource footprint, runs comfortably on a Raspberry Pi

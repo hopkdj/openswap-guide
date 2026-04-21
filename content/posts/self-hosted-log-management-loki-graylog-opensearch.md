@@ -12,7 +12,7 @@ Centralized log management solves this. Instead of hunting through individual lo
 
 Commercial solutions like Splunk, Datadog, and Papertrail charge per gigabyte of ingested logs — which gets expensive fast when you're logging dozens of containers. Open-source alternatives give you the same capabilities without per-volume pricing, and your logs never leave your infrastructure.
 
-In this guide, we'll compare the three leading open-source log management platforms, walk through full Docker deployments for each, and help you pick the right tool for your setup.
+In this guide, we'll compare the three leading open-source log management platforms, walk through full [docker](https://www.docker.com/) deployments for each, and help you pick the right tool for your setup.
 
 ## Why Self-Host Your Log Management
 
@@ -24,7 +24,7 @@ There are four compelling reasons to run your own log management stack:
 
 **No ingestion limits.** Commercial log services penalize verbosity. You end up reducing log levels, dropping debug information, and losing the data you actually need when something breaks. With self-hosted logging, you can log everything and decide retention based on disk space, not budget.
 
-**Deep integration with existing infrastructure.** Self-hosted log platforms integrate natively with your existing monitoring stack — Prometheus metrics, Grafana dashboards, and alerting pipelines — without requiring expensive add-on licenses.
+**Deep integration with existing infrastructure.** Self-hosted log platforms integrate natively with your e[prometheus](https://prometheus.io/)nitoring stack — Prometheus metrics, Grafana dashboards, and alerting pipelines — without requiring expensive add-on licenses.
 
 ## The Three Contenders
 
@@ -50,7 +50,7 @@ OpenSearch is Amazon's open-source fork of Elasticsearch and Kibana, created aft
 
 OpenSearch gives you the most raw power — distributed search, aggregations, anomaly detection, and machine learning-based log anomaly identification. But it also has the steepest learning curve and highest resource requirements.
 
-**Best for:** Large-scale deployments, complex search and aggregation needs, teams with Elasticsearch experience.
+**Best for:** Large-scale deployments, com[plex](https://www.plex.tv/) search and aggregation needs, teams with Elasticsearch experience.
 
 ## Quick Comparison
 
@@ -603,3 +603,34 @@ Regardless of which platform you choose, configure retention policies early:
 The self-hosted log management landscape in 2026 offers genuinely excellent options at every scale. Loki has become the default choice for Grafana-centric monitoring stacks thanks to its minimal resource footprint. Graylog remains the most complete turnkey solution with its built-in processing pipelines and dashboards. OpenSearch delivers unmatched search power for teams that need deep analytical capabilities.
 
 All three are free, open-source, and keep your data under your control. The best choice depends on your existing infrastructure, team expertise, and the volume and type of logs you need to manage. Start with Loki if you're unsure — it's the easiest to deploy, cheapest to run, and scales gracefully as your needs grow.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

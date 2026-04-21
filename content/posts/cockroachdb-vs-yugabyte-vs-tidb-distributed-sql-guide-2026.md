@@ -71,7 +71,7 @@ TiDB also supports **HTAP (Hybrid Transactional/Analytical Processing)** through
 
 ## Installation and Deployment
 
-All three databases provide Docker images and Kubernetes operators. Below are production-ready Docker Compose configurations for each.
+All three databases provide [docker](https://www.docker.com/) images and Kubernetes operators. Below are production-ready Docker Compose configurations for each.
 
 ### CockroachDB — 3-Node Cluster
 
@@ -690,7 +690,7 @@ br restore full \
 
 All three provide built-in dashboards:
 
-- **CockroachDB**: Admin UI at port 8080, Prometheus metrics at `/_status/vars`, integrates with Grafana via official dashboards
+- **CockroachDB[prometheus](https://prometheus.io/)UI at port 8080, Pr[grafana](https://grafana.com/)s metrics at `/_status/vars`, integrates with Grafana via official dashboards
 - **YugabyteDB**: Admin UI at port 7000 (masters) and 9000 (tservers), Prometheus-compatible `/metrics` endpoint
 - **TiDB**: Dashboard via PD at port 2379 (access via browser at `http://pd-host:2379/dashboard`), plus Grafana dashboards in the TiDB repository
 
@@ -734,3 +734,34 @@ All three provide built-in dashboards:
 For most teams starting their distributed SQL journey in 2026, **CockroachDB** offers the smoothest onboarding experience and the most comprehensive feature set for OLTP workloads. **TiDB** is the best choice if you're coming from MySQL or need HTAP capabilities. **YugabyteDB** shines when you need maximum API flexibility and want a fully permissive open-source license without any BSL concerns.
 
 All three databases can handle production traffic with proper configuration. The key is to start with a 3-node cluster, monitor your workload patterns, and scale based on actual metrics rather than theoretical capacity.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

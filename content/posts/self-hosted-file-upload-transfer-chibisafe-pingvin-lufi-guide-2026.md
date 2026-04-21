@@ -35,7 +35,7 @@ If you regularly send files larger than 2 GB, work with sensitive data, or simpl
 | **Password Protection** | Yes | Yes | No (relies on encryption) |
 | **Expiration Dates** | Yes | Yes | Yes |
 | **User Accounts** | Yes | Optional | No |
-| **Docker Support** | Official image | Official image | Community images |
+| **[docker](https://www.docker.com/) Support** | Official image | Official image | Community images |
 | **Reverse Proxy Ready** | Yes | Yes | Yes |
 | **API** | Full REST API | REST API | Web interface only |
 | **Best For** | Power users, bulk uploads | General file sharing | Maximum privacy |
@@ -53,7 +53,7 @@ If you regularly send files larger than 2 GB, work with sensitive data, or simpl
 - **Customizable expiration** — Set per-file or default expiration times ranging from hours to never.
 - **Role-based access** — Create user accounts with different permission levels (administrator, user).
 - **Mimes and file-type restrictions** — Control which file types can be uploaded.
-- **Storage backends** — Store files locally or on S3-compatible object storage (MinIO, Cloudflare R2, Backblaze B2).
+- **Storage backends** — Store files locally or on S3-[minio](https://min.io/)tible object storage (MinIO, Cloudflare R2, Backblaze B2).
 
 ### Docker Installation
 
@@ -93,7 +93,7 @@ files.example.com {
     header {
         -Server
         X-Content-Type-Options "nosniff"
-        X-Frame-Options "DENY"
+  [nginx](https://nginx.org/) X-Frame-Options "DENY"
     }
 }
 ```
@@ -405,3 +405,34 @@ Self-hosting your file transfer infrastructure eliminates the limitations and pr
 - **Lufi** is the privacy champion — client-side encryption means even the server administrator cannot read your files.
 
 Pick the one that matches your threat model, technical comfort level, and infrastructure. You'll be sharing files on your own terms within minutes of deployment.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

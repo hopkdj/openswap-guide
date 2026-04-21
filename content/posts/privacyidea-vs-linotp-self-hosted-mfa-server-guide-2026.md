@@ -10,7 +10,7 @@ Multi-factor authentication (MFA) is one of the most effective security controls
 
 Self-hosted MFA servers give you full control over your authentication infrastructure. Your tokens never leave your network, your user data stays on your servers, and you avoid vendor lock-in entirely. In this guide, we compare the two leading open-source MFA server platforms: **privacyIDEA** and **LinOTP**.
 
-Both are mature Python-based projects with support for TOTP, HOTP, SMS, email OTP, and hardware tokens. But they differ significantly in architecture, deployment complexity, and enterprise features.
+Both are mature Python-based projects with support for TOTP, HOTP, SMS, email OTP, and hardware tokens. But they differ significantly in architecture, deployment com[plex](https://www.plex.tv/)ity, and enterprise features.
 
 ## Why Self-Host Your MFA Server?
 
@@ -32,7 +32,7 @@ For organizations running their own identity providers, directory services, or a
 | GitHub Stars | ~1,700+ | ~540+ |
 | Last Active | April 2026 | April 2026 |
 | Language | Python | Python |
-| License | AGPLv3 | AGPLv3 |
+| Licens[docker](https://www.docker.com/)PLv3 | AGPLv3 |
 | Docker Support | Official dev compose | Official compose.yaml |
 | Web UI | Built-in admin + user portal | Basic admin interface |
 | Token Types | 15+ types | 10+ types |
@@ -257,8 +257,7 @@ Both platforms integrate with common identity sources and authentication protoco
 | SAML SP | Via SimpleSAMLphp module | No |
 | OAuth2/OIDC | Via authentication endpoint | No |
 | RADIUS | Built-in server | Module |
-| PAM | Yes | Yes |
-| FreeRADIUS | Compatible | Compatible |
+| PAM | Yes [kubernetes](https://kubernetes.io/)FreeRADIUS | Compatible | Compatible |
 | Kubernetes | Helm chart available | Manual |
 | REST API | Full OpenAPI | JSON REST |
 

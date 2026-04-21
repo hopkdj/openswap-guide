@@ -70,7 +70,7 @@ Convoy runs as a single Go binary with PostgreSQL for persistence and Redis for 
 
 ### When to Choose Convoy
 
-Convoy excels when you need advanced event routing logic, built-in observability with distributed tracing, or a Go-native stack that aligns with your existing infrastructure. Its dynamic routing capabilities make it ideal for complex event-driven architectures.
+Convoy excels when you need advanced event routing logic, built-in observability with distributed tracing, or a Go-native stack that aligns with your existing infrastructure. Its dynamic routing capabilities make it ideal for com[plex](https://www.plex.tv/) event-driven architectures.
 
 ## Hook0: Lightweight Open-Source Webhook Server
 
@@ -114,7 +114,7 @@ Hook0 is ideal for small teams or individual developers who want webhook managem
 | **Dynamic Routing** | No | Yes | No |
 | **SDK Support** | 9 languages | REST API | REST API + Swagger |
 | **Distributed Tracing** | No | Yes (Jaeger) | No |
-| **Email Notifications** | No | No | Yes (Mailpit) |
+| **Email Notifications** | No | N[docker](https://www.docker.com/)s (Mailpit) |
 | **Docker Compose** | Yes (4 services) | Yes (3+ services) | Yes (5 services) |
 
 ## Deploying with Docker Compose
@@ -327,7 +327,7 @@ curl -X POST http://localhost:8081/api/v1/events \
 
 **Choose Svix if**: You need the most mature, production-tested solution with multi-language SDK support, cryptographic signing, and a large community. It's the safest choice for teams that want a proven platform.
 
-**Choose Convoy if**: You need advanced event routing, rate limiting, or built-in distributed tracing. Its Go-based architecture integrates well with Kubernetes and cloud-native deployments.
+**Choose Convoy if**: You need advanced event routing, rate limiting, or built-in distributed traci[kubernetes](https://kubernetes.io/)-based architecture integrates well with Kubernetes and cloud-native deployments.
 
 **Choose Hook0 if**: You want the simplest deployment with a bundled UI and the fewest infrastructure dependencies. It's ideal for small teams that need webhook management without the operational complexity of Redis and connection poolers.
 

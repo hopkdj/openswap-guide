@@ -8,13 +8,13 @@ description: "Compare AIDE, OSSEC, and Tripwire for self-hosted file integrity m
 
 File integrity monitoring (FIM) is one of the most fundamental security controls for any self-hosted infrastructure. It answers a critical question: **has someone modified files on my server without authorization?** Whether it's a compromised binary, a backdoored configuration file, or an attacker planting a rootkit, file integrity monitoring detects changes to critical system files before they can cause damage.
 
-In this guide, we compare three leading open-source FIM solutions — **AIDE**, **OSSEC**, and **Open Source Tripwire** — examining their features, configuration complexity, deployment options, and real-world effectiveness. We'll provide Docker deployment configs, installation commands, and policy examples so you can get running quickly.
+In this guide, we compare three leading open-source FIM solutions — **AIDE**, **OSSEC**, and **Open Source Tripwire** — examining their features, configuration com[plex](https://www.plex.tv/)ity, deployment options, and real-world effec[docker](https://www.docker.com/)ss. We'll provide Docker deployment configs, installation commands, and policy examples so you can get running quickly.
 
 ## Why Self-Hosted File Integrity Monitoring Matters
 
 Cloud providers and managed services offer FIM as part of their security suites, but self-hosting gives you full control over what gets monitored, how alerts are generated, and where the data lives. For organizations handling sensitive data, compliance frameworks like PCI DSS, HIPAA, and SOC 2 explicitly require file integrity monitoring on critical systems.
 
-Self-hosted FIM tools also detect issues that network-based security tools miss. While a [network IDS like Suricata](../2026-04-18-suricata-vs-snort-vs-zeek-self-hosted-ids-ips-guide-2026/) catches suspicious traffic patterns, FIM catches what happens after an attacker gains a foothold — modified binaries, new cron jobs, or altered SSH authorized_keys files. Combined with log analysis from a [SIEM platform](../self-hosted-siem-wazuh-security-onion-elastic-guide/), file integrity monitoring forms a layered defense strategy.
+Self-hosted FIM tools also detect issues that network-based security tools miss. While a [network IDS like Suricata](../2026-04-18-suricata-vs-snort-vs-zeek-self-hosted-ids-ips-guide-2026/) catches suspicious traffic patterns, FIM catches what happens after an attacker gains a foothold — modified binaries, new cron jobs, or altered SSH authorized_keys files. Combined with log a[wazuh](https://wazuh.com/)is from a [SIEM platform](../self-hosted-siem-wazuh-security-onion-elastic-guide/), file integrity monitoring forms a layered defense strategy.
 
 ## What Is File Integrity Monitoring?
 

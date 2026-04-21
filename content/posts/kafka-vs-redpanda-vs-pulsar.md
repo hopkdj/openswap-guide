@@ -6,9 +6,9 @@ draft: false
 description: "Compare Apache Kafka, Redpanda, and Apache Pulsar — the top open source event streaming platforms. Includes Docker Compose deployment guides, performance benchmarks, and a decision guide for 2026."
 ---
 
-When your application needs to handle millions of events per second, a message broker is no longer optional — it's the backbone of your architecture. In 2026, three platforms dominate the open source event streaming space: **Apache Kafka**, the industry standard; **Redpanda**, the modern Kafka-compatible successor; and **Apache Pulsar**, the cloud-native challenger with multi-tenancy built in.
+When your application needs to handle millions of events per second, a message broker is no longer optional — it's the backbone of your architecture. In 2026, three platforms dominate the open source event streaming space: **Apache [kafka](https://kafka.apache.org/)**, the industry standard; **Redpanda**, the modern Kafka-compatible successor; and **Apache Pulsar**, the cloud-native challenger with multi-tenancy built in.
 
-Choosing between them affects your infrastructure costs, operational complexity, and scalability ceiling. This guide compares all three across architecture, features, performance, and deployment — with complete Docker Compose configs so you can self-host any of them today.
+Choosing between them affects your infrastructure costs, operational com[plex](https://www.plex.tv/)ity, and scalability ceiling. This guide compares all three across architecture, features, performance, and dep[docker](https://www.docker.com/)t — with complete Docker Compose configs so you can self-host any of them today.
 
 ---
 

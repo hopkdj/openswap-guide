@@ -38,7 +38,7 @@ Whether you're a developer who wants to code from an iPad, a team that needs con
 - Let's Encrypt certificate support built in
 - Active community and extensive documentation
 
-### Docker Deployment
+### [docker](https://www.docker.com/) Deployment
 
 ```yaml
 version: "3.8"
@@ -159,7 +159,7 @@ Navigate to `http://your-server:3000/?tkn=your-secret-token` to connect. The tok
 | Clean architecture | Fewer deployment tutorials available |
 | No password hashing overhead | Token management can be cumbersome |
 
-## Option 3: Eclipse Che — Kubernetes-Native Workspaces
+[kubernetes](https://kubernetes.io/)3: Eclipse Che — Kubernetes-Native Workspaces
 
 **Eclipse Che** takes a fundamentally different approach. Instead of running a single IDE instance, it provisions entire development **workspaces** as Kubernetes pods. Each workspace can have its own stack of containers for the IDE frontend, build tools, databases, and more.
 
@@ -256,7 +256,7 @@ chectl server:deploy \
 | Devfile standard for reproducible environments | Steep learning curve |
 | Multi-tenant with per-user workspaces | Heavy resource usage (Kubernetes + workspace containers) |
 | Supports multiple IDE frontends | Overkill for solo developers |
-| Team collaboration built in | Complex to maintain |
+| Team collaboration built in | Com[plex](https://www.plex.tv/) to maintain |
 
 ## Option 4: Theia — Cloud & Desktop IDE Platform
 
@@ -512,3 +512,34 @@ Running a web IDE exposes a powerful development environment to the network. Fol
 The self-hosted web IDE landscape in 2026 offers something for every developer. **code-server** remains the best all-around choice for most users — it's mature, well-documented, and delivers a near-perfect VS Code experience through the browser. **OpenVSCode Server** is a strong alternative if you prefer Gitpod's maintenance approach and cleaner architecture. **Eclipse Che** shines for teams that need Kubernetes-native, multi-tenant development environments with standardized workspace definitions. **Theia** is the right pick when you need to build a custom IDE platform rather than use an off-the-shelf solution.
 
 Regardless of which option you choose, running your own web IDE gives you full control over your development environment, keeps your code private, and lets you develop from any device with a browser.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

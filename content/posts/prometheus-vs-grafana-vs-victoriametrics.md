@@ -15,7 +15,7 @@ Monitoring your infrastructure is critical for every homelab, VPS, and productio
 - **Privacy**: Keep your infrastructure data on-premises
 - **Customization**: Full control over alerting, retention, and dashboards
 
-The three most popular open-source monitoring solutions in 2026 are **Prometheus**, **Grafana**, and **VictoriaMetrics**. Each serves a different role, and understanding when to use which — or how to combine them — is key to building an effective monitoring stack.
+The three most popular open-source monitoring solutions in 2026 are **[prometheus](https://prometheus.io/)**, **Grafana**, and **VictoriaMetrics**. Each serves a different role, and understanding when to use which — or how to combine them — is key to building an effective monitoring stack.
 
 ## Quick Comparison Table
 
@@ -33,7 +33,7 @@ The three most popular open-source monitoring solutions in 2026 are **Prometheus
 | **Resource Usage** | Medium (RAM-heavy) | Low (stateless) | Low (efficient storage) |
 | **Compression** | Good | N/A | Excellent (10x vs Prometheus) |
 | **Long-term Storage** | ⚠️ Requires federation | N/A | ✅ Native |
-| **Setup Complexity** | Medium | Low | Low-Medium |
+| **Setup Com[plex](https://www.plex.tv/)ity** | Medium | Low | Low-Medium |
 | **GitHub Stars** | 63,500+ | 73,100+ | 16,700+ |
 
 ---
@@ -47,7 +47,7 @@ Prometheus is the original time-series monitoring system created by SoundCloud a
 ### Key Features
 
 - **Pull-based architecture**: Scrapes targets at configurable intervals
-- **Service discovery**: Kubernetes, Docker, Consul, EC2, and more
+- **Service d[docker](https://www.docker.com/)ry**: Kubernetes, Docker, Consul, EC2, and more
 - **Powerful PromQL**: Complex queries with functions, aggregations, and joins
 - **Rich exporter ecosystem**: 300+ official and community exporters
 - **Alertmanager**: Dedicated alerting with deduplication, grouping, and routing

@@ -8,7 +8,7 @@ description: "Complete comparison of Woodpecker CI, Drone CI, and Gitea Actions 
 
 Self-hosted CI/CD platforms give you full control over your build infrastructure, pipeline execution, and artifact storage. When you can't (or don't want to) rely on cloud services like GitHub Actions, GitLab CI, or CircleCI, open-source alternatives let you run pipelines on your own servers with no usage limits or data leaving your infrastructure.
 
-In this guide, we compare three leading self-hosted CI/CD engines: **Woodpecker CI**, **Drone CI**, and **Gitea Actions**. All three run as Docker containers, support YAML-based pipeline definitions, and integrate with popular git forges.
+In this guide, we compare three leading self-hosted CI/CD engines: **Woodpecker CI**, **Drone CI**, and **[gitea](https://gitea.io/) Actions**. All three run as [docker](https://www.docker.com/) containers, support YAML-based pipeline definitions, and integrate with popular git forges.
 
 ## Why Self-Host Your CI/CD Pipeline?
 
@@ -278,7 +278,7 @@ labels:
 
 ### Plugin Ecosystem
 
-**Drone CI** has the largest plugin marketplace with hundreds of official and community plugins covering Docker builds, Slack notifications, S3 uploads, Kubernetes deployments, and more. The plugin registry at [plugins.drone.io](https://plugins.drone.io/) serves as the central directory.
+**Drone CI** has the largest plugin marketplace with hundreds of official and community plugins covering Docker builds, Slack [kubernetes](https://kubernetes.io/)ons, S3 uploads, Kubernetes deployments, and more. The plugin registry at [plugins.drone.io](https://plugins.drone.io/) serves as the central directory.
 
 **Woodpecker CI** maintains compatibility with most Drone plugins, giving it access to the same ecosystem. It also develops native extensions for newer integrations. The project publishes a curated list at [woodpecker-ci.org/docs/extensions](https://woodpecker-ci.org/docs/extensions).
 

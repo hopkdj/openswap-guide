@@ -8,7 +8,7 @@ description: "Compare the top open-source learning management systems you can se
 
 Running your own learning platform means full control over course content, student data, and pedagogical tools — without per-student licensing fees or data leaving your infrastructure. Self-hosted learning management systems (LMS) are used by universities, corporate training departments, and independent educators worldwide.
 
-In 2026, three open-source LMS platforms dominate the self-hosted space: **Moodle**, the world's most widely deployed LMS; **Open edX**, the enterprise-grade platform built by MIT and Harvard; and **Chamilo**, the lightweight alternative focused on ease of use. This guide compares all three, provides Docker deployment configurations, and helps you choose the right platform for your needs.
+In 2026, three open-source LMS platforms dominate the self-hosted space: **Moodle**, the world's most widely deployed LMS; **Open edX**, the enterprise-grade platform built by MIT and Harvard; and **Chamilo**, the lightweight alternative focused on ease of use. This guide compares all three, provides [docker](https://www.docker.com/) deployment configurations, and helps you choose the right platform for your needs.
 
 ## Why Self-Host Your Learning Platform
 
@@ -247,7 +247,7 @@ server {
 
 1. Open `https://studio.example.com` and log in
 2. Click **Create a New Course**
-3. Select a course template (Demo Course, Empty Course, or import from library)
+3. Select a course template (Demo Course, Empty Course, or impo[outline](https://www.getoutline.com/) library)
 4. In the Outline view, add sections, subsections, and units
 5. In each unit, add components:
    - **Text** — HTML content with embedded media
@@ -260,7 +260,7 @@ server {
 
 ### When to Choose Open edX
 
-Open edX is the choice for large-scale course delivery — think universities with thousands of concurrent learners, corporate training programs across multiple departments, or organizations running MOOCs. Its Studio authoring interface is intuitive for content creators, and the MFE architecture means you can customize the learner experience without touching the backend. The trade-off is infrastructure complexity: a full Open edX deployment requires 15+ containers, 4+ GB of RAM, and careful operational management.
+Open edX is the choice for large-scale course delivery — think universities with thousands of concurrent learners, corporate training programs across multiple departments, or organizations running MOOCs. Its Studio authoring interface is intuitive for content creators, and the MFE architecture means you can customize the learner experience without touching the backend. The trade-off is infrastructure com[plex](https://www.plex.tv/)ity: a full Open edX deployment requires 15+ containers, 4+ GB of RAM, and careful operational management.
 
 ## Chamilo: The Lightweight Alternative
 
@@ -480,3 +480,34 @@ services:
 Self-hosting a learning management system in 2026 is straightforward with Docker and gives you complete control over your educational platform. Moodle offers unmatched flexibility and the largest ecosystem, Open edX delivers enterprise-scale course delivery with a polished authoring experience, and Chamilo provides a lightweight, quick-to-deploy option for smaller organizations.
 
 All three are open-source, free to use, and respect your data sovereignty. Pick the one that matches your scale and technical capacity, deploy it behind a reverse proxy with TLS, set up automated backups, and start building courses — without per-student fees or data leaving your servers.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

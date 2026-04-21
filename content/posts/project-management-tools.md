@@ -9,7 +9,7 @@ description: "Compare open source alternatives to Jira for project management. V
 ## Why Replace Jira?
 
 - **Cost**: Jira gets expensive for teams
-- **Complexity**: Often overkill for small teams
+- **Com[plex](https://www.plex.tv/)ity**: Often overkill for small teams
 - **Privacy**: Keep project data on your servers
 - **Customization**: Open source allows full control
 
@@ -35,7 +35,7 @@ description: "Compare open source alternatives to Jira for project management. V
 - Multiple views (List, Kanban, Gantt, Table)
 - Time tracking
 - Reminders and notifications
-- File attachments
+[docker](https://www.docker.com/) attachments
 
 ### Docker Deployment
 
@@ -52,7 +52,7 @@ services:
     volumes:
       - ./files:/app/vikunja/files
     environment:
-      - VIKUNJA_SERVICE_PUBLICURL=https://tasks.example.com
+      - VIKUNJA_SERVICE_PUBLICURL=https[mysql](https://www.mysql.com/)sks.example.com
       - VIKUNJA_DATABASE_TYPE=mysql
       - VIKUNJA_DATABASE_HOST=db
       - VIKUNJA_DATABASE_PASSWORD=secret

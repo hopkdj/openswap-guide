@@ -10,7 +10,7 @@ description: "Complete guide to self-hosted web application firewalls and bot pr
 
 Every public-facing web application is under constant attack. SQL injection, cross-site scripting, credential stuffing, and automated bot scraping happen around the clock. A cloud-hosted Web Application Firewall (WAF) like Cloudflare or AWS WAF can cost anywhere from $20 to hundreds of dollars per month — and your traffic data flows through a third party.
 
-Running your own WAF gives you full control over filtering rules, zero per-request fees, and complete privacy. Your traffic never leaves your infrastructure. In this guide, we compare the three most capable self-hosted options available in 2026: **ModSecurity**, **Coraza**, and **CrowdSec**. We'll cover installation, configuration, OWASP Core Rule Set integration, performance benchmarks, and provide ready-to-use Docker Compose setups for each.
+Running your own WAF gives you full control over filtering rules, zero per-request fees, and complete privacy. Your traffic never leaves your infrastructure. In this guide, we compare the three most capable self-hosted options available in 2026: **ModSecurity**, **Coraza**, and **CrowdSec**. We'll cover installation, configuration, OWASP Core Rule Set integration, performance benchmarks, and provide ready-to-use [docker](https://www.docker.com/) Compose setups for each.
 
 ## Why Run Your Own WAF in 2026
 
@@ -35,7 +35,7 @@ ModSecurity has been the open-source WAF standard for over two decades. Original
 - Virtual patching — block vulnerabilities in your application before you deploy a fix
 - Extensive logging with detailed audit trails
 - Mature ecosystem with decades of community-contributed rules
-- Supports SecRule language for complex conditional matching
+- Supports SecRule language for com[plex](https://www.plex.tv/) conditional matching
 
 ### Docker Setup with Nginx
 
@@ -449,7 +449,7 @@ Set up alerts for unusual blocking patterns:
 docker exec crowdsec cscli metrics | grep -E "Bucket\|Decision"
 ```
 
-For production deployments, integrate with your existing monitoring stack. All three tools expose metrics in Prometheus format.
+For production deployments, integrate with your existing m[prometheus](https://prometheus.io/)stack. All three tools expose metrics in Prometheus format.
 
 ### Rule Updates
 
@@ -480,3 +480,34 @@ For the strongest protection, combine Coraza with CrowdSec — the Coraza layer 
 Self-hosted WAF and bot protection is not just about cost savings — it is about sovereignty over your security posture. You decide what to block, what to log, and what data to share. With Docker, any of these solutions deploys in under five minutes. The OWASP Core Rule Set provides enterprise-grade detection out of the box. And with CrowdSec's community intelligence, a single self-hosted instance becomes part of a global defense network.
 
 The barrier to running your own WAF has never been lower. There is no reason to send your traffic through a third party when a $10 VPS and a Docker Compose file give you better control, lower latency, and stronger privacy.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

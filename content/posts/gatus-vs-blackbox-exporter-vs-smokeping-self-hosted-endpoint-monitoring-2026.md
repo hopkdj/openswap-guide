@@ -23,7 +23,7 @@ For infrastructure teams running self-hosted services, having an independent hea
 | Tool | Stars | Language | Last Updated | Best For |
 |------|-------|----------|--------------|----------|
 | **[Gatus](https://github.com/TwiN/gatus)** | 10,690 | Go | April 2026 | Developer-oriented health dashboards with status pages |
-| **[Blackbox Exporter](https://github.com/prometheus/blackbox_exporter)** | 5,645 | Go | April 2026 | Prometheus ecosystem integration and standardized probing |
+| **[Blackbox Exporter](https://github.com/[prometheus](https://prometheus.io/)/blackbox_exporter)** | 5,645 | Go | April 2026 | Prometheus ecosystem integration and standardized probing |
 | **[SmokePing](https://github.com/oetiker/SmokePing)** | 1,868 | Perl | March 2026 | Network latency monitoring with historical trend visualization |
 
 ## Gatus: Developer-Oriented Health Dashboard
@@ -39,7 +39,7 @@ Gatus is a lightweight, config-as-code health dashboard that supports HTTP, ICMP
 - **Storage backends**: SQLite (default), PostgreSQL, MySQL for persistent history
 - **Single binary**: No external dependencies beyond the config file
 
-### Docker Compose Deployment
+### [docker](https://www.docker.com/) Compose Deployment
 
 ```yaml
 version: "3.8"
@@ -124,7 +124,7 @@ Gatus processes the `conditions` field as a simple expression language. Each con
 
 ## Prometheus Blackbox Exporter: Standardized Probe Monitoring
 
-The Blackbox Exporter is Prometheus's official probe exporter. It exposes a single HTTP endpoint that accepts probe targets and returns metrics in Prometheus format. This design means it integrates seamlessly with the existing Prometheus monitoring stack — scrape configs, alerting rules, and Grafana dashboards all work out of the box.
+The Blackbox Exporter is Prometheus's official probe exporter. It exposes a single HTTP endpoint that accepts probe targets and returns metrics in Prometheus format. This design means it integrates seamlessly with the existing Prometheus mo[grafana](https://grafana.com/)g stack — scrape configs, alerting rules, and Grafana dashboards all work out of the box.
 
 ### Key Features
 

@@ -42,13 +42,13 @@ The decision to self-host an e-signature solution is not just about saving money
 | **Mobile Signing** | Responsive web | Dedicated apps |
 | **Field Types** | Signature, text, date, checkbox, initials, dropdown, radio | Same + payment fields |
 | **Multi-language UI** | Growing community support | 40+ languages |
-| **Advanced Workflows** | Parallel and sequential signing | Complex routing rules |
+| **Advanced Workflows** | Parallel and sequential signing | Com[plex](https://www.plex.tv/) routing rules |
 | **Encryption at Rest** | Your database config | AES-256 (managed) |
 | **Compliance** | eIDAS, ESIGN Act (self-certified) | eIDAS, ESIGN Act, HIPAA, SOC 2 |
 
 Documenso is younger and has fewer enterprise compliance certifications out of the box, but for most small-to-medium businesses, freelancers, and internal teams, the feature set is more than sufficient. The gap continues to close with each release.
 
-## Installing Documenso with Docker Compose
+## In[docker](https://www.docker.com/)ng Documenso with Docker Compose
 
 The fastest way to get Documenso running is with Docker Compose. This setup uses PostgreSQL as the database, which is the recommended production database.
 
@@ -166,7 +166,7 @@ Check that everything is running:
 docker compose ps
 ```
 
-You should see both `documenso-postgres` and `documenso-app` containers in a healthy state. The application will be available on port 3000, but you should not expose it directly — use a reverse proxy with TLS.
+You should see both `documenso-postgres` and `documenso-app` containers in a healthy state. The application will be available on port 3000, but you should not expose it directly — use a reverse prox[caddy](https://caddyserver.com/)h TLS.
 
 ### Setting Up the Reverse Proxy with Caddy
 
@@ -347,3 +347,34 @@ Self-hosting your e-signature platform with Documenso gives you unlimited docume
 If you are still paying DocuSign for every contract you send, it is worth evaluating whether the convenience justifies the ongoing cost and the loss of data control. For most organizations in 2026, the answer is increasingly: no, it does not.
 
 Deploy Documenso on a modest VPS, configure your reverse proxy with TLS, set up automated backups, and start sending documents under your own terms. Your signatures, your server, your rules.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

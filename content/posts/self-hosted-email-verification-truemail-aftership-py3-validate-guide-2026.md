@@ -45,7 +45,7 @@ Truemail is the most comprehensive self-hosted email verification solution avail
 - Ruby gem for direct application integration
 - Regular expression-based domain matching for custom rules
 
-### Docker Deployment
+### [docker](https://www.docker.com/) Deployment
 
 While Truemail itself is a Ruby gem, truemail-rack provides a ready-to-deploy API server. Here's a Docker Compose setup:
 
@@ -377,7 +377,7 @@ done < emails_to_verify.txt
 
 ### Docker Compose for Production
 
-Here's a full production stack combining Truemail with Redis for caching results:
+Here's a full production sta[redis](https://redis.io/)mbining Truemail with Redis for caching results:
 
 ```yaml
 version: "3.8"
@@ -459,7 +459,7 @@ AfterShip email-verifier (Go) is the fastest in terms of raw verification speed 
 
 ### Can I use these tools with my existing self-hosted email server?
 
-Absolutely. These verification tools are independent of your mail server. They work with Postfix, Dovecot, Stalwart, Mailcow, or any other SMTP server. In fact, integrating verification with your [self-hosted email infrastructure](../self-hosted-email-server-postfix-dovecot-rspamd-complete-guide-2026/) is the recommended approach for complete email quality control.
+Absolutely. These verification tools are independent of your mail server. They work with P[mailcow](https://mailcow.email/) Dovecot, Stalwart, Mailcow, or any other SMTP server. In fact, integrating verification with your [self-hosted email infrastructure](../self-hosted-email-server-postfix-dovecot-rspamd-complete-guide-2026/) is the recommended approach for complete email quality control.
 
 <script type="application/ld+json">
 {

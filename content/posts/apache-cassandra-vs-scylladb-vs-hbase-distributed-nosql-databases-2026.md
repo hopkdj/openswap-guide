@@ -8,7 +8,7 @@ description: "Compare Apache Cassandra, ScyllaDB, and Apache HBase — three sel
 
 When your application outgrows a single database server, you need a distributed NoSQL database that can scale horizontally across multiple nodes. Apache Cassandra, ScyllaDB, and Apache HBase are the three most mature open-source options for self-hosted wide-column data storage. Each uses a fundamentally different architecture, and picking the wrong one can lead to painful operational overhead down the road.
 
-This guide compares all three — their data models, consistency guarantees, deployment complexity, and real-world performance characteristics — so you can choose the right distributed database for your workload.
+This guide compares all three — their data models, consistency guarantees, deployment com[plex](https://www.plex.tv/)ity, and real-world performance characteristics — so you can choose the right distributed database for your workload.
 
 ## Why Self-Host a Distributed NoSQL Database?
 
@@ -102,7 +102,7 @@ HBase is the natural choice for Hadoop-centric data pipelines. If your organizat
 
 ## Deployment Guides
 
-### Deploying Apache Cassandra with Docker Compose
+### Deployin[docker](https://www.docker.com/)he Cassandra with Docker Compose
 
 Create a single-node development cluster:
 
@@ -345,7 +345,7 @@ ScyllaDB consistently delivers the highest throughput and lowest latency due to 
 
 ### Monitoring
 
-- **Cassandra**: Use `nodetool` commands, JMX metrics, and integrate with Prometheus via the JMX Exporter. The Cassandra 5.0 release includes built-in Prometheus metrics endpoints.
+- **Cassandra**: Use `n[prometheus](https://prometheus.io/)ommands, JMX metrics, and integrate with Prometheus via the JMX Exporter. The Cassandra 5.0 release includes built-in Prometheus metrics endpoints.
 - **ScyllaDB**: Ships with a built-in Grafana dashboard and Prometheus metrics endpoint. Scylla Monitoring Stack provides pre-configured dashboards for cluster health, per-shard metrics, and I/O latency histograms.
 - **HBase**: Exposes JMX metrics and a Web UI at port 16010. Integrates with Ganglia, Ambari, or Cloudera Manager for cluster monitoring.
 

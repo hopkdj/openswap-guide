@@ -8,14 +8,14 @@ description: "Complete guide to self-hosted DHCP servers in 2026. Compare Kea, D
 
 Running your own DHCP server gives you full control over IP address assignment, DNS resolution, and network boot operations. Whether you manage a homelab with dozens of devices or an enterprise network spanning multiple VLANs, choosing the right DHCP server is one of the most foundational decisions you'll make.
 
-In this guide, we compare the three most popular open-source DHCP servers — Kea, Dnsmasq, and the legacy ISC DHCP — with hands-on installation instructions, Docker Compose configurations, and production-ready deployment advice.
+In this guide, we compare the three most popular open-source DHCP servers — Kea, Dnsmasq, and the legacy ISC DHCP — with hands-on installation instructions, [docker](https://www.docker.com/) Compose configurations, and production-ready deployment advice.
 
 ## Why Run Your Own DHCP Server?
 
 Most home users rely on the DHCP server baked into their consumer router. That works fine for a handful of devices on a single flat network. But as soon as your infrastructure grows, the limitations become obvious:
 
 - **VLAN segmentation** — Consumer routers can't assign addresses across multiple subnets. A dedicated DHCP server handles VLANs and subnet scopes with ease.
-- **Static reservations** — Lock specific MAC addresses to fixed IPs so your servers, NAS, and Pi-hole always get the same address without manual static IP configuration on each device.
+- **Static reservations** — Lock specific MAC addresses to fixed IPs so your servers, NAS, and [pi-hole](https://pi-hole.net/) always get the same address without manual static IP configuration on each device.
 - **DNS integration** — DHCP and DNS are natural partners. Servers like Dnsmasq handle both, ensuring every device that receives a lease is automatically registered in DNS.
 - **Network boot (PXE/TFTP)** — Provision bare-metal servers, diskless workstations, or thin clients by serving boot images over the network.
 - **Lease monitoring and auditing** — Track every device that connects to your network, when it connected, and what IP it received. Built-in router logs rarely expose this data.
@@ -34,7 +34,7 @@ Before diving into configuration, here's how the three major options compare:
 | **Protocols** | DHCPv4, DHCPv6 | DHCPv4, DNS, TFTP, PXE | DHCPv4, DHCPv6 |
 | **Backend** | MySQL, PostgreSQL, Cassandra, memfile | In-memory, hosts file | Flat file (leases) |
 | **HA Support** | Yes (failover + load balancing) | No (single instance) | Yes (failover protocol) |
-| **Configuration** | JSON | Simple flat file | Complex flat file |
+| **Configuration** | JSON | Simple flat file | Com[plex](https://www.plex.tv/) flat file |
 | **REST API** | Yes (control agent) | No | No |
 | **Hook System** | Yes (C/C++ and Python plugins) | No | Limited |
 | **Resource Usage** | Moderate (backend-dependent) | Very low | Low |
@@ -601,3 +601,34 @@ Choose based on your specific needs:
 **For ISC DHCP users**, there's no reason to stay on an unsupported product. Kea was designed as its direct successor, and the migration tools make the transition straightforward. Plan your migration, test thoroughly in a staging environment, and cut over during a maintenance window.
 
 Whichever you choose, running your own DHCP server is one of the highest-leverage infrastructure decisions you can make. It gives you visibility into every device on your network, eliminates dependency on proprietary router firmware, and lays the foundation for everything else — DNS, PXE boot, VLAN segmentation, and network automation.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

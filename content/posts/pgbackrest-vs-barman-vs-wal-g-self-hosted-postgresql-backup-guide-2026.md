@@ -8,7 +8,7 @@ description: "Compare pgBackRest, Barman, and WAL-G for self-hosted PostgreSQL b
 
 PostgreSQL is one of the most widely deployed open-source relational databases, powering everything from small web apps to enterprise data warehouses. But a database without a reliable backup strategy is a ticking time bomb. Hardware failures, accidental deletes, and corrupt migrations can destroy months or years of data in seconds.
 
-This guide compares three of the most popular open-source PostgreSQL backup tools — **pgBackRest**, **Barman**, and **WAL-G** — and shows you how to deploy each one on your own infrastructure with Docker and native packages.
+This guide compares three of the most popular open-source PostgreSQL backup tools — **pgBackRest**, **Barman**, and **WAL-G** — and shows you how to deploy each one on your own infrastructure with [docker](https://www.docker.com/) and native packages.
 
 > **Quick stats** (as of April 2026):
 > - **pgBackRest**: 3,726 GitHub stars, written in C, last updated April 2026
@@ -308,8 +308,7 @@ services:
     volumes:
       - ./walg-config.json:/etc/wal-g/wal-g.json:ro
       - walg_backups:/backups
-    environment:
-      - AWS_ACCESS_KEY_ID=minio
+    environment:[minio](https://min.io/)  - AWS_ACCESS_KEY_ID=minio
       - AWS_SECRET_ACCESS_KEY=minio123
       - AWS_ENDPOINT=http://minio:9000
       - AWS_S3_FORCE_PATH_STYLE=true
@@ -345,7 +344,7 @@ WAL-G uses a JSON configuration file:
   "AWS_SECRET_ACCESS_KEY": "minio123",
   "AWS_S3_FORCE_PATH_STYLE": "true",
   "WALG_S3_PREFIX": "s3://postgresql-backups/demo",
-  "PGDATA": "/var/lib/postgresql/16/main",
+ [ghost](https://ghost.org/)ATA": "/var/lib/postgresql/16/main",
   "PGHOST": "/var/run/postgresql",
   "PGUSER": "postgres",
   "WALG_COMPRESSION_METHOD": "lz4",

@@ -15,7 +15,7 @@ description: "Compare Gitea, Forgejo, and GitLab for self-hosted Git repositorie
 
 ## Comparison Matrix
 
-| Feature | Gitea | Forgejo | GitLab CE |
+| Feature | [gitea](https://gitea.io/) | Forgejo | GitLab CE |
 |---------|-------|---------|-----------|
 | **Origin** | Original project | Gitea fork | GitLab Inc |
 | **License** | MIT | MIT | MIT (Core) |
@@ -45,7 +45,7 @@ description: "Compare Gitea, Forgejo, and GitLab for self-hosted Git repositorie
 - GitHub-like interface
 - Low maintenance
 
-### Docker Deployment
+### [docker](https://www.docker.com/) Deployment
 
 ```yaml
 # docker-compose.yml
@@ -135,7 +135,7 @@ services:
 ```
 
 **Pros**: Complete DevOps, enterprise features, excellent CI/CD
-**Cons**: Resource heavy (4GB+ RAM), complex, slow updates
+**Cons**: Resource heavy (4GB+ RAM), com[plex](https://www.plex.tv/), slow updates
 
 ---
 

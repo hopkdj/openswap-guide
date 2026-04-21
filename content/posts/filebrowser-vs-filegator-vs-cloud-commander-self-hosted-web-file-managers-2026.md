@@ -8,7 +8,7 @@ description: "Compare the top 3 self-hosted web file managers — FileBrowser, F
 
 Managing files on a remote server through SSH and terminal commands works, but it is not always the most efficient workflow. Whether you are running a home lab, managing a VPS, or sharing files with a team, a web-based file manager gives you a familiar graphical interface accessible from any browser — no SSH client, SFTP software, or terminal required.
 
-In this guide, we compare three mature, open-source, self-hosted web file managers: **FileBrowser**, **FileGator**, and **Cloud Commander**. All three can be deployed with Docker, support user authentication, and handle the core file operations you expect — upload, download, copy, move, rename, and delete. But they differ significantly in architecture, features, and ideal use cases.
+In this guide, we compare three mature, open-source, self-hosted web file managers: **FileBrowser**, **FileGator**, and **Cloud Commander**. All three can be deployed with [docker](https://www.docker.com/), support user authentication, and handle the core file operations you expect — upload, download, copy, move, rename, and delete. But they differ significantly in architecture, features, and ideal use cases.
 
 ## Why Self-Host a Web File Manager?
 
@@ -17,10 +17,10 @@ Before diving into the comparison, here is why running your own web file manager
 - **No third-party dependency**: Your files stay on your server. No cloud storage provider can change pricing, shut down, or scan your data.
 - **Access from anywhere**: A web interface works on any device with a browser — phone, tablet, laptop — without installing specialized clients.
 - **Share with others**: Multi-user support lets you grant specific users access to specific directories without giving them full SSH access.
-- **Lightweight alternatives**: Compared to full suites like Nextcloud (which bundles calendars, contacts, office suites, and more), a dedicated file manager uses far fewer resources and has a smaller attack surface.
+- **Lightweight alternatives**: Compared to full suites like [nextcloud](https://nextcloud.com/) (which bundles calendars, contacts, office suites, and more), a dedicated file manager uses far fewer resources and has a smaller attack surface.
 - **Integrates with existing infrastructure**: These tools sit behind your existing reverse proxy, use your authentication system, and store files wherever you point them.
 
-For users who need a full collaboration suite, our [Nextcloud vs ownCloud comparison](../nextcloud-vs-owncloud/) covers the heavyweight options. But if you just need a clean, fast file management interface, read on.
+For users who need a full collaboration[owncloud](https://owncloud.com/)our [Nextcloud vs ownCloud comparison](../nextcloud-vs-owncloud/) covers the heavyweight options. But if you just need a clean, fast file management interface, read on.
 
 ## FileBrowser — Minimalist, Fast, Single Binary
 

@@ -19,7 +19,7 @@ Many DDNS providers offer their own lightweight update clients, but these come w
 - **Privacy concerns** — third-party clients report your IP to external servers you don't control
 - **Limited provider support** — most official clients handle only one or two DNS providers
 
-A self-hosted DDNS client running in your own infrastructure solves all of these problems. You can manage updates for **multiple DNS providers** from a single tool, run it as a **systemd service or Docker container**, and keep full control over the update schedule, logging, and credentials.
+A self-hosted DDNS client running in your own infrastructure solves all of these problems. You can manage updates for **multiple DNS providers** from a single tool, run it as a **systemd service or [docker](https://www.docker.com/) container**, and keep full control over the update schedule, logging, and credentials.
 
 Combined with a [self-hosted DNS resolver](../self-hosted-dns-resolvers-unbound-dnsmasq-bind-coredns-guide-2026/) for local resolution and [tunnel alternatives](../frp-vs-chisel-vs-rathole-self-hosted-tunnel-ngrok-alternatives-2026/) for NAT traversal, DDNS clients form the backbone of a reliable home server setup.
 
@@ -302,7 +302,7 @@ All three tools support the major DDNS providers, but the breadth varies:
 
 **ddclient** supports the widest range: Cloudflare, CloudXNS, ConoHa, ClouDNS, deSEC, Dinahosting, Directnic, DNS Made Easy, DNS Park, DNS-O-Matic, DNSexit, DNSimple, Domainorama, Dove, DynDNS, DynSIP, EasyDNS, Enom, GoDaddy, Google, Hurricane Electric, He.net, HostUmbrella, Infomaniak, Intercage, INWX, Loopia, Mythic Beasts, Namecheap, No-IP, NS1, OVH, Porkbun, Regfish, Time, Variomedia, and more.
 
-**ddns-updater** covers: Cloudflare, Custom (generic API), DD24.de, DDNSS.de, deSEC, DNS Made Easy, DNSPod, DonDominio, DuckDNS, DynDNS, DNSimple, Dynu, EasyDNS, FreeDNS, Gandi, Gandi LiveDNS, GoDaddy, GoIP.de, He.net, Hetzner, Infomaniak, Ionos, Joker, Linode, LuaDNS, Name.com, Namecheap, Netcup, No-IP, NoIP, OVH, Porkbun, Reg.ru, Scaleway, Selfhost.de, Servercow, Simply.com, Spdyn, Strato, Variomedia, and Zoneedit.
+**ddns-updater** covers: Cloudflare, Custom (generic API), DD24.de, DDNSS.de, deSEC, D[minio](https://min.io/)de Easy, DNSPod, DonDominio, DuckDNS, DynDNS, DNSimple, Dynu, EasyDNS, FreeDNS, Gandi, Gandi LiveDNS, GoDaddy, GoIP.de, He.net, Hetzner, Infomaniak, Ionos, Joker, Linode, LuaDNS, Name.com, Namecheap, Netcup, No-IP, NoIP, OVH, Porkbun, Reg.ru, Scaleway, Selfhost.de, Servercow, Simply.com, Spdyn, Strato, Variomedia, and Zoneedit.
 
 **inadyn** supports: Cloudflare, deSEC, DNS Made Easy, DuckDNS, DynDNS, EasyDNS, FreeDNS, GoDaddy, Hurricane Electric, INWX, Loopia, Namecheap, No-IP, OVH, Porkbun, Regfish, Strato, and Yandex.
 
@@ -365,7 +365,7 @@ fi
 
 ### 5. Run Behind a Reverse Proxy
 
-If you expose your DDNS client's web UI (ddns-updater), place it behind a reverse proxy with TLS termination. For a complete reverse proxy setup, see our [nginx vs Caddy vs Traefik comparison](../nginx-vs-caddy-vs-traefik-self-hosted-web-server-guide-2026/).
+If you expose your DDNS client's web UI (ddns-updater), place it behind a reverse proxy with TLS termination.[nginx](https://nginx.org/)a complete reverse proxy setup, see our [nginx vs Caddy vs Traefik comparison](../nginx-vs-caddy-vs-traefik-self-hosted-web-server-guide-2026/).
 
 ## FAQ
 

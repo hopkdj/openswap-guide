@@ -69,7 +69,7 @@ This architecture is fundamentally different from Optimizely and Statsig, which 
 
 ## Installation Guide
 
-### Method 1: Quick Start with Docker Compose
+### Method 1: Quick Start with [docker](https://www.docker.com/) Compose
 
 The fastest way to get GrowthBook running is with Docker Compose. This deploys the GrowthBook app, MongoDB (for configuration storage), and a demo data source.
 
@@ -188,9 +188,7 @@ The `Caddyfile` for automatic TLS:
 ```
 growthbook.yourdomain.com {
     reverse_proxy localhost:3000
-    encode gzip
-}
-```
+    encode[kubernetes](https://kubernetes.io/)`
 
 ### Method 3: Kubernetes Deployment
 
@@ -344,7 +342,7 @@ const gb = new GrowthBook({
 
 ### CDN Distribution for Feature Definitions
 
-For high-traffic applications, put the GrowthBook API behind a CDN:
+For high-traffic ap[nginx](https://nginx.org/)tions, put the GrowthBook API behind a CDN:
 
 ```nginx
 # Nginx CDN configuration for GrowthBook API
@@ -426,3 +424,34 @@ GrowthBook has matured into a genuinely production-ready open-source A/B testing
 For teams spending thousands of dollars per month on Optimizely or Statsig, self-hosting GrowthBook can reduce costs to near-zero while providing equivalent statistical rigor, more deployment flexibility, and complete data sovereignty.
 
 The combination of Bayesian statistics, local SDK evaluation, SQL-based metrics, and the MIT license makes GrowthBook the strongest open-source option for product teams serious about experimentation in 2026.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

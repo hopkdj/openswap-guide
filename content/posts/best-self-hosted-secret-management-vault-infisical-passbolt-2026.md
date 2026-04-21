@@ -32,7 +32,7 @@ The self-hosted secret management landscape spans three distinct design philosop
 | **Secret Types** | KV, databases, PKI, SSH, transit, cloud IAM | KV, files, dynamic DB creds | Passwords, files, TOTP |
 | **Dynamic Secrets** | ✅ Full support (DB, AWS, Azure, GCP, RabbitMQ) | ✅ Database credentials | ❌ Static only |
 | **Auto Rotation** | ✅ Built-in engine | ✅ Built-in | ❌ Manual |
-| **Auth Methods** | 15+ (LDAP, OIDC, JWT, Kubernetes, AppRole, TLS certs, GitHub, GitLab, AWS IAM, etc.) | 8+ (LDAP, OIDC, SAML, SSO, service tokens) | 4 (Email, LDAP, SAML, SSO) |
+| **Auth Methods** | 15+ (LDAP, OIDC, JWT, [kubernetes](https://kubernetes.io/), AppRole, TLS certs, GitHub, GitLab, AWS IAM, etc.) | 8+ (LDAP, OIDC, SAML, SSO, service tokens) | 4 (Email, LDAP, SAML, SSO) |
 | **UI Quality** | Functional but dated | Modern, polished, excellent UX | Clean, functional |
 | **CLI Quality** | Excellent, full-featured | Excellent, developer-friendly | Good |
 | **API** | REST + Go SDK | REST + SDKs (JS, Python, Go, CLI) | REST API |
@@ -40,7 +40,7 @@ The self-hosted secret management landscape spans three distinct design philosop
 | **High Availability** | ✅ Raft consensus + integrated storage | ✅ Replicated state | ✅ Enterprise only |
 | **Audit Logging** | ✅ Comprehensive | ✅ Full history | ✅ Activity log |
 | **Learning Curve** | Steep | Low | Low |
-| **Best For** | Large teams, complex infra | Dev teams, startups | Credential sharing, IT teams |
+| **Best For** | Large teams, com[plex](https://www.plex.tv/) infra | Dev teams, startups | Credential sharing, IT teams |
 
 ## 1. HashiCorp Vault — The Industry Standard
 
@@ -55,7 +55,7 @@ Vault is the most powerful and widely deployed secret management system in exist
 - **PKI secrets engine**: Run your own certificate authority. Issue and revoke TLS certificates automatically, replacing manual Let's Encrypt workflows for internal services.
 - **Transit encryption**: Encrypt and decrypt data without handling keys yourself. Useful for encrypting backups, database columns, or application data.
 - **Identity-based access**: Integrate with LDAP, OIDC, Kubernetes service accounts, cloud IAM roles, and more. No shared API keys needed.
-- **Raft storage**: Built-in high-availability storage with no external database dependency.
+- **Raft storage**: Built-in high-availability storage with no external da[docker](https://www.docker.com/) dependency.
 
 ### Docker Compose Deployment
 
@@ -459,3 +459,34 @@ For larger organizations with complex infrastructure, **HashiCorp Vault** remain
 For teams focused on credential sharing with strong encryption, **Passbolt** fills the gap between personal password managers and enterprise secret management systems.
 
 All three are open-source, self-hostable, and free for unlimited use. Pick the one that matches your workflow and start centralizing your secrets today.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

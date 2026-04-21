@@ -6,7 +6,7 @@ draft: false
 description: "Complete guide to building a self-hosted email server from scratch using Postfix, Dovecot, and Rspamd — including Docker setup, TLS, SPF, DKIM, DMARC, and deliverability best practices."
 ---
 
-Running your own email server is one of the most rewarding self-hosted projects you can undertake. It gives you complete control over your communications, eliminates third-party data harvesting, and teaches you a tremendous amount about how the internet actually works. In this guide, we will walk through building a production-ready mail server using the gold-standard open-source stack: **Postfix** for SMTP, **Dovecot** for IMAP/LMTP, and **Rspamd** for spam filtering — all orchestrated with Docker Compose.
+Running your own email server is one of the most rewarding self-hosted projects you can undertake. It gives you complete control over your communications, eliminates third-party data harvesting, and teaches you a tremendous amount about how the internet [actual](https://actualbudget.org/)ly works. In this guide, we will walk through building a production-ready mail server using the gold-standard open-source stack: **Postfix** for SMTP, **Dovecot** for IMAP/LMTP, and **Rspamd** for spam filtering — all orchestrated with [docker](https://www.docker.com/) Compose.
 
 ## Why Self-Host Your Own Email
 
@@ -30,7 +30,7 @@ Our stack consists of four interconnected components:
 |-----------|------|------|
 | **Postfix** | SMTP server — sends and receives mail | 25, 587, 465 |
 | **Dovecot** | IMAP/LMTP server — mailbox access and local delivery | 143, 993 |
-| **Rspamd** | Spam filter — content analysis, greylisting, DKIM signing | 11332-11334 |
+| **Rspamd** | Spam filter — content analysis, greylisting, DKIM s[nginx](https://nginx.org/)g | 11332-11334 |
 | **Nginx** (optional) | Webmail front-end (Roundcube/Snappymail) | 80, 443 |
 
 Here is how a typical message flows through the system:
@@ -751,3 +751,34 @@ Key takeaways for success:
 - **Start with DMARC `p=none`** and move to `p=reject` only after confirming everything works
 
 Your email, your server, your rules.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

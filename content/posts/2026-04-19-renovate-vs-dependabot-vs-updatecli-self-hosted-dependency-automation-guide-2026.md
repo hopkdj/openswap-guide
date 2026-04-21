@@ -10,7 +10,7 @@ Keeping dependencies up to date is one of the most tedious yet critical tasks in
 
 Dependency automation tools solve this problem by scanning your projects for outdated packages, testing new versions, and creating pull requests with changelogs and release notes. The three leading tools in this space are **Renovate**, **Dependabot**, and **Updatecli**. Each takes a different approach to the problem, with varying degrees of self-hosting support and ecosystem coverage.
 
-This guide compares all three tools, shows you how to self-host them with Docker, and helps you choose the right dependency automation pipeline for your infrastructure.
+This guide compares all three tools, shows you how to self-host them with [docker](https://www.docker.com/), and helps you choose the right dependency automation pipeline for your infrastructure.
 
 ## Why Automate Dependency Updates?
 
@@ -46,7 +46,7 @@ Dependabot is deeply integrated into the GitHub ecosystem. It supports GitHub-na
 
 **Key stats:** 895 GitHub stars, actively maintained (last pushed April 2026), Go.
 
-Updatecli is not limited to package dependencies. It can update Docker image tags, Terraform module versions, Helm chart versions, Kubernetes manifests, GitHub Actions versions, and virtually anything that has a version number. This makes it more flexible but also more complex to configure.
+Updatecli is not limited to package dependencies. It can update Docker image tags, Terraform module vers[kubernetes](https://kubernetes.io/) chart versions, Kubernetes manifests, GitHub Actions versions, and virtually anything that has a version number. This makes it more flexible but also more com[plex](https://www.plex.tv/) to configure.
 
 ## Feature Comparison
 

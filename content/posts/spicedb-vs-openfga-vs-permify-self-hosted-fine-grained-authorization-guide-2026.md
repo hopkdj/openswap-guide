@@ -10,7 +10,7 @@ When you move beyond simple role-based access control (RBAC), permissions get co
 
 Enter the Zanzibar model — Google's 2019 paper describing a global, consistent authorization system that handles billions of permission checks per second. Three open-source projects have brought this architecture to the self-hosted world: **SpiceDB**, **OpenFGA**, and **Permify**. All three let you define fine-grained permissions as data, query them at scale, and keep them decoupled from your application code.
 
-This guide compares all three, covers how to deploy each with Docker, and shows you how to model real-world authorization schemas.
+This guide compares all three, covers how to deploy each with [docker](https://www.docker.com/), and shows you how to model real-world authorization schemas.
 
 ## Why Self-Host Your Authorization Engine?
 
@@ -21,7 +21,7 @@ Cloud-hosted authorization services like Auth0 FGA or Oso Cloud are convenient, 
 - **Cost at scale** — per-check pricing models get expensive quickly. A self-hosted engine has no per-request charges.
 - **Full control** — you own the schema, the data, the backup strategy, and the availability guarantees.
 
-For teams that already self-host their authentication stack (Keycloak, Authentik, Zitadel), running authorization on-premise completes the picture. For related reading, see our [Zitadel vs Ory vs Keycloak IAM comparison](../zitadel-vs-ory-vs-keycloak-self-hosted-iam-guide/) and [Authentik vs Keycloak vs Authelia guide](../authentik-vs-keycloak-vs-authelia/) for the authentication side.
+For teams that already self-host t[keycloak](https://www.keycloak.org/)hentication stack (Keycloak, Authentik, Zitadel), running authorization on-premise completes the picture. For related reading, see our [Zitadel vs Ory vs Keycloak IAM comparison](../zitadel-vs-ory-vs-keycloak-self-hosted-iam-guide/) and [Authentik vs Keycloak vs Authelia guide](../authentik-vs-keycloak-vs-authelia/) for the authentication side.
 
 ## What Is Zanzibar-Inspired Authorization?
 
@@ -41,7 +41,7 @@ All three engines discussed here follow this model, but each has its own schema 
 
 ### Key Features
 
-- **Consistent, globally distributed** — supports CockroachDB and PostgreSQL as backends, with read-after-write consistency
+- **Consis[postgresql](https://www.postgresql.org/)ally distributed** — supports CockroachDB and PostgreSQL as backends, with read-after-write consistency
 - **Schema language** — uses `definition` blocks with `relation` and `permission` keywords, directly inspired by Zanzibar's configuration language
 - **Dispatch architecture** — parallel dispatch tree evaluation for sub-millisecond checks even with deep permission hierarchies
 - **Caveats** — supports conditional permissions (e.g., "can edit if the document is not archived")

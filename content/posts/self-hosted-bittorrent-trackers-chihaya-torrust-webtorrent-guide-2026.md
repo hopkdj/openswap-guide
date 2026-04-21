@@ -39,7 +39,7 @@ We evaluated the three most actively maintained open-source BitTorrent tracker i
 | **Web UI** | No | No | Yes (optional) |
 | **Database Support** | In-memory only | Pluggable | SQLite, PostgreSQL |
 | **Stats Dashboard** | Basic (CLI) | Basic | Full web dashboard |
-| **Docker Image** | Official | Community | Official |
+| **[docker](https://www.docker.com/) Image** | Official | Community | Official |
 | **IPv6 Support** | Yes | Yes | Yes |
 | **Whitelist Mode** | Yes | Yes | Yes |
 | **Configuration** | JSON/YAML | TOML | TOML |
@@ -69,7 +69,7 @@ bittorrent-tracker --port 6969
 
 Chihaya is a high-performance BitTorrent tracker written in Go. It was designed from the ground up for speed and handles millions of peers with minimal resource usage. Its pluggable middleware architecture allows you to customize behavior at every stage of the request lifecycle.
 
-The project supports both HTTP and UDP tracker protocols and includes a Prometheus metrics endpoint for monitoring. The main trade-off is that development has slowed since 2023, and the last major release was in June 2023. For users who need the absolute best performance and are comfortable with Go, Chihaya remains an excellent choice.
+The project supports both HTTP and UDP tracke[prometheus](https://prometheus.io/)s and includes a Prometheus metrics endpoint for monitoring. The main trade-off is that development has slowed since 2023, and the last major release was in June 2023. For users who need the absolute best performance and are comfortable with Go, Chihaya remains an excellent choice.
 
 **Architecture highlights:**
 
@@ -358,7 +358,7 @@ server {
 
 - **Choose Torrust Tracker** if you are building a private torrent community and need persistent storage, a web dashboard, and user management out of the box. It is the most feature-complete solution and the most actively developed of the three.
 
-For a complete self-hosted file sharing stack, combine your tracker with a [self-hosted torrent client](../self-hosted-torrent-clients-guide/) for seeding and an [NAS solution](../self-hosted-nas-solutions-openmediavault-truenas-rockstor-guide/) for storage. If you are distributing media, our [Jellyfin vs Plex comparison](../jellyfin-vs-plex-vs-emby/) covers the playback side of the stack.
+For a complete self-hosted file sharing stack, combine your tracker with a [self-hosted torrent client](../self-hosted-torrent-clients-guide/) for seeding and an [NAS solution](../self-hosted-nas-solutions-openmediavault-truenas-rockstor-guide/) for storage. If you are distributing media, our [[jellyfin](https://jellyfin.org/) vs Plex comparison](../jellyfin-vs-plex-vs-emby/) covers the playback side of the stack.
 
 ## FAQ
 

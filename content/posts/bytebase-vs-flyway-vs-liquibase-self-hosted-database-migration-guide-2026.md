@@ -43,7 +43,7 @@ Each tool represents a different philosophy for managing schema changes.
 | **Schema drift detection** | No | Limited (Diff command) | Yes (continuous) |
 | **Audit log** | Migration history table | Database changelog table | Full audit trail in UI |
 | **License** | Apache 2.0 (core) | Apache 2.0 (core) | MIT |
-| **Docker image** | flyway/flyway | liquibase/liquibase | bytebase/bytebase |
+| **[docker](https://www.docker.com/) image** | flyway/flyway | liquibase/liquibase | bytebase/bytebase |
 
 ## Flyway: SQL-First Migrations
 
@@ -60,7 +60,7 @@ docker run --rm \
 
 ### Docker Compose Setup
 
-For a production-ready setup with PostgreSQL:
+For a p[postgresql](https://www.postgresql.org/)ready setup with PostgreSQL:
 
 ```yaml
 version: "3.9"
@@ -172,7 +172,7 @@ jobs:
 - You prefer writing raw SQL and want zero abstraction overhead
 - Your team works primarily with one database engine
 - You need a lightweight tool that integrates easily into existing CI/CD pipelines
-- Your migration workflow is linear (no complex branching or rollback needs)
+- Your migration workflow is linear (no com[plex](https://www.plex.tv/) branching or rollback needs)
 
 ## Liquibase: Multi-Database Changelogs
 
@@ -604,3 +604,34 @@ pg_restore -h localhost -U appuser -d appdb backup_$(date +%Y%m%d).dump
 The choice between Bytebase, Flyway, and Liquibase comes down to your team's workflow and governance needs. Flyway is the simplest option for teams comfortable writing raw SQL. Liquibase provides database-agnostic changelog management with strong rollback support. Bytebase offers a complete database DevOps platform with visual management, SQL review, and approval workflows.
 
 All three tools can be self-hosted via Docker, giving you full control over your migration infrastructure. Start with the tool that matches your current complexity, and migrate to a more feature-rich option as your team and database estate grow.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

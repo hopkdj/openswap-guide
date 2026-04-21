@@ -10,7 +10,7 @@ Knowledge management is one of the hardest problems for growing teams. Documents
 
 Enter **Outline**, the fastest open-source wiki and knowledge base designed for modern teams. It combines the clean, block-based editing experience of Notion with the structured hierarchy of Confluence — all self-hosted, fully under your control, and free to use.
 
-In this guide, we'll explore why Outline is the best self-hosted knowledge base available today, compare it against Notion and Confluence, and walk you through a complete production deployment using Docker Compose with OIDC authentication.
+In this guide, we'll explore why Outline is the best self-hosted knowledge base available today, compare it against Notion and Confluence, and walk you through a complete production deployment using [docker](https://www.docker.com/) Compose with OIDC authentication.
 
 ## Why Self-Host Your Team Wiki
 
@@ -104,7 +104,7 @@ Before starting, ensure you have:
 - Docker and Docker Compose installed
 - A domain name pointed to your server (e.g., `wiki.example.com`)
 - An OIDC provider (Google, Slack, Azure AD, Authelia, Authentik, or any generic OIDC provider)
-- An S3-compatible storage service (MinIO, Cloudflare R2, AWS S3, or Backblaze B2)
+- An S3-c[minio](https://min.io/)ible storage service (MinIO, Cloudflare R2, AWS S3, or Backblaze B2)
 
 ### Step 1: Create the Docker Compose Configuration
 
@@ -439,7 +439,7 @@ find ./confluence-export -name "*.html" -exec pandoc -f html -t gfm -o {}.md {} 
 ```
 
 3. Import the resulting Markdown files into Outline collections
-4. Confluence macros and custom page layouts won't translate directly — plan to rebuild complex pages manually
+4. Confluence macros and custom page layouts won't translate directly — plan to rebuild com[plex](https://www.plex.tv/) pages manually
 
 ### From Wiki.js or BookStack
 
@@ -505,3 +505,34 @@ Outline is the best self-hosted wiki and knowledge base available today for team
 The setup is straightforward with Docker Compose, and once running, Outline requires minimal maintenance. Your documents are stored in PostgreSQL (easily backed up and queried), your attachments live in S3-compatible storage, and your authentication integrates with whatever identity provider you already use.
 
 At zero software cost and running on a $5/month VPS, Outline delivers enterprise-grade knowledge management without the enterprise price tag or the privacy compromises of cloud-only alternatives.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

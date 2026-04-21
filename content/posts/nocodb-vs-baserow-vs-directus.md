@@ -40,7 +40,7 @@ Whether you're building internal tools, managing project data, or creating a hea
 | **Automation/Flows** | ✅ Basic webhooks | ✅ Automations | ✅ Flows engine |
 | **File Attachments** | ✅ Yes | ✅ Yes | ✅ File library |
 | **Mobile Responsive** | ✅ Yes | ✅ Yes | ✅ Yes |
-| **Docker Image Size** | ~300 MB | ~1.2 GB | ~400 MB |
+| **[docker](https://www.docker.com/) Image Size** | ~300 MB | ~1.2 GB | ~400 MB |
 | **Min RAM** | ~256 MB | ~512 MB | ~256 MB |
 | **License** | AGPLv3 | MIT | GPLv3 |
 | **Best For** | Teams wanting Airtable UI over existing SQL DB | Teams wanting the cleanest Airtable clone | Developers wanting a headless CMS + data platform |
@@ -230,7 +230,7 @@ Directus is fundamentally different from NocoDB and Baserow. It's not just a spr
 - **Dual API** — REST and GraphQL APIs generated automatically from your schema
 - **Headless CMS** — content management with rich text editor, media library, and versioning
 - **Data Studio** — admin interface with layouts, dashboards, and custom pages
-- **Flows engine** — visual automation builder for complex workflows and data pipelines
+- **Flows engine** — visual automation builder for com[plex](https://www.plex.tv/) workflows and data pipelines
 - **Role-based access control** — field-level permissions, custom validation rules
 - **Extensions SDK** — build custom interfaces, panels, modules, and hooks
 - **Real-time subscriptions** — WebSocket support for live data updates
@@ -366,7 +366,7 @@ services:
 
 ### 1. Can NocoDB, Baserow, or Directus fully replace Airtable?
 
-For most use cases, **yes**. All three provide spreadsheet views, multiple display formats (Kanban, Gallery, Calendar), collaboration features, and API access. The main gaps are Airtable's polished mobile app and its marketplace of third-party integrations. If you primarily work on desktop and your integrations can be replaced with webhooks or Zapier/n8n, these are complete replacements.
+For most use cases, **yes**. All three provide spreadsheet views, multiple display formats (Kanban, Gallery, Calendar), collaboration features, and API access. The main gaps are Airtable's polished mobile app and its marketplace of third-party integrations. If you primarily work on desktop and your in[n8n](https://n8n.io/)rations can be replaced with webhooks or Zapier/n8n, these are complete replacements.
 
 ### 2. Can I migrate my existing Airtable data to these tools?
 

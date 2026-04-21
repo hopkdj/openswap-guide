@@ -10,7 +10,7 @@ Running a freelance business or small agency means dealing with invoices, tracki
 
 Self-hosted invoicing and accounting software solves all three problems: it's free (or nearly free), your financial data stays on your own server, and you control the entire system. In 2026, the ecosystem has matured significantly — the leading open-source options now rival their paid counterparts in features, usability, and payment integrations.
 
-This guide covers the top three self-hosted invoicing platforms, provides Docker installation instructions for each, and helps you pick the right one for your workflow.
+This guide covers the top three self-hosted invoicing platforms, provides [docker](https://www.docker.com/) installation instructions for each, and helps you pick the right one for your workflow.
 
 ## Why Self-Host Your Invoicing Software
 
@@ -235,7 +235,7 @@ docker compose exec akaunting php artisan module:install alias=module-alias
 
 ## Crater — Modern Invoicing for Freelancers
 
-Crater is a newer entrant built specifically for freelancers and small businesses. It uses a modern tech stack (Laravel + Vue.js) and focuses on simplicity. While it has fewer features than Invoice Ninja, its clean interface and straightforward setup make it attractive for solo operators who don't need complex project management or time tracking.
+Crater is a newer entrant built specifically for freelancers and small businesses. It uses a modern tech stack (Laravel + Vue.js) and focuses on simplicity. While it has fewer features than Invoice Ninja, its clean interface and straightforward setup make it attractive for solo operators who don't need com[plex](https://www.plex.tv/) project management or time tracking.
 
 ### Key Features
 
@@ -411,8 +411,7 @@ healthcheck:
   test: ["CMD", "curl", "-f", "http://localhost:9000/api/v1/ping"]
   interval: 60s
   timeout: 10s
-  retries: 3
-  start_period: 30s
+  [uptime kuma](https://github.com/louislam/uptime-kuma)  start_period: 30s
 ```
 
 Pair this with Uptime Kuma for alerting when your invoicing platform goes down — you never want to miss a client invoice because your server crashed.
@@ -422,3 +421,34 @@ Pair this with Uptime Kuma for alerting when your invoicing platform goes down �
 Self-hosted invoicing software has reached a point where there's no compelling reason for most freelancers and small businesses to pay for SaaS alternatives. Invoice Ninja, Akaunting, and Crater each serve different needs — from lightweight solo invoicing to full double-entry accounting — but all three keep your financial data under your control, cost nothing in software fees, and run comfortably on a $5/month VPS.
 
 The initial setup takes about 15 minutes with Docker, and once running, these platforms require minimal maintenance. Add automated backups, HTTPS, and SMTP configuration, and you have a professional invoicing system that's more private, more customizable, and more cost-effective than any subscription service.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

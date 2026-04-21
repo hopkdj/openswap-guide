@@ -42,8 +42,8 @@ This approach catches breaking changes early. If a provider removes a field a co
 | **Latest Release** | v2.119.0 (Broker) | 2.43.3 | v4.3.3 |
 | **Broker Included** | Yes (Pact Broker) | No (requires external) | No (stub runner only) |
 | **OpenAPI Support** | Via plugin | Native | Via plugin |
-| **Async Messaging** | Yes (Kafka, RabbitMQ) | Yes | Limited |
-| **Self-Hosted** | Full support | Docker available | Docker + stub runner |
+| **Async Messaging** | Yes ([kafka](https://kafka.apache.org/), RabbitMQ) | Yes | Limited |
+| **Self-Hosted** | Full support | [docker](https://www.docker.com/) available | Docker + stub runner |
 | **CI/CD Integration** | Excellent | Good | Good (Maven/Gradle) |
 | **Best For** | Polyglot teams, mature CDC | API-first, spec-driven | Spring ecosystem teams |
 
@@ -346,7 +346,7 @@ jobs:
       -Dstubrunner.repositoryRoot=https://repo.example.com/maven
 ```
 
-For more on self-hosted CI/CD runners that can execute these contract tests, see our [Woodpecker CI vs Drone CI vs Gitea Actions comparison](../woodpecker-ci-vs-drone-ci-vs-gitea-actions-self-hosted-cicd-guide-2026/).
+For more on self-hosted CI/CD runners that can execute these contract tests, see our [Wo[gitea](https://gitea.io/)ker CI vs Drone CI vs Gitea Actions comparison](../woodpecker-ci-vs-drone-ci-vs-gitea-actions-self-hosted-cicd-guide-2026/).
 
 ## Choosing the Right Tool
 

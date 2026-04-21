@@ -30,10 +30,10 @@ For network administrators, homelab operators, and MSPs, a self-hosted monitorin
 | **SNMP Support** | ✅ v1/v2c/v3 | ✅ v1/v2c/v3 (primary) | ✅ via go.d plugin |
 | **Network Topology Maps** | ✅ Manual + auto-generated | ✅ Automatic LLDP/CDP maps | ❌ |
 | **Flow Collection** | ❌ (external tools needed) | ✅ NetFlow, sFlow, IPFIX, NSEL | ❌ |
-| **Real-Time Dashboards** | Configurable widgets | Grafana integration | ⚡ Built-in, sub-second |
+| **Real-Time Dashboards** | Configurable widgets | [grafana](https://grafana.com/) integration | ⚡ Built-in, sub-second |
 | **Alerting Engine** | Powerful trigger expressions | Alert templates + macros | Alert config files |
 | **Notification Channels** | 40+ (email, webhook, Slack, Telegram, etc.) | 20+ (email, Slack, Discord, Matrix, webhooks) | 100+ (via alarm_notify.sh and integrations) |
-| **Docker Support** | ✅ Official images | ✅ Official image | ✅ Official image |
+| **[docker](https://www.docker.com/) Support** | ✅ Official images | ✅ Official image | ✅ Official image |
 | **Scalability** | Proxies for distributed monitoring | Horizontal via polling workers | Parent-child streaming |
 | **BGP Monitoring** | Manual OID polling | ✅ Native BGP session tracking | ❌ |
 | **Wireless Controller Support** | Limited | ✅ UniFi, Cisco WLC, Aruba | ❌ |
@@ -726,7 +726,7 @@ docker exec librenms apt-get update && \
   docker exec librenms apt-get install -y php-json php-curl
 ```
 
-2. **Netdata as Grafana Data Source** — Netdata exposes a Prometheus-compatible endpoint at `http://netdata:19999/api/v1/allmetrics?format=prometheus`. Add this as a Prometheus data source in Grafana.
+2. **Netdata as Grafana Data So[prometheus](https://prometheus.io/)etdata exposes a Prometheus-compatible endpoint at `http://netdata:19999/api/v1/allmetrics?format=prometheus`. Add this as a Prometheus data source in Grafana.
 
 3. **LibreNMS MySQL as Data Source** — point Grafana at the LibreNMS MariaDB instance for custom SQL queries on historical port utilization, device availability, and BGP session data.
 
@@ -846,3 +846,34 @@ All three tools are mature, production-ready, and entirely free. Your choice dep
 For maximum coverage, pair **Netdata** (real-time per-node metrics) with **LibreNMS** (network-wide discovery and trending) — many organizations find this combination covers both the forest and the trees.
 
 All three integrate cleanly with reverse proxies, support containerized deployment, and offer robust alerting pipelines. Pick the tool that matches your team's expertise and your infrastructure's needs — you can't go wrong with any of them.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

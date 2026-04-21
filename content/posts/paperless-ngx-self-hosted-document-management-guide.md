@@ -8,7 +8,7 @@ description: "Complete guide to Paperless-ngx — self-hosted document managemen
 
 Every household and small business drowns in paper: utility bills, bank statements, insurance policies, tax receipts, contracts, medical records. Commercial solutions like DocuWare or SharePoint cost hundreds per month and lock your sensitive documents inside someone else's infrastructure. **Paperless-ngx** changes that entirely. It is a free, open-source document management system that scans, indexes, and organizes every piece of paper you own — running on your own hardware, under your complete control.
 
-In this guide, you will learn what Paperless-ngx is, why self-hosting your documents matters, how to deploy it with Docker, and how to configure it for production use. Whether you want to archive a decade of tax records or build a paperless office from scratch, this guide covers everything.
+In this guide, you will learn what Paperless-ngx is, why self-hosting your documents matters, how to deploy it with [docker](https://www.docker.com/), and how to configure it for production use. Whether you want to archive a decade of tax records or build a paperless office from scratch, this guide covers everything.
 
 ## Why Self-Host Your Document Management
 
@@ -33,7 +33,7 @@ Paperless-ngx is a community-maintained fork of the original Paperless project. 
 - **Multi-format support** — PDFs, images (PNG, JPG, TIFF), plain text, and Office documents are all handled natively.
 - **REST API** — Full API access enables integration with scanners, mobile apps, and automation workflows.
 - **Multi-user support** — Role-based access control with per-document ownership and sharing.
-- **Workflows** — Automate complex filing rules based on document content, source, or metadata.
+- **Workflows** — Automate com[plex](https://www.plex.tv/) filing rules based on document content, source, or metadata.
 
 Paperless-ngx is licensed under the GPL-3.0 and has an active community of contributors. The "ngx" suffix denotes the next-generation rewrite with modern tooling, performance improvements, and a redesigned interface.
 
@@ -41,7 +41,7 @@ Paperless-ngx is licensed under the GPL-3.0 and has an active community of contr
 
 Before diving into installation, it helps to understand where Paperless-ngx sits in the landscape of document management tools.
 
-| Feature | Paperless-ngx | DocuWare | SharePoint | Nextcloud Files |
+| Feature | Paperless-ngx | DocuWare | SharePoint | [nextcloud](https://nextcloud.com/) Files |
 |---------|---------------|----------|------------|-----------------|
 | License | GPL-3.0 (Free) | Commercial | Commercial | AGPL-3.0 (Free) |
 | Self-hosted | Yes | On-prem option | On-prem option | Yes |
@@ -428,3 +428,34 @@ Paperless-ngx transforms a chaotic pile of paper into a searchable, organized di
 The combination of automatic OCR, machine learning classification, email consumption, and workflow automation means that once set up, your document archive practically manages itself. Add the robust backup strategy and API access, and you have a future-proof solution that grows with your needs.
 
 Start with the Docker Compose deployment above, feed it your first batch of documents, and watch as years of paper chaos transform into an organized, searchable digital library — all running on your own hardware, under your own control.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

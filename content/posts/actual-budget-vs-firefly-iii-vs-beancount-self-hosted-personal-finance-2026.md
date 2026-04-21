@@ -12,7 +12,7 @@ Your financial data is among the most sensitive information you manage daily. Ev
 
 Self-hosting your personal finance stack changes that equation entirely. By running budgeting software on your own hardware — a Raspberry Pi, a NAS, or a VPS — you retain full ownership of every transaction, every category, and every report. No telemetry, no data harvesting, no sudden service shutdowns that leave you without access to years of financial records.
 
-The open-source ecosystem offers three fundamentally different approaches to personal finance: **envelope-based budgeting** (Actual Budget), **comprehensive expense tracking** (Firefly III), and **plain-text accounting** (Beancount). Each serves a different mindset and workflow. This guide compares all three, provides Docker Compose deployment instructions, and helps you pick the right tool for your needs.
+The open-source ecosystem offers three fundamentally different approaches to personal finance: **envelope-based budgeting** (Actual Budget), **comprehensive expense tracking** (Firefly III), and **plain-text accounting** (Beancount). Each serves a different mindset and workflow. This guide compares all three, provides [docker](https://www.docker.com/) Compose deployment instructions, and helps you pick the right tool for your needs.
 
 ---
 
@@ -445,7 +445,7 @@ This is particularly powerful for shared household finances — each person comm
 | **API** | Limited | Full REST API | None (CLI-based) |
 | **Reports** | Spending, net worth, cash flow | 20+ report types | Balance, income, register, custom |
 | **Learning curve** | Low | Medium | High |
-| **Setup complexity** | One container | Container + database | Python install or container |
+| **Setup com[plex](https://www.plex.tv/)ity** | One container | Container + database | Python install or container |
 | **Backup strategy** | Export files / copy data dir | Database dumps | Git push |
 | **License** | MIT | GNU GPL v3 | Apache 2.0 |
 | **Best for** | Monthly budgeting, YNAB refugees | Full financial tracking & analysis | Engineers, auditors, Git users |
@@ -460,7 +460,7 @@ You want to **control your monthly spending** with a proven envelope methodology
 
 ### Choose Firefly III If
 
-You want **comprehensive financial tracking** with rich reporting. You care about understanding where your money went over the past year, not just managing this month's budget. You want investment tracking, savings goals (piggy banks), recurring transactions, and multi-user support for family finances. The REST API means you can build custom integrations — pull data into a Grafana dashboard, feed it into automation scripts, or connect it to your own applications.
+You want **comprehensive financial tracking** with rich reporting. You care about understanding where your money went over the past year, not just managing this month's budget. You want investment tracking, savings goals (piggy banks), recurring transactions, and multi-user support for family finances. The REST API means yo[grafana](https://grafana.com/)uild custom integrations — pull data into a Grafana dashboard, feed it into automation scripts, or connect it to your own applications.
 
 ### Choose Beancount If
 
@@ -563,3 +563,34 @@ For Beancount specifically, the security model shifts: your data is only as secu
 Self-hosting your personal finance is one of the highest-impact privacy decisions you can make. Whether you choose the intuitive envelope budgeting of Actual Budget, the comprehensive tracking of Firefly III, or the transparent plain-text approach of Beancount, you gain something that no commercial service can offer: **complete ownership of your financial data**.
 
 The initial setup takes an evening. The payoff — years of private, portable, ad-free financial management — lasts indefinitely. Pick the tool that matches your workflow, deploy it with Docker, and take back control of your numbers.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

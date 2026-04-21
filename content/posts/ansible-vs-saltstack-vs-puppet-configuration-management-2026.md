@@ -150,7 +150,7 @@ ansible-playbook -i inventory.ini site.yml --check  # Dry run first
 ansible-playbook -i inventory.ini site.yml          # Apply changes
 ```
 
-### Ansible With Docker (Dockerized Control Node)
+### Ansible With [docker](https://www.docker.com/) (Dockerized Control Node)
 
 If you prefer not to install Ansible directly on your workstation:
 
@@ -203,7 +203,7 @@ Salt uses a **master-minion architecture** with a high-speed ZeroMQ or RAET mess
 - **Communication**: ZeroMQ (encrypted AES) on ports 4505–4506
 - **Execution model**: Declarative states with reactive event system
 - **Agent required**: Yes (minion), but SSH mode is agentless
-- **Learning curve**: Medium — more complex than Ansible, easier than Puppet
+- **Learning curve**: Medium — more com[plex](https://www.plex.tv/) than Ansible, easier than Puppet
 
 ### Installation
 
@@ -536,7 +536,7 @@ homelab/
 ├── ansible.cfg
 ├── group_vars/
 │   ├── all.yml          # Variables for all hosts
-│   └── pihole.yml       # Pi-hole specific variables
+│  [pi-hole](https://pi-hole.net/)hole.yml       # Pi-hole specific variables
 ├── host_vars/
 │   └── nas.yml          # NAS-specific variables
 ├── playbooks/
@@ -566,3 +566,34 @@ All three tools are mature, open-source, and production-ready. The "best" choice
 - **Puppet wins on compliance** — the most rigorous state enforcement and reporting
 
 For most self-hosters starting out, Ansible is the right choice. It scales further than most people need, and if you eventually outgrow it, both Salt and Puppet have migration paths. The important thing is to start treating your infrastructure as code — the tool you pick matters less than the discipline you build around it.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

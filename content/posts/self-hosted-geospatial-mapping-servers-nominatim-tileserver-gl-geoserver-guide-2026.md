@@ -8,7 +8,7 @@ description: "Complete guide to self-hosted geospatial servers — Nominatim for
 
 Building location-aware applications means relying on maps, geocoding, and spatial data. The default path for most developers is Google Maps Platform — geocoding APIs, tile servers, routing engines, all billed per request. But when your application scales, those costs multiply fast. More importantly, you hand over your entire location data pipeline to a single vendor.
 
-Self-hosted geospatial infrastructure changes that equation. The open-source mapping ecosystem in 2026 is mature enough to replace every major Google Maps API component: geocoding, tile serving, spatial queries, and map rendering. This guide covers the three pillars of a self-hosted geospatial stack — Nominatim, TileServer GL, and GeoServer — with Docker deployment instructions, configuration examples, and a comparison to help you pick the right tool for each layer.
+Self-hosted geospatial infrastructure changes that equation. The open-source mapping ecosystem in 2026 is mature enough to replace every major Google Maps API component: geocoding, tile serving, spatial queries, and map rendering. This guide covers the three pillars of a self-hosted geospatial stack — Nominatim, TileServer GL, and GeoServer — with [docker](https://www.docker.com/) deployment instructions, configuration examples, and a comparison to help you pick the right tool for each layer.
 
 ## Why Self-Host Your Mapping Infrastructure
 
@@ -310,7 +310,7 @@ Choose GeoServer when you need:
 - **Standards compliance**: OGC WMS, WFS, WCS, and WMTS for interoperability with any GIS client
 - **Layer styling**: SLD (Styled Layer Descriptor) for professional cartographic rendering
 - **Data editing**: WFS-T for transactional editing of vector features
-- **Complex spatial queries**: Filter expressions, coordinate transformations, and projections
+- **Com[plex](https://www.plex.tv/) spatial queries**: Filter expressions, coordinate transformations, and projections
 
 If you just need map tiles and address search, Nominatim + TileServer GL are simpler. If you need enterprise GIS capabilities, GeoServer is the answer.
 
@@ -535,7 +535,7 @@ services:
     volumes:
       - postgis-data:/var/lib/postgresql
     ports:
-      - "5432:5432"
+      - "[caddy](https://caddyserver.com/)5432"
 
   # Reverse proxy for unified access
   caddy:
@@ -607,3 +607,34 @@ maps.yourdomain.com {
 **Use all three together** for a complete replacement of Google Maps Platform. Nominatim handles address search, TileServer GL serves your base map tiles, and GeoServer manages your custom spatial data layers.
 
 The open-source geospatial ecosystem is mature, well-documented, and production-ready. With a single server and a weekend of setup time, you can replace every paid mapping API in your stack while keeping your data private, your costs predictable, and your infrastructure entirely under your control.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

@@ -24,7 +24,7 @@ The trade-off is operational overhead: you need to provision and maintain the pl
 
 ## OpenFaaS — Serverless Functions Made Simple
 
-OpenFaaS ([github.com/openfaas/faas](https://github.com/openfaas/faas)) is the most widely adopted open-source FaaS platform with **26,141 GitHub stars**. Written in Go, it runs on any container orchestrator — Kubernetes, Docker Swarm, or plain Docker Compose.
+OpenFaaS ([github.com/openfaas/faas](https://github.com/openfaas/faas)) is the most widely adopted open-source FaaS platform with **26,141 GitHub stars**. Written in Go, it runs on any container orchestrator — Kubernetes, [docker](https://www.docker.com/) Swarm, or plain Docker Compose.
 
 ### Architecture
 
@@ -34,7 +34,7 @@ OpenFaaS has a straightforward two-component architecture:
 - **faas-netes / faas-swarm** — Provider layer that translates Gateway requests into orchestrator-specific operations (creating deployments, services, and pods on Kubernetes).
 - **Queue Worker** — Asynchronous function invocation via NATS message queue.
 
-The Gateway exposes a REST API and integrates with Prometheus for metrics. Functions are containerized and can be written in any language using OpenFaaS templates.
+The Gateway exposes a RE[prometheus](https://prometheus.io/) integrates with Prometheus for metrics. Functions are containerized and can be written in any language using OpenFaaS templates.
 
 ### Key Features
 
@@ -188,7 +188,7 @@ curl http://hello-function.default.127.0.0.1.sslip.io
 
 ### When to Choose Knative
 
-Knative is the right choice when you're already running Kubernetes and want deep integration with its native primitives. Its scale-to-zero capability and revision-based deployment model make it ideal for event-driven APIs with variable traffic patterns. Teams building complex event pipelines will benefit from Knative Eventing's CloudEvents-native architecture. For a deeper look at container orchestration options, see our [Kubernetes vs Docker Swarm vs Nomad comparison](../kubernetes-vs-docker-swarm-vs-nomad/).
+Knative is the right choice when you're already running Kubernetes and want deep integration with its native primitives. Its scale-to-zero capability and revision-based deployment model make it ideal for event-driven APIs with variable traffic patterns. Teams building com[plex](https://www.plex.tv/) event pipelines will benefit from Knative Eventing's CloudEvents-native architecture. For a deeper look at container orchestration options, see our [Kubernetes vs Docker Swarm vs Nomad comparison](../kubernetes-vs-docker-swarm-vs-nomad/).
 
 ## Apache OpenWhisk — Enterprise Serverless Platform
 

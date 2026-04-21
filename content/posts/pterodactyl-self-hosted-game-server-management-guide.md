@@ -20,7 +20,7 @@ Commercial hosting panels charge premium prices per slot, lock you into their in
 - **Real-time monitoring** — watch CPU, memory, disk I/O, and network usage per server from one interface
 - **No vendor lock-in** — your servers, your hardware, your rules. Move nodes or migrate data on your own terms
 
-Pterodactyl Panel is the gold standard for open-source game server management. It powers thousands of private homelab setups, community gaming networks, and even some commercial hosting providers. This guide walks you through a complete production deployment — panel, Wings daemon, Docker isolation, database setup, and multi-node configuration.
+Pterodactyl Panel is the gold standard for open-source game server management. It powers thousands of private homelab setups, community gaming networks, and even some commercial hosting providers. This guide walks you through a complete production deployment — panel, Wings daemon, [docker](https://www.docker.com/) isolation, database setup, and multi-node configuration.
 
 ## Architecture Overview
 
@@ -56,7 +56,7 @@ sudo apt update && sudo apt upgrade -y
 # Install core dependencies
 sudo apt install -y \
     ca-certificates curl gnupg \
-    php8.2 php8.2-{cli,common,gd,mysql,mbstring,bcmath,xml,fpm,curl,zip} \
+    php8.2 php8.2-{cli,common,gd,mysql,mbstring,bcmath,xml,fpm,curl[nginx](https://nginx.org/) \
     mariadb-server nginx certbot python3-certbot-nginx \
     redis-server unzip tar
 ```
@@ -630,7 +630,7 @@ While Pterodactyl is the most feature-complete option, other game server managem
 | **Auto-updates** | ✅ Via eggs | ✅ Via scripts | ✅ | ✅ |
 | **Backup system** | ✅ Built-in | ⚠️ Manual | ✅ | ✅ |
 | **Resource limits** | ✅ CPU/RAM/Disk | ❌ | ✅ | ✅ |
-| **Setup complexity** | Moderate | Low | Low | Low |
+| **Setup com[plex](https://www.plex.tv/)ity** | Moderate | Low | Low | Low |
 
 **Choose Pterodactyl** if you need multi-user management, Docker isolation, and a polished web dashboard for multiple game servers across multiple machines.
 
@@ -641,3 +641,34 @@ While Pterodactyl is the most feature-complete option, other game server managem
 **Choose MCSManager** if you want a lightweight web panel with Docker support but Pterodactyl's setup complexity is a barrier.
 
 With a fully deployed Pterodactyl Panel, you have complete control over your game server infrastructure — from a single private Minecraft world to a multi-node hosting operation serving hundreds of concurrent players. The investment in setup pays for itself quickly compared to commercial hosting, and the flexibility to run any supported game on any hardware configuration makes it the definitive open-source choice for game server management in 2026.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

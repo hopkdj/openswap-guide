@@ -6,7 +6,7 @@ draft: false
 description: "Compare OpenDNSSEC, Knot DNS, and BIND for self-hosted DNSSEC zone signing, key management, and automated rollover. Complete deployment guide with Docker configs."
 ---
 
-DNS Security Extensions (DNSSEC) protect your domains from cache poisoning, DNS spoofing, and man-in-the-middle attacks by cryptographically signing DNS records. But managing DNSSEC keys, signing zones, and handling automated key rollovers is complex — especially across dozens or hundreds of zones.
+DNS Security Extensions (DNSSEC) protect your domains from cache poisoning, DNS spoofing, and man-in-the-middle attacks by cryptographically signing DNS records. But managing DNSSEC keys, signing zones, and handling automated key rollovers is com[plex](https://www.plex.tv/) — especially across dozens or hundreds of zones.
 
 This guide compares three mature, self-hosted DNSSEC solutions: **OpenDNSSEC**, **Knot DNS**, and **BIND**. Each takes a fundamentally different approach to DNSSEC management, and the right choice depends on your scale, automation needs, and existing DNS infrastructure.
 
@@ -139,8 +139,7 @@ OpenDNSSEC uses two config files: `conf.xml` (system settings) and `kasp.xml` (K
       <Minimum>PT3600S</Minimum>
       <Serial>datecounter</Serial>
     </SOA>
-  </Zone>
-</Policy>
+  </Z[docker](https://www.docker.com/)/Policy>
 ```
 
 ### Docker Deployment
@@ -267,7 +266,7 @@ volumes:
   zone-data:
 ```
 
-## BIND: The Standard DNS Server with Inline DNSSEC Signing
+## BIND: The Standard DNS[gitlab](https://about.gitlab.com/)r with Inline DNSSEC Signing
 
 [BIND](https://gitlab.isc.org/isc-projects/bind9) (Berkeley Internet Name Domain) is the most widely deployed DNS server in the world. Its DNSSEC capabilities evolved from offline signing (using `dnssec-signzone`) to inline signing, where zones are signed automatically as they're loaded.
 

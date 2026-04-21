@@ -67,7 +67,7 @@ consistency:
 
 The `consistency` section is where Borgmatic shines. Unlike running `borg check` manually, Borgmatic schedules different check types at different frequencies — lightweight repository checks run often, while expensive extract tests run quarterly to avoid impacting production storage.
 
-### Docker Deployment
+### [docker](https://www.docker.com/) Deployment
 
 ```yaml
 version: "3.8"
@@ -153,7 +153,7 @@ echo "$(date): Starting restore verification" >> "$LOGFILE"
 restic -r "$REPO" restore latest --target "$RESTORE_DIR" 2>&1 >> "$LOGFILE"
 
 # Verify critical files exist and are non-empty
-CRITICAL_FILES=(
+[nginx](https://nginx.org/)CAL_FILES=(
     "/etc/nginx/nginx.conf"
     "/var/www/config/database.yml"
     "/etc/ssl/certs/server.crt"
@@ -344,7 +344,7 @@ sudo tune2fs -l /dev/sdb1 | grep -i "filesystem state"
 zpool status -x
 
 # Monitor disk SMART data
-sudo smartctl -a /dev/sdb | grep -E "Reallocated|Pending|Uncorrectable"
+sudo smartctl -a /dev/sdb | grep -E "Reallocated|Pendin[minio](https://min.io/)orrectable"
 
 # For S3/MinIO: use mc admin info
 mc admin info myminio

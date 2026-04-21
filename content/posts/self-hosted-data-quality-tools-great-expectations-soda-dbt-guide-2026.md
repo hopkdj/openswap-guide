@@ -68,7 +68,7 @@ great_expectations/
 └── great_expectations.yml # Main configuration
 ```
 
-### Docker Compose Setup
+### [docker](https://www.docker.com/) Compose Setup
 
 For production deployments, run Great Expectations as part of your pipeline infrastructure:
 
@@ -279,7 +279,7 @@ services:
       - data-network
 ```
 
-Soda also offers **Soda Cloud**, a hosted dashboard for monitoring results. But the core scanning engine is fully open-source and self-hosted. For a self-hosted dashboard, you can parse the JSON scan output and feed it into Grafana, Prometheus, or any monitoring system.
+Soda also offers **Soda Cloud**, a hosted dashboard for monitoring results. But the core scanning engine is fully open-source and self-hosted. For a self-hosted dashboard, you can parse the JSON scan output[prometheus](https://prometheus.io/)it into Grafana, Prometheus, or any monitoring system.
 
 ## dbt Tests: Quality Checks Inside Your Transformation Layer
 
@@ -452,7 +452,7 @@ After running `dbt deps`, you can use tests like:
 
 ## Choosing the Right Tool
 
-**Pick Great Expectations if:** You need the most comprehensive framework with the deepest feature set. Its Python API gives you unlimited flexibility — you can write custom expectations that check anything expressible in code. The Data Docs feature provides excellent out-of-the-box reporting. It is the best choice when you have dedicated data engineers and complex validation requirements.
+**Pick Great Expectations if:** You need the most comprehensive framework with the deepest feature set. Its Python API gives you unlimited flexibility — you can write custom expectations that check anything expressible in code. The Data Docs feature provides excellent out-of-the-box reporting. It is the best choice when you have dedicated data engineers and com[plex](https://www.plex.tv/) validation requirements.
 
 **Pick Soda Core if:** You want a low-barrier entry point. The YAML-based SodaCL is easy to read and write, and the fact that it generates SQL rather than pulling data into memory makes it efficient for large datasets. It is ideal for teams where analysts need to write and maintain checks without Python expertise.
 
@@ -512,3 +512,34 @@ Data quality is not optional. Every pipeline that moves, transforms, or stores d
 Great Expectations offers the most comprehensive feature set and is the industry standard for programmatic data validation. Soda Core provides the simplest entry point with its YAML-based check language. dbt tests integrate seamlessly into existing dbt workflows with minimal overhead.
 
 All three are open-source, self-hostable, and free to run at any scale. The best choice depends on whether your team writes more Python, more YAML, or more SQL — and whether you want a standalone validation layer or something embedded in your transformation pipeline.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

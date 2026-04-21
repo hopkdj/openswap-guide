@@ -60,7 +60,7 @@ pgWatch2 uses a daemon-based architecture:
 
 - You run **PostgreSQL exclusively** and need deep, database-specific insights
 - You want a **low-overhead** monitoring solution with no agents on database servers
-- You need **quick setup** — the Docker Compose deployment gets you running in minutes
+- You need **quick setup** — the [docker](https://www.docker.com/) Compose deployment gets you running in minutes
 - Your team already uses **Grafana** and wants pre-built PostgreSQL dashboards
 
 ## Percona Monitoring and Management (PMM) — Multi-Database Observability
@@ -123,7 +123,7 @@ PMM uses a client-server model:
 - **Production-tested configurations**: Developed and refined by Crunchy Data through years of running PostgreSQL in production environments
 - **Crunchy Postgres integration**: Designed to work seamlessly with Crunchy's PostgreSQL distribution and operator (PGO)
 - **PostgreSQL-specific alerts**: Pre-configured Alertmanager rules for replication lag, connection exhaustion, long-running queries, and checkpoint frequency
-- **Lightweight footprint**: Uses standard Prometheus exporters — no additional daemon or database required
+- **Lightweight footprint**: Uses standard Prometheus exporters — no additional daemo[kubernetes](https://kubernetes.io/)ase required
 - **Kubernetes-native**: Works well in containerized and Kubernetes environments
 - **Modular design**: Pick and choose which components (postgres_exporter, node_exporter, pgbadger) to deploy
 
@@ -160,7 +160,7 @@ pgMonitor is a configuration framework, not a standalone application:
 | **Alerting** | Built-in | Alertmanager | Alertmanager |
 | **Docker Deployment** | docker-compose.yml | docker pull + volume | Manual setup |
 | **Kubernetes Support** | Basic | Basic | Excellent (via PGO) |
-| **Setup Complexity** | Low | Medium | Medium-High |
+| **Setup Com[plex](https://www.plex.tv/)ity** | Low | Medium | Medium-High |
 | **Active Development** | Moderate (Dec 2024) | Very Active (Apr 2026) | Active (Feb 2026) |
 | **License** | Apache 2.0 | AGPL v3 | Apache 2.0 |
 

@@ -18,7 +18,7 @@ Running your own orchestrator gives you control over your most critical data wor
 
 - **Data sovereignty**: Pipelines often touch sensitive data — financial records, personal information, proprietary metrics. Keeping orchestration on-premises or in your own VPC ensures data never leaves your infrastructure.
 - **Cost at scale**: Cloud-managed orchestration services charge per task run, per execution minute, or per worker. As pipeline volume grows, self-hosting becomes dramatically cheaper.
-- **Custom integrations**: Self-hosted instances let you connect to internal systems — private databases, on-premises data warehouses, internal APIs — without complex network tunnels or VPN workarounds.
+- **Custom integrations**: Self-hosted instances let you connect to internal systems — private databases, on-premises data warehouses, internal APIs — without com[plex](https://www.plex.tv/) network tunnels or VPN workarounds.
 - **No vendor lock-in**: Open-source orchestrators run the same way on bare metal, in containers, or on any cloud. You own the deployment and can migrate freely.
 - **Full observability**: You control the logging, monitoring, and alerting stack. Every task run, every failure, every retry is visible in your own tools.
 
@@ -43,7 +43,7 @@ Airflow uses Python to define workflows as DAGs (Directed Acyclic Graphs). Each 
 - **Massive provider ecosystem**: Over 100 official provider packages for databases, cloud services, and SaaS tools.
 - **Python-native DAG definition**: Write pipelines in pure Python with full access to the language's expressiveness.
 - **Mature community**: The largest user base, most Stack Overflow answers, and extensive documentation.
-- **Horizontal scalability**: Supports Celery, Kubernetes, and Dask executors for distributed task execution.
+- **Horizontal scalabil[kubernetes](https://kubernetes.io/)ports Celery, Kubernetes, and Dask executors for distributed task execution.
 - **Rich UI**: Web interface for DAG visualization, task logs, retry management, and ad-hoc execution.
 
 ### Strengths
@@ -61,7 +61,7 @@ Airflow uses Python to define workflows as DAGs (Directed Acyclic Graphs). Each 
 - Dynamic DAG generation has historically been problematic
 - Steeper learning curve for beginners
 
-### Self-Hosted Deployment with Docker Compose
+### Self[docker](https://www.docker.com/)d Deployment with Docker Compose
 
 Here is a production-ready Docker Compose setup for Apache Airflow:
 
@@ -686,3 +686,34 @@ All three are open-source, all three can run on a single machine for small deplo
 For most teams starting fresh in 2026, **Prefect** offers the fastest path to production. Teams with existing Airflow investments should stay the course. And teams building complex data platforms with heavy emphasis on data quality and lineage should seriously evaluate **Dagster**.
 
 Whichever you choose, self-hosting gives you full control over your most critical data workflows — and that is worth the effort.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

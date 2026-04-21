@@ -14,9 +14,9 @@ Smart home platforms control your lights, thermostats, cameras, locks, and dozen
 - **Local control**: Works even when the internet is down
 - **No subscription fees**: One-time hardware cost, free software forever
 - **Unlimited integrations**: Connect any device, any brand, any protocol
-- **Advanced automation**: Complex rules that cloud platforms can't handle
+- **Advanced automation**: Com[plex](https://www.plex.tv/) rules that cloud platforms can't handle
 
-The two dominant open source platforms in 2026 are **Home Assistant** and **OpenHAB**. Both are free, both run on a Raspberry Pi or Docker, and both support thousands of devices. But they take very different approaches.
+The two dominant open source [home assistant](https://www.home-assistant.io/)026 are **Home Assistant** and [docker](https://www.docker.com/)HAB**. Both are free, both run on a Raspberry Pi or Docker, and both support thousands of devices. But they take very different approaches.
 
 ## Quick Comparison Table
 

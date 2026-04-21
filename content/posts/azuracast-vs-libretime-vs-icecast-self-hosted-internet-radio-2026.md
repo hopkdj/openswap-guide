@@ -8,7 +8,7 @@ description: "Run your own internet radio station with AzuraCast, LibreTime, or 
 
 Running your own internet radio station gives you complete control over what your audience hears. No corporate playlists, no algorithmic recommendations, no licensing restrictions on what you can broadcast. Whether you want to share music, host talk shows, or run a community station, self-hosted radio software handles everything from playlist scheduling to live DJ connections and listener analytics.
 
-This guide compares three of the most capable open-source options for building a self-hosted radio station — **AzuraCast**, **LibreTime**, and **Icecast** — with practical Docker deployment instructions so you can go live in under an hour.
+This guide compares three of the most capable open-source options for building a self-hosted radio station — **AzuraCast**, **LibreTime**, and **Icecast** — with practical [docker](https://www.docker.com/) deployment instructions so you can go live in under an hour.
 
 ## Why Self-Host an Internet Radio Station
 
@@ -23,7 +23,7 @@ Broadcasting your own radio station from your own server offers advantages that 
 - **AutoDJ functionality** — When no live DJ is connected, your station keeps running automatically with scheduled playlists, jingles, and station IDs.
 - **Multiple mount points** — Run several channels or shows from a single server, each with its own playlist and schedule.
 
-If you've explored self-hosted media servers like [Navidrome for music streaming](../navidrome-vs-funkwhale-vs-airsonic-self-hosted-music-guide/) or [Owncast for live video streaming](../self-hosted-live-streaming-owncast-mediamtx-nginx-rtmp-guide-2026/), an internet radio station is the natural audio-only complement to your self-hosted media stack.
+If you've explored self-hosted media servers like [Navidrome for music streaming](../navidrome-vs-funkwhale-vs-airsonic-self-hosted-music-guide/) or [Owncast for live video streaming](../self-hosted-live-[nginx](https://nginx.org/)ming-owncast-mediamtx-nginx-rtmp-guide-2026/), an internet radio station is the natural audio-only complement to your self-hosted media stack.
 
 ## The Three Contenders at a Glance
 
@@ -380,7 +380,7 @@ The decision depends on your use case:
 
 ## Reverse Proxy Setup
 
-For production use, place your radio server behind a reverse proxy to handle SSL termination and domain routing. If you're using AzuraCast, it includes built-in Nginx with Let's Encrypt support. For LibreTime or standalone Icecast, configure a reverse proxy like [Traefik or Nginx Proxy Manager](../nginx-vs-caddy-vs-traefik-self-hosted-web-server-guide-2026/) to handle HTTPS.
+For production use, place your radio server behind a reverse proxy to handle SSL termination and domain routing. If you're using AzuraCast, it includes built-in Nginx with Let's Encrypt support. For LibreTime or standalone Icecast, configure a reverse proxy l[caddy](https://caddyserver.com/)Traefik or Nginx Proxy Manager](../nginx-vs-caddy-vs-traefik-self-hosted-web-server-guide-2026/) to handle HTTPS.
 
 Example Nginx configuration for Icecast:
 

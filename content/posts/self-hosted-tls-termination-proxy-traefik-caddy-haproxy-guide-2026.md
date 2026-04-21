@@ -6,7 +6,7 @@ draft: false
 description: "Compare the best self-hosted TLS termination proxies for 2026 — Traefik, Caddy, and HAProxy. Learn how to configure automatic HTTPS, mTLS, and certificate management for your infrastructure."
 ---
 
-A TLS termination proxy sits at the edge of your network, handling HTTPS decryption so your backend services don't have to. It manages SSL certificates, enforces TLS versions, and offloads cryptographic overhead from your applications. For self-hosters running multiple services behind a single public IP, a good TLS termination proxy is essential infrastructure. If you're also evaluating [load balancing options](../haproxy-vs-envoy-vs-nginx-load-balancer-guide/), note that many load balancers double as TLS termination proxies — the line between the two roles is often blurred.
+A TLS termination proxy sits at the edge of your network, handling HTTPS decryption so your backend services don't have to. It manages SSL certificates, enforces TLS versions, and offloads cryptographic overhead from your applications. For self-hosters running multiple services behind a single public IP, a good TLS termination proxy is essential infrastructure. If you're also evaluating [load balancing options](../haproxy-vs-envoy-vs-[nginx](https://nginx.org/)-load-balancer-guide/), note that many load balancers double as TLS termination proxies — the line between the two roles is often blurred.
 
 ## Why Self-Host Your TLS Termination Proxy?
 
@@ -34,7 +34,7 @@ Not all reverse proxies handle TLS termination equally well. When choosing a TLS
 
 **GitHub**: [traefik/traefik](https://github.com/traefik/traefik) | **Stars**: 62,787 | **Language**: Go | **Last Updated**: April 2026
 
-Traefik was built from the ground up as a cloud-native edge router. Its standout feature for TLS termination is automatic discovery — it watches your Docker, Kubernetes, or Consul infrastructure and configures TLS routes dynamically without requiring manual configuration reloads.
+Traefik was built from the ground up as a cloud-native edge router. Its standout feature for TLS termination is automatic discovery — it watches your [docker](https://www.docker.com/), Kubernetes, or Consul infrastructure and configures TLS routes dynamically without requiring manual configuration reloads.
 
 ### Traefik TLS Features
 
@@ -236,7 +236,7 @@ Caddy's Caddyfile syntax is arguably the most readable of any proxy configuratio
 
 **GitHub**: [haproxy/haproxy](https://github.com/haproxy/haproxy) | **Stars**: 6,484 | **Language**: C | **Last Updated**: April 2026
 
-HAProxy is the performance champion. Written in C and optimized for maximum throughput with minimal latency, it handles millions of concurrent connections with TLS termination. While it lacks the automatic certificate management of Traefik and Caddy, it compensates with unmatched configurability for complex TLS scenarios.
+HAProxy is the performance champion. Written in C and optimized for maximum throughput with minimal latency, it handles millions of concurrent connections with TLS termination. While it lacks the automatic certificate management of Traefik and Caddy, it compensates with unmatched configurability for com[plex](https://www.plex.tv/) TLS scenarios.
 
 ### HAProxy TLS Features
 

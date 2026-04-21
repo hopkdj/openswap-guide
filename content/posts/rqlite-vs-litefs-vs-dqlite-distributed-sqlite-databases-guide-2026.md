@@ -21,7 +21,7 @@ SQLite stores data in a single file on disk. This is brilliant for local applica
 
 Distributed SQLite solutions address these by replicating data across multiple nodes. Instead of replacing SQLite, they layer consensus or replication on top of it, preserving SQLite's SQL compatibility while adding fault tolerance. For self-hosters running lightweight infrastructure, this means you get the simplicity of SQLite with the resilience of a clustered database.
 
-If you need more traditional distributed SQL databases with full PostgreSQL or MySQL compatibility, see our [CockroachDB vs YugabyteDB vs TiDB comparison](../cockroachdb-vs-yugabyte-vs-tidb-distributed-sql-guide-2026/) and [PostgreSQL vs MySQL vs MariaDB guide](../postgresql-vs-mysql-mariadb-database-comparison-guide/).
+If you need more traditional distributed SQL databases with full [postgresql](https://www.postgresql.org/) or MySQL compatibility, see our [CockroachDB vs YugabyteDB vs TiDB comparison](../cockroachdb-vs-yugabyte-vs-tidb-distributed-sql-guide-2026/) and [PostgreSQL vs MySQL vs MariaDB guide](../postgresql-vs-mysql-mariadb-database-comparison-guide/).
 
 ## Architecture Comparison
 
@@ -96,7 +96,7 @@ dqlite, developed by Canonical, embeds the Raft consensus layer directly into SQ
 
 ### Installing rqlite
 
-rqlite ships as a single binary. Download it directly or use the Docker image:
+rqlite ships as a single binary. Download it directly or use the [docker](https://www.docker.com/) image:
 
 ```bash
 # Quick install script
@@ -346,7 +346,7 @@ For microservices that need a shared, lightweight database, **rqlite** is the st
 
 ### Edge Deployments
 
-For edge computing scenarios where nodes may have intermittent connectivity, **LiteFS** shines. Its primary-replica model allows edge nodes to serve reads locally from cached SQLite files, even when disconnected from the primary.
+For edge computing scenarios where nodes may have intermittent connectivity, **LiteFS** shines. Its primary-replica model allows edge nodes to serve reads locally from cached SQLite files, even when disconnec[kubernetes](https://kubernetes.io/)he primary.
 
 ### Kubernetes Operators
 

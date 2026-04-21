@@ -21,14 +21,14 @@ Whether you are a home cook building a personal collection, a family managing we
 
 ## Feature Comparison: Tandoor Recipes vs Mealie
 
-Tandoor Recipes and Mealie are the two leading open-source, self-hosted recipe managers. Both scrape recipes from URLs, support meal planning, and run in Docker. But they differ significantly in philosophy and features.
+Tandoor Recipes and Mealie are the two leading open-source, self-hosted recipe managers. Both scrape recipes from URLs, support meal planning, and run in [docker](https://www.docker.com/). But they differ significantly in philosophy and features.
 
 | Feature | Tandoor Recipes | Mealie |
 |---------|----------------|--------|
 | **License** | MIT | MIT |
 | **Language Stack** | Python/Django + Vue.js | Python/FastAPI + Vue.js |
 | **Database** | PostgreSQL or SQLite | PostgreSQL or SQLite |
-| **Recipe Import** | URL import, JSON, Paprika, ChowNow, Nextcloud Cook | URL import, JSON, Paprika, Pepper, Tandoor |
+| **Recipe Import** | URL import, JSON, Paprika, ChowNow, [nextcloud](https://nextcloud.com/) Cook | URL import, JSON, Paprika, Pepper, Tandoor |
 | **URL Scrape Success** | Excellent (Django-based parser) | Excellent (recipe-scrapers library) |
 | **Image Import** | ✅ Downloads and stores images | ✅ Downloads and stores images |
 | **Meal Planning** | ✅ Calendar view with drag-and-drop | ✅ Calendar view with drag-and-drop |
@@ -552,9 +552,7 @@ services:
       - ./mealie-data:/app/data
 ```
 
-Import the same 20–30 recipes into each platform, build a week of meal plans, and see which workflow feels more natural. Once you decide, stop and remove the other container.
-
-### Integrating with Home Assistant
+Import the same 20–30 recipes into each platform, build a week of meal plans, and see which workflow feels more natural. Once you decide, stop and remove the other contain[home assistant](https://www.home-assistant.io/)rating with Home Assistant
 
 If you run Home Assistant, both platforms can integrate with your smart kitchen:
 
@@ -601,3 +599,34 @@ Self-hosting your recipe collection is one of the most practical homelab project
 **Mealie** delivers a polished, opinionated experience that works beautifully from the first launch. Its barcode scanning, lighter resource footprint, and faster development cycle make it the easier recommendation for most households.
 
 Deploy both, import a few dozen recipes, plan a week of meals on each, and you will quickly know which one fits your kitchen workflow. Either choice means your grandmother's lasagna recipe will outlive every cloud service that ever charged a monthly fee.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

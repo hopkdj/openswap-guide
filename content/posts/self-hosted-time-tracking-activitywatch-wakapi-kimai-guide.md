@@ -44,7 +44,7 @@ ActivityWatch consists of three parts:
 2. **aw-watcher-*** — platform-specific watchers (aw-watcher-window for active window tracking, aw-watcher-web for browser extensions)
 3. **aw-webui** — the browser-based dashboard
 
-### Installation with Docker
+### Installation with [docker](https://www.docker.com/)
 
 The simplest way to run ActivityWatch server is via Docker:
 
@@ -138,9 +138,7 @@ docker run -d \
   -p 3000:3000 \
   -v wakapi-data:/data \
   muety/wakapi:latest
-```
-
-For production use with PostgreSQL:
+``[postgresql](https://www.postgresql.org/)duction use with PostgreSQL:
 
 ```yaml
 version: "3.8"
@@ -302,7 +300,7 @@ After the containers start, create your first admin user:
 
 ```bash
 docker exec kimai bin/console kimai:create-user \
-  admin admin@yourdomain.com ROLE_SUPER_ADMIN
+  admin admin@yourdomain.com[nginx](https://nginx.org/)_SUPER_ADMIN
 ```
 
 ### Nginx Reverse Proxy Configuration
@@ -509,3 +507,34 @@ Self-hosted time tracking gives you something no commercial service can: complet
 All three are actively maintained, have strong communities, and can be deployed on minimal hardware. The choice depends entirely on your workflow — and there is no rule saying you can only pick one.
 
 Start with the tool that matches your most pressing need, and expand from there. Your future self will thank you for having years of detailed, private, and fully-owned productivity data.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

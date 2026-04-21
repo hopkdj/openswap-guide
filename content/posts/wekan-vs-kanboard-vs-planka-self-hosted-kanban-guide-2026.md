@@ -40,7 +40,7 @@ WeKan is the most feature-complete open-source Trello clone. Built on the Meteor
 - **Webhooks**: Trigger external services on card events
 - **Multi-language**: Translated into 50+ languages
 
-### Docker Compose Setup
+### [docker](https://www.docker.com/) Compose Setup
 
 WeKan ships with a comprehensive `docker-compose.yml` that handles MongoDB, SMTP, and the application in one file:
 
@@ -287,7 +287,7 @@ Access at `http://your-server:3000`. Create your admin account on first visit.
 - You want a modern, visually polished interface
 - Your organization uses OIDC/OAuth2 for single sign-on
 - You prefer PostgreSQL over MongoDB
-- You value real-time updates without the complexity of Meteor
+- You value real-time updates without the com[plex](https://www.plex.tv/)ity of Meteor
 - Your team is small to medium (under 50 concurrent users)
 
 ## Migration from Trello or Jira
@@ -356,7 +356,7 @@ The WebSocket upgrade headers (`Upgrade` and `Connection`) are essential for WeK
 
 ## Related Reading
 
-If you're building a self-hosted productivity stack, check out our [wikis and knowledge base comparison](../wiki-js-vs-bookstack-vs-outline/) for team documentation, our [task management guide](../vikunja-vs-todoist-self-hosted-task-management-guide-2026/) for to-do list tools, and our [collaboration platform overview](../mattermost-vs-rocketchat-vs-zulip/) for team chat integration.
+If you're building a self-hosted productivity stack, check out our [wikis and knowledge base comparison](../wiki-js-vs-bookstack-vs-outline/) for team documentation, our [task management guide](../vikunja-vs-todoist-self-hosted-task-management-guide-2026/) for to-do list t[mattermost](https://mattermost.com/)our [collaboration platform overview](../mattermost-vs-rocketchat-vs-zulip/) for team chat integration.
 
 ## FAQ
 

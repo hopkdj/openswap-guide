@@ -15,10 +15,10 @@ Every training run produces valuable metadata: hyperparameters, metrics curves, 
 - **Data ownership**: Your experiment history is a strategic asset. It captures what works and what doesn't for your specific use case. Losing access to this data means losing institutional knowledge.
 - **Cost at scale**: SaaS pricing is typically per-user or per-experiment. Teams running hyperparameter sweeps with hundreds of parallel trials quickly hit expensive tiers.
 - **Network dependencies**: Training clusters in isolated VPCs or air-gapped environments cannot reach external tracking servers. Local tracking eliminates this bottleneck.
-- **Custom infrastructure**: Self-hosted tools integrate directly with your artifact stores (S3-compatible, NFS, MinIO), authentication systems (LDAP, OAuth), and CI/CD pipelines.
+- **Custom infrastructure**: Self-hosted tools integrate directly with your artifact stores (S3-compatible, NFS, [minio](https://min.io/)), authentication systems (LDAP, OAuth), and CI/CD pipelines.
 - **Privacy compliance**: When training on sensitive datasets — healthcare, finance, or proprietary data — keeping experiment metadata on-premises satisfies regulatory requirements.
 
-The three leading open-source experiment tracking platforms in 2026 are **MLflow**, **ClearML**, and **Aim**. Each takes a different approach to the problem. This guide compares them in detail and shows you how to deploy each one with Docker.
+The three leading open-source experiment tracking platforms in 2026 are **MLflow**, **ClearML**, and **Aim**. Each takes a different approach to the problem. This guide compares them in detail and shows you how to deploy each one with [docker](https://www.docker.com/).
 
 ## What Is ML Experiment Tracking?
 
@@ -484,7 +484,7 @@ metrics.loss.min < 0.1 and metrics.train_time < 3600
 # Group by optimizer and compare
 params.optimizer == "adamw" and metrics.accuracy.last > 0.9
 
-# Complex multi-metric queries
+# Com[plex](https://www.plex.tv/) multi-metric queries
 metrics.loss.last < metrics.loss.first * 0.1 and
 params.learning_rate > 0.0005 and
 params.learning_rate < 0.01
@@ -527,3 +527,34 @@ Regardless of which tool you choose, follow these practices for production self-
 7. **Version pinning**: Pin your Docker image versions to avoid breaking changes during upgrades. Test upgrades on a staging instance first.
 
 Self-hosted experiment tracking puts your ML team in control. The data stays on your infrastructure, the cost scales with your hardware rather than your experiment count, and the tools integrate seamlessly into your existing pipelines. Pick the platform that matches your workflow, deploy it with Docker, and start tracking every run from day one.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

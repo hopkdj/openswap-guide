@@ -44,7 +44,7 @@ Running E2E tests on your own infrastructure offers several compelling advantage
 
 Playwright doesn't require a central server — tests run directly on your infrastructure. The main self-hosting concern is providing browser binaries and managing execution environments.
 
-#### Option 1: Docker Container for CI/CD
+#### Option 1: [docker](https://www.docker.com/) Container for CI/CD
 
 The simplest approach is to run Playwright tests inside a Docker container that includes all browser dependencies:
 
@@ -110,9 +110,7 @@ export default defineConfig({
     ["list"],
   ],
   workers: process.env.CI ? 4 : 2,
-  retries: process.env.CI ? 2 : 0,
-});
-```
+  retries: process.env.CI ? 2 : [kubernetes](https://kubernetes.io/)
 
 #### Option 3: Kubernetes-Based Test Grid
 
@@ -669,8 +667,7 @@ services:
     ports:
       - "5050:5050"
     volumes:
-      - ./allure-results:/app/allure-results
-      - ./allure-reports:/app/default-reports
+      - ./allure-results:/app/allure-result[postgresql](https://www.postgresql.org/)./allure-reports:/app/default-reports
 
   # PostgreSQL for test data management
   test-db:
@@ -737,3 +734,34 @@ For most teams starting fresh in 2026, the recommended path is:
 5. **Consider Selenium Grid** only if you need legacy browser support or massive parallel execution
 
 The open-source E2E testing ecosystem in 2026 is stronger than ever. You no longer need to send your test data to external cloud services — you can run the same powerful testing infrastructure entirely on your own servers, with full control, full privacy, and a fraction of the cost.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

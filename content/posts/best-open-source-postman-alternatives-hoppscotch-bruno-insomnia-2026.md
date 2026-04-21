@@ -47,7 +47,7 @@ Hoppscotch has two deployment modes:
 - Dark theme with a clean, modern interface
 - PWA support — install as a desktop or mobile app
 
-### Self-Hosted Installation with Docker Compose
+### Self-Hosted Installation with [docker](https://www.docker.com/) Compose
 
 Hoppscotch's self-hosted version gives your team a private API workspace. Here is a production-ready Docker Compose setup:
 
@@ -89,7 +89,7 @@ Start the stack:
 docker compose up -d
 ```
 
-Then configure your reverse proxy to serve Hoppscotch at `https://hoppscotch.example.com`. A minimal Nginx configuration:
+Then configure your reverse proxy to serve Hoppscotch at `https://hoppscot[nginx](https://nginx.org/)ample.com`. A minimal Nginx configuration:
 
 ```nginx
 server {
@@ -396,7 +396,7 @@ The right choice depends on your team's workflow and infrastructure:
 
 **Choose Bruno if** you want your API tests to live in your Git repository alongside your source code. The `.bru` file format makes every change reviewable in pull requests, and the CLI enables automated API testing in CI/CD pipelines. It is ideal for developers who want a local-first, Git-native approach with zero cloud dependency.
 
-**Choose Insomnia if** you need gRPC or WebSocket support in addition to REST and GraphQL. Its mature plugin ecosystem and request chaining features make it powerful for complex API workflows. However, be aware that recent versions have moved more features behind a paid tier, and the open-source community has forked some functionality into alternative projects.
+**Choose Insomnia if** you need gRPC or WebSocket support in addition to REST and GraphQL. Its mature plugin ecosystem and request chaining features make it powerful for com[plex](https://www.plex.tv/) API workflows. However, be aware that recent versions have moved more features behind a paid tier, and the open-source community has forked some functionality into alternative projects.
 
 ## Advanced: Combining Bruno and Hoppscotch for Maximum Coverage
 
@@ -442,3 +442,34 @@ Environment variables can be migrated manually by exporting them from Postman as
 The open-source API testing landscape in 2026 offers mature, capable alternatives that match or exceed Postman's core features — without the subscription costs, cloud lock-in, or data privacy concerns. Hoppscotch delivers a polished web-based experience with excellent self-hosted team features. Bruno brings a revolutionary local-first, Git-native approach that makes API tests a natural part of your codebase. Insomnia remains a powerful option for teams that need gRPC and WebSocket support.
 
 All three tools respect your data, run on your terms, and can be adopted incrementally. Start by importing one Postman collection, try out the workflow, and see which approach fits your team best. Your APIs deserve better than a vendor-locked testing tool.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

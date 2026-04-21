@@ -10,7 +10,7 @@ SurrealDB is a modern, open-source database that blurs the line between document
 
 With over 31,000 stars on GitHub and weekly releases from an active development team, SurrealDB has matured into a viable production database for applications that need flexible data modeling without juggling multiple database systems.
 
-This guide covers everything you need to self-host SurrealDB: installation methods, Docker deployment, SurrealQL fundamentals, authentication setup, and production clustering configuration.
+This guide covers everything you need to self-host SurrealDB: installation methods, [docker](https://www.docker.com/) deployment, SurrealQL fundamentals, authentication setup, and production clustering configuration.
 
 ## Why Self-Host SurrealDB
 
@@ -18,7 +18,7 @@ Running your own SurrealDB instance gives you capabilities that hosted database 
 
 **Full data control.** Your application data — including user records, session tokens, and business logic — stays on infrastructure you own. No third-party database operator can access, monetize, or restrict your data.
 
-**Unified data model.** Traditional architectures require a document database for flexible JSON storage, a graph database for relationship queries, and a relational database for transactions. SurrealDB handles all three patterns in a single engine, reducing operational complexity and eliminating inter-database synchronization.
+**Unified data model.** Traditional architectures require a document database for flexible JSON storage, a graph database for relationship queries, and a relational database for transactions. SurrealDB handles all three patterns in a single engine, reducing operational com[plex](https://www.plex.tv/)ity and eliminating inter-database synchronization.
 
 **Cost predictability.** Managed database services charge per read, per write, per gigabyte stored, and per compute hour. A self-hosted SurrealDB instance on a $15/month VPS handles millions of records with predictable resource usage.
 
@@ -332,7 +332,7 @@ networks:
 
 ### Reverse Proxy Configuration
 
-Place SurrealDB behind a reverse proxy for TLS termination and rate limiting:
+Place SurrealDB behind a revers[nginx](https://nginx.org/)xy for TLS termination and rate limiting:
 
 ```nginx
 server {

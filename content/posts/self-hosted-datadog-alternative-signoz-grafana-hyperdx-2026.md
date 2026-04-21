@@ -21,7 +21,7 @@ Moving your monitoring infrastructure in-house delivers benefits that go far bey
 - **Custom integrations without vendor approval.** Build custom dashboards, alerting pipelines, and data enrichments without waiting for a vendor's roadmap or paying for premium connector tiers.
 - **Predictable infrastructure costs.** Your observability bill becomes a function of storage and compute — two resources you can plan for and optimize — rather than opaque per-host or per-ingestion pricing.
 
-The trade-off is operational overhead: you need to provision, maintain, and scale the infrastructure yourself. The tools below minimize that burden with Docker Compose and Helm chart deployments.
+The trade-off is operational overhead: you need to provision, maintain, and scale the infrastructure yourself. The tools below minimize that burden with [docker](https://www.docker.com/) Compose and Helm chart deployments.
 
 ## The Contenders at a Glance
 
@@ -35,7 +35,7 @@ The trade-off is operational overhead: you need to provision, maintain, and scal
 | **Dashboard tool** | Built-in UI | Grafana | Built-in UI |
 | **Alerting** | Built-in | Alertmanager + Grafana | Built-in |
 | **OpenTelemetry native** | Yes | Yes (Tempo + Mimir) | Yes |
-| **Self-hosting complexity** | Medium (single stack) | High (4 components) | Low (single stack) |
+| **Self-hosting com[plex](https://www.plex.tv/)ity** | Medium (single stack) | High (4 components) | Low (single stack) |
 | **GitHub stars** | 20,000+ | Grafana: 62,000+ | 4,000+ |
 | **License** | MIT | AGPLv3 / Apache 2.0 | MIT |
 | **Best for** | Teams wanting Datadog-like experience | Teams already using Grafana | Developers who need fast debugging |
@@ -449,7 +449,7 @@ SigNoz and HyperDX benefit from ClickHouse's LZ4 compression, which is particula
 
 ### Scaling Path
 
-**SigNoz:** Vertical scaling of ClickHouse nodes, with horizontal read replicas for the query service. For large deployments, SigNoz supports Kubernetes Helm charts with separate storage and query tiers.
+**SigNoz:** Vertical scaling of ClickHouse nodes, with horizontal read replicas for the que[kubernetes](https://kubernetes.io/). For large deployments, SigNoz supports Kubernetes Helm charts with separate storage and query tiers.
 
 **Grafana LGTM:** Each component scales independently. Mimir supports horizontal sharding, Loki supports read/write path separation, and Tempo supports block-based distributed storage. This is the most scalable option for enterprise deployments with tens of thousands of hosts.
 
@@ -564,3 +564,34 @@ curl -X POST "https://api.newrelic.com/graphql" \
 All three tools are production-ready, support OpenTelemetry natively, and can replace commercial observability platforms at a fraction of the cost. The best choice depends on your team size, existing infrastructure, and whether you prioritize ease of setup (SigNoz), flexibility (Grafana), or developer experience (HyperDX).
 
 The common thread is clear: open-source observability has matured to the point where self-hosting is no longer a compromise — it is often the better option.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

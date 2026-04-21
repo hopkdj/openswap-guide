@@ -12,7 +12,7 @@ When it comes to organizing and streaming your personal media collection, three 
 
 ## Quick Comparison Matrix
 
-| Feature | Jellyfin | Plex | Emby |
+| Feature | [jellyfin](https://jellyfin.org/) | Plex | Emby |
 |---------|----------|------|------|
 | **Cost** | 100% Free | Free / $119 Lifetime / $54/yr | Free / $54/yr / $119 Lifetime |
 | **Open Source** | ✅ Fully | ❌ Closed Core | ⚠️ Partially |
@@ -35,7 +35,7 @@ When it comes to organizing and streaming your personal media collection, three 
 - Completely free, no premium tier
 - Full hardware transcoding support
 - Active community development
-- All features unlocked from day one
+- All features un[docker](https://www.docker.com/) from day one
 
 ### Docker Deployment
 
@@ -168,7 +168,7 @@ A: Jellyfin and Emby are more lightweight than Plex. Jellyfin typically uses 20-
 
 ### Q: How do I access my media server remotely?
 A: 
-- **Plex**: Built-in Plex Relay makes this automatic.
+- **Plex**: Built-in Plex Relay makes this a[nginx](https://nginx.org/)tic.
 - **Jellyfin**: Set up reverse proxy with Nginx/Caddy and port forwarding.
 - **Emby**: Use Emby Connect or manual reverse proxy.
 

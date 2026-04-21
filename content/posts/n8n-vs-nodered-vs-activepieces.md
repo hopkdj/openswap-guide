@@ -6,9 +6,9 @@ draft: false
 description: "Compare n8n, Node-RED, and Activepieces — the top three open-source workflow automation platforms for 2026. Docker deployment guides, feature comparisons, and performance benchmarks."
 ---
 
-Looking for a self-hosted alternative to Zapier or Make in 2026? You're in the right place. The open-source workflow automation space has exploded, with **n8n**, **Node-RED**, and **Activepieces** emerging as the three most popular platforms for building automated workflows without vendor lock-in.
+Looking for a self-hosted alternative to Zapier or Make in 2026? You're in the right place. The open-source workflow automation space has exploded, with **[n8n](https://n8n.io/)**, **Node-RED**, and **Activepieces** emerging as the three most popular platforms for building automated workflows without vendor lock-in.
 
-Each platform targets a different audience and use case. Whether you need enterprise-grade workflow orchestration, IoT and hardware automation, or a modern Zapier replacement — this guide will help you pick the right tool and get it running with Docker Compose in minutes.
+Each platform targets a different audience and use case. Whether you need enterprise-grade workflow orchestration, IoT and hardware automation, or a modern Zapier replacement — this guide will help you pick the right tool and get it running with [docker](https://www.docker.com/) Compose in minutes.
 
 ---
 
@@ -306,7 +306,7 @@ Direct migration is **not possible** — each platform uses its own workflow for
 
 ### 3. Which platform has the best AI / LLM integration?
 
-**n8n** currently leads with native LangChain integration, supporting multiple LLM providers (OpenAI, Anthropic, Ollama, etc.), vector stores, and AI agent workflows. **Activepieces** has growing AI piece support. **Node-RED** can connect to AI APIs through community nodes but lacks native AI workflow constructs.
+**n8n** currently leads with native LangChain integration, supporting multiple LLM providers (OpenAI, Anthropic, [ollama](https://ollama.com/), etc.), vector stores, and AI agent workflows. **Activepieces** has growing AI piece support. **Node-RED** can connect to AI APIs through community nodes but lacks native AI workflow constructs.
 
 ### 4. Can these platforms handle high-volume production workloads?
 

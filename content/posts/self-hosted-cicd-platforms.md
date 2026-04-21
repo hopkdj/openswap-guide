@@ -8,7 +8,7 @@ description: "A comprehensive comparison of the best self-hosted CI/CD platforms
 
 Continuous Integration and Continuous Deployment (CI/CD) is the backbone of modern software development. For teams and individuals who value data sovereignty, privacy, and full control over their build infrastructure, self-hosted CI/CD platforms are no longer a nice-to-have — they are a necessity.
 
-In 2026, the landscape of self-hosted CI/CD has matured significantly. GitHub Actions set the standard for pipeline-as-code, and several open-source projects now bring that same developer experience to your own servers. This guide compares the three most compelling options: Woodpecker CI, Gitea Actions, and Drone — with practical setup instructions for each.
+In 2026, the landscape of self-hosted CI/CD has matured significantly. GitHub Actions set the standard for pipeline-as-code, and several open-source projects now bring that same developer experience to your own servers. This guide compares the three most compelling options: Woodpecker CI, [gitea](https://gitea.io/) Actions, and Drone — with practical setup instructions for each.
 
 ## Why Self-Host Your CI/CD Pipeline
 
@@ -41,7 +41,7 @@ The architecture supports multiple agents across different machines, making it e
 
 - Native integration with Gitea, GitHub, GitLab, and Bitbucket
 - Pipeline-as-code using `.woodpecker.yml` in your repository root
-- Docker, Kubernetes, and local process backends
+- [docker](https://www.docker.com/), Kubernetes, and local process backends
 - Built-in secret management with per-repository scoping
 - Matrix pipelines for testing across multiple environments simultaneously
 - Approval gates for deployment stages
@@ -452,7 +452,7 @@ For teams running fewer than 50 repositories with moderate build frequency, any 
 
 Self-hosting CI/CD shifts the security responsibility to you. Here are the essential hardening steps that apply to all three platforms:
 
-**1. Network isolation.** Place the CI/CD server behind a reverse proxy with TLS termination. Never expose the internal gRPC port (used by agents) to the public internet. The Nginx configuration below demonstrates the pattern:
+**1. Network isolation.** Place the CI/CD server behind a reverse proxy with TLS termination. Never expose the internal gRPC po[nginx](https://nginx.org/)sed by agents) to the public internet. The Nginx configuration below demonstrates the pattern:
 
 ```nginx
 server {
@@ -520,3 +520,34 @@ Once you have selected and deployed your platform, follow these steps to onboard
 6. **Monitor the build** in the web UI and iterate on your pipeline configuration
 
 With your CI/CD pipeline running on your own infrastructure, every build, every artifact, and every log entry stays under your control. That is the foundation of a truly self-hosted development workflow.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

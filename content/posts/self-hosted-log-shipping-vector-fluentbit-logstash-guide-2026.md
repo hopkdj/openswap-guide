@@ -39,7 +39,7 @@ Vector is a high-performance observability data pipeline built in Rust by Datado
 - **Topology awareness** — understand exactly how data flows through your pipeline with the `vector top` command
 - **Hot-reloadable configuration** — change pipelines without restarting the agent
 
-### Installation with Docker Compose
+### Installation with [docker](https://www.docker.com/) Compose
 
 Run Vector as a daemon on each node, collecting logs from local files, Docker containers, or systemd journal:
 
@@ -122,10 +122,7 @@ address = "0.0.0.0:8686"
 Start the agent:
 
 ```bash
-docker compose -f docker-compose-vector.yml up -d
-```
-
-### Collecting from Kubernetes
+docker compose -f docker-compose-vector.yml up -[kubernetes](https://kubernetes.io/) Collecting from Kubernetes
 
 Vector can run as a DaemonSet in Kubernetes, collecting logs from every node:
 
@@ -346,7 +343,7 @@ WHERE log LIKE '%ERROR%'
 WINDOW TUMBLING (1 MINUTE);
 ```
 
-## Logstash: Best for Complex Transformation Pipelines
+## Logstash: Best for Com[plex](https://www.plex.tv/) Transformation Pipelines
 
 Logstash is the oldest and most feature-rich log shipper in the Elastic ecosystem. Written in Java with JRuby for its plugin system, Logstash excels at complex data transformation, enrichment, and multi-stage processing pipelines. If your log processing requirements involve heavy parsing, external API lookups, geo-IP enrichment, or multi-step data manipulation, Logstash is the most capable option.
 
@@ -649,3 +646,34 @@ curl -s http://localhost:8686/metrics | \
 Self-hosted log shipping is the foundation of any serious observability stack. Vector leads on performance and reliability with its Rust implementation and guaranteed delivery semantics. Fluent Bit dominates the edge collection space with its tiny footprint and CNCF pedigree. Logstash remains unmatched for complex transformation pipelines with its vast plugin ecosystem and deep Elastic Stack integration.
 
 Start with the tool that matches your constraints: Fluent Bit for resource-limited environments, Vector for high-throughput production systems, or Logstash for heavy data transformation needs. As your infrastructure grows, combine them in a layered architecture where each handles the workload it was designed for. Your logs are too important to lose — build a pipeline you can trust.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

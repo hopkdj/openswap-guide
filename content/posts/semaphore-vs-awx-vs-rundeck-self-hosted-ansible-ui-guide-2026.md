@@ -8,7 +8,7 @@ description: "Compare Semaphore, AWX, and Rundeck for self-hosted Ansible UI and
 
 Running Ansible playbooks from the command line works fine for small teams. But as your infrastructure grows, you need scheduling, role-based access, audit trails, and a web interface that lets non-developers trigger deployments safely. That is where Ansible UI platforms come in.
 
-This guide compares three leading self-hosted options: **Semaphore**, **AWX**, and **Rundeck**. Each takes a different approach to automation management, and choosing the right one depends on your team size, infrastructure complexity, and how deeply you are invested in the Ansible ecosystem.
+This guide compares three leading self-hosted options: **Semaphore**, **AWX**, and **Rundeck**. Each takes a different approach to automation management, and choosing the right one depends on your team size, infrastructure com[plex](https://www.plex.tv/)ity, and how deeply you are invested in the Ansible ecosystem.
 
 ## Why Self-Host Your Ansible UI
 
@@ -32,7 +32,7 @@ Commercial automation platforms charge per node, per user, or both. At scale, th
 | **Primary Focus** | Multi-tool DevOps UI | Ansible upstream | Operations runbooks |
 | **Ansible Support** | Full | Full (native) | Via plugin |
 | **Terraform Support** | Yes | No | No |
-| **Database** | MySQL/PostgreSQL/SQLite | PostgreSQL | PostgreSQL/MySQL |
+| **Database** | MySQL/PostgreSQL/SQLite | PostgreSQL |[docker](https://www.docker.com/)reSQL/MySQL |
 | **Docker Image** | Official (single binary) | Official (multi-container) | Official (Docker Hub) |
 | **Resource Footprint** | ~50 MB RAM | ~2 GB+ RAM | ~1â€“2 GB RAM |
 | **RBAC** | Teams + permissions | Organizations + roles | Projects + ACL policies |
@@ -107,7 +107,7 @@ For an even simpler setup, Semaphore supports SQLite as a single-file database â
 
 ## Installing AWX with Docker Compose
 
-AWX has transitioned to an Operator-based deployment for Kubernetes, but a Docker Compose setup is still available via the [AWX Compose repository](https://github.com/ansible/awx). The official approach uses a Makefile to generate the deployment:
+AWX ha[kubernetes](https://kubernetes.io/)oned to an Operator-based deployment for Kubernetes, but a Docker Compose setup is still available via the [AWX Compose repository](https://github.com/ansible/awx). The official approach uses a Makefile to generate the deployment:
 
 ```bash
 # Clone the AWX repository

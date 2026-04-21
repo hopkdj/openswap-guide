@@ -31,7 +31,7 @@ The benefits are concrete:
 - **Meet reliability SLAs** by proactively proving your system can handle failure
 - **Reduce mean time to recovery (MTTR)** through practiced incident response
 
-For teams running Kubernetes, microservices, or any distributed architecture, chaos engineering isn't optional — it's a necessity.
+For teams running [kubernetes](https://kubernetes.io/), microservices, or any distributed architecture, chaos engineering isn't optional — it's a necessity.
 
 ## Litmus Chaos: The CNCF Graduated Platform
 
@@ -138,7 +138,7 @@ Pick Litmus if you're running Kubernetes, want a mature CNCF-graduated project, 
 
 ## Chaos Mesh: Kubernetes-Native with Visual Workflows
 
-[Chaos Mesh](https://chaos-mesh.org/) is a cloud-native chaos engineering platform originally developed by PingCAP (the team behind TiDB). It provides a comprehensive set of fault types and a powerful visual workflow builder for orchestrating complex chaos experiments.
+[Chaos Mesh](https://chaos-mesh.org/) is a cloud-native chaos engineering platform originally developed by PingCAP (the team behind TiDB). It provides a comprehensive set of fault types and a powerful visual workflow builder for orchestrating com[plex](https://www.plex.tv/) chaos experiments.
 
 ### Architecture
 
@@ -265,7 +265,7 @@ Choose Chaos Mesh if you need the widest range of fault injection types, want to
 
 ## Chaos Toolkit: API-First and Platform-Agnostic
 
-[Chaos Toolkit](https://chaostoolkit.org/) takes a fundamentally different approach. Instead of a Kubernetes operator or a web dashboard, it provides a Python-based CLI and API for defining and running chaos experiments as JSON or YAML files. It's platform-agnostic — it works with Kubernetes, AWS, Docker, bare metal, and virtually anything with an API.
+[Chaos Toolkit](https://chaostoolkit.org/) takes a fundamentally different approach. Instead of a Kubernetes operator or a web dashboard, it provides a Python-based CLI and API for defining and running chaos experiments as JSON or YAML files. It's platform-agnostic — it work[docker](https://www.docker.com/) Kubernetes, AWS, Docker, bare metal, and virtually anything with an API.
 
 ### Installation
 
@@ -591,3 +591,34 @@ The tool is only as effective as the team using it. Establish these practices:
 The best approach for most organizations is to start with one platform, run experiments regularly, and expand coverage over time. Chaos engineering is not about breaking systems — it's about building confidence that your systems won't break when it matters most.
 
 All three platforms are free, open-source, and self-hosted. Pick the one that matches your infrastructure, write your first experiment today, and start building systems that survive the real world.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

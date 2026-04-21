@@ -10,7 +10,7 @@ WireGuard has become the gold standard for VPN protocols — faster, simpler, an
 
 That's where web-based management interfaces come in. Instead of editing `/etc/wireguard/wg0.conf` by hand, you get a dashboard to create clients, generate QR codes, monitor bandwidth, and manage access — all from a browser.
 
-In this guide, we compare the three most popular open-source WireGuard web managers: **wg-easy**, **WireGuard-UI**, and **wg-gen-web**. We'll cover installation, features, Docker configurations, and help you pick the right tool for your self-hosted VPN setup.
+In this guide, we compare the three most popular open-source WireGuard web managers: **wg-easy**, **WireGuard-UI**, and **wg-gen-web**. We'll cover installation, features, [docker](https://www.docker.com/) configurations, and help you pick the right tool for your self-hosted VPN setup.
 
 For broader VPN options, check out our [self-hosted VPN solutions guide](../self-hosted-vpn-solutions-wireguard-openvpn-tailscale-guide/) and [WireGuard VPN alternatives comparison](../firezone-vs-pritunl-vs-netbird-self-hosted-wireguard-vpn-guide-2026/). If you're building a complete network stack, our [firewall and router guide](../pfsense-vs-opnsense-vs-ipfire-self-hosted-firewall-router-guide-2026/) covers the edge layer.
 
@@ -187,7 +187,7 @@ WireGuard-UI runs on port `5000` by default. Access at `http://your-server-ip:50
 
 **Cons:**
 - Requires `network_mode: host` for full WireGuard integration
-- More complex setup than wg-easy
+- More com[plex](https://www.plex.tv/) setup than wg-easy
 - SendGrid dependency for email features (no SMTP alternative built-in)
 - Manage mode can conflict with existing WireGuard configurations
 
@@ -313,7 +313,7 @@ Regardless of which tool you choose, follow these security best practices:
 
 **1. Always use a strong password** — the web UI is your gatekeeper. Use a password manager to generate a 20+ character password.
 
-**2. Put the UI behind a reverse proxy with TLS** — use Nginx, Caddy, or Traefik to serve the interface over HTTPS. Never expose the admin panel over plain HTTP on the public internet.
+**2. [nginx](https://nginx.org/)he UI behind a reverse proxy with TLS** — use Nginx, Caddy, or Traefik to serve the interface over HTTPS. Never expose the admin panel over plain HTTP on the public internet.
 
 ```nginx
 server {

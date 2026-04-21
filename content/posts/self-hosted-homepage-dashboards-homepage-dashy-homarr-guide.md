@@ -93,7 +93,7 @@ Homepage is the go-to dashboard for homelab enthusiasts who want deep service in
 
 **Key strengths:**
 
-- **Rich widget ecosystem** — Over 40 built-in widgets covering Docker, Proxmox, Kubernetes, Pi-hole, AdGuard Home, Sonarr, Radarr, Plex, Transmission, qBittorrent, and many more. These widgets display real data: download speeds, upcoming TV episodes, disk usage, container counts.
+- **Rich widget ecosystem** — Over 40 built-in widgets covering Docker, Proxmox, Kubernetes, Pi-hole, AdGuard Home, Sonarr, Radarr, [plex](https://www.plex.tv/), Transmission, qBittorrent, and many more. These widgets display real data: download speeds, upcoming TV episodes, disk usage, container counts.
 - **YAML-first configuration** — Perfect for GitOps workflows. Store your configuration in a Git repository, version your changes, and roll back if something breaks.
 - **Docker socket integration** — Homepage can read your Docker socket directly and auto-discover services labeled for inclusion. This means adding a new container to your dashboard can be as simple as adding a Docker label.
 - **Excellent performance** — Built with Next.js, Homepage renders quickly and uses minimal resources.
@@ -211,7 +211,7 @@ layout:
           url: http://192.168.1.100:32400
           key: YOUR_PLEX_TOKEN
 
-    - Jellyfin:
+    - [jellyfin](https://jellyfin.org/):
         icon: jellyfin
         href: http://192.168.1.100:8096
         description: Alternative media server
@@ -364,7 +364,7 @@ sections:
         url: https://192.168.1.50:8006
         statusCheck: true
 
-      - title: Nextcloud
+      - title: [nextcloud](https://nextcloud.com/)
         icon: nextcloud
         url: http://192.168.1.100:8080
         statusCheck: true
@@ -619,3 +619,34 @@ All three projects — Homepage, Dashy, and Homarr — are excellent choices for
 For a homelab with dozens of services where every container's status matters, Homepage's widget ecosystem and Docker integration are unmatched. For a family or team environment where different users need different access levels, Dashy's built-in authentication and theming options shine. For anyone who wants to get a beautiful, functional dashboard running in under five minutes without touching a config file, Homarr is the clear winner.
 
 The good news is that all three are lightweight enough to run simultaneously on a single machine. Try them all, see which one fits your workflow, and stick with the one that makes managing your self-hosted services feel effortless.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

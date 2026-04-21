@@ -8,7 +8,7 @@ description: "Complete guide to self-hosting Revolt as an open source Discord al
 
 If you run a community, manage a team, or simply value control over your communication tools, the idea of hosting your own chat platform is compelling. Discord dominates the group chat space, but it comes with trade-offs: closed source, opaque data practices, arbitrary server limits, and the risk of sudden bans or policy changes.
 
-**Revolt** is an open source, self-hostable chat platform designed from the ground up to look and feel like Discord while giving you full ownership of your data, your infrastructure, and your community. In this guide, we'll cover what Revolt is, why you'd want to self-host it, and how to get a production-ready instance running with Docker Compose.
+**Revolt** is an open source, self-hostable chat platform designed from the ground up to look and feel like Discord while giving you full ownership of your data, your infrastructure, and your community. In this guide, we'll cover what Revolt is, why you'd want to self-host it, and how to get a production-ready instance running with [docker](https://www.docker.com/) Compose.
 
 ## Why Self-Host Your Chat Platform
 
@@ -483,9 +483,9 @@ Ensure the `AUTUMN_FILESIZE_LIMIT` matches your expectations (value is in bytes 
 
 Revolt isn't the only self-hosted chat option. Depending on your needs, these alternatives may be worth evaluating:
 
-| Platform | Best For | Language | Complexity |
+| Platform | Best For | Language | Com[plex](https://www.plex.tv/)ity |
 |----------|----------|----------|------------|
-| **Matrix/Element** | Federation, E2E encryption | Rust + Python | Medium |
+| **Matrix/Element** | Federat[mattermost](https://mattermost.com/)ncryption | Rust + Python | Medium |
 | **Mattermost** | Enterprise, Slack-like UX | Go | Medium |
 | **Rocket.Chat** | Omnichannel, integrations | TypeScript/Node.js | Medium |
 | **Zulip** | Threaded conversations | Python | Medium |
@@ -500,3 +500,34 @@ Revolt is the most straightforward path to a self-hosted, Discord-like chat plat
 The trade-offs are real: smaller ecosystem, fewer third-party integrations, and community-built mobile apps that lag behind Discord's polish. But for communities that value sovereignty over convenience, Revolt is the best option available today.
 
 **Your data, your server, your rules.** That's the entire point.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

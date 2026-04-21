@@ -8,7 +8,7 @@ description: "Compare Kiwi TCMS, TestLink, and ReportPortal — the top open-sou
 
 Test management is one of those areas where SaaS tools dominate the conversation — TestRail, Qase, Zephyr — but self-hosted open-source alternatives have matured significantly. Whether you're running a QA lab with air-gapped systems, managing compliance requirements that demand data sovereignty, or simply want full control over your test data, the self-hosted path is viable.
 
-This guide compares the three most capable open-source test management platforms: **Kiwi TCMS**, **TestLink**, and **ReportPortal**. We'll cover features, deployment, API integrations, and help you choose the right tool for your team. For related reading, check out our [self-hosted CI/CD guide](../2026-04-19-woodpecker-ci-vs-drone-ci-vs-gitea-actions-self-hosted-cicd-guide-2026/) for pipeline integration tips and the [browser automation server comparison](../self-hosted-browser-automation-servers-browserless-playwright-selenium-grid-guide-2026/) for end-to-end testing infrastructure.
+This guide compares the three most capable open-source test management platforms: **Kiwi TCMS**, **TestLink**, and **ReportPortal**. We'll cover features, deployment, API integrations, and help you choose the right tool for your team. For related reading, check out our [self-hosted CI/CD guide](../2026-04-19-woodpecker-ci-vs-drone-ci-vs-[gitea](https://gitea.io/)-actions-self-hosted-cicd-guide-2026/) for pipeline integration tips and the [browser automation server comparison](../self-hosted-browser-automation-servers-browserless-playwright-selenium-grid-guide-2026/) for end-to-end testing infrastructure.
 
 ## Why Self-Host Your Test Management
 
@@ -22,7 +22,7 @@ Test case data contains sensitive information about your product: feature roadma
 
 ## Kiwi TCMS — Modern Python-Based Test Management
 
-[Kiwi TCMS](https://kiwitcms.org/) is an open-source test management system written in Python (Django). With over 2 million Docker pulls and 1,183 GitHub stars, it's the most actively maintained self-hosted test management platform today.
+[Kiwi TCMS](https://kiwitcms.org/) is an open-source test management system written in Python (Django). With over 2 million [docker](https://www.docker.com/) pulls and 1,183 GitHub stars, it's the most actively maintained self-hosted test management platform today.
 
 ### Key Features
 
@@ -209,7 +209,7 @@ ReportPortal is designed to complement your existing test automation frameworks 
 - **Defect grouping** — clusters similar failures across test runs to reduce noise
 - **Historical trends** — track flaky tests, execution time regression, and pass rate trends
 - **Real-time dashboards** — live test execution monitoring with customizable widgets
-- **Plugin ecosystem** — integrations with Jira, Slack, email, and S3/MinIO storage
+- **Plugin ecosystem** — integrations with [minio](https://min.io/) Slack, email, and S3/MinIO storage
 - **Multi-project support** — manage multiple projects and teams from a single instance
 - **Fine-grained permissions** — project roles, user filters, and team-based access control
 

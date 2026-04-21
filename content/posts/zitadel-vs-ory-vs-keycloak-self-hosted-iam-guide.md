@@ -12,9 +12,9 @@ Every organization — from a two-person startup to a multinational enterprise �
 
 Cloud-hosted IAM solutions like Okta, Auth0, and Microsoft Entra ID have become expensive at scale. Pricing models charge per active user, per authentication event, or per integration — costs that compound rapidly as your team and service count grow. Beyond pricing, there are structural risks: vendor lock-in, unpredictable price increases, data residency constraints under GDPR and SOC 2 requirements, and single points of failure when your identity provider goes down.
 
-Self-hosting an IAM platform gives you complete ownership of user data, unlimited user scaling without per-seat fees, full control over security policies, and the ability to integrate with any internal system — HR databases, directory services, custom applications — without waiting for a vendor to build a connector. The trade-off is operational responsibility: you manage the infrastructure, handle upgrades, and ensure availability. For teams that already run Docker and manage a handful of services, this overhead is minimal compared to the long-term savings and autonomy.
+Self-hosting an IAM platform gives you complete ownership of user data, unlimited user scaling without per-seat fees, full control over security policies, and the ability to integrate with any internal system — HR databases, directory services, custom applications — without waiting for a vendor to build a connector. The trade-off is operational responsibility: you manage the infrastructure, handle upgrades, and ensure availability. For teams that already run [docker](https://www.docker.com/) and manage a handful of services, this overhead is minimal compared to the long-term savings and autonomy.
 
-This guide compares three of the most capable self-hosted IAM platforms available in 2026: **Zitadel**, **Ory**, and **Keycloak**. Each takes a fundamentally different architectural approach, from cloud-native multi-tenancy to modular microservices to monolithic enterprise maturity.
+This guide compares three of the most capable self-hosted IAM platforms available in 2026: *[keycloak](https://www.keycloak.org/)**, **Ory**, and **Keycloak**. Each takes a fundamentally different architectural approach, from cloud-native multi-tenancy to modular microservices to monolithic enterprise maturity.
 
 ---
 
@@ -99,7 +99,7 @@ After starting the stack, Zitadel initializes its database schema automatically.
 
 **Custom branding per organization.** Each organization in Zitadel can define its own login page appearance, including logo, color scheme, fonts, and custom behavior settings. When you are running a multi-tenant application, each of your customers sees a login experience that matches their brand, without any code changes on your end.
 
-**Login policy controls.** Granular policies govern password complexity, MFA enforcement, session lifetime, lockout behavior, and allowed external identity providers. These can be set at the instance level (global defaults) or overridden per organization.
+**Login policy controls.** Granular policies govern password com[plex](https://www.plex.tv/)ity, MFA enforcement, session lifetime, lockout behavior, and allowed external identity providers. These can be set at the instance level (global defaults) or overridden per organization.
 
 **gRPC and REST API.** Zitadel exposes every operation through both gRPC and REST APIs. The gRPC interface is ideal for high-throughput internal services, while the REST API with OpenAPI specification simplifies integration with existing tooling and third-party platforms.
 
@@ -504,3 +504,34 @@ The self-hosted IAM landscape in 2026 offers three distinct approaches to identi
 The right choice depends on your constraints: team size, existing infrastructure, compliance requirements, and whether you prioritize developer experience or feature completeness. All three are production-ready, actively maintained, and available under permissive open-source licenses. The common thread is that self-hosting your identity infrastructure pays for itself through eliminated per-user licensing costs, complete data ownership, and the freedom to integrate with any system without vendor approval.
 
 Start with a proof-of-deployment using the Docker Compose configurations above. Test the authentication flows, integrate one application, and evaluate the developer experience. The investment in self-hosted IAM compounds over time as your organization grows and your integration needs expand.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

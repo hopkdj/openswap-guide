@@ -8,7 +8,7 @@ description: "Compare Stubby, Unbound, and Knot Resolver for running your own DN
 
 Every DNS query your devices send travels in plain text by default. That means your ISP, network administrator, or anyone with access to the network path can see every domain you look up. DNS-over-TLS (DoT) fixes this by encrypting the entire DNS conversation inside a TLS tunnel on port 853, the same cryptographic protection you get from HTTPS.
 
-While public DoT providers like Cloudflare (1.1.1.1) and Google (8.8.8.8) offer encrypted DNS, running your own DoT resolver gives you full control over query logging, filtering policies, upstream providers, and caching behavior. This guide walks through three production-ready open-source options: **Stubby**, **Unbound**, and **Knot Resolver**.
+While public DoT providers like [cloudflare](https://www.cloudflare.com/) (1.1.1.1) and Google (8.8.8.8) offer encrypted DNS, running your own DoT resolver gives you full control over query logging, filtering policies, upstream providers, and caching behavior. This guide walks through three production-ready open-source options: **Stubby**, **Unbound**, and **Knot Resolver**.
 
 ## Why Run Your Own DNS-over-TLS Resolver
 
@@ -37,7 +37,7 @@ Stubby was originally developed as part of the getdns API project and is maintai
 - Configuration via a simple YAML file
 - Available in most Linux distribution repositories
 
-### Docker Deployment
+### [docker](https://www.docker.com/) Deployment
 
 ```yaml
 # docker-compose.yml for Stubby
@@ -230,7 +230,7 @@ Knot Resolver, developed by CZ.NIC, is a modern DNS resolver built on the Knot D
 - Native DoT support for both client-facing and upstream connections
 - Lua module system for custom DNS logic (filtering, rewriting, logging)
 - Built-in DNSSEC validation
-- LRU cache with configurable size limits
+- LRU cache with [prometheus](https://prometheus.io/)le size limits
 - Prometheus metrics export for monitoring
 - Support for DNS-over-HTTPS (DoH) in addition to DoT
 - Active development backed by CZ.NIC, operator of the .cz TLD
@@ -395,3 +395,34 @@ DNS resolvers are security-critical infrastructure. Subscribe to security mailin
 Running your own DNS-over-TLS resolver is one of the highest-impact privacy upgrades you can make for your network. Stubby gives you encrypted upstream DNS with almost zero overhead. Unbound provides a complete, independent recursive resolver with years of proven reliability. Knot Resolver offers unmatched programmability for advanced use cases.
 
 All three are free, open-source, and can be deployed with Docker in minutes. The best choice depends on whether you prioritize simplicity (Stubby), completeness (Unbound), or flexibility (Knot Resolver).
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

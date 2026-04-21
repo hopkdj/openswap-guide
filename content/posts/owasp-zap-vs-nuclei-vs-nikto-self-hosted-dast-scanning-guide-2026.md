@@ -35,7 +35,7 @@ OWASP ZAP (Zed Attack Proxy), now maintained by Checkmarx, is the world's most p
 - **Spider and AJAX spider** — crawls web applications to discover all reachable endpoints, including JavaScript-rendered content
 - **API scanning** — supports OpenAPI and SOAP API definitions for structured API testing
 - **Marketplace addons** — extensive plugin ecosystem via the ZAP Marketplace for custom rules, authentication helpers, and report formats
-- **Headless mode (ZAP in a Container)** — designed for CI/CD integration with Docker-based automation
+- **Headless mode (ZAP in a Container)** — designed for CI/CD integration with [docker](https://www.docker.com/)-based automation
 - **Authentication handling** — supports form-based, script-based, and OAuth authentication flows
 
 ### Docker Installation
@@ -388,11 +388,11 @@ Nuclei generally has the lowest false positive rate because its YAML templates u
 
 ### Can these tools scan applications behind authentication?
 
-OWASP ZAP has the most robust authentication support, including form-based login, OAuth 2.0, and custom authentication scripts. Nuclei can handle authenticated scanning by passing custom headers, cookies, or using its built-in HTTP extractor for session tokens. Nikto only supports basic HTTP authentication. For applications with complex login flows, ZAP is the best choice.
+OWASP ZAP has the most robust authentication support, including form-based login, OAuth 2.0, and custom authentication scripts. Nuclei can handle authenticated scanning by passing custom headers, cookies, or using its built-in HTTP extractor for session tokens. Nikto only supports basic HTTP authentication. For applications with com[plex](https://www.plex.tv/) login flows, ZAP is the best choice.
 
 ### How do I integrate these scanners with vulnerability management?
 
-All three tools support output formats compatible with vulnerability management platforms. Nuclei outputs JSON and SARIF, which integrate directly with GitHub Security, GitLab, and DefectDojo. ZAP can generate XML reports compatible with most platforms. Nikto supports XML, CSV, and JSON. For centralized management, consider deploying a platform like [DefectDojo](https://defectdojo.com) to aggregate findings from all three scanners, alongside our [SIEM comparison](../self-hosted-siem-wazuh-security-onion-elastic-guide/) for broader security event correlation.
+All three tools support output formats compatible with vulnerability management platforms. Nuclei outputs JSON and SAR[gitlab](https://about.gitlab.com/)ich integrate directly with GitHub Security, GitLab, and DefectDojo. ZAP can generate XML reports compatible with most platforms. Nikto supports XML, CSV, and JSON. For centralized management, consider deploying a platform like [DefectDojo](https://defectdojo.com) to aggregate findings from all three scanners, alongside our [SIEM comparison](../self-hosted-siem-wazuh-security-onion-elastic-guide/) for broader security event correlation.
 
 <script type="application/ld+json">
 {

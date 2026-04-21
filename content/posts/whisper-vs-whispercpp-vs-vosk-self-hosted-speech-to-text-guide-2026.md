@@ -22,7 +22,7 @@ Beyond cost, self-hosting gives you:
 - **Custom vocabulary and domain tuning** — add industry-specific terms that cloud services don't recognize
 - **Predictable latency** — no multi-tenant queueing, consistent response times
 
-For related reading, see our [self-hosted TTS engines guide](../coqui-tts-vs-piper-vs-openvoice-self-hosted-tts-engines-guide-2026/) for the reverse pipeline (text-to-speech), and our [local AI tools comparison](../ollama-vs-lmstudio-vs-localai/) for running other models on-premise.
+For related reading, see our [self-hosted TTS engines guide](../coqui-tts-vs-piper-vs-openvoice-self-hosted-tts-engines-guide-2026/) for the reverse pipeline (text-to-speech), and our [local AI tools comparison](../ollama-vs-lmstudio-vs-[localai](https://localai.io/)/) for running other models on-premise.
 
 ## OpenAI Whisper — Highest Accuracy, GPU-Optimized
 
@@ -37,7 +37,7 @@ OpenAI released Whisper in September 2022 as an open-source speech recognition m
 | GPU Support | CUDA, MPS (Apple Silicon) |
 | License | MIT |
 
-Whisper's architecture uses a sequence-to-sequence Transformer encoder-decoder. The large-v3 model achieves near-human accuracy on most benchmark datasets and handles code-switching between languages naturally. It produces timestamps at the segment level and supports direct translation to English from any supported language.
+Whisper's architecture uses a sequence-to-sequence Transformer encoder-decoder. The large-v3 model achieves near-human accuracy on most benchmark datasets and handles code-switching between languages naturally. It produces timestamps at the segment level and supports direct translation to English from any supported [docker](https://www.docker.com/)ge.
 
 ### Whisper Docker Deployment
 
@@ -323,7 +323,7 @@ async def transcribe_stream(audio_stream):
 
 ### Reverse Proxy with TLS
 
-Put any of these engines behind a reverse proxy for HTTPS termination and rate limiting:
+Put any of these engines behind a reverse p[nginx](https://nginx.org/)for HTTPS termination and rate limiting:
 
 ```nginx
 server {

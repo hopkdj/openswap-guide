@@ -51,7 +51,7 @@ SeaweedFS started as a key-value store inspired by Facebook's Haystack paper and
 
 What makes SeaweedFS unique is its **Filer + Volume** dual architecture. You get both a traditional hierarchical filesystem (via Filer mount) AND S3 object storage simultaneously from the same backend.
 
-### Docker Compose Deployment
+### [docker](https://www.docker.com/) Compose Deployment
 
 ```yaml
 # docker-compose.yml — SeaweedFS Full Stack
@@ -140,7 +140,7 @@ services:
 ```
 
 **Pros**: Apache 2.0 license, excellent small-file performance, dual object+file API, FUSE mount, lightweight
-**Cons**: More complex architecture, no built-in IAM for S3 gateway, learning curve for topology
+**Cons**: More com[plex](https://www.plex.tv/) architecture, no built-in IAM for S3 gateway, learning curve for topology
 
 ---
 
@@ -403,7 +403,7 @@ Schedule it via cron (`0 2 * * *`) for daily offsite replication.
 
 All three run comfortably on a Raspberry Pi 4. For production workloads with active traffic, 2GB+ RAM and SSD storage are recommended.
 
-### Which solution works best with Nextcloud external storage?
+### Which solution works best with [nextcloud](https://nextcloud.com/) external storage?
 
 All three work via the **External Storage Support** app with S3 backend. **MinIO** has the most reliable integration due to its mature S3 API. **SeaweedFS** works well but requires the Filer-based S3 gateway (not the raw volume API). **Garage** works for basic operations but may hit edge cases with Nextcloud's presigned URL handling.
 

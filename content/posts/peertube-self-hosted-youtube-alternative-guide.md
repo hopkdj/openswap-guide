@@ -10,7 +10,7 @@ If you're tired of YouTube's algorithm-driven feed, invasive tracking, unpredict
 
 PeerTube is not just a self-hosted video player. It's a full-featured video platform with its own player, transcoding engine, user accounts, channels, playlists, and — most importantly — **federation** via ActivityPub. Your PeerTube instance can talk to other instances, share content, and let followers subscribe across servers. It's the video layer of the fediverse, sitting alongside Mastodon, PixelFed, and Lemmy.
 
-In this guide, we'll cover why PeerTube matters, how to deploy it with Docker, configure storage and transcoding, set up federation, and manage a production instance at scale.
+In this guide, we'll cover why PeerTube matters, how to deploy it with [docker](https://www.docker.com/), configure storage and transcoding, set up federation, and manage a production instance at scale.
 
 ---
 
@@ -251,7 +251,7 @@ PEERTUBE_STORAGE_TMP_PERSISTENT_DURATION: "1h"
 PEERTUBE_OBJECT_STORAGE_ENABLED: "false"  # Set true for S3-compatible backends
 ```
 
-For larger instances, consider offloading video storage to **MinIO** or **Backblaze B2**:
+For larger instances, consider off[minio](https://min.io/)ng video storage to **MinIO** or **Backblaze B2**:
 
 ```yaml
 PEERTUBE_OBJECT_STORAGE_ENABLED: "true"
@@ -366,7 +366,7 @@ Use the built-in health check endpoint:
 curl -s https://video.example.com/api/v1/server/health | python3 -m json.tool
 ```
 
-For comprehensive monitoring, export metrics to Prometheus:
+For comprehensive mon[prometheus](https://prometheus.io/)xport metrics to Prometheus:
 
 ```yaml
 # Install the PeerTube Prometheus exporter
@@ -521,3 +521,34 @@ The entire setup takes under 30 minutes. Your video platform, your rules, your d
 **PeerTube repository**: [github.com/Chocobozzz/PeerTube](https://github.com/Chocobozzz/PeerTube)
 **Official documentation**: [docs.joinpeertube.org](https://docs.joinpeertube.org/)
 **Fediverse instance directory**: [instances.joinpeertube.org](https://instances.joinpeertube.org/)
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

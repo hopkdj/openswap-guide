@@ -17,7 +17,7 @@ The reasons are straightforward:
 - **Privacy**: Your schedule and relationships are sensitive data. A self-hosted server means no third party scans your events for advertising profiles or trains models on your contact graph.
 - **No vendor lock-in**: CalDAV and CardDAV are open RFC standards (RFC 4791 and RFC 6352). Any standards-compliant client works with any server. Switch apps freely — Thunderbird, DAVx5, GNOME Calendar, iOS, macOS, Outlook — they all connect the same way.
 - **Full ownership**: Your data lives on hardware you control. Export it, back it up, migrate it — on your terms.
-- **Lightweight footprint**: Unlike running a full Nextcloud instance just for calendar sync, dedicated CalDAV/CardDAV servers consume minimal RAM (often under 100 MB) and need almost no CPU.
+- **Lightweight footprint**: Unlike running a full [nextcloud](https://nextcloud.com/) instance just for calendar sync, dedicated CalDAV/CardDAV servers consume minimal RAM (often under 100 MB) and need almost no CPU.
 - **Reliability**: These servers have been production-stable for years. Once configured, they run silently in the background with near-zero maintenance.
 
 If you already run Nextcloud and only need calendar and contacts, its built-in CalDAV/CardDAV support may suffice. But if you want something purpose-built, fast, and resource-efficient, read on.
@@ -47,7 +47,7 @@ Both run over HTTP/HTTPS, use standard authentication, and are supported nativel
 | **Language** | Python | PHP | Python |
 | **Storage** | Flat files | SQLite / MySQL | Git repository |
 | **GitHub Stars** | 3,200+ | 2,800+ | 900+ |
-| **Web Admin UI** | Minimal (Radicale Manager plugin) | Full admin panel | None (CLI only) |
+| **Web Admin UI** | Minimal (Radicale Manager plugin) | Full admin pane[docker](https://www.docker.com/)ne (CLI only) |
 | **Docker Image** | Official | Community | Community |
 | **RAM Usage** | ~30 MB | ~50 MB | ~40 MB |
 | **Multi-user** | Yes | Yes | Yes |
@@ -183,7 +183,7 @@ server {
 
 ## Baïkal: Feature-Rich with a Web Admin
 
-[Baïkal](https://sabre.io/baikal/) is a PHP-based CalDAV/CardDAV server built on the sabre/dav framework — the same library that powers ownCloud/Nextcloud's calendar backend. Its standout feature is a polished web admin interface where you can manage users, calendars, and address books without touching the command line.
+[Baïkal](https://sabre.io/baikal/) is a PHP-based CalDAV/CardDAV server built on the sabre/dav framework — the[owncloud](https://owncloud.com/)brary that powers ownCloud/Nextcloud's calendar backend. Its standout feature is a polished web admin interface where you can manage users, calendars, and address books without touching the command line.
 
 ### Strengths
 
@@ -501,3 +501,34 @@ All three are excellent choices. The "best" server depends on your technical com
 Self-hosting your calendar and contacts is one of the highest-impact privacy upgrades you can make for minimal effort. These servers run reliably on hardware as modest as a Raspberry Pi, consume almost no resources, and give you complete ownership of some of your most personal data.
 
 Pair any of these servers with DAVx5 on Android or native CalDAV/CardDAV on iOS/macOS, put them behind a reverse proxy with Let's Encrypt SSL, and you have a fully functional, private alternative to Google Calendar and iCloud Contacts — no subscription fees, no data harvesting, no vendor lock-in.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

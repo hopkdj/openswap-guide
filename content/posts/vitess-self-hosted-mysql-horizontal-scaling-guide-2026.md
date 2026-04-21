@@ -8,7 +8,7 @@ description: "Complete guide to deploying Vitess for horizontal MySQL scaling. L
 
 When a single MySQL server can no longer handle your traffic, you face a critical decision: vertical scaling (bigger hardware) or horizontal scaling (more servers). [Vitess](https://vitess.io/) — the open-source database clustering system originally built at YouTube — makes horizontal MySQL scaling practical for self-hosted deployments. With over 20,900 GitHub stars and active development by a vibrant community, Vitess has proven itself at petabyte scale in production environments worldwide.
 
-This guide covers what Vitess is, how its architecture works, and how to deploy a sharded MySQL cluster using Docker Compose.
+This guide covers what Vitess is, how its architecture works, and how to deploy a sharded MySQL cluster using [docker](https://www.docker.com/) Compose.
 
 ## Why Self-Host MySQL at Scale
 
@@ -17,7 +17,7 @@ MySQL is the world's most popular open-source relational database, but as your a
 - **Connection limits** — MySQL caps concurrent connections, and connection-heavy apps exhaust them quickly
 - **Storage ceilings** — Even with NVMe SSDs, a single node's IOPS and capacity become limiting factors
 - **Write throughput** — Read replicas help with reads, but write scaling requires actual sharding
-- **Operational complexity** — Manual sharding, rebalancing, and failover are error-prone without a coordination layer
+- **Operational com[plex](https://www.plex.tv/)ity** — Manual sharding, rebalancing, and failover are error-prone without a coordination layer
 
 Managed solutions like Amazon Aurora or PlanetScale handle this complexity for you, but they come with vendor lock-in, unpredictable pricing, and data residency constraints. Self-hosting with Vitess gives you full control over your database infrastructure while providing the same horizontal scaling capabilities.
 
@@ -25,7 +25,7 @@ For a broader look at distributed SQL alternatives, check out our [CockroachDB v
 
 ## What Is Vitess?
 
-Vitess is a database clustering system for horizontal scaling of MySQL (and compatible databases like MariaDB and Percona Server). It was created at YouTube in 2010 to handle their massive database growth, open-sourced in 2014, and became a Cloud Native Computing Foundation (CNCF) graduated project in 2021 — the same tier as Kubernetes, Prometheus, and Envoy.
+Vitess is a database clustering system for horizontal scaling of MySQL (and compatible databases like MariaDB and Percona Server). It was created at YouTube in 2010 to handle their massive database growth, open-sourced in 2014, and became a Cloud Native Computing Foundation ([kubernetes](https://kubernetes.io/)uated project in 2021 — the same tier as Kubernetes, Prometheus, and Envoy.
 
 ### Key Capabilities
 

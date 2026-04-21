@@ -8,7 +8,7 @@ description: "Compare CasaOS, Umbrel, and YunoHost — three open-source home se
 
 Taking control of your data by running a home server is one of the most rewarding projects you can tackle. Instead of relying on Google Drive, iCloud, or Spotify, you can host your own file sync, media streaming, password vault, and dozens of other services on hardware you own.
 
-The biggest hurdle has always been complexity. Setting up a Linux server, configuring Docker, managing reverse proxies, and keeping everything updated requires significant technical knowledge. That is where home server operating systems come in — they provide a web-based dashboard, one-click app installation, and simplified server management.
+The biggest hurdle has always been com[plex](https://www.plex.tv/)ity. Setting up a Li[docker](https://www.docker.com/)rver, configuring Docker, managing reverse proxies, and keeping everything updated requires significant technical knowledge. That is where home server operating systems come in — they provide a web-based dashboard, one-click app installation, and simplified server management.
 
 In this guide, we compare three of the most popular open-source home server platforms: **CasaOS**, **Umbrel**, and **YunoHost**. Each takes a different approach to self-hosting, and the right choice depends on your technical comfort level, hardware, and what you want to run.
 
@@ -30,7 +30,7 @@ Home server OS platforms take the pain out of setup. Instead of manually provisi
 
 ### Key Features
 
-- **One-click app store** — browse and install 100+ community apps (Nextcloud, Home Assistant, Jellyfin, Gitea, and more)
+- **One-click app store** — browse and install 100+ community apps ([nextcloud](https://nextcloud.com/), Home Assistant, Jellyfin, Gitea, and more)
 - **File manager** — built-in web file browser with upload, download, and sharing
 - **Storage management** — visualize disk usage, mount external drives, configure RAID
 - **Docker integration** — every app runs in a Docker container, easily managed from the UI

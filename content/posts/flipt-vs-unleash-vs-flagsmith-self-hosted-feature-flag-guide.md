@@ -14,7 +14,7 @@ SaaS feature flag providers like LaunchDarkly are powerful but come with trade-o
 
 Self-hosting feature flag infrastructure solves these problems. You own your data, avoid per-developer pricing, and keep your feature management inside your own network. When your CI/CD pipeline depends on feature flags being available, running them on your own infrastructure removes a single point of failure controlled by a third party.
 
-In this guide, we compare the three leading open-source, self-hostable feature flag platforms: **Flipt**, **Unleash**, and **Flagsmith**. We cover architecture, feature comparisons, Docker deployment, and production hardening.
+In this guide, we compare the three leading open-source, self-hostable feature flag platforms: **Flipt**, **Unleash**, and **Flagsmith**. We cover architecture, feature comparisons, [docker](https://www.docker.com/) deployment, and production hardening.
 
 ## What Are Feature Flags and Why Do You Need Them?
 
@@ -394,7 +394,7 @@ Regardless of which platform you choose, follow these production deployment prac
 SQLite works for development and small homelab setups, but PostgreSQL is essential for production. It provides connection pooling, WAL-based replication, and proper concurrent access handling.
 
 **2. Add a Reverse Proxy with TLS**
-Put your feature flag service behind a reverse proxy with TLS termination:
+Put your feature flag service behind a reverse proxy[nginx](https://nginx.org/) TLS termination:
 
 ```nginx
 server {
@@ -441,7 +441,7 @@ Add to crontab:
 ```
 
 **4. Monitor Flag Evaluation Latency**
-Feature flag lookups should be fast — ideally under 5ms. Monitor your evaluation endpoint:
+Feature flag lookups should be fast — ideally under 5ms. Monitor your evalu[prometheus](https://prometheus.io/)oint:
 
 ```yaml
 # Prometheus scrape config for Flipt
@@ -506,3 +506,34 @@ Self-hosting feature flags gives you full control over your rollout infrastructu
 All three are production-ready, actively maintained, and can be deployed with Docker Compose in under five minutes. Start with the one that aligns with your team's existing technology stack, and migrate later if your requirements evolve — all three provide REST APIs and import/export tools that make migration manageable.
 
 The most important step is getting started. Every feature flag you add reduces deployment risk and increases your team's ability to ship confidently.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

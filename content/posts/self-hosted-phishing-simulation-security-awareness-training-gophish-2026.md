@@ -37,7 +37,7 @@ Phishing simulations involve sending realistic-looking deceptive emails to emplo
 - RESTful API for automation and CI/CD integration
 - Built-in tracking pixel and click redirect handling
 
-### Docker Installation
+### [docker](https://www.docker.com/) Installation
 
 The fastest way to deploy GoPhish is with Docker Compose. Create a project directory and the following files:
 
@@ -226,7 +226,7 @@ curl -s "${SERVER}/api/campaigns/1/results" \
 
 ### Docker Installation
 
-King Phisher is more complex to containerize due to its client-server model, but it can be deployed with Docker:
+King Phisher is more com[plex](https://www.plex.tv/) to containerize due to its client-server model, but it can be deployed with Docker:
 
 ```yaml
 version: "3.8"
@@ -258,7 +258,7 @@ services:
       - POSTGRES_PASSWORD=secure_password_here
       - POSTGRES_DB=kingphisher
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - pgd[nginx](https://nginx.org/)var/lib/postgresql/data
 
   kp-web:
     image: nginx:alpine
@@ -464,3 +464,34 @@ Your phishing emails need to reach the inbox, not the spam folder. Key steps:
 Self-hosted phishing simulation platforms offer cost-effective, privacy-preserving alternatives to expensive SaaS solutions. GoPhish remains the best choice for most organizations thanks to its simplicity, active development, and comprehensive feature set. King Phisher serves teams that need multi-tenant flexibility and plugin extensibility, while SET excels for rapid penetration testing engagements.
 
 Whichever tool you choose, the key to a successful awareness program is consistency. Run campaigns regularly, vary your templates and timing, track both click rates and reporting rates, and use results to continuously improve your organization's security posture. Running these tools on your own infrastructure keeps sensitive campaign data under your control and eliminates ongoing per-user licensing costs.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

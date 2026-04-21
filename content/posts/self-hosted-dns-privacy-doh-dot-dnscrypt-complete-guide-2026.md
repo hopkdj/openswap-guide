@@ -20,7 +20,7 @@ Before diving into protocols, understanding the threat model matters:
 - **Censorship Evasion**: Some ISPs and governments block access to websites by intercepting and dropping DNS queries for specific domains. Encrypted DNS bypasses these simple blocks.
 - **Privacy from Recursive Resolvers**: Even if you use a privacy-respecting resolver, without encryption the path between you and the resolver is exposed.
 
-Encrypting DNS queries adds a fundamental layer of privacy to your network. Combined with a self-hosted ad-blocker like Pi-hole or AdGuard Home, encrypted DNS forms the backbone of a privacy-respecting home network.
+Encrypting DNS queries adds a fundamental layer of privacy to your network. Combined with a self-hosted ad-blocker like Pi-hole or [adguard home](https://adguard.com/en/adguard-home/overview.html), encrypted DNS forms the backbone of a privacy-respecting home network.
 
 ## DNS Privacy Protocols Compared
 
@@ -96,7 +96,7 @@ DNSCrypt is an older protocol designed by Frank Denis (also the author of dnscry
 Before setting up your own stack, knowing which providers support each protocol helps:
 
 | Provider | DoH | DoT | DNSCrypt | DNSSEC | No-Log Policy |
-|----------|-----|-----|----------|--------|---------------|
+|----------|[cloudflare](https://www.cloudflare.com/)-|----------|--------|---------------|
 | **Cloudflare (1.1.1.1)** | ✅ | ✅ | ❌ | ✅ | Yes |
 | **Quad9 (9.9.9.9)** | ✅ | ✅ | ✅ | ✅ | Yes |
 | **NextDNS** | ✅ | ✅ | ✅ | ✅ | Yes (configurable) |
@@ -358,7 +358,7 @@ Check dnscrypt-proxy status:
 
 ```bash
 sudo ./dnscrypt-proxy -service status
-sudo ./dnscrypt-proxy -show-certs
+sudo ./dnscrypt-pr[docker](https://www.docker.com/)how-certs
 ```
 
 ## Running DNS Privacy Tools in Docker
@@ -520,3 +520,34 @@ Encrypting your DNS queries is one of the most impactful privacy improvements yo
 - **DNSCrypt** with dnscrypt-proxy provides the most comprehensive feature set, combining multiple protocols with ad-blocking and caching
 
 For a production self-hosted setup, we recommend running **dnscrypt-proxy** as your local resolver (it supports all three protocols) with **Pi-hole or AdGuard Home** for filtering, forwarding through encrypted upstream resolvers like Cloudflare, Quad9, or Mullvad. This gives you encrypted DNS, ad-blocking, and query logging control — all running on your own infrastructure.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

@@ -6,7 +6,7 @@ draft: false
 description: "Compare StrongSwan, LibreSwan, and SoftEther for self-hosted VPN gateways. Detailed Docker setups, configuration guides, and performance benchmarks for IPSec and multi-protocol VPN deployments."
 ---
 
-When you need a self-hosted VPN gateway for site-to-site connectivity, remote access, or secure network bridging, the choice of VPN software matters. While tools like WireGuard and OpenVPN dominate the consumer space, enterprise-grade deployments often require the flexibility and proven security of IPSec or multi-protocol VPN solutions.
+When you need a self-hosted VPN gateway for site-to-site connectivity, remote access, or secure network bridging, the choice of VPN software matters. While tools like [wireguard](https://www.wireguard.com/) and OpenVPN dominate the consumer space, enterprise-grade deployments often require the flexibility and proven security of IPSec or multi-protocol VPN solutions.
 
 In this guide, we compare three mature, open-source VPN gateway implementations: **StrongSwan**, **LibreSwan**, and **SoftEther VPN**. Each serves a different niche, and understanding their strengths helps you pick the right tool for your infrastructure.
 
@@ -47,7 +47,7 @@ For related reading, see our [complete VPN solutions guide](../self-hosted-vpn-s
 - Built-in certificate management and OCSP/CRL support
 - Integration with systemd, NetworkManager, and Android
 
-### Docker Setup
+### [docker](https://www.docker.com/) Setup
 
 StrongSwan can be containerized using the official Docker image. Here is a production-ready Docker Compose configuration:
 
@@ -131,7 +131,7 @@ StrongSwan is the best choice when you need **IKEv2 road warrior access** with c
 - Support for up to 64,000 concurrent tunnels
 - IKEv2 with EAP-TLS, EAP-MSCHAPv2, and certificate auth
 - L2TP/IPSec support for legacy Windows clients
-- IPsec-in-IPsec nesting for complex routing scenarios
+- IPsec-in-IPsec nesting for com[plex](https://www.plex.tv/) routing scenarios
 - SELinux integration for hardened deployments
 - Automatic key rotation and DPD (Dead Peer Detection)
 

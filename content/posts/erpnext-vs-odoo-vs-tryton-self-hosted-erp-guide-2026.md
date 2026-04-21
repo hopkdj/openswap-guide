@@ -10,7 +10,7 @@ If your business still runs on a patchwork of spreadsheets, disconnected account
 
 The catch: commercial ERPs from SAP, Oracle, and Microsoft Dynamics cost hundreds of thousands of dollars to license and implement. For small and mid-sized businesses, these are simply out of reach.
 
-The open-source alternatives have matured to the point where they can genuinely replace commercial systems for most use cases. Three projects stand out in 2026: **ERPNext**, **Odoo Community**, and **Tryton**. This guide compares them head-to-head and provides complete Docker deployment instructions for each.
+The open-source alternatives have matured to the point where they can genuinely replace commercial systems for most use cases. Three projects stand out in 2026: **ERPNext**, **Odoo Community**, and **Tryton**. This guide compares them head-to-head and provides complete [docker](https://www.docker.com/) deployment instructions for each.
 
 ## Why Self-Host Your ERP
 
@@ -104,7 +104,7 @@ Tryton is released under the GNU GPLv3 license and is fully open-source — no o
 - Upgrading between major versions can be painful, especially with custom modules
 - The sheer number of modules creates quality variance — some community modules are unmaintained
 - PostgreSQL-only (not a weakness per se, but limits deployment flexibility compared to ERPNext)
-- Module interdependencies can create complex upgrade and compatibility issues
+- Module interdependencies can create com[plex](https://www.plex.tv/) upgrade and compatibility issues
 
 ### Tryton: Strengths and Weaknesses
 
@@ -169,7 +169,7 @@ services:
       - erpnext-network
 
   frontend:
-    image: frappe/erpnext:${ERPNEXT_VERSION}
+    image: frap[nginx](https://nginx.org/)pnext:${ERPNEXT_VERSION}
     command:
       - nginx-entrypoint.sh
     depends_on:
@@ -650,3 +650,34 @@ Regardless of which system you choose, these steps are essential for a productio
 8. **Disaster recovery** — Maintain a documented, tested recovery plan. Know your RTO and RPO requirements.
 
 The best self-hosted ERP is the one that matches your technical capacity, business requirements, and growth trajectory. All three — ERPNext, Odoo Community, and Tryton — are production-ready, actively maintained, and capable of running real businesses. The key is choosing the one whose philosophy, ecosystem, and feature set align with your needs.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

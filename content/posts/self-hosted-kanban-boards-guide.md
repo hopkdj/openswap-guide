@@ -26,7 +26,7 @@ For small teams, homelab operators, freelancers, and privacy-conscious organizat
 | **License** | MIT | MIT | AGPL-3.0 | MIT |
 | **Language** | PHP | JavaScript (Meteor) | React + Node.js | Go + React |
 | **Database** | SQLite / MySQL / PostgreSQL | MongoDB | PostgreSQL | SQLite / PostgreSQL |
-| **Docker Image** | ✅ Official | ✅ Official | ✅ Official | ✅ Mattermost image |
+| **[docker](https://www.docker.com/) Image** | ✅ Official | ✅[mattermost](https://mattermost.com/)| ✅ Official | ✅ Mattermost image |
 | **Memory Footprint** | ~50 MB | ~500 MB | ~200 MB | ~150 MB |
 | **Real-time Updates** | ❌ Manual refresh | ✅ Live (DDP) | ✅ Live (WebSockets) | ✅ Live (WebSockets) |
 | **Kanban View** | ✅ | ✅ | ✅ | ✅ |
@@ -307,7 +307,7 @@ openssl rand -hex 64
 
 **Clean Card Interface:** Planka's card editor is one of the cleanest in the open-source space. It includes checklists, labels, attachments, task assignments, and due dates without feeling cluttered.
 
-**OIDC Integration:** Planka supports OpenID Connect out of the box, making it straightforward to integrate with Keycloak, Authentik, Authelia, or any other OIDC provider.
+**OIDC Integration:** Planka supports OpenID Connect out of[keycloak](https://www.keycloak.org/), making it straightforward to integrate with Keycloak, Authentik, Authelia, or any other OIDC provider.
 
 ## Focalboard — The Spreadsheet Meets Kanban Hybrid
 
@@ -517,3 +517,34 @@ Automate backups with a cron job:
 | **Mattermost integration** | Focalboard | Native Mattermost authentication and linking |
 
 Each of these tools is production-ready and actively maintained. Your choice depends on whether you prioritize feature depth (Kanboard), Trello familiarity (WeKan), modern simplicity (Planka), or multi-view flexibility (Focalboard). All four can be deployed in under five minutes with Docker and run reliably behind a reverse proxy with HTTPS.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

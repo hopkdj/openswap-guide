@@ -45,7 +45,7 @@ Before diving into deployment, here's how Headscale stacks up against the main a
 | **Exit Nodes** | ✅ Yes | ✅ Yes (paid for full) | ✅ Yes |
 | **SSO/OIDC** | ✅ OIDC support | ✅ Multiple providers | ✅ OIDC |
 | **Min RAM** | ~64 MB | N/A (cloud) | ~256 MB |
-| **Setup Complexity** | Medium (config file) | Low (just sign up) | Medium-High |
+| **Setup Com[plex](https://www.plex.tv/)ity** | Medium (config file) | Low (just sign up) | Medium-High |
 | **Maturity** | Production-ready (v0.24+) | Most mature | Growing |
 
 ---
@@ -70,7 +70,7 @@ Headscale works as a central coordination server. Here's the flow:
 2. Nodes register with your Headscale server
 3. Headscale distributes WireGuard keys and routing info
 4. Nodes establish **direct P2P WireGuard tunnels** to each other
-5. If direct connection fails, traffic relays through a DERP server
+5. If direct connection fails, traffic relays through[docker](https://www.docker.com/)P server
 
 ---
 
@@ -242,7 +242,7 @@ services:
       - ./config:/etc/headscale:ro
       - ./db:/var/lib/headscale
     ports:
-      - "8080:8080"    # Main API
+      - "8080:808[prometheus](https://prometheus.io/)in API
       - "9090:9090"    # Metrics (Prometheus)
       - "3478:3478/udp" # STUN for DERP
     environment:

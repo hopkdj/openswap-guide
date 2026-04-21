@@ -8,7 +8,7 @@ description: "Compare PostgreSQL, MySQL, and MariaDB as self-hosted databases. C
 
 ## Why Self-Host Your Database?
 
-Running your own database server is the backbone of any self-hosted infrastructure. Whether you are powering a home lab, running a small business application, or building a multi-service architecture, the database choice defines your scalability ceiling, data integrity guarantees, and operational complexity.
+Running your own database server is the backbone of any self-hosted infrastructure. Whether you are powering a home lab, running a small business application, or building a multi-service architecture, the database choice defines your scalability ceiling, data integrity guarantees, and operational com[plex](https://www.plex.tv/)ity.
 
 Cloud database services like Amazon RDS, Google Cloud SQL, and Azure Database offer convenience at a steep premium. They charge for storage, compute, IOPS, backups, and data transfer — often running into hundreds of dollars per month for modest workloads. Self-hosting flips the economics: you pay for the hardware once, and the software is free.
 
@@ -55,7 +55,7 @@ PostgreSQL is widely regarded as the most advanced open-source relational databa
 - **Data Integrity**. PostgreSQL enforces constraints rigorously. Check constraints, exclusion constraints, deferred constraints, and partial indexes give you fine-grained control over data validity.
 - **JSONB Performance**. Unlike MySQL's text-based JSON type, PostgreSQL's JSONB stores data in a decomposed binary format. You can index JSON fields with GIN indexes, query nested structures, and get sub-millisecond lookups on JSON documents.
 - **Concurrency Control**. PostgreSQL's MVCC implementation avoids read locks entirely. Readers never block writers, and writers never block readers. Combined with advisory locks and SKIP LOCKED, it handles complex concurrent workloads gracefully.
-- **Parallel Query Execution**. Complex analytical queries can be parallelized across multiple CPU cores automatically. Sequential scans, joins, aggregations, and sorts all benefit from parallel execution.
+- **Parallel Query Execution**. Complex analytical queries can be parallelized across multiple CPU cores automatically. Sequential scans, joins, aggregations, and sorts all benefit from parallel exe[docker](https://www.docker.com/).
 
 ### PostgreSQL Docker Setup
 
@@ -648,7 +648,7 @@ SELECT * FROM mysql.slow_log ORDER BY start_time DESC LIMIT 10;
 SHOW FULL PROCESSLIST;
 ```
 
-For comprehensive monitoring, deploy **pgwatch2** for PostgreSQL or **Percona Monitoring and Management (PMM)** for MySQL/MariaDB alongside your database. Both provide Docker-based deployment with Grafana dashboards out of the box.
+For comprehensive monitoring, deploy **pgwatch2** for PostgreSQL or **Percona Monitoring and Management (PMM)** for MySQL/MariaDB alongside your d[grafana](https://grafana.com/). Both provide Docker-based deployment with Grafana dashboards out of the box.
 
 ## Final Recommendation
 
@@ -659,3 +659,34 @@ For most new self-hosted projects in 2026, **PostgreSQL** is the default choice.
 **MariaDB** shines when you need MySQL compatibility with open-source governance, or when Galera Cluster's synchronous multi-primary replication fits your high-availability requirements. The Thread Pool inclusion at no cost is a genuine differentiator.
 
 Whichever you choose, self-hosting your database puts you in control of your most valuable asset — your data. With Docker Compose, automated backups, and proper monitoring, the operational overhead is manageable even for small teams and home lab enthusiasts.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

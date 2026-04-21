@@ -43,7 +43,7 @@ Cachet's biggest advantage is maturity. It has been production-tested for over a
 - No built-in monitoring — you must push metrics from external tools
 - Heavier resource footprint compared to lightweight alternatives
 
-### Docker Deployment
+### [docker](https://www.docker.com/) Deployment
 
 ```yaml
 # docker-compose.yml for Cachet
@@ -366,14 +366,13 @@ status-website:
 | **Multi-User / Auth** | ✅ Admin dashboard | ✅ OAuth, SAML | ✅ GitHub auth |
 | **Incident Timeline** | ✅ Manual entries | ✅ Automatic | ✅ GitHub Issues |
 | **Resource Usage** | Medium (PHP-FPM) | Low (single binary) | Zero (serverless) |
-| **Setup Complexity** | Medium | Low | Very Low |
+| **Setup Com[plex](https://www.plex.tv/)ity** | Medium | Low | Very Low |
 | **Best For** | Enterprise, customizable | Self-hosters wanting monitoring | GitHub-based, zero-infra |
 
 ## Which Should You Choose?
 
 ### Choose Cachet if:
-- You need a polished, customizable status page with full API control
-- You already have monitoring infrastructure (Prometheus, Datadog, etc.) and just need a presentation layer
+- You need a polished, customizable status page with full API con[prometheus](https://prometheus.io/) already have monitoring infrastructure (Prometheus, Datadog, etc.) and just need a presentation layer
 - You want metrics charts with custom data points
 - Your team is comfortable with PHP/Laravel for customizations
 - You need multi-language support out of the box
@@ -547,3 +546,34 @@ For most self-hosters in 2026, **Statping-ng** offers the best balance of featur
 If you need maximum customization and API flexibility, **Cachet** remains the gold standard for enterprise status pages. Pair it with your existing monitoring stack, and you get a professional-grade status portal.
 
 For teams that want zero infrastructure to manage, **Upptime** is unbeatable. The GitHub-native approach means your status page is literally part of your codebase — version controlled, reviewed, and deployed through the same workflow as your applications.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

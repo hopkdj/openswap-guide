@@ -6,7 +6,7 @@ draft: false
 description: "Compare three lightweight SMTP server alternatives — Maddy, Chasquid, and OpenSMTPD — to Postfix and Exim. Includes Docker setup, configuration examples, and deployment guides for 2026."
 ---
 
-Running your own mail server has traditionally meant wrestling with Postfix or Exim — powerful but notoriously complex tools with decades of accumulated configuration options. If you've ever lost an afternoon debugging a `main.cf` or deciphering a cryptic Exim ACL error, you know the pain.
+Running your own mail server has traditionally meant wrestling with Postfix or Exim — powerful but notoriously com[plex](https://www.plex.tv/) tools with decades of accumulated configuration options. If you've ever lost an afternoon debugging a `main.cf` or deciphering a cryptic Exim ACL error, you know the pain.
 
 Enter a new generation of lightweight SMTP servers designed from scratch with simplicity, security, and modern deployment patterns in mind. This guide compares three of the best alternatives: **[Maddy](https://maddy.email)**, **[Chasquid](https://blitiri.com.ar/p/chasquid/)**, and **[OpenSMTPD](https://opensmtpd.org/)**.
 
@@ -15,7 +15,7 @@ Enter a new generation of lightweight SMTP servers designed from scratch with si
 Postfix handles roughly 75% of the world's email traffic. It's battle-tested, incredibly flexible, and can handle virtually any mail routing scenario. But that flexibility comes at a cost:
 
 - **Configuration complexity**: Postfix ships with 300+ configuration parameters. Even a minimal working setup requires careful tuning.
-- **Security surface**: Decades of code means decades of edge cases. Hardening Postfix for production takes significant expertise.
+- **Security surface**: Decades of code means decades of edge cases. Hardening Postfix for production takes sig[docker](https://www.docker.com/)nt expertise.
 - **Docker unfriendly**: Postfix was designed as a system daemon, not a containerized microservice. Running it in Docker often means wrestling with multiple daemons and stateful volumes.
 - **Overkill for small deployments**: If you're running email for a handful of domains or a single application, Postfix is like using a sledgehammer to hang a picture.
 
@@ -168,7 +168,7 @@ mail_log_path: "/var/lib/chasquid/mail.log"
 
 ### Docker Deployment
 
-Chasquid provides an experimental Docker setup in its `docker/` directory. The image pairs Chasquid with Dovecot using supervisord:
+Chasquid provides a[ory](https://www.ory.sh/)xperimental Docker setup in its `docker/` directory. The image pairs Chasquid with Dovecot using supervisord:
 
 ```yaml
 services:

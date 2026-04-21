@@ -26,7 +26,7 @@ Whether you're managing a fleet of workstations, providing IT support across a d
 | Feature | Apache Guacamole | RustDesk | MeshCentral |
 |---------|-----------------|----------|-------------|
 | **Type** | Web gateway | P2P + relay | Full IT management |
-| **Protocols** | RDP, VNC, SSH, Telnet, Kubernetes | Proprietary (encrypted) | RDP, VNC, SSH, Terminal |
+| **Protocols** | RDP, VNC, SSH, Telnet, [kubernetes](https://kubernetes.io/) | Proprietary (encrypted) | RDP, VNC, SSH, Terminal |
 | **Client** | Browser-based (HTML5) | Desktop + web + mobile | Web-based |
 | **Self-Host Relay** | N/A (direct) | ✅ Built-in | ✅ Built-in |
 | **File Transfer** | ✅ Via RDP/VNC | ✅ Native | ✅ Native |
@@ -56,7 +56,7 @@ Apache Guacamole is a clientless remote desktop gateway. It supports standard pr
 
 Guacamole excels in environments where users need to access a mix of Windows (RDP), Linux (VNC/SSH), and network equipment (SSH/telnet) from a single browser interface. It integrates with Active Directory, LDAP, SAML, CAS, and OpenID Connect for authentication, and supports two-factor authentication via TOTP.
 
-### Docker Deployment
+### [docker](https://www.docker.com/) Deployment
 
 The official Docker deployment requires three services: Guacamole, guacd, and a database (PostgreSQL or MySQL) for connection configuration:
 
@@ -442,7 +442,7 @@ Permissions can be set per-device or per-group, allowing contractors temporary a
 
 **Pros**: Comprehensive IT management beyond just remote desktop, Intel AMT out-of-band management, excellent user permission system, built-in file manager, event logging, group/device organization, active development
 
-**Cons**: More complex setup than Guacamole or RustDesk, Node.js resource footprint, MongoDB dependency, web-only interface (no native desktop client), steeper learning curve
+**Cons**: More com[plex](https://www.plex.tv/) setup than Guacamole or RustDesk, Node.js resource footprint, MongoDB dependency, web-only interface (no native desktop client), steeper learning curve
 
 ---
 
@@ -505,3 +505,34 @@ Your choice depends on your primary use case:
 - **Choose MeshCentral** if you need comprehensive device management including power control, file management, terminal access, and user permissions alongside remote desktop. Ideal for IT departments managing fleets of workstations and servers.
 
 All three solutions are fully open-source, actively maintained, and can be deployed on commodity hardware. Start with the Docker compositions provided above, and scale from there based on your requirements.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

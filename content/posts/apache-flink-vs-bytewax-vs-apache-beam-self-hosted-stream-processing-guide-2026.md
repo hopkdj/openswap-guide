@@ -32,7 +32,7 @@ Three open-source frameworks dominate the self-hosted stream processing landscap
 | **Windowing** | Tumbling, sliding, session, global | Tumbling, sliding, session | Tumbling, sliding, session, global |
 | **Exactly-Once Semantics** | Yes (end-to-end with Kafka) | Yes | Yes (with Flink runner) |
 | **Event-Time Processing** | Native (watermarks) | Native (watermarks) | Native (watermarks) |
-| **CEP (Complex Event Processing)** | Built-in library | Custom logic required | No native CEP |
+| **CEP (Com[plex](https://www.plex.tv/) Event Processing)** | Built-in library | Custom logic required | No native CEP |
 | **SQL Interface** | Flink SQL (fully featured) | No | Limited (via ZetaSQL) |
 | **Deployment Model** | JobManager + TaskManagers | Single binary or cluster | Depends on runner |
 | **Learning Curve** | Steep | Moderate | Steep (two layers: API + runner) |
@@ -45,9 +45,7 @@ Three open-source frameworks dominate the self-hosted stream processing landscap
 
 **Apache Beam** is a unified programming model rather than a processing engine. You write your pipeline once using Beam's SDK, then choose a runner: Flink for streaming, Spark for batch, or the Direct runner for local testing. The promise is portability — the same pipeline code runs on any runner. In practice, this means maintaining an abstraction layer on top of your chosen engine, which adds complexity but pays off when you need to switch runners or run the same logic across batch and streaming contexts.
 
-## Installation and Deployment
-
-### Apache Flink — Docker Compose Setup
+## Installation and Deploym[docker](https://www.docker.com/)## Apache Flink — Docker Compose Setup
 
 Flink's architecture separates the JobManager (coordinator) from TaskManagers (workers). A minimal production-ready deployment requires one JobManager and at least two TaskManagers.
 
@@ -471,7 +469,7 @@ For teams that want to write stream processing in Python without managing a dist
 ```
 [Kafka] → [Bytewax Workers (3 replicas)]
         → [PostgreSQL (aggregated results)]
-        → [Metabase / Superset (visualization)]
+        → [Metabase / Sup[kubernetes](https://kubernetes.io/)ualization)]
 ```
 
 Run Bytewax workers as Kubernetes Deployments with a Horizontal Pod Autoscaler based on Kafka consumer lag:
@@ -535,3 +533,34 @@ Choose **Beam** when:
 - Your team can manage the added complexity of the abstraction layer
 
 All three frameworks are production-ready, open-source, and free to self-host. The right choice depends on your team's language preferences, operational capacity, and data volume — not on licensing or feature gaps. In 2026, the gap between them has narrowed: Flink has improved its Python support (PyFlink), Bytewax has added production clustering, and Beam continues to expand its runner ecosystem. Pick the one that matches your team's skills, deploy it behind your own firewalls, and process your data on your own terms.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

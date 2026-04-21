@@ -37,7 +37,7 @@ A distributed SQL database spreads data across multiple nodes while preserving A
 - **Survivable failures** — the database remains available as long as a quorum of replicas survives
 - **Standard SQL** — application code uses familiar SQL with standard drivers
 
-The trade-off is operational complexity: distributed databases require more careful planning around network latency between nodes, clock synchronization, and initial cluster bootstrapping. But the payoff — a database that scales horizontally while maintaining transactional integrity — is substantial.
+The trade-off is operational com[plex](https://www.plex.tv/)ity: distributed databases require more careful planning around network latency between nodes, clock synchronization, and initial cluster bootstrapping. But the payoff — a database that scales horizontally while maintaining transactional integrity — is substantial.
 
 ## Quick Comparison at a Glance
 
@@ -84,7 +84,7 @@ Data is automatically split into ranges, replicated across nodes (default 3x), a
 
 **Survivability.** CockroachDB can survive entire data center failures. With a 5-node cluster spread across 3 regions, losing one region still leaves a quorum. The database automatically re-replicates data to surviving nodes.
 
-**Built-in observability.** The DB Console (accessible at `http://localhost:8080`) provides real-time visibility into query execution, range distribution, replication health, and node metrics. No external monitoring setup is required.
+**Built-in observability.** The DB Console (accessible at `http://localhost:8080`) provides real-time visibility into query execution, range distribution, replication health, and node metrics. No external monitoring [docker](https://www.docker.com/)is required.
 
 ### Docker Compose Setup (Single Node — Development)
 
@@ -375,7 +375,7 @@ The separation between compute (TiDB) and storage (TiKV) means you can scale the
 
 **Massive scale.** TiDB is designed for very large clusters. Production deployments with 100+ TiKV nodes and tens of TiDB servers are common. The decoupled architecture means the SQL layer never becomes a bottleneck.
 
-**TiCDC for change data capture.** TiCDC streams row-level changes to downstream systems (Kafka, MySQL, storage) in real time, enabling event-driven architectures without dual-writes.
+**TiCDC for change data capture.** TiCD[kafka](https://kafka.apache.org/)eams row-level changes to downstream systems (Kafka, MySQL, storage) in real time, enabling event-driven architectures without dual-writes.
 
 ### Docker Compose Setup (Single Node via TiUP Playground — Development)
 
@@ -684,3 +684,34 @@ Lightning can import 1 TB of data in under 6 hours on a 3-node cluster.
 All three databases are production-ready and deployed at scale. The decision ultimately comes down to protocol compatibility (PostgreSQL vs MySQL), operational preferences, and specific feature needs like geo-partitioning, HTAP, or multi-API support.
 
 The best approach is to run a proof of concept with your actual workload. Each database has a Docker Compose setup that takes under five minutes to start. Import a subset of your production data, run your most important queries, and measure the results. The right choice will become obvious within an hour of hands-on testing.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

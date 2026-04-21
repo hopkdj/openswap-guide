@@ -73,7 +73,7 @@ cluster-init: true
 datastore-endpoint: "mysql://user:password@tcp(db-host:3306)/k3s"
 ```
 
-### Docker Compose Alternative with k3s
+### [docker](https://www.docker.com/) Compose Alternative with k3s
 
 For users migrating from Docker Compose, k3s makes the transition straightforward with Helm:
 
@@ -377,7 +377,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: nextcloud
+                name: [nextcloud](https://nextcloud.com/)
                 port:
                   number: 80
     - host: metrics.home.local
@@ -457,4 +457,35 @@ All three can run your entire self-hosted stack — from media servers to develo
 
 Start with k3s if you're new to Kubernetes. Consider Talos Linux if you want to practice the infrastructure-as-code patterns that are becoming the industry standard. And look at k0s if you want something in between — more opinionated than k3s, but less radical than Talos.
 
-The era of "Kubernetes is too complex for home use" is over. Pick a distribution, point it at some hardware, and start deploying.
+The era[plex](https://www.plex.tv/)"Kubernetes is too complex for home use" is over. Pick a distribution, point it at some hardware, and start deploying.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

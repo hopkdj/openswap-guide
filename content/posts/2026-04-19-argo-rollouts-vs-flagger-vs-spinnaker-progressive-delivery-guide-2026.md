@@ -8,7 +8,7 @@ description: "Compare Argo Rollouts, Flagger, and Spinnaker for progressive deli
 
 Progressive delivery has replaced traditional blue-green and canary deployments as the standard for releasing software safely in production. Instead of flipping a switch and hoping for the best, progressive delivery tools automatically shift traffic between old and new versions while monitoring key metrics — rolling back instantly if something goes wrong.
 
-For teams running Kubernetes, three open-source options dominate the progressive delivery space: **Argo Rollouts**, **Flagger**, and **Spinnaker**. Each takes a different architectural approach, and the right choice depends on your existing toolchain, cluster complexity, and deployment maturity.
+For teams running [kubernetes](https://kubernetes.io/), three open-source options dominate the progressive delivery space: **Argo Rollouts**, **Flagger**, and **Spinnaker**. Each takes a different architectural approach, and the right choice depends on your existing toolchain, cluster com[plex](https://www.plex.tv/)ity, and deployment maturity.
 
 As of April 2026, here is the current state of each project:
 
@@ -42,7 +42,7 @@ Argo Rollouts introduces a custom resource definition (CRD) called `Rollout` tha
 
 Key components:
 - **Rollout controller**: Manages the lifecycle of progressive deployments
-- **Analysis controller**: Evaluates metrics from Prometheus, Datadog, Wavefront, or other providers
+[prometheus](https://prometheus.io/)is controller**: Evaluates metrics from Prometheus, Datadog, Wavefront, or other providers
 - **kubectl plugin**: Provides CLI commands for managing rollouts
 - **Argo Rollouts Dashboard**: Optional web UI for visualizing deployment state
 

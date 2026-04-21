@@ -45,7 +45,7 @@ The third key concept is **automatic failover**: when the primary node becomes u
 
 ## Patroni: PostgreSQL HA with Distributed Consensus
 
-Patroni is widely considered the gold standard for PostgreSQL high availability. Originally developed by Zalando, it has become the go-to solution for production PostgreSQL clusters. Patroni uses a distributed consensus store — etcd, Consul, ZooKeeper, or Kubernetes — to manage cluster state and coordinate leader elections.
+Patroni is widely considered the gold standard for PostgreSQL high availability. Originally developed by Zalando, it has become the go-to solution for production PostgreSQL clusters. Patroni uses a distributed consensus store — etcd, Consul, ZooKeeper, or [kubernetes](https://kubernetes.io/) — to manage cluster state and coordinate leader elections.
 
 ### Architecture
 
@@ -53,7 +53,7 @@ Patroni runs as a daemon alongside each PostgreSQL instance. The cluster elects 
 
 Replication is handled by PostgreSQL's native streaming replication (physical) or logical replication. Patroni manages the entire lifecycle: initializing replicas, promoting a new leader, reconfiguring `postgresql.conf` and `pg_hba.conf` dynamically, and running custom scripts on state transitions.
 
-### Docker Compose Setup
+### [docker](https://www.docker.com/) Compose Setup
 
 Here is a production-ready Patroni cluster with three PostgreSQL nodes and a three-node etcd quorum:
 
@@ -552,7 +552,7 @@ networks:
 - **Standby cloning** — `repmgr standby clone` creates replicas from any healthy node
 - **Witness server** — a lightweight node that breaks ties during failover without holding data
 - **Event notifications** — hook scripts for failover, switchover, and node state changes
-- **Lower complexity** — no external consensus store required, just PostgreSQL itself
+- **Lower com[plex](https://www.plex.tv/)ity** — no external consensus store required, just PostgreSQL itself
 
 ### Operations with repmgr
 
@@ -677,3 +677,34 @@ FROM pg_stat_replication;
 | Highest availability guarantee | Patroni or Galera (depending on database) |
 
 Database high availability is not a set-and-forget concern. The tools covered here give you the building blocks, but achieving reliable HA requires testing, monitoring, and ongoing operational discipline. Start with the setup that matches your team's expertise, test failover thoroughly before going live, and iterate as your requirements evolve.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

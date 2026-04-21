@@ -39,7 +39,7 @@ MantisBT (Mantis Bug Tracker) is one of the oldest and most widely used open-sou
 - **RSS feeds**: Subscribe to issue activity feeds for any project, category, or custom filter.
 - **Plugin ecosystem**: Extend functionality with official and community plugins for LDAP, LDAP authentication, REST API enhancements, and more.
 
-### Docker Compose Setup
+### [docker](https://www.docker.com/) Compose Setup
 
 MantisBT requires a PHP runtime and a MySQL/MariaDB database. Here is a production-ready Docker Compose configuration:
 
@@ -93,7 +93,7 @@ Start the stack with `docker compose up -d`, then access MantisBT at `http://you
 
 ### When to Choose MantisBT
 
-MantisBT is the right choice when you want a no-nonsense bug tracker that installs quickly, uses minimal resources, and covers the essentials without overwhelming complexity. It is particularly popular with small-to-medium development teams, open-source projects, and IT departments that need straightforward issue tracking without the overhead of full project management suites.
+MantisBT is the right choice when you want a no-nonsense bug tracker that installs quickly, uses minimal resources, and covers the essentials without overwhelming com[plex](https://www.plex.tv/)ity. It is particularly popular with small-to-medium development teams, open-source projects, and IT departments that need straightforward issue tracking without the overhead of full project management suites.
 
 ## Redmine — The Full-Featured Project Management Suite
 
@@ -227,7 +227,7 @@ networks:
     driver: bridge
 ```
 
-Note that Flyspray's Docker image situation is less mature than MantisBT or Redmine. If the official image is unavailable, you can also run Flyspray on any standard PHP + PostgreSQL stack using Apache or Nginx. After downloading the source from GitHub, point your web server to the Flyspray directory and complete the browser-based installer.
+Note that Flyspray's Docker image situation is less mature than MantisBT or Redmine. If the official image is unavailable, you can also run Flyspray on a[nginx](https://nginx.org/)andard PHP + PostgreSQL stack using Apache or Nginx. After downloading the source from GitHub, point your web server to the Flyspray directory and complete the browser-based installer.
 
 ### When to Choose Flyspray
 

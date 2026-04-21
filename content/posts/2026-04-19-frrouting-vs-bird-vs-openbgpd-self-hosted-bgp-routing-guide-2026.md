@@ -8,7 +8,7 @@ description: "Compare FRRouting, BIRD, and OpenBGPD for self-hosted BGP routing.
 
 Border Gateway Protocol (BGP) is the routing protocol that glues the internet together. It decides how traffic flows between autonomous systems — the networks operated by ISPs, cloud providers, and large enterprises. But BGP isn't just for tier-1 providers anymore. Homelab enthusiasts, small ISPs, and self-hosting communities increasingly run their own BGP setups for multi-homing, peering exchanges, and overlay network integration.
 
-If you're running BGP on your own infrastructure, you need a reliable, open-source BGP daemon. The three most widely used options are **FRRouting**, **BIRD**, and **OpenBGPD**. Each takes a fundamentally different approach to routing. This guide compares them head-to-head and shows you how to deploy each one in a Docker container.
+If you're running BGP on your own infrastructure, you need a reliable, open-source BGP daemon. The three most widely used options are **FRRouting**, **BIRD**, and **OpenBGPD**. Each takes a fundamentally different approach to routing. This guide compares them head-to-head and shows you how to deploy each one in a [docker](https://www.docker.com/) container.
 
 ## Why Self-Host Your BGP Routing?
 
@@ -393,7 +393,7 @@ CMD ["bgpd", "-d", "-f", "/etc/bgpd.conf", "-n"]
 
 - You need **multiple routing protocols** (BGP + OSPF + IS-IS + EIGRP + PIM)
 - You want a **Cisco IOS-style CLI** for interactive management
-- You're running a **data center or ISP** with complex routing requirements
+- You're running a **data center or ISP** with com[plex](https://www.plex.tv/) routing requirements
 - You need **BGP flowspec** for DDoS mitigation
 - You need **EVPN** for VXLAN overlay networks
 - You want **official Docker images** and long-term support releases
@@ -412,7 +412,7 @@ CMD ["bgpd", "-d", "-f", "/etc/bgpd.conf", "-n"]
 - You want the **simplest possible BGP configuration**
 - You only need **BGP + basic OSPF**
 - You're already running **OpenBSD** (native support)
-- You value **code auditability** — the smallest codebase of the three
+- You value **code auditability** [matrix](https://matrix.org/)smallest codebase of the three
 
 ### Decision Matrix
 

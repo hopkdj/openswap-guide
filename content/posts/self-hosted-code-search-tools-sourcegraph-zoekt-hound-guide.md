@@ -29,7 +29,7 @@ Whether you're a small team of five developers or an enterprise with hundreds of
 | **Search Type** | Full-text + semantic | Full-text + trigram | Full-text regex | Full-text + Xref |
 | **Code Navigation** | Go-to-definition, find-references | Basic | None | Go-to-definition |
 | **Multi-repo** | Yes (unlimited) | Yes | Yes (via config) | Yes |
-| **Docker Support** | Excellent | Excellent | Excellent | Good |
+| **[docker](https://www.docker.com/) Support** | Excellent | Excellent | Excellent | Good |
 | **Resource Usage** | High (min 4 GB RAM) | Low (~200 MB RAM) | Very low (~50 MB RAM) | Moderate (~1 GB RAM) |
 | **Web UI** | Full IDE-like interface | Minimal | Clean and fast | Rich but dated |
 | **IDE Integration** | VS Code, JetBrains, Vim | None | None | None |
@@ -259,7 +259,7 @@ repex:myorg -file:vendor -file:test
 
 [Hound](https://github.com/hound-search/hound) is the simplest option in this comparison. Built by Etsy and now maintained as an independent project, Hound is a single binary that indexes Git repositories and provides a clean, fast web UI for regex-based search.
 
-Hound's philosophy is simplicity: drop a JSON configuration file pointing to your repositories, and you're done. No database, no Redis, no complex microservice architecture. Just a single process that serves search results in milliseconds.
+Hound's philosophy is simplicity: drop a JSON configuration file pointing to your repositories, and you're done. No database, no Redis, no com[plex](https://www.plex.tv/) microservice architecture. Just a single process that serves search results in milliseconds.
 
 ### When to Choose Hound
 
@@ -402,7 +402,7 @@ Regardless of which tool you choose, follow these security practices when self-h
 
 **1. Network Isolation**
 
-Run your code search instance on a private network segment, behind a reverse proxy:
+Run your code search instance on a pr[nginx](https://nginx.org/) network segment, behind a reverse proxy:
 
 ```nginx
 # /etc/nginx/sites-available/code-search
@@ -486,3 +486,34 @@ For most teams starting their self-hosted code search journey, we recommend this
 The common thread across all these tools is that they give you control over your code search infrastructure. No vendor lock-in, no API rate limits, and no concerns about your code being processed by external services. Your code stays on your servers, searchable by your team, on your terms.
 
 For organizations that take code security and developer productivity seriously, self-hosted code search isn't just a nice-to-have — it's essential infrastructure, right alongside your CI/CD pipeline and artifact registry.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

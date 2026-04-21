@@ -34,7 +34,7 @@ For related reading, see our [E2E testing tools comparison](../self-hosted-e2e-t
 - Built-in concurrency limiting and session queuing to prevent resource exhaustion
 - Automatic session timeout and cleanup for orphaned browser instances
 - Pre-installed fonts and Chrome extensions ready out of the box
-- Docker Compose deployment with health checks
+- [docker](https://www.docker.com/) Compose deployment with health checks
 - Puppeteer and Playwright compatible APIs
 - PDF generation and screenshot endpoints built in
 
@@ -276,7 +276,7 @@ driver.quit()
 - You want built-in concurrency limiting and session management
 - You're running screenshot or PDF generation services
 
-Browserless is the easiest to deploy and manage. The single-container setup with environment-based configuration makes it ideal for teams that want a "just works" solution without managing complex infrastructure.
+Browserless is the easiest to deploy and manage. The single-container setup with environment-based configuration makes it ideal for teams that want a "just works" solution without managing com[plex](https://www.plex.tv/) infrastructure.
 
 ### Pick Playwright Server If:
 
@@ -321,7 +321,7 @@ services:
     image: ghcr.io/browserless/chromium:latest
     environment:
       - TOKEN=${BROWSER_TOKEN}
-      - CONCURRENT=5
+[nginx](https://nginx.org/) - CONCURRENT=5
     expose:
       - "3000"
 

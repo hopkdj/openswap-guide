@@ -17,7 +17,7 @@ Running your own rate limiting layer gives you advantages that managed services 
 - **No per-request pricing** — Cloud rate limiting costs scale with your traffic. Self-hosted solutions cost the same whether you handle 1,000 or 10 million requests per day.
 - **Custom policies** — You are not locked into predefined tiers or fixed windows. Write per-endpoint, per-user, per-IP, or even per-header rules that match your exact business logic.
 - **Data stays on your infrastructure** — Rate limiting decisions require inspecting every request. With a self-hosted solution, request metadata never leaves your network.
-- **Works alongside any backend** — Whether your services run on bare metal, Kubernetes, or a mix of both, these tools slot in front of them without requiring code changes.
+- **Works alongside any backend** — Whether your services run on bare metal, [kubernetes](https://kubernetes.io/), or a mix of both, these tools slot in front of them without requiring code changes.
 - **Defense in depth** — Rate limiting is not just about abuse prevention. It protects your database connection pools, prevents cascading failures during traffic spikes, and gives you time to auto-scale before things break.
 
 The four solutions covered here — Nginx, Traefik, Envoy, and Kong — all handle rate limiting, but they approach it differently. Each excels in specific scenarios.
@@ -37,7 +37,7 @@ Nginx uses two directives:
 
 The shared memory zone is a fixed-size slab allocated at startup. Each unique key gets an entry with a timestamp. Nginx checks timestamps against the configured rate and either passes the request, delays it, or rejects it with a 503.
 
-### Docker Setup
+### [docker](https://www.docker.com/) Setup
 
 ```yaml
 version: "3.8"
@@ -459,7 +459,7 @@ descriptors:
 - You are already using Envoy or Istio
 - You need runtime-configurable rate limits without restarts
 
-Envoy's architecture is the most powerful of the four options but also the most complex. The separation between proxy and RLS means more moving parts to manage. It is the right choice when you are operating at scale with dozens or hundreds of service instances.
+Envoy's architecture is the most powerful of the four options but also the most com[plex](https://www.plex.tv/). The separation between proxy and RLS means more moving parts to manage. It is the right choice when you are operating at scale with dozens or hundreds of service instances.
 
 ---
 
@@ -659,3 +659,34 @@ The best rate limiter depends on what you are protecting and how you operate.
 A practical migration path many teams follow: start with Nginx for basic rate limiting, move to Traefik when container orchestration becomes necessary, adopt Envoy when distributed counters become a requirement, and layer Kong on top when API management needs grow beyond simple rate limiting.
 
 Whichever tool you choose, the most important step is to actually deploy rate limiting before you need it. The time to set up login brute-force protection is not during the brute-force attack.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

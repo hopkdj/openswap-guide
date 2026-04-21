@@ -8,9 +8,9 @@ description: "Compare containerd, CRI-O, and Podman — three leading OCI-compli
 
 Every container you run — whether it's a web server, database, or microservice — depends on a **container runtime** underneath. The runtime is the low-level software that actually creates, manages, and tears down containers on your host system.
 
-For most of Docker's history, the runtime was bundled together with the CLI, networking, and image management into one monolithic tool. But the ecosystem has since split into specialized, modular components. Today, three OCI-compliant runtimes dominate the self-hosted landscape: **containerd**, **CRI-O**, and **Podman**.
+For most of [docker](https://www.docker.com/)'s history, the runtime was bundled together with the CLI, networking, and image management into one monolithic tool. But the ecosystem has since split into specialized, modular components. Today, three OCI-compliant runtimes dominate the self-hosted landscape: **containerd**, **CRI-O**, and **Podman**.
 
-Choosing the right one matters. It affects your Kubernetes compatibility, security posture, operational complexity, and whether you can run containers without root privileges.
+Choosing the right on[kubernetes](https://kubernetes.io/) It affects your Kubernetes compatibility, security posture, operational com[plex](https://www.plex.tv/)ity, and whether you can run containers without root privileges.
 
 For related reading, see our [Kubernetes distribution comparison](../k3s-vs-k0s-vs-talos-linux-self-hosted-kubernetes-guide-2026/) for runtime integration details, our [container build tools guide](../buildah-vs-kaniko-vs-earthly-self-hosted-container-build-tools-guide-2026/) for image creation workflows, and our [container registry comparison](../harbor-vs-distribution-vs-zot-self-hosted-container-registry-guide-2026/) for image storage options.
 

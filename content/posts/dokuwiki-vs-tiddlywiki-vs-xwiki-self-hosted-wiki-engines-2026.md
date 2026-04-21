@@ -41,7 +41,7 @@ DokuWiki is a PHP-based wiki engine that stores all content as plain text files 
 - **SEO-friendly URLs** — clean URL structure for search engine indexing
 - **Media manager** — upload and organize images, PDFs, and other files within the wiki
 
-### Docker Compose Deployment
+### [docker](https://www.docker.com/) Compose Deployment
 
 The simplest way to deploy DokuWiki is with a lightweight PHP container. This configuration uses the `linuxserver/dokuwiki` image which bundles PHP, nginx, and DokuWiki in a single container:
 
@@ -260,7 +260,7 @@ XWiki is the right choice when you need enterprise wiki capabilities: structured
 | **Import/Export** | Text, HTML, PDF | HTML, JSON, Markdown | Confluence, MediaWiki, XAR, PDF |
 | **Search** | Full-text, plugin-enhanced | Tag-based, filter queries | Lucene-powered full-text |
 | **Docker Support** | Excellent | Good | Excellent |
-| **Setup Complexity** | Very low | Low | Moderate to high |
+| **Setup Com[plex](https://www.plex.tv/)ity** | Very low | Low | Moderate to high |
 | **Best For** | Personal wikis, homelab docs | Personal notebooks, research | Enterprise knowledge bases |
 
 ## Choosing the Right Wiki Engine
@@ -283,7 +283,7 @@ The decision between these three wikis comes down to your scale and requirements
 - You need enterprise features like structured data and advanced permissions
 - Your wiki serves a large organization with multiple departments
 - You require Office document editing and Confluence migration
-- You need multi-wiki hosting on a single server
+- You need multi-wiki hosting[wiki.js](https://js.wiki/)ingle server
 
 For related reading, see our [Wiki.js vs BookStack vs Outline comparison](../wiki-js-vs-bookstack-vs-outline/) for additional wiki engine options, our [self-hosted note-taking and knowledge management guide](../self-hosted-note-taking-knowledge-management/) for broader knowledge management solutions, and our [Docker Compose guide](../docker-compose-guide/) for container deployment fundamentals.
 

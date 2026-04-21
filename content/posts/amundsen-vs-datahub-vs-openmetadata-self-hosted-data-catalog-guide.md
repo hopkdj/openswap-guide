@@ -69,7 +69,7 @@ DataHub was open-sourced by LinkedIn in 2020 and is now maintained by Acryl Data
 - Built-in data quality insights integration
 
 **Weaknesses:**
-- Complex architecture with many dependencies (Kafka, Elasticsearch, MySQL, ZooKeeper)
+- Com[plex](https://www.plex.tv/) architecture with many dependencies (Kafka, Elasticsearch, MySQL, ZooKeeper)
 - Higher operational overhead for self-hosting
 - Steeper learning curve for administrators
 - UI can feel overwhelming with its density of features
@@ -106,8 +106,8 @@ OpenMetadata was launched in 2021 by the former CEO of DataHub at LinkedIn. It p
 | **Ingestion sources** | ~25 | 80+ | 50+ |
 | **Real-time updates** | No | Yes (Kafka) | Partial |
 | **Access control** | Basic | RBAC + Policies | RBAC |
-| **UI customization** | Limited | Moderate | Good |
-| **Docker deployment** | Yes | Yes (docker-compose) | Yes (docker-compose) |
+| **UI customization** | Limited [docker](https://www.docker.com/)rate | Good |
+| **Docker deployment** | Yes |[kubernetes](https://kubernetes.io/)er-compose) | Yes (docker-compose) |
 | **Kubernetes support** | Via Helm | Via Helm | Via Helm |
 | **License** | Apache 2.0 | Apache 2.0 | Apache 2.0 |
 
@@ -449,3 +449,34 @@ echo "[$(date)] Metadata ingestion complete."
 ```
 
 Monitor ingestion health through the platform's built-in dashboards or by scraping ingestion logs into your existing monitoring stack (Prometheus, Grafana). Set up alerts for failed ingestion runs so metadata gaps are caught early rather than discovered by frustrated analysts.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

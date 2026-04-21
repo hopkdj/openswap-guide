@@ -38,7 +38,7 @@ This architectural split defines everything:
 | **Last Updated** | April 2026 | April 2026 | April 2026 |
 | **License** | AGPL-3.0 | GPL-3.0 | GPL-3.0 |
 
-Klipper (⭐ 11,464 on GitHub) is the firmware that powers both Mainsail and Fluidd. It runs on a host computer (Raspberry Pi, Orange Pi, or x86 Linux) and sends step pulses to the printer MCU over USB, CAN bus, or UART. This design enables much higher print speeds, advanced features like input shaping and pressure advance, and multi-MCU setups for complex printer kinematics.
+Klipper (⭐ 11,464 on GitHub) is the firmware that powers both Mainsail and Fluidd. It runs on a host computer (Raspberry Pi, Orange Pi, or x86 Linux) and sends step pulses to the printer MCU over USB, CAN bus, or UART. This design enables much higher print speeds, advanced features like input shaping and pressure advance, and multi-MCU setups for com[plex](https://www.plex.tv/) printer kinematics.
 
 ## OctoPrint: The Established Standard
 
@@ -51,9 +51,7 @@ OctoPrint has been the go-to 3D printer web interface since 2013. It connects to
 - **Built-in G-code viewer**: Preview your sliced models directly in the browser with layer-by-layer navigation
 - **User access control**: Multi-user support with role-based permissions
 - **Safe Z homing and temperature monitoring**: Built-in safety features that pause prints on thermal runaway
-- **Responsive web UI**: Clean dashboard with webcam integration, progress bars, and temperature graphs
-
-### Installation via Docker
+- **Responsive web UI**: Clean dashboard with webcam integration, progress bars, and temperature graph[docker](https://www.docker.com/) Installation via Docker
 
 OctoPrint's official Docker image makes deployment straightforward:
 
@@ -179,7 +177,7 @@ Fluidd is another Klipper-focused web interface, positioned as a lighter, faster
 
 ### Key Features
 
-- **Fast and lightweight**: Smaller footprint, faster load times, less memory usage
+- **Fast and lightweigh[ory](https://www.ory.sh/): Smaller footprint, faster load times, less memory usage
 - **Clean, minimal UI**: Focused interface without feature bloat — everything you need, nothing you don't
 - **Multi-printer support**: Manage multiple Klipper printers with a sidebar switcher
 - **Macro management**: Edit and run G-code macros with a dedicated panel

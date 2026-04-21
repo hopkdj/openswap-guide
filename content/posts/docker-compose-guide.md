@@ -6,7 +6,7 @@ draft: false
 description: "Complete beginner's guide to Docker Compose. Learn how to define, run, and manage multi-container Docker applications with practical examples."
 ---
 
-## What is Docker Compose?
+## What is [docker](https://www.docker.com/) Compose?
 
 Docker Compose lets you define and run multi-container applications with a single YAML file. Instead of running multiple `docker run` commands, you define everything in `docker-compose.yml`.
 
@@ -21,7 +21,7 @@ Docker Compose lets you define and run multi-container applications with a singl
 
 ```yaml
 version: '3.8'
-services:
+s[nginx](https://nginx.org/)es:
   web:
     image: nginx:alpine
     ports:
@@ -184,7 +184,6 @@ A: Use `docker run --rm -v volume_name:/data -v $(pwd):/backup alpine tar czf /b
 
 ## Next Steps
 
-- Learn about Docker networking
-- Set up monitoring with Portainer
+- Learn about Docker networkin[portainer](https://www.portainer.io/)p monitoring with Portainer
 - Configure automatic updates with Watchtower
 - Explore Docker Swarm for clustering

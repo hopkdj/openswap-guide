@@ -86,7 +86,7 @@ _api:
     - "v=spf1 include:_spf.example.com ~all"
 ```
 
-### Docker Deployment
+### [docker](https://www.docker.com/) Deployment
 
 ```yaml
 # docker-compose.yml
@@ -339,7 +339,7 @@ services:
 | **Provider support** | 25+ providers via standardized API |
 | **Simplicity** | CLI commands are straightforward for one-off changes |
 | **Certbot integration** | Widely used for DNS-01 ACME challenges |
-| **Lightweight** | Minimal overhead, no complex configuration structure |
+| **Lightweight** | Minimal overhead, no com[plex](https://www.plex.tv/) configuration structure |
 | **No built-in sync** | Must build your own sync/diff logic |
 | **No preview mode** | Changes are applied immediately without diff |
 | **Maintenance** | Less active development; last significant update in late 2024 |
@@ -410,7 +410,7 @@ Yes. All three tools support managing multiple domains. OctoDNS and DNSControl l
 
 ### How do I handle DNS secrets and API keys?
 
-Never commit API keys to your Git repository. Use environment variables, CI/CD secret stores (GitHub Secrets, GitLab CI Variables), or external secret management tools. DNSControl's `creds.json` should be added to your `.gitignore`. OctoDNS supports `env/` prefix in config to read credentials from environment variables.
+Never commit API keys to your Git repository. Use environme[gitlab](https://about.gitlab.com/)iables, CI/CD secret stores (GitHub Secrets, GitLab CI Variables), or external secret management tools. DNSControl's `creds.json` should be added to your `.gitignore`. OctoDNS supports `env/` prefix in config to read credentials from environment variables.
 
 ### Which tool is best for CI/CD pipeline integration?
 

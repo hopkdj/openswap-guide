@@ -38,7 +38,7 @@ Here is what makes Grist different from a regular spreadsheet like LibreOffice C
 
 - **Access control at the row and column level.** Define who can see or edit specific records or fields. This is impossible in a traditional spreadsheet but essential for team collaboration.
 
-- **Python-powered formulas.** Grist uses Python as its formula language. If you know Python, you can write complex calculations, date manipulations, string processing, and conditional logic directly in your cells.
+- **Python-powered formulas.** Grist uses Python as its formula language. If you know Python, you can write com[plex](https://www.plex.tv/) calculations, date manipulations, string processing, and conditional logic directly in your cells.
 
 - **Document-based organization.** Each Grist document is a self-contained collection of tables, views, and dashboards. You can organize documents into workspaces, share them with specific people, and set permissions per workspace.
 
@@ -49,7 +49,7 @@ Grist is not the only self-hosted spreadsheet-database hybrid. Here is how it co
 | Feature | Grist | Airtable | Baserow | Nocodb |
 |---------|-------|----------|---------|--------|
 | **License** | Apache 2.0 | Proprietary | MIT | AGPL 3.0 |
-| **Self-hosted** | Yes (Docker) | No | Yes (Docker) | Yes (Docker) |
+|[docker](https://www.docker.com/)f-hosted** | Yes (Docker) | No | Yes (Docker) | Yes (Docker) |
 | **Formula language** | Python | Airtable formulas | Excel-like | Excel-like |
 | **Relational model** | Full (foreign keys) | Limited (linked records) | Yes | Yes (via database) |
 | **Access control** | Row + column level | Basic (table/workspace) | Basic | Table-level |
@@ -178,8 +178,7 @@ environment:
   - GRIST_GOOGLE_CLIENT_SECRET=your-google-client-secret
   - GRIST_GOOGLE_LOGIN=required
 ```
-
-For generic OpenID Connect (works with Authentik, Keycloak, Authelia, and other providers):
+[keycloak](https://www.keycloak.org/)eric OpenID Connect (works with Authentik, Keycloak, Authelia, and other providers):
 
 ```yaml
 environment:
@@ -364,3 +363,34 @@ Grist is not the best fit for every use case:
 Grist occupies a unique space in the self-hosted tool landscape. It is more powerful than a spreadsheet, more approachable than a database, and more flexible than most no-code platforms. The combination of Python formulas, relational data modeling, and granular access control makes it a genuinely useful tool for teams that need to organize and analyze data without building custom software.
 
 With a straightforward Docker installation, straightforward backup procedures, and support for OAuth2/OIDC authentication, running Grist on your own infrastructure is well within reach for anyone comfortable with basic server administration. If you have been paying for Airtable or struggling with unwieldy spreadsheets, giving Grist a try on a spare server or a low-cost VPS is one of the most practical steps you can take toward data independence in 2026.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

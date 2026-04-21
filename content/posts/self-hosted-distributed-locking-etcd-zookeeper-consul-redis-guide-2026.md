@@ -6,9 +6,9 @@ draft: false
 description: "Compare self-hosted distributed locking solutions — etcd, ZooKeeper, Consul, and Redis Redlock. Learn which distributed lock implementation fits your infrastructure with Docker configs and real-world benchmarks."
 ---
 
-When multiple services need coordinated access to a shared resource, a distributed lock is the answer. Whether you're running scheduled jobs across Kubernetes pods, managing leader election in a microservices cluster, or preventing double-processing in a distributed queue, picking the right locking primitive matters.
+When multiple services need coordinated access to a shared resource, a distributed lock is the answer. Whether you're running scheduled jobs across [kubernetes](https://kubernetes.io/) pods, managing leader election in a microservices cluster, or preventing double-processing in a distributed queue, picking the right locking primitive matters.
 
-This guide compares the four most popular self-hosted distributed locking solutions: **etcd**, **Apache ZooKeeper**, **HashiCorp Consul**, and **Redis** (Redlock algorithm). We'll cover how each works, provide Docker deployment configs, and help you choose the right tool for your infrastructure.
+This guide compares the four most popular self-hosted distributed locking solutions: **etcd**, **Apache ZooKeeper**, **HashiCorp Consul**, and **Redis** (Redlock algorithm). We'll cover how each works, provide [docker](https://www.docker.com/) deployment configs, and help you choose the right tool for your infrastructure.
 
 ## Why You Need Distributed Locking
 
@@ -358,7 +358,7 @@ For production, add `--appendonly yes` and configure `min-replicas-to-write` to 
 
 ### Decision Matrix
 
-- **Choose etcd** if you run Kubernetes — it's already in your cluster, and the Go client is excellent.
+- **Choose etcd** if you run Kubernetes — it's already in your cluster, and the Go client is [kafka](https://kafka.apache.org/)lent.
 - **Choose ZooKeeper** if you run Hadoop, Kafka, or other JVM-based distributed systems.
 - **Choose Consul** if you already use it for service discovery and want a unified coordination layer.
 - **Choose Redis Redlock** if you need maximum throughput and can tolerate weaker consistency guarantees (e.g., rate limiting, cache stampede prevention).

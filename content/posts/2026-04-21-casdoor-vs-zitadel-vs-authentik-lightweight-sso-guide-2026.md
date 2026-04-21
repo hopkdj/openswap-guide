@@ -10,9 +10,9 @@ description: "Compare three modern self-hosted identity providers — Casdoor, Z
 
 Authentication is the foundation of every service you run. Whether you manage a homelab with a dozen applications or operate a multi-team infrastructure with hundreds of services, users need a reliable, secure way to log in once and access everything. Cloud-hosted SSO providers — Okta, Auth0, Microsoft Entra ID — charge per active user, impose rate limits, and store your user data on their servers. For organizations handling sensitive data or operating under data residency regulations (GDPR, HIPAA, SOC 2), handing authentication to a third party introduces compliance risk and ongoing cost.
 
-Self-hosting a single sign-on provider gives you full control over the authentication flow, user directory, session policies, and audit logs. You eliminate per-user licensing fees, avoid vendor lock-in, and can integrate with any internal system — LDAP directories, HR databases, custom applications — without waiting for a vendor connector. The self-hosted identity landscape in 2026 has matured significantly, with several projects offering enterprise-grade features alongside simple Docker-based deployments.
+Self-hosting a single sign-on provider gives you full control over the authentication flow, user directory, session policies, and audit logs. You eliminate per-user licensing fees, avoid vendor lock-in, and can integrate with any internal system — LDAP directories, HR databases, custom applications — without waiting for a vendor connector. The self-hosted identity landscape in 2026 has matured significantly, with several projects offering enterprise-grade features alongside simple [docker](https://www.docker.com/)-based deployments.
 
-This guide compares three modern, actively maintained self-hosted identity providers: **Casdoor**, **Zitadel**, and **Authentik**. Each takes a different approach to the problem, from Go-based simplicity to event-sourced multi-tenancy to Django-powered extensibility. We cover architecture, protocol support, deployment complexity, and provide production-ready Docker Compose configurations for each.
+This guide compares three modern, actively maintained self-hosted identity providers: **Casdoor**, **Zitadel**, and **Authentik**. Each takes a different approach to the problem, from Go-based simplicity to event-sourced multi-tenancy to Django-powered extensibility. We cover architecture, protocol support, deployment com[plex](https://www.plex.tv/)ity, and provide production-ready Docker Compose configurations for each.
 
 ---
 
@@ -322,7 +322,7 @@ Yes, Zitadel supports PostgreSQL as an alternative database. However, some featu
 
 ### How does Authentik handle high availability?
 
-Authentik supports horizontal scaling by running multiple server instances behind a load balancer, all sharing the same PostgreSQL database. The worker processes can also be scaled independently. For the database layer, PostgreSQL streaming replication with a read replica handles read scaling, and tools like Patroni or Stolon provide automated failover. Authentik's stateless server design means any instance can handle any request.
+Authentik supports horizontal scaling by running multiple server instances behind a load balancer, all sharing the same PostgreSQL database. The worker processes can also be scaled independently. For the database layer, PostgreSQL streaming replication with a read replica handles read scaling, and tools like Patroni or Stolon provide automated failover. Authentik's stateless server design means any instance can[keycloak](https://www.keycloak.org/)any request.
 
 ### Can I migrate users from Keycloak to any of these platforms?
 

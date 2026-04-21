@@ -19,7 +19,7 @@ Self-hosting your incident management stack solves multiple problems at once:
 - **On-prem notification routing** — route alerts through internal Gotify, Ntfy, or Matrix instances that external SaaS tools cannot reach
 - **Custom escalation logic** — build multi-tier routing policies that match your exact organizational structure
 
-Whether you manage a production Kubernetes cluster, a homelab with dozens of services, or a small business IT stack, self-hosted incident management gives you enterprise-grade alerting without the enterprise-grade price tag. This guide covers the three most capable open-source options available in 2026.
+Whether you manage a production [kubernetes](https://kubernetes.io/) cluster, a homelab with dozens of services, or a small business IT stack, self-hosted incident management gives you enterprise-grade alerting without the enterprise-grade price tag. This guide covers the three most capable open-source options available in 2026.
 
 ## What Is Incident Management and On-Call Alerting?
 
@@ -53,10 +53,10 @@ Without proper incident management, alerts get lost in Slack channels, nobody kn
 | **Multi-Tenant** | ✅ Teams and organizations | ✅ Customers and environments | ❌ |
 | **Post-Mortem/Blameless** | ✅ Built-in notes | ⚠️ Via annotations | ❌ |
 | **Status Page** | ⚠️ Via Grafana | ❌ | ❌ |
-| **Docker Support** | ✅ Official images | ✅ Official images | Community images |
+| **[docker](https://www.docker.com/) Support** | ✅ Official images | ✅ Official images | Community images |
 | **Prometheus Integration** | ✅ Native | ✅ Native | ❌ |
 | **Database** | PostgreSQL, MySQL, SQLite | PostgreSQL, MongoDB | PostgreSQL, MySQL |
-| **Complexity** | Medium-High | Medium | Low |
+| **Com[plex](https://www.plex.tv/)ity** | Medium-High | Medium | Low |
 
 ### Choosing the Right Tool
 
@@ -588,3 +588,34 @@ Choose **Alerta** if your primary challenge is alert noise and deduplication. It
 Choose **OpenDuty** if you need something simple and lightweight — a basic on-call rotation system for a small team that does not justify the infrastructure overhead of the other two options.
 
 All three platforms eliminate the per-user pricing model that makes PagerDuty expensive. All three keep your incident data on your own servers. And all three can replace PagerDuty entirely with proper configuration and migration planning.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

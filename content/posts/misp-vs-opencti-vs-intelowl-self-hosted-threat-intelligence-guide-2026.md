@@ -6,7 +6,7 @@ draft: false
 description: "Compare MISP, OpenCTI, and IntelOwl — the top 3 open-source, self-hosted threat intelligence platforms. Docker setup guides, feature comparison, and which to choose for your SOC in 2026."
 ---
 
-Threat intelligence has become a cornerstone of modern cybersecurity operations. Security teams need to enrich indicators of compromise (IOCs), correlate attack patterns, and share actionable intel across organizations — all without sending sensitive data to third-party cloud providers. In 2026, three open-source platforms dominate the self-hosted threat intelligence landscape: **MISP**, **OpenCTI**, and **IntelOwl**. Each takes a different approach to collecting, organizing, and acting on threat data. This guide compares all three in detail, with complete Docker deployment instructions so you can run any of them on your own infrastructure.
+Threat intelligence has become a cornerstone of modern cybersecurity operations. Security teams need to enrich indicators of compromise (IOCs), correlate attack patterns, and share actionable intel across organizations — all without sending sensitive data to third-party cloud providers. In 2026, three open-source platforms dominate the self-hosted threat intelligence landscape: **MISP**, **OpenCTI**, and **IntelOwl**. Each takes a different approach to collecting, organizing, and acting on threat data. This guide compares all three in detail, with complete [docker](https://www.docker.com/) deployment instructions so you can run any of them on your own infrastructure.
 
 ## Why Self-Host Your Threat Intelligence Platform
 
@@ -139,7 +139,7 @@ OpenCTI's differentiator is its rich data model and visual investigation capabil
 
 ### Docker Deployment
 
-OpenCTI requires a more complex stack with Elasticsearch, RabbitMQ, Redis, and MinIO. The platform provides deployment files through the `opencti-docker` project:
+OpenCTI requires a more com[plex](https://www.plex.tv/) stack with Elasticsearch, RabbitMQ, Redis, and MinIO. The platform provides deployment files through the `opencti-docker` project:
 
 ```bash
 git clone https://github.com/OpenCTI-Platform/opencti.git
@@ -261,7 +261,7 @@ services:
       - env_file_app
       - .env
     healthcheck:
-      test: ["CMD-SHELL", "nc -z localhost 8001 || exit 1"]
+      test: ["CMD-SHELL", "nc -[nginx](https://nginx.org/)alhost 8001 || exit 1"]
       interval: 5s
 
   nginx:

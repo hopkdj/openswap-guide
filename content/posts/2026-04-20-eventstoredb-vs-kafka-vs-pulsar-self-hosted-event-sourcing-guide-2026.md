@@ -8,9 +8,9 @@ description: "Compare EventStoreDB, Apache Kafka, and Apache Pulsar for self-hos
 
 Event sourcing has emerged as one of the most powerful architectural patterns for building resilient, auditable, and scalable systems. Instead of storing only the current state of your data, event sourcing persists every state change as an immutable event in an append-only log. This gives you a complete history, natural audit trails, and the ability to replay events to rebuild state at any point in time.
 
-But choosing the right platform to store and process those events is critical. Three options dominate the self-hosted event sourcing landscape: **EventStoreDB**, a purpose-built event sourcing database; **Apache Kafka**, the industry-standard distributed event streaming platform; and **Apache Pulsar**, a next-generation cloud-native messaging and streaming system.
+But choosing the right platform to store and process those events is critical. Three options dominate the self-hosted event sourcing landscape: **EventStoreDB**, a purpose-built event sourcing database; **Apache [kafka](https://kafka.apache.org/)**, the industry-standard distributed event streaming platform; and **Apache Pulsar**, a next-generation cloud-native messaging and streaming system.
 
-In this guide, we compare all three platforms head-to-head — covering architecture, Docker deployment, performance, and real-world use cases — so you can pick the right tool for your event-driven system.
+In this guide, we compare all three platforms head-to-head — covering architecture, [docker](https://www.docker.com/) deployment, performance, and real-world use cases — so you can pick the right tool for your event-driven system.
 
 ## Why Self-Hosted Event Sourcing Matters
 
@@ -410,7 +410,7 @@ pulsar-client produce persistent://myorg/orders/order-events \
 
 EventStoreDB excels when you need precise per-stream operations with optimistic concurrency. Kafka delivers the highest raw throughput for fire-and-forget event streaming. Pulsar offers the best operational flexibility with compute-storage separation.
 
-If you are building complex workflows on top of your event streams, you may want to pair your event sourcing platform with a workflow orchestration engine. See our [Temporal vs Camunda vs Flowable comparison](../temporal-vs-camunda-vs-flowable-self-hosted-workflow-orchestration-guide-2026/) for guidance on that layer.
+If you are building com[plex](https://www.plex.tv/) workflows on top of your event streams, you may want to pair your event sourcing platform with a workflow orchestration engine. See our [Temporal vs Camunda vs Flowable comparison](../temporal-vs-camunda-vs-flowable-self-hosted-workflow-orchestration-guide-2026/) for guidance on that layer.
 
 ## FAQ
 

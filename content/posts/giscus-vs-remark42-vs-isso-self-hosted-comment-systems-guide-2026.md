@@ -8,7 +8,7 @@ description: "Compare three self-hosted comment systems — Giscus, Remark42, an
 
 If you run a self-hosted blog, documentation site, or static website, you need a way for readers to leave comments — but relying on third-party services like Disqus means surrendering user data, injecting tracking scripts, and accepting ads you don't control. Self-hosted comment systems give you full ownership of every comment, zero third-party tracking, and complete control over moderation and data retention.
 
-In this guide, we compare three mature, open-source self-hosted comment engines: **Giscus**, **Remark42**, and **Isso**. We'll look at their architecture, feature sets, deployment complexity, and real-world performance so you can pick the right tool for your site.
+In this guide, we compare three mature, open-source self-hosted comment engines: **Giscus**, **Remark42**, and **Isso**. We'll look at their architecture, feature sets, deployment com[plex](https://www.plex.tv/)ity, and real-world performance so you can pick the right tool for your site.
 
 ## Why Self-Host Your Comment System
 
@@ -88,7 +88,7 @@ To get `data-repo-id` and `data-category-id`, visit [giscus.app](https://giscus.
 - **Email notifications**: Configurable email alerts for new comments and replies.
 - **Granular moderation**: Approve, delete, or pin individual comments. Block users by IP.
 - **RSS feed**: Per-site and per-user comment feeds.
-- **Admin dashboard**: Web-based admin panel for moderation, comment management, and user administration.
+- **Admin dashboard**: Web-based admin panel for moderation, comment management, and us[docker](https://www.docker.com/)inistration.
 
 ### Docker Deployment
 
@@ -130,7 +130,7 @@ services:
 Start with:
 
 ```bash
-mkdir -p remark42-data
+mkdir -p rema[nginx](https://nginx.org/)data
 docker compose up -d
 ```
 

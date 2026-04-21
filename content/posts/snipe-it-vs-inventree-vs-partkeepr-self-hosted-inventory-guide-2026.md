@@ -23,7 +23,7 @@ In this guide, we compare the three most mature open-source inventory management
 | **Database** | MySQL/MariaDB | PostgreSQL | MySQL |
 | **GitHub Stars** | 13,665 | 6,829 | 1,526 |
 | **Last Updated** | April 2026 | April 2026 | May 2023 |
-| **Docker Support** | Official image | Official compose stack | Community images only |
+| **[docker](https://www.docker.com/) Support** | Official image | Official compose stack | Community images only |
 | **Barcode/QR** | Built-in | Built-in | Built-in |
 | **Multi-Location** | Yes | Yes | Yes |
 | **Check-in/Out** | Yes | Yes | No |
@@ -143,7 +143,7 @@ InvenTree is particularly strong for electronics labs, 3D printing shops, small 
 
 ### Docker Compose Deployment
 
-InvenTree ships with a comprehensive production-ready compose stack in `contrib/container/`. The official stack includes five services: PostgreSQL, Redis cache, Gunicorn web server, Django-Q worker, and Caddy reverse proxy.
+InvenTree ships with a comprehensive production-ready compose stack in `contrib/container/`. The official stack includes [redis](https://redis.io/)services: PostgreSQL, Redis cache, Gunicorn web se[caddy](https://caddyserver.com/) Django-Q worker, and Caddy reverse proxy.
 
 ```yaml
 # Simplified InvenTree docker-compose.yml

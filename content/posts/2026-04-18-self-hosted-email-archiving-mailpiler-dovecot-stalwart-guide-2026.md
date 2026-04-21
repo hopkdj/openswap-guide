@@ -19,9 +19,9 @@ Self-hosted email archiving gives you:
 - **Data sovereignty** — email archives never leave your server, satisfying strict data residency laws
 - **Centralized journaling** — capture all inbound and outbound mail from every account in one searchable repository
 
-In 2026, three approaches dominate the self-hosted email archiving space: **MailPiler** (dedicated archiving application), **Dovecot's built-in archiving plugin** (IMAP-level solution), and **Stalwart Mail Server** (all-in-one server with native journaling). Let's compare them.
+In 2026, three approaches dominate the self-hosted email archiving space: **MailPiler** (dedicated archiving application), **Dovecot's built-in archiving plugin** (IMAP-level solution), and **[stalwart](https://stalw.art/) Mail Server** (all-in-one server with native journaling). Let's compare them.
 
-For related reading, see our [complete self-hosted email server guide with Postfix, Dovecot, and Rspamd](../self-hosted-email-server-postfix-dovecot-rspamd-complete-guide-2026/) and the [Stalwart vs Mailcow vs Mailu comparison](../stalwart-vs-mailcow-vs-mailu/) for broader email server alternatives.
+For related reading, see our [complete self-hosted email server guide with Postfix, Dovecot, and Rspamd](../self-hosted-email-server-postfix-dovecot-rspamd-complete-guide-2026/) and the [Stalwart vs [mailcow](https://mailcow.email/) vs Mailu comparison](../stalwart-vs-mailcow-vs-mailu/) for broader email server alternatives.
 
 ## Quick Comparison Table
 
@@ -41,7 +41,7 @@ For related reading, see our [complete self-hosted email server guide with Postf
 | **Retention Policies** | ✅ Configurable per-user/per-domain | ❌ Manual (cron + doveadm) | ✅ Configurable |
 | **Legal Hold** | ✅ Tag-based | ❌ Not supported | ⚠️ Via retention rules |
 | **E-Discovery Export** | ✅ PST/EML export | ❌ Manual export | ✅ JMAP export |
-| **Docker Support** | ✅ Official compose | ⚠️ Community images | ✅ Official Docker image |
+| **[docker](https://www.docker.com/) Support** | ✅ Official compose | ⚠️ Community images | ✅ Official Docker image |
 | **Best For** | Compliance-focused teams | Existing Dovecot deployments | New mail server setups |
 
 ---

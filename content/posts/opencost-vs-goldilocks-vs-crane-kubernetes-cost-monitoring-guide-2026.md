@@ -6,7 +6,7 @@ draft: false
 description: "Compare OpenCost, Goldilocks, and Crane for self-hosted Kubernetes cost monitoring, resource right-sizing, and FinOps. Installation guides and configuration examples included."
 ---
 
-Kubernetes clusters are notorious for silent budget blowouts. Without proper visibility, teams over-provision CPU and memory, pay for idle pods, and struggle to allocate cloud spend across namespaces and teams. Self-hosted Kubernetes cost monitoring tools solve this by providing real-time cost allocation, resource optimization recommendations, and FinOps-grade reporting — all within your own infrastructure.
+[kubernetes](https://kubernetes.io/) clusters are notorious for silent budget blowouts. Without proper visibility, teams over-provision CPU and memory, pay for idle pods, and struggle to allocate cloud spend across namespaces and teams. Self-hosted Kubernetes cost monitoring tools solve this by providing real-time cost allocation, resource optimization recommendations, and FinOps-grade reporting — all within your own infrastructure.
 
 In this guide, we compare three leading open-source Kubernetes cost management platforms: **OpenCost** (the CNCF standard), **Goldilocks** (Fairwinds' VPA recommendation engine), and **Crane** (gocrane's FinOps platform). Each takes a different approach to the same problem: making sure you only pay for what you actually need.
 
@@ -37,7 +37,7 @@ For teams running Kubernetes in production, cost visibility is not optional — 
 - **Real-time cost allocation** per pod, deployment, namespace, label, and service
 - **Multi-cloud support** for AWS, GCP, Azure, Alibaba Cloud, and Oracle Cloud
 - **On-premises pricing** with configurable custom rate cards
-- **Asset cost tracking** for nodes, persistent volumes, load balancers, and network egress
+- **Asset cost tracking** for nodes, persistent volumes, load balancers, and n[prometheus](https://prometheus.io/)ess
 - **API and Prometheus metrics** export for integration with Grafana dashboards
 - **Kubernetes-native architecture** deployed as a standard set of deployments and services
 - **Efficiency metrics** showing request vs. actual utilization ratios
@@ -332,7 +332,7 @@ Goldilocks is the simplest tool of the three. It does one thing well: tell you w
 - You operate **multiple clusters** and want centralized management
 - You want **time-series forecasting** to anticipate scaling needs
 
-Crane is the most ambitious platform, combining cost monitoring with actual resource optimization through predictive autoscaling. The trade-off is higher complexity and infrastructure overhead compared to the other two tools.
+Crane is the most ambitious platform, combining cost monitoring with actual resource optimization through predictive autoscaling. The trade-off is higher com[plex](https://www.plex.tv/)ity and infrastructure overhead compared to the other two tools.
 
 ## Best Practices for Kubernetes Cost Optimization
 

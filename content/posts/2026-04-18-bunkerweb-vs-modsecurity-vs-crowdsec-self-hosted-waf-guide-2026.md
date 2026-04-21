@@ -20,7 +20,7 @@ Running your own WAF eliminates several downsides of managed services:
 - **Compliance** — keep sensitive request data in-house for GDPR, HIPAA, or PCI-DSS environments
 - **Full visibility** — inspect every blocked request, not just a dashboard summary
 
-For teams that already run self-hosted reverse proxies and load balancers (see our [load balancer guide](../self-hosted-load-balancers-traefik-haproxy-nginx-high-availability-guide-2026/) and [reverse proxy comparison](../reverse-proxy-comparison/)), adding a WAF layer is a natural next step.
+For teams that already run self-hosted reverse proxies and load balancers (see our [load balancer guide](../self-hosted-load-balancers-traefik-haproxy-[nginx](https://nginx.org/)-high-availability-guide-2026/) and [reverse proxy comparison](../reverse-proxy-comparison/)), adding a WAF layer is a natural next step.
 
 ## BunkerWeb: The All-in-One WAF
 
@@ -36,7 +36,7 @@ BunkerWeb (10,300+ stars on GitHub, actively maintained by Bunkerity) is a next-
 - **Multi-site support** with per-site security profiles
 - **Scheduler service** for background tasks like certificate renewal and log rotation
 
-### Docker Compose Configuration
+### [docker](https://www.docker.com/) Compose Configuration
 
 BunkerWeb's official Docker Compose setup deploys two containers — the WAF proxy and a scheduler:
 
@@ -232,7 +232,7 @@ CrowdSec (13,000+ stars) takes a fundamentally different approach. Instead of re
 
 - **Crowdsourced IP reputation database** — blocks IPs flagged by the global community
 - **Scenario-based detection** — defines patterns (brute force, port scans, crawls) and triggers bans
-- **Bouncer architecture** — lightweight plugins for NGINX, Apache, Traefik, Caddy, Cloudflare, and more
+- **Bouncer architecture** —[caddy](https://caddyserver.com/)tweight plugins for NGINX, Apache, Traefik, Caddy, Cloudflare, and more
 - **Local API + Central API** — self-hosted decision server with optional community IP sharing
 - **Post-overflow analysis** — enriches blocked events with geolocation, reverse DNS, and threat category
 

@@ -10,7 +10,7 @@ When teams need to sketch architecture diagrams, brainstorm product ideas, or ru
 
 Self-hosted whiteboard and diagram tools solve all three problems at once. You keep full control over your data, eliminate per-seat licensing costs, and run the software on your own infrastructure. In 2026, the open-source ecosystem offers several mature options that rival their commercial counterparts.
 
-This guide covers the three most popular self-hosted whiteboard tools — **Excalidraw**, **WBO (Whiteboard Online)**, and **Draw.io (diagrams.net)** — with hands-on Docker deployment instructions for each.
+This guide covers the three most popular self-hosted whiteboard tools — **Excalidraw**, **WBO (Whiteboard Online)**, and **Draw.io (diagrams.net)** — with hands-on [docker](https://www.docker.com/) deployment instructions for each.
 
 ## Why Self-Host Your Whiteboard Tools
 
@@ -100,7 +100,7 @@ draw.example.com {
 }
 
 collab.example.com {
-    reverse_proxy localhost:3001
+    reverse_proxy loc[nginx](https://nginx.org/)t:3001
 }
 ```
 
@@ -274,7 +274,7 @@ Draw.io (also known as diagrams.net) is the most feature-rich option in this com
 
 ### Key Features
 
-- **Extensive shape libraries** — Built-in support for AWS, Azure, GCP, Kubernetes, Cisco, and many other icon sets
+- **Extensive shape libraries** — Built-in su[kubernetes](https://kubernetes.io/)AWS, Azure, GCP, Kubernetes, Cisco, and many other icon sets
 - **Multiple diagram types** — Flowcharts, UML, BPMN, ER diagrams, network topology, org charts, mind maps, and more
 - **File format support** — Import and export Visio (.vsdx), Lucidchart, Gliffy, SVG, PDF, and PNG files
 - **Storage integrations** — Native support for local storage, WebDAV, GitHub, GitLab, and object storage
@@ -587,3 +587,34 @@ ssh -L 3000:localhost:3000 user@your-server
 Self-hosted whiteboard tools have matured to the point where there is no reason to send your diagrams to a third-party service. Excalidraw delivers the best experience for quick sketches and architecture diagrams with encryption built in. WBO is the lightest option for real-time freeform collaboration. Draw.io provides the deepest feature set for professional diagramming.
 
 All three deploy with a single `docker compose up -d`, run on modest hardware, and cost nothing beyond your server infrastructure. Pick the tool that matches your team's workflow — or run all three behind a single domain and let people choose.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

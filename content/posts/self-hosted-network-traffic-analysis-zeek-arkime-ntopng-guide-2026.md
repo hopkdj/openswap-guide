@@ -8,7 +8,7 @@ description: "A comprehensive guide to self-hosted network traffic analysis and 
 
 Network visibility is the foundation of effective infrastructure management. Whether you are diagnosing a stubborn latency issue, investigating a potential intrusion, auditing data flows for compliance, or simply understanding what traverses your network, a self-hosted traffic analysis platform gives you full access to the raw data without shipping packets to a third-party cloud.
 
-In 2026, three open-source projects dominate this space, each with a distinct philosophy: **Zeek** (formerly Bro) for deep protocol analysis and scripting, **Arkime** (formerly Moloch) for full packet capture and search, and **ntopng** for real-time flow monitoring and visualization. This guide examines all three, provides production-ready Docker deployment instructions, and helps you choose the right tool — or combination of tools — for your environment.
+In 2026, three open-source projects dominate this space, each with a distinct philosophy: **Zeek** (formerly Bro) for deep protocol analysis and scripting, **Arkime** (formerly Moloch) for full packet capture and search, and **ntopng** for real-time flow monitoring and visualization. This guide examines all three, provides production-ready [docker](https://www.docker.com/) deployment instructions, and helps you choose the right tool — or combination of tools — for your environment.
 
 ## Why Self-Host Network Traffic Analysis
 
@@ -55,7 +55,7 @@ Zeek's architecture is modular:
 2. **Protocol analyzers** — built-in dissectors for 50+ protocols (HTTP, DNS, SSH, SMTP, TLS, DHCP, Kerberos, RDP, and more)
 3. **Event engine** — converts protocol events into Zeek Script callbacks
 4. **Zeek Script (Zeek Language)** — a domain-specific language for writing custom detection logic
-5. **Logging framework** — outputs structured logs to files, Elasticsearch, Kafka, or stdout
+5. **Logging framework** — outputs structured log[kafka](https://kafka.apache.org/)files, Elasticsearch, Kafka, or stdout
 
 ### Docker Deployment
 
@@ -396,7 +396,7 @@ ntopng does not store raw packets or generate detailed protocol logs like Zeek. 
 | **Multi-Site Deployment** | Yes (distributed nodes) | Yes (capture nodes + shared ES) | Yes (ntopng instances) |
 | **Learning Curve** | Steep (Zeek Script, log analysis) | Moderate (web UI, search syntax) | Gentle (point-and-click dashboards) |
 | **License** | BSD | Apache 2.0 | GPL v3 (Community) |
-| **Best Paired With** | Elasticsearch, Elasticsearch SIEM | Arkime Viewer, Wireshark | InfluxDB, Grafana |
+| **Best Paired With** | Elasticsearch, Elasticsearch SIEM | Arkime Vie[grafana](https://grafana.com/)reshark | InfluxDB, Grafana |
 
 ## Choosing the Right Tool
 
@@ -509,3 +509,34 @@ Start the stack with `docker compose -f docker-compose-network-analysis.yml up -
 For most self-hosted deployments, start with **ntopng** for immediate visibility — it takes five minutes to deploy and provides actionable insights from day one. Then add **Zeek** when you need deeper protocol analysis or custom detection rules. Add **Arkime** when incident response requires the ability to examine raw packet contents.
 
 All three tools are production-proven, actively maintained, and available under permissive open-source licenses. They form the backbone of network visibility for organizations ranging from small homelabs to Fortune 500 security operations centers. The only question is not whether you need network traffic analysis — it is which tools best fit your operational requirements and available hardware.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

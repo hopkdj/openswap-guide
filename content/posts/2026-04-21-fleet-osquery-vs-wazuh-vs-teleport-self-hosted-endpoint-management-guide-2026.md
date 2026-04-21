@@ -6,11 +6,11 @@ draft: false
 description: "Compare Fleet, Wazuh, and Teleport for self-hosted endpoint management, device compliance monitoring, and infrastructure access control. Complete Docker deployment guides with real configuration examples."
 ---
 
-Managing hundreds or thousands of endpoints — servers, workstations, laptops, and containers — is one of the most complex operational challenges for infrastructure teams. Commercial endpoint management platforms like Jamf, CrowdStrike Falcon, and Tanium charge per-device licensing fees that scale into tens of thousands of dollars annually. They also require your telemetry data to flow through third-party cloud infrastructure.
+Managing hundreds or thousands of endpoints — servers, workstations, laptops, and containers — is one of the most com[plex](https://www.plex.tv/) operational challenges for infrastructure teams. Commercial endpoint management platforms like Jamf, CrowdStrike Falcon, and Tanium charge per-device licensing fees that scale into tens of thousands of dollars annually. They also require your telemetry data to flow through third-party cloud infrastructure.
 
 In 2026, three open-source projects have emerged as production-ready alternatives for self-hosted endpoint management: **Fleet** (built on osquery), **Wazuh** (unified XDR/SIEM), and **Teleport** (infrastructure access with device trust). Each takes a fundamentally different approach to the problem, and the right choice depends on whether your priority is visibility, security, or access control.
 
-This guide compares all three platforms with hands-on Docker deployment instructions, so you can evaluate them on your own infrastructure.
+This guide compares all three [docker](https://www.docker.com/)rms with hands-on Docker deployment instructions, so you can evaluate them on your own infrastructure.
 
 ## Why Self-Host Endpoint Management
 
@@ -260,7 +260,7 @@ curl -k -H "Authorization: Bearer $TOKEN" \
 
 Teleport ([gravitational/teleport](https://github.com/gravitational/teleport), 20,164 stars) approaches endpoint management from a different angle: it is primarily an infrastructure access platform that has evolved to include device trust and endpoint posture verification. Rather than continuously monitoring every aspect of endpoint state, Teleport focuses on ensuring that only compliant, verified devices can access your infrastructure.
 
-### Key Capabilities
+### Key[kubernetes](https://kubernetes.io/)ies
 
 - **Unified access gateway** — SSH, Kubernetes, database, application, and desktop access through a single identity-aware proxy
 - **Device trust** — verify endpoint posture (OS version, disk encryption, EDR status) before granting access

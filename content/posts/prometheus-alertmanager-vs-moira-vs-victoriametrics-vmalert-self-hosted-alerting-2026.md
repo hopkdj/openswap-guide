@@ -8,9 +8,9 @@ description: "Compare three leading self-hosted alerting systems in 2026: Promet
 
 Every monitoring stack is only as good as its alerting pipeline. You can collect thousands of metrics, build beautiful dashboards, and track every service — but if nobody gets notified when CPU hits 95% at 3 AM, the whole system is useless.
 
-In 2026, the self-hosted alerting landscape has matured significantly. **Prometheus Alertmanager** remains the industry standard, **Moira** offers a compelling alternative for teams coming from Graphite or wanting a unified trigger system, and **VictoriaMetrics vmalert** provides a lightweight, high-performance option within the growing VictoriaMetrics ecosystem.
+In 2026, the self-hosted alerting landscape has matured significantly. **[prometheus](https://prometheus.io/) Alertmanager** remains the industry standard, **Moira** offers a compelling alternative for teams coming from Graphite or wanting a unified trigger system, and **VictoriaMetrics vmalert** provides a lightweight, high-performance option within the growing VictoriaMetrics ecosystem.
 
-This guide compares all three tools head-to-head with real configuration examples, Docker deployment instructions, and practical advice on which one fits your infrastructure.
+This guide compares all three tools head-to-head with real configuration examples, [docker](https://www.docker.com/) deployment instructions, and practical advice on which one fits your infrastructure.
 
 For related reading, see our [Prometheus vs Grafana vs VictoriaMetrics monitoring comparison](../prometheus-vs-grafana-vs-victoriametrics/) and [self-hosted incident management with Alerta and OpenDuty](../self-hosted-incident-management-oncall-alerta-openduty-2026/). If you need push notification delivery for your alerts, check our [Gotify vs Ntfy guide](../gotify-vs-ntfy-self-hosted-push-notifications/).
 
@@ -140,7 +140,7 @@ receivers:
 **Weaknesses:**
 - Requires Prometheus server to evaluate rules (not standalone)
 - No built-in UI for managing alert rules — rules live in Prometheus config
-- Complex YAML routing config has a steep learning curve
+- Com[plex](https://www.plex.tv/) YAML routing config has a steep learning curve
 - Limited to Prometheus metric format
 
 ## Moira

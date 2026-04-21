@@ -21,7 +21,7 @@ Commercial NAS devices from Synology and QNAP are popular, but they come with si
 - **Cloud dependency** — many "smart" NAS features require external cloud servers, defeating the purpose of local storage
 - **Cost** — commercial NAS hardware carries a premium for the bundled software
 
-Self-hosted NAS solutions solve all of these problems. They run on commodity hardware, receive community-driven updates, and keep your data entirely under your control. For related reading on building out your self-hosted infrastructure, see our [file sync and sharing guide](../self-hosted-file-sync-sharing-nextcloud-seafile-syncthing-guide/) and [distributed storage comparison](../ceph-vs-glusterfs-vs-moosefs-distributed-file-storage-2026/).
+Self-hosted NAS solutions solve all of these problems. They run on commodity hardware, receive community-driven updates, and keep your data entirely under your control. For related reading on building out your self-hosted infrastructure, see our [file sync and sharing guide](../self-hosted-file-sync-sharing-[nextcloud](https://nextcloud.com/)-seafile-syncthing-guide/) and [distributed storage comparison](../ceph-vs-glusterfs-vs-moosefs-distributed-file-storage-2026/).
 
 ## Quick Comparison Table
 
@@ -47,7 +47,7 @@ OpenMediaVault (OMV) is the most flexible and accessible open-source NAS solutio
 
 ### Key Features
 
-- **Modular plugin architecture** — OMV-Extras extends the base system with Docker, Portainer, Plex, and more
+- **Modular plugin architecture** — OMV-Extras extends the base syste[plex](https://www.plex.tv/)th Docker, Portainer, Plex, and more
 - **Multi-filesystem support** — choose ext4 for simplicity, XFS for performance, or Btrfs/ZFS for advanced features
 - **Lightweight** — runs comfortably on 1 GB of RAM
 - **Active community** — large forum and plugin ecosystem
@@ -119,7 +119,7 @@ TrueNAS SCALE (Systems, Clustering, and Aggregation, Linux Edition) is the Linux
 
 - **OpenZFS filesystem** — enterprise-grade data integrity with checksums, automatic repair, and compression
 - **ZFS snapshots and replication** — take instant, space-efficient snapshots and replicate them to remote systems
-- **Applications catalog** — deploy pre-packaged apps (Plex, Nextcloud, Jellyfin) through a built-in catalog
+- **Applications catalog** — deploy pre-packag[jellyfin](https://jellyfin.org/)(Plex, Nextcloud, Jellyfin) through a built-in catalog
 - **Built-in virtualization** — run VMs alongside your NAS workloads
 - **SMB, NFS, iSCSI, S3** — all major sharing protocols supported natively
 

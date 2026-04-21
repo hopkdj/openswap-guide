@@ -30,7 +30,7 @@ Whether you're managing DNS for a small homelab, a startup's staging environment
 
 **GitHub:** [PowerDNS/pdns](https://github.com/PowerDNS/pdns) | **Stars:** 4,345 | **Last Updated:** April 2026 | **Language:** C++
 
-PowerDNS is the most feature-rich authoritative DNS server on this list. It supports multiple backend storage engines (SQLite, MySQL, PostgreSQL, PostgreSQL with DNSSEC, generic ODBC, BIND zone files, and Lua scripts), a built-in REST API, and dynamic updates. The PowerDNS ecosystem also includes a separate **Recursor** product and **dnsdist** for DNS load balancing.
+PowerDNS is the most feature-rich authoritative DNS server on this list. It supports multiple backend storage engines (SQLite, MySQL, [postgresql](https://www.postgresql.org/), PostgreSQL with DNSSEC, generic ODBC, BIND zone files, and Lua scripts), a built-in REST API, and dynamic updates. The PowerDNS ecosystem also includes a separate **Recursor** product and **dnsdist** for DNS load balancing.
 
 ### Key Features
 
@@ -43,7 +43,7 @@ PowerDNS is the most feature-rich authoritative DNS server on this list. It supp
 - AXFR/IXFR zone transfers
 - GeoDNS support via the GeoIP backend
 
-### Docker Compose Setup
+### [docker](https://www.docker.com/) Compose Setup
 
 PowerDNS provides an official `docker-compose.yml` in their repository. Here's a simplified deployment:
 
@@ -85,7 +85,7 @@ dnssec=on
 default-soa-content=ns1.example.com. admin.example.com. 0 10800 3600 604800 3600
 ```
 
-PowerDNS also supports a full Docker Compose stack with the Recursor and dnsdist components from the official `docker-compose.yml` — mapping the authoritative server on port 1053, the recursor on port 2053, and dnsdist on port 3053.
+PowerDNS also supports a full Docker Compose stack with the Recursor and dnsdist components from the official `docker-compose.yml` — mapping the authoritative server on port 1053, the recursor on port 2053, and dnsdist o[gitlab](https://about.gitlab.com/) 3053.
 
 ## BIND9 (Berkeley Internet Name Domain)
 

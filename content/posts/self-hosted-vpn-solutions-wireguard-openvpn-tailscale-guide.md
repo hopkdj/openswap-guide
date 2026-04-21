@@ -83,7 +83,7 @@ sudo systemctl enable --now wg-quick@wg0
 sudo wg show
 ```
 
-### Deploying WireGuard with Docker
+### Deploying WireGuard with [docker](https://www.docker.com/)
 
 For containerized environments or quick testing, use the `linuxserver/wireguard` image:
 
@@ -373,7 +373,7 @@ services:
       - 9090:9090
     command: headscale serve
     environment:
-      - TZ=UTC
+   [nginx](https://nginx.org/)TZ=UTC
 
   # Optional: nginx reverse proxy with TLS
   nginx:
@@ -533,7 +533,7 @@ The official Headscale installation does not include a web interface, but the co
 | **DNS** | Push DNS to clients | Push DNS to clients | MagicDNS (per-peer DNS) |
 | **Exit Nodes** | Manual routing config | `redirect-gateway` | First-class exit node support |
 | **TCP Fallback** | No | Yes (port 443 stealth mode) | Via DERP relay servers |
-| **Setup Complexity** | Low | Medium | Medium-High |
+| **Setup Com[plex](https://www.plex.tv/)ity** | Low | Medium | Medium-High |
 | **Best For** | Simple site-to-site, <20 peers | Enterprise, firewall traversal | Large mesh networks, dynamic peers |
 | **License** | GPL v2 | GPL v2 | BSD 3-Clause |
 | **Lines of Code** | ~4,000 | ~100,000+ | ~30,000 (Go) |
@@ -547,3 +547,34 @@ The official Headscale installation does not include a web interface, but the co
 **Pick Headscale** if you're managing more than a handful of nodes, need dynamic peer discovery without manual configuration, want fine-grained access control between nodes, or want the Tailscale experience without depending on an external service. Headscale shines in environments where nodes join and leave frequently — laptop users, ephemeral containers, or IoT deployments — because the central coordination server handles all the complexity of peer discovery, key distribution, and NAT traversal automatically.
 
 For most homelab operators in 2026, the practical answer is to run **both WireGuard and Headscale**: use standalone WireGuard for simple, static connections (like a permanent link to a VPS) and Headscale for everything else that benefits from automatic mesh networking and dynamic access control.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

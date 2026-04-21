@@ -16,7 +16,7 @@ DNS-level ad blocking protects every device on your network:
 
 ## Feature Comparison
 
-| Feature | AdGuard Home | Pi-hole |
+| Feature | [adguard home](https://adguard.com/en/adguard-home/overview.html) | Pi-hole |
 |---------|-------------|---------|
 | **Cost** | 100% Free | 100% Free |
 | **Open Source** | ✅ Yes | ✅ Yes |
@@ -29,7 +29,7 @@ DNS-level ad blocking protects every device on your network:
 | **Blocklists** | ✅ Yes | ✅ Yes |
 | **Rewrite Rules** | ✅ Yes | ✅ Local DNS |
 | **Parental Control** | ✅ Safe Search | ⚠️ Custom |
-| **Setup Complexity** | Low | Medium |
+| **Setup Com[plex](https://www.plex.tv/)ity** | Low | Medium |
 | **Web UI** | Modern | Functional |
 | **Resource Usage** | Low | Low |
 
@@ -42,8 +42,7 @@ DNS-level ad blocking protects every device on your network:
 ### Key Features
 - Native DoH, DoT, DoQ support
 - Modern, responsive web UI
-- Per-client configuration
-- Built-in DHCP server
+- Per-client configurati[docker](https://www.docker.com/)uilt-in DHCP server
 - Query rewriting
 - Upstream parallel queries
 

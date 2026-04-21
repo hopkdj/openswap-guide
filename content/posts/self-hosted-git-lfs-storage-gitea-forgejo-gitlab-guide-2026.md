@@ -10,7 +10,7 @@ Git was designed for source code — small text files that compress well and dif
 
 [Git Large File Storage (LFS)](https://git-lfs.com/) solves this by replacing large files with lightweight pointer files in your repository while storing the actual content on a separate server. The challenge: **where do you host that LFS server?** Public services like GitHub impose storage limits and bandwidth quotas. For teams with large binary assets, self-hosting your LFS server is the most cost-effective and privacy-preserving option.
 
-This guide compares three leading open-source platforms with built-in Git LFS support: **Gitea**, **Forgejo**, and **GitLab CE**. We cover installation, storage backends, Docker Compose configurations, and migration strategies so you can choose the right LFS solution for your infrastructure.
+This guide compares three leading open-source platforms with built-in Git LFS support: **[gitea](https://gitea.io/)**, **Forgejo**, and **GitLab CE**. We cover installation, storage backends, [docker](https://www.docker.com/) Compose configurations, and migration strategies so you can choose the right LFS solution for your infrastructure.
 
 ## Why Self-Host Git LFS?
 
@@ -35,7 +35,7 @@ Here's how the three platforms compare as of April 2026, based on live GitHub da
 | **Last Updated** | 2026-04-20 | Active (Codeberg) | 2026-04-20 |
 | **Language** | Go | Go | Ruby |
 | **LFS Protocol** | Native LFS API | Native LFS API | Native LFS API |
-| **Storage Backends** | Local disk, MinIO/S3 | Local disk, MinIO/S3 | Local disk, S3, GCS |
+| **Storag[minio](https://min.io/)kends** | Local disk, MinIO/S3 | Local disk, MinIO/S3 | Local disk, S3, GCS |
 | **LFS Locking** | Yes | Yes | Yes |
 | **LFS Object Pruning** | Manual (admin API) | Manual (admin API) | Built-in admin UI |
 | **Docker Image** | `gitea/gitea` | `codeberg/forgejo` | `gitlab/gitlab-ce` |

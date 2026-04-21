@@ -36,7 +36,7 @@ In this guide, we compare the three most mature open-source Markdown presentatio
 | **Presenter Notes** | Yes, separate panel | Yes, `S` key | Markdown comment blocks |
 | **Export to PDF** | Built-in (`slidev export`) | via `decktape` | Built-in (`marp --pdf`) |
 | **Recording** | Built-in camera recording | No native support | No native support |
-| **Docker Support** | Community images | Manual Dockerfile | Official Dockerfile |
+| **[docker](https://www.docker.com/) Support** | Community images | Manual Dockerfile | Official Dockerfile |
 | **Best For** | Developers who want rich interactivity | Teams needing maximum customization | Minimalist, fast slide creation |
 
 ## Slidev — The Developer's Presentation Framework
@@ -451,7 +451,7 @@ Slidev's presenter mode is the most feature-complete, including camera recording
 
 For most **developers creating technical presentations**, Slidev offers the richest feature set and best DX. For **teams deploying presentations to diverse audiences** who may access them on any device, Reveal.js's HTML-first approach guarantees compatibility. For **documentation-driven teams** who want slides generated from the same Markdown as their docs, Marp's simplicity and official Docker image make it the pragmatic choice.
 
-For related reading, check out our [self-hosted whiteboard and diagram tools guide](../self-hosted-whiteboard-tools-excalidraw-wbo-drawio-guide/) for visual presentation aids, the [wiki.js vs BookStack vs Outline comparison](../wiki-js-vs-bookstack-vs-outline/) for team documentation, and our [self-hosted note-taking and knowledge management guide](../self-hosted-note-taking-knowledge-management/) for organizing research before building presentations.
+For related reading, check out our [self-hosted whiteboard and diagram tools guide](../self-hosted-whiteboard-tools-excalidraw-wbo-drawio-guide/) for visu[wiki.js](https://js.wiki/)entation aids, the [wiki.js vs BookStack vs Outline comparison](../wiki-js-vs-bookstack-vs-outline/) for team documentation, and our [self-hosted note-taking and knowledge management guide](../self-hosted-note-taking-knowledge-management/) for organizing research before building presentations.
 
 ## FAQ
 
@@ -461,7 +461,7 @@ Yes. All three tools support fully offline use. Slidev and Marp bundle their dep
 
 ### How do I convert existing PowerPoint presentations to these formats?
 
-There is no automatic PowerPoint-to-Markdown converter that preserves formatting perfectly. The recommended approach is to extract content from your existing slides and rewrite them in Markdown. For Reveal.js, the `reveal.js-md` plugin can convert simple Markdown to slides. Marp's `@marp-team/marp-cli` also supports importing basic HTML. Complex animations and transitions must be recreated manually.
+There is no automatic PowerPoint-to-Markdown converter that preserves formatting perfectly. The recommended approach is to extract content from your existing slides and rewrite them in Markdown. For Reveal.js, the `reveal.js-md` plugin can convert simple Markdown to slides. Marp's `@marp-team/marp-cli` also supports importing basic HTML. Com[plex](https://www.plex.tv/) animations and transitions must be recreated manually.
 
 ### Can I export presentations to PDF?
 

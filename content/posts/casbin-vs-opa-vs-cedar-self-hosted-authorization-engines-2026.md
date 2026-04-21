@@ -28,7 +28,7 @@ Before diving into the comparison, let's understand why offloading authorization
 - **Centralized policy management** — One source of truth instead of scattered `if` statements across 20 microservices
 - **Auditability** — Declarative policies are readable, testable, and version-controllable
 - **Dynamic updates** — Change permissions without redeploying application code
-- **Multi-tenant support** — Model complex tenant-scoped access rules consistently
+- **Multi-tenant support** — Model com[plex](https://www.plex.tv/) tenant-scoped access rules consistently
 - **Compliance** — Easier to prove access controls to auditors when policies are explicit
 
 If you're running more than two services that need consistent permission checking, a policy engine pays for itself quickly.
@@ -86,7 +86,7 @@ if allowed {
 }
 
 // Add policy at runtime
-enforcer.AddPolicy("alice", "data2", "write")
+enforcer.AddPolicy("alice", "data2", "[docker](https://www.docker.com/))
 ```
 
 ### Casbin Docker Deployment (Casbin-Server)
@@ -142,9 +142,7 @@ pip install casbin
 
 ## Open Policy Agent (OPA): General-Purpose Policy Engine
 
-[OPA](https://github.com/open-policy-agent/opa) is a CNCF graduated project that takes a broader approach. Rather than focusing solely on authorization, OPA provides a **general-purpose policy engine** with its own declarative language called **Rego**.
-
-OPA is widely used as an admission controller in Kubernetes (via Gatekeeper), but it works equally well for application-level authorization, API gateway policies, and CI/CD gatekeeping.
+[OPA](https://github.com/open-policy-agent/opa) is a CNCF graduated project that takes a broader approach. Rather than focusing solely on authorization, OPA provides a **general-purpose policy engine** with its own declarative language called **Rego**.[kubernetes](https://kubernetes.io/)idely used as an admission controller in Kubernetes (via Gatekeeper), but it works equally well for application-level authorization, API gateway policies, and CI/CD gatekeeping.
 
 ### How OPA Works
 

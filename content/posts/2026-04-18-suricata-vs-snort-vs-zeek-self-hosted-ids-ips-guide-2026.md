@@ -6,7 +6,7 @@ draft: false
 description: "Compare Suricata, Snort 3, and Zeek — the top open-source intrusion detection and prevention systems. Learn which self-hosted IDS/IPS fits your network security stack in 2026."
 ---
 
-When you deploy a server or manage a home lab, a firewall alone isn't enough. You need visibility into what's actually happening on your network — who's scanning your ports, what protocols are being used, and whether any traffic matches known attack patterns. That's exactly what an Intrusion Detection System (IDS) and Intrusion Prevention System (IPS) provide.
+When you deploy a server or manage a home lab, a firewall alone isn't enough. You need visibility into what's [actual](https://actualbudget.org/)ly happening on your network — who's scanning your ports, what protocols are being used, and whether any traffic matches known attack patterns. That's exactly what an Intrusion Detection System (IDS) and Intrusion Prevention System (IPS) provide.
 
 In this guide, we compare the three leading open-source IDS/IPS engines — **Suricata**, **Snort 3**, and **Zeek** — covering architecture, rule compatibility, performance, deployment options, and how to choose the right one for your self-hosted infrastructure.
 
@@ -20,7 +20,7 @@ Commercial IDS/IPS appliances cost thousands of dollars and often require propri
 - **Integration flexibility** — pipe alerts into your SIEM, alerting system, or dashboard
 - **Zero licensing cost** — all three tools are free and open-source
 
-Whether you're protecting a homelab, a small business network, or a production data center, self-hosted IDS/IPS gives you enterprise-grade network security monitoring at no cost. For a complete security stack, consider pairing your IDS/IPS with a [self-hosted SIEM like Wazuh or Security Onion](../self-hosted-siem-wazuh-security-onion-elastic-guide/) for centralized alerting, and a [WAF like ModSecurity or Coraza](../self-hosted-waf-bot-protection-modsecurity-coraza-crowdsec-2026/) for application-layer protection.
+Whether you're protecting a homelab, a small business network, or a production data center, self-hosted IDS/IPS gives you enterprise-grade network security monitoring at no cost. For a complete security stack, consider pairing your IDS/IPS w[wazuh](https://wazuh.com/) [self-hosted SIEM like Wazuh or Security Onion](../self-hosted-siem-wazuh-security-onion-elastic-guide/) for centralized alerting, and a [WAF like ModSecurity or Coraza](../self-hosted-waf-bot-protection-modsecurity-coraza-crowdsec-2026/) for application-layer protection.
 
 ## Understanding IDS vs IPS vs NSM
 
@@ -50,7 +50,7 @@ Suricata, developed by the Open Information Security Foundation (OISF), is the m
 - **IP reputation support** — integrate threat intelligence feeds directly
 - **TLS/SSL inspection** — log certificate details, detect expired or suspicious certs
 
-### Suricata Docker Deployment
+### Suricata [docker](https://www.docker.com/) Deployment
 
 The OISF community maintains Docker images. Here's a production-ready Docker Compose configuration:
 

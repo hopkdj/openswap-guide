@@ -33,7 +33,7 @@ For teams that already run self-hosted tools like [Cal.com for booking](../self-
 | **License** | AGPL-3.0 | AGPL-3.0 | MIT |
 | **GitHub Stars** | 5,057 | 103 | 370 |
 | **Last Updated** | April 2026 | November 2025 | March 2026 |
-| **Docker Support** | Official docker-compose | Community Docker image | Dockerfile available |
+| **[docker](https://www.docker.com/) Support** | Official docker-compose | Community Docker image | Dockerfile available |
 | **User Accounts** | Yes (email + OAuth) | No (anonymous polls) | No (anonymous polls) |
 | **Auth Providers** | Google, Microsoft, OIDC | N/A | N/A |
 | **Calendar Sync** | Yes (ICS export) | No | No |
@@ -108,7 +108,7 @@ Save this as `docker-compose.yml` and run:
 docker compose up -d
 ```
 
-Rallly will be available at `http://localhost:3000`. For production, place it behind a reverse proxy like [Nginx or Caddy](../nginx-vs-caddy-vs-traefik-self-hosted-web-server-guide-2026/) with TLS termination.
+Rallly will be available at `http://localhost:3000`. For production, place it be[nginx](https://nginx.org/)a reverse proxy like [Nginx or Caddy](../nginx-vs-caddy-vs-traefik-self-hosted-web-server-guide-2026/) with TLS termination.
 
 ### Configuration Options
 
@@ -267,7 +267,7 @@ The decision between these three tools comes down to your priorities:
 
 ## Deployment Architecture
 
-For a production deployment, the recommended architecture for Rallly (the most complex of the three) looks like this:
+For a production deployment, the recommended architecture for Rallly (the most com[plex](https://www.plex.tv/) of the three) looks like this:
 
 ```
                     ┌─────────────────┐

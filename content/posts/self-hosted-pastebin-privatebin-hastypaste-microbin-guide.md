@@ -65,7 +65,7 @@ Hastypaste is the simplest of the three options to understand and modify. If you
 | Discussion threads | Yes | No | No |
 | REST API | Limited | Yes | Yes |
 | Database support | Flat files, MySQL, PostgreSQL, SQLite, S3, GCS | SQLite | SQLite |
-| Docker image | Official | Official | Community |
+| [docker](https://www.docker.com/) image | Official | Official | Community |
 | Binary size | ~5 MB | ~8 MB single binary | ~50 MB with deps |
 | RAM usage | ~50 MB | ~10 MB | ~30 MB |
 | Active development | Yes | Yes | Yes |
@@ -90,8 +90,7 @@ Create the `docker-compose.yml` file:
 version: "3.8"
 
 services:
-  privatebin:
-    image: privatebin/nginx-fpm-alpine:latest
+  private[nginx](https://nginx.org/)    image: privatebin/nginx-fpm-alpine:latest
     restart: unless-stopped
     ports:
       - "8080:8080"
@@ -494,8 +493,39 @@ The decision comes down to your specific requirements:
 
 **Choose PrivateBin** if privacy is your top priority. Client-side encryption means the server operator (even you) cannot read paste contents. This is critical for regulated industries or when sharing sensitive credentials. It is also the best choice if you need file attachments, discussion threads, or enterprise-grade database backends.
 
-**Choose MicroBin** if you value simplicity and low resource usage. A single binary with no dependencies, minimal RAM footprint, and a clean interface make it ideal for homelab deployments, Raspberry Pi instances, or small teams that need a reliable paste server without complexity.
+**Choose MicroBin** if you value simplicity and low resource usage. A single binary with no dependencies, minimal RAM footprint, and a clean interface make it ideal for homelab deployments, Raspberry Pi instances, or small teams that need a reliable paste server without com[plex](https://www.plex.tv/)ity.
 
 **Choose Hastypaste** if you need a programmable API and Python-based extensibility. It is the easiest to customize and integrate into existing Python workflows. The straightforward REST API makes it a natural fit for automated pipelines and tooling.
 
 All three solutions can be running on a $5 VPS or a Raspberry Pi with less than 100 MB of RAM. The barrier to self-hosting a pastebin has never been lower, and the privacy and control benefits make it one of the most practical self-hosted services you can deploy today.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

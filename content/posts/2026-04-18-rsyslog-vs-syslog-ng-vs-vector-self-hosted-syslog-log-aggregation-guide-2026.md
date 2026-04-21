@@ -8,7 +8,7 @@ description: "Compare rsyslog, syslog-ng, and Vector for self-hosted syslog coll
 
 Every server, container, and network device generates logs. Without a centralized collection strategy, troubleshooting means SSH-ing into individual machines, tailing files, and hoping you catch the error before it scrolls off screen. A self-hosted syslog aggregation pipeline solves this by collecting logs from all your infrastructure into a single searchable location — without sending sensitive data to a third-party cloud service.
 
-In this guide, we compare three mature open-source log aggregation engines: **rsyslog**, **syslog-ng**, and **Vector**. Each has a different design philosophy, performance profile, and configuration model. We'll walk through installation, Docker deployment, configuration examples, and help you pick the right tool for your stack.
+In this guide, we compare three mature open-source log aggregation engines: **rsyslog**, **syslog-ng**, and **Vector**. Each has a different design philosophy, performance profile, and configuration model. We'll walk through installation, [docker](https://www.docker.com/) deployment, configuration examples, and help you pick the right tool for your stack.
 
 ## Why Self-Host Your Log Aggregation
 
@@ -36,7 +36,7 @@ For related reading, see our [complete self-hosted log management guide with Lok
 | **Buffering / Disk Queue** | Yes (on-disk queue) | Yes (disk-buffer) | Yes (disk buffer) |
 | **Built-in Metrics** | No | Limited | Yes (prometheus endpoint) |
 | **Docker Image Size** | ~10 MB (alpine) | ~25 MB (alpine) | ~85 MB (alpine) |
-| **Best For** | Traditional Linux servers, minimal footprint | Complex parsing, enterprise syslog | Modern observability pipelines, multi-destination routing |
+| **Best For** | Traditional Linux servers, minimal footprint | Com[plex](https://www.plex.tv/) parsing, enterprise syslog | Modern observability pipelines, multi-destination routing |
 
 ## rsyslog: The Default Linux Syslog Daemon
 
@@ -488,9 +488,7 @@ UDP is faster but offers no delivery guarantees — messages can be dropped duri
 
 ### How much disk space should I allocate for log storage?
 
-This depends on log volume and retention requirements. A rough estimate for a small infrastructure (10-20 servers) is 5-10 GB per month with log rotation. For larger deployments, use a dedicated log storage backend like Loki, OpenSearch, or Graylog with index lifecycle management that automatically deletes old data. Always configure log rotation (`logrotate`) for locally stored files to prevent disk exhaustion.
-
-### Can these tools handle container and Kubernetes logs?
+This depends on log volume and retention requirements. A rough estimate for a small infrastructure (10-20 servers) is 5-10 GB per month with log rotation. For larger deployments, use a dedicated log storage backend like Loki, OpenSearch, or Graylog with index lifecycle management that automatically deletes old data. Always configure log rotation (`logrotate`) for locally stored files to prevent disk exh[kubernetes](https://kubernetes.io/)### Can these tools handle container and Kubernetes logs?
 
 Yes, but with different approaches. rsyslog and syslog-ng typically require a sidecar or DaemonSet that reads container stdout/stderr and forwards it via syslog. Vector has native Docker and Kubernetes source types that can read directly from the Docker socket or Kubernetes API, making it the easiest option for container-native environments. For Kubernetes specifically, consider pairing Vector with the Vector Kubernetes collection chart for automatic pod discovery and metadata enrichment.
 

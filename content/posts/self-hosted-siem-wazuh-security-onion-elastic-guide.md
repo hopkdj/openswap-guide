@@ -54,7 +54,7 @@ sudo bash ./wazuh-install.sh -a
 # - Enrollment command for agents
 ```
 
-For a Docker-based deployment, which is ideal for testing and isolated environments:
+For a [docker](https://www.docker.com/)-based deployment, which is ideal for testing and isolated environments:
 
 ```yaml
 # docker-compose-wazuh.yml
@@ -237,7 +237,7 @@ sudo so-allow
 Security Onion's Suricata instance can be customized with community and private rules:
 
 ```yaml
-# /opt/so/saltstack/local/pillar/minions/<sensor-hostname>.sls
+# /opt[minio](https://min.io/)altstack/local/pillar/minions/<sensor-hostname>.sls
 # Add a custom Suricata rules file
 
 suricata:
@@ -315,7 +315,7 @@ The platform uses Elastic Agents — a unified agent that combines the functiona
 
 ### Elastic Security Installation Guide
 
-The quickest way to deploy Elastic Security for evaluation is via Docker Compose. For production, Elastic recommends Kubernetes or their Elastic Cloud hosted offering.
+The quickest way to deploy Elastic Security for evaluation is via Docker Compose. For prod[kubernetes](https://kubernetes.io/)astic recommends Kubernetes or their Elastic Cloud hosted offering.
 
 ```yaml
 # docker-compose-elastic.yml
@@ -507,3 +507,34 @@ ufw default deny
 ```
 
 The open-source SIEM landscape in 2026 offers genuine enterprise capability without enterprise pricing. Whether you choose Wazuh for endpoint-centric security, Security Onion for network forensics, or Elastic Security for unified observability and security, you can build a world-class detection capability on commodity hardware. The key is starting with a clear understanding of your threat model, sizing your infrastructure correctly, and committing to ongoing rule tuning and operational maturity.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

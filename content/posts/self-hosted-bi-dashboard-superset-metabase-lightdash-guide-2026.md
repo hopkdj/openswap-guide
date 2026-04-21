@@ -20,7 +20,7 @@ Cloud BI tools like Looker, Tableau Cloud, and Power BI Service are convenient, 
 - **Custom integrations**: You can connect internal APIs, modify authentication flows, and embed dashboards into your own applications without vendor lock-in.
 - **Performance control**: When queries are slow, you tune the database or add cache layers yourself — no waiting on a vendor's shared infrastructure.
 
-The trade-off is operational overhead: you manage the deployment, upgrades, and backups. But with Docker Compose and modern container orchestration, the maintenance burden is modest.
+The trade-off is operational overhead: you manage the deployment, upgrades, and backups. But with [docker](https://www.docker.com/) Compose and modern container orchestration, the maintenance burden is modest.
 
 ## Apache Superset
 
@@ -100,7 +100,7 @@ Access the dashboard at `http://localhost:8088`.
 
 ### Best For
 
-Data teams that need maximum chart variety, complex SQL exploration, and enterprise-grade security features. If your analysts are comfortable writing SQL and need geospatial or advanced statistical visualizations, Superset is the strongest option.
+Data teams that need maximum chart variety, com[plex](https://www.plex.tv/) SQL exploration, and enterprise-grade security features. If your analysts are comfortable writing SQL and need geospatial or advanced statistical visualizations, Superset is the strongest option.
 
 ## Metabase
 
@@ -201,7 +201,7 @@ services:
     ports:
       - "8080:8080"
     environment:
-      # Database for Lightdash internal state
+  [ghost](https://ghost.org/) Database for Lightdash internal state
       PGHOST: postgres
       PGPORT: 5432
       PGUSER: lightdash
@@ -372,3 +372,34 @@ Schedule this via cron: `0 2 * * * /opt/scripts/backup-bi.sh`
 The self-hosted BI landscape in 2026 offers three genuinely different approaches. Superset is the power tool for data teams. Metabase is the accessibility champion for mixed-skill organizations. Lightdash is the modern, code-first choice for dbt-centric data stacks. All three keep your data on your infrastructure, eliminate per-seat licensing fees, and give you full control over performance and security.
 
 The best path forward is to Docker-run each tool against your actual data warehouse, build the same dashboard in all three, and let your team's workflow — not feature checklists — drive the final decision.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

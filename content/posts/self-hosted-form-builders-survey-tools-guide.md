@@ -26,7 +26,7 @@ The arguments for owning your form infrastructure are the same as for any self-h
 
 ## LimeSurvey: The Enterprise-Grade Survey Platform
 
-[LimeSurvey](https://www.limesurvey.org/) is the most mature open-source survey platform available. It has been in active development since 2006 and powers surveys for universities, governments, and enterprises worldwide. If you need statistical rigor, complex branching logic, and multilingual support, this is the tool.
+[LimeSurvey](https://www.limesurvey.org/) is the most mature open-source survey platform available. It has been in active development since 2006 and powers surveys for universities, governments, and enterprises worldwide. If you need statistical rigor, com[plex](https://www.plex.tv/) branching logic, and multilingual support, this is the tool.
 
 ### Key Features
 
@@ -35,7 +35,7 @@ The arguments for owning your form infrastructure are the same as for any self-h
 - **Multilingual surveys** — manage translations within the platform, switch languages per respondent
 - **Statistical analysis** — built-in descriptive statistics, cross-tabulations, and export to SPSS, R, and CSV
 - **Token management** — generate invitation tokens for controlled access surveys, track open/completion rates
-- **REST API** — full JSON-RPC API for programmatic survey creation and response retrieval
+- **REST API** — full JSON-RPC API for programmatic survey creation and [docker](https://www.docker.com/)se retrieval
 
 ### Docker Installation
 
@@ -368,7 +368,7 @@ forms.example.com {
 }
 ```
 
-Caddy automatically obtains and renews TLS certificates. No manual certificate management needed.
+Caddy automatically obtains and renews TLS certificates. No ma[nginx](https://nginx.org/)certificate management needed.
 
 If you prefer Nginx:
 
@@ -464,3 +464,34 @@ The answer depends entirely on your use case:
 **Choose OhMyForm** if you need simple forms fast with minimal overhead. Internal feedback, event registration, contact forms — anything where a lightweight, no-nonsense tool is preferable to a feature-heavy platform.
 
 All three are open-source, self-hostable, and give you complete ownership of your data. The best practice? Try each one in a Docker container for an afternoon. Build the same form in all three and see which workflow clicks with your team. You can't go wrong with any of them.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

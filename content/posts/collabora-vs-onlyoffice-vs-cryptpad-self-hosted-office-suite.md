@@ -10,7 +10,7 @@ If your team still relies on Google Docs or Microsoft 365 for everyday document 
 
 The good news: open-source, self-hosted office suites have matured dramatically. In 2026, you no longer need to choose between collaboration and sovereignty. You can have real-time co-editing, rich document formatting, spreadsheet formulas, and presentation tools — all running on your own infrastructure.
 
-This guide compares the three strongest contenders — **Collabora Online**, **OnlyOffice**, and **CryptPad** — and walks you through deploying each one with Docker Compose.
+This guide compares the three strongest contenders — **Collabora Online**, **OnlyOffice**, and **CryptPad** — and walks you through deploying each one with [docker](https://www.docker.com/) Compose.
 
 ## Why Self-Host Your Office Suite
 
@@ -20,7 +20,7 @@ The case for moving away from Google Docs and Microsoft 365 has only gotten stro
 
 **Cost at scale.** Google Workspace starts at $6/user/month and Microsoft 365 Business at $6/user/month. For a 50-person organization, that's $3,600/year before any add-ons. A self-hosted office suite on a $20/month VPS serves unlimited users. The only scaling cost is storage and compute, which grows linearly and predictably.
 
-**No vendor lock-in.** Google Docs and Office 365 use proprietary formats under the hood. Even when they support .docx export, complex formatting, macros, and embedded objects often break. Self-hosted suites like Collabora Online and OnlyOffice use ODF (Open Document Format) natively and provide faithful round-trip compatibility with Microsoft Office formats.
+**No vendor lock-in.** Google Docs and Office 365 use proprietary formats under the hood. Even when they support .docx export, com[plex](https://www.plex.tv/) formatting, macros, and embedded objects often break. Self-hosted suites like Collabora Online and OnlyOffice use ODF (Open Document Format) natively and provide faithful round-trip compatibility with Microsoft Office formats.
 
 **Offline resilience.** A self-hosted instance on your local network works regardless of internet outages. For organizations in areas with unreliable connectivity, or teams that simply can't afford downtime during critical work, this is a genuine operational advantage.
 
@@ -32,7 +32,7 @@ The case for moving away from Google Docs and Microsoft 365 has only gotten stro
 
 Collabora Online is the leading open-source implementation of LibreOffice technology, designed specifically for cloud-based collaborative editing. It's built by Collabora Productivity, a company with deep roots in the LibreOffice and OpenOffice communities.
 
-Under the hood, Collabora Online uses the same rendering engine as LibreOffice — meaning document fidelity is exceptional. It supports ODF natively and provides strong compatibility with Microsoft Office formats (.docx, .xlsx, .pptx). It's designed to integrate with cloud storage platforms like Nextcloud, ownCloud, Seafile, and SharePoint.
+Under the hood, Collabora Online uses the same rendering engine as LibreOffice — meaning document fidelity is exceptional. It supports ODF natively and provides strong compatibility with Microsoft Office formats (.docx, .xlsx, .pptx). It's designed to integrate with cloud storage platforms like [nextcloud](https://nextcloud.com/), ownCloud, Seafile, and SharePoint.
 
 ### OnlyOffice
 
@@ -453,3 +453,34 @@ In 2026, there's no reason to keep your documents on someone else's servers if y
 All three can be deployed in under 30 minutes with Docker Compose. All three support real-time collaboration. All three give you full control over your data.
 
 The best choice depends on your existing infrastructure, your team's workflow, and your threat model. But whatever you choose, you'll be taking a meaningful step toward data sovereignty — and that's worth the effort.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

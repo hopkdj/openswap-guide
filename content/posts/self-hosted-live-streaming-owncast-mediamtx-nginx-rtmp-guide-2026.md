@@ -12,7 +12,7 @@ The live streaming landscape in 2026 is dominated by a handful of centralized pl
 
 Self-hosting your live streaming infrastructure changes the equation entirely. You own the server, the audience data, the chat history, and the entire viewer experience. There are no surprise takedowns, no algorithmic shadow-banning, and no revenue sharing. For organizations, educators, and independent creators, a self-hosted streaming stack provides complete control over branding, moderation, and distribution.
 
-The open-source ecosystem has matured significantly. Tools like Owncast deliver a polished, all-in-one streaming experience with built-in chat, user management, and embed support. MediaMTX (formerly rtsp-simple-server) handles protocol conversion and relay with minimal resource usage. And Nginx with the RTMP module remains the battle-tested foundation for custom streaming pipelines. This guide covers all three, with practical setup instructions so you can get broadcasting on your own terms.
+The open-source ecosystem has matured significantly. Tools like Owncast deliver a polished, all-in-one streaming experience with built-in chat, user management, and embed support. MediaMTX (formerly rtsp-simple-server) handles protocol conversion and relay with minimal resource usage. And [nginx](https://nginx.org/) with the RTMP module remains the battle-tested foundation for custom streaming pipelines. This guide covers all three, with practical setup instructions so you can get broadcasting on your own terms.
 
 ## Owncast: The All-in-One Streaming Platform
 
@@ -28,7 +28,7 @@ The open-source ecosystem has matured significantly. Tools like Owncast deliver 
 - **Multi-platform streaming** — restream to Twitch, YouTube, and other platforms simultaneously
 - **API-first design** — full REST API for custom integrations
 
-### Docker Installation
+### [docker](https://www.docker.com/) Installation
 
 Owncast ships as a single binary, but Docker is the recommended deployment method for production:
 
@@ -458,7 +458,7 @@ The configuration above demonstrates how to create multiple quality levels from 
 
 **Pick MediaMTX if** your primary challenge is protocol conversion. If you have cameras publishing RTSP, viewers needing HLS, and some who want WebRTC, MediaMTX handles all of this simultaneously with near-zero resource overhead. It's also excellent as a relay layer between your encoder and your viewer-facing frontend.
 
-**Pick Nginx RTMP if** you need maximum control over the streaming pipeline. When you require custom transcoding, adaptive bitrate streaming, complex event hooks, or integration with existing Nginx infrastructure, the RTMP module gives you the flexibility to build exactly what you need. It's the foundation that Owncast and many other streaming tools are built on top of.
+**Pick Nginx RTMP if** you need maximum control over the streaming pipeline. When you require custom transcoding, adaptive bitrate streaming, com[plex](https://www.plex.tv/) event hooks, or integration with existing Nginx infrastructure, the RTMP module gives you the flexibility to build exactly what you need. It's the foundation that Owncast and many other streaming tools are built on top of.
 
 **Combining tools** is also a common pattern: use MediaMTX for protocol ingestion and conversion, then feed the output into Owncast for the viewer-facing experience. Or run Nginx RTMP for transcoding and HLS packaging, with a separate web frontend handling the user interface and chat.
 
@@ -481,3 +481,34 @@ Without transcoding (Owncast passthrough mode, MediaMTX relay), CPU requirements
 Self-hosted live streaming in 2026 is no longer a compromise. The tools available — Owncast for the complete experience, MediaMTX for protocol flexibility, and Nginx RTMP for custom pipelines — cover every use case from solo creator broadcasts to enterprise streaming infrastructure. The key is matching the tool to your specific needs: user-facing features, protocol requirements, and available hardware.
 
 Start with Owncast if you want to go live today with a polished viewer experience. Add MediaMTX if you need to handle multiple input protocols or run a low-resource relay. Reach for Nginx RTMP when you need the flexibility to build a custom streaming architecture from the ground up.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

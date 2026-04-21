@@ -36,7 +36,7 @@ Trino does not store data. It reads directly from external storage systems, maki
 - **Row-level security** — fine-grained access control with system-level and catalog-level policies
 - **Multi-engine federation** — join data from MySQL and Kafka in the same query without moving data
 
-### Quick Start with Docker
+### Quick Start with [docker](https://www.docker.com/)
 
 Trino provides an official Docker image that runs a single-node cluster for development:
 
@@ -304,7 +304,7 @@ volumes:
 
 Benchmark results vary by workload, but general patterns emerge:
 
-- **Ad-hoc queries on data lakes**: Trino and Presto perform similarly (both use the same lineage of optimizer). Trino's cost-based optimizer often generates more efficient plans for complex joins.
+- **Ad-hoc queries on data lakes**: Trino and Presto perform similarly (both use the same lineage of optimizer). Trino's cost-based optimizer often generates more efficient plans for com[plex](https://www.plex.tv/) joins.
 - **Real-time dashboards on local data**: StarRocks consistently outperforms both Trino and Presto by 3-10x due to its native columnar storage and vectorized C++ execution.
 - **Concurrent queries**: StarRocks handles 100+ concurrent queries better due to its resource group and workload group management. Trino and Presto can saturate worker memory under high concurrency.
 - **Data ingestion**: Only StarRocks supports direct data ingestion with real-time UPSERT. Trino and Presto require external systems (Kafka Connect, Spark) for data loading.
@@ -329,7 +329,7 @@ StarRocks supports real-time UPSERT and DELETE operations through its Primary Ke
 
 ### How do I connect BI tools to these engines?
 
-StarRocks speaks the MySQL wire protocol natively, so any MySQL-compatible BI tool (Superset, Metabase, Tableau, Power BI) connects out of the box. Trino and Presto provide JDBC and ODBC drivers, plus ODBC bridges for broader compatibility. Most modern BI tools have native Trino/Presto connectors.
+StarRocks speaks the MySQL wire protocol natively, so any MySQL-compatible BI tool (Superset, Metabase, Tableau, Power BI) connects out of the box. Trino and Presto provide JDBC and ODBC drivers, plus ODBC bridges for broader compatibility. Most modern BI tools have native Trino/[kubernetes](https://kubernetes.io/)nectors.
 
 ### Can I run these engines on Kubernetes?
 

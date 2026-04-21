@@ -10,7 +10,7 @@ Every production application eventually outgrows synchronous request handling. S
 
 While managed solutions like AWS SQS, Google Cloud Tasks, and Cloudflare Queues offer convenience, they come with vendor lock-in, per-task pricing, and data sovereignty concerns. Self-hosted task queue systems give you full control over your job processing pipeline, unlimited task throughput, and complete data privacy.
 
-This guide compares the three most prominent Python-native task queue frameworks — **Celery**, **Dramatiq**, and **ARQ** — covering architecture, performance, reliability, and step-by-step deployment with Docker.
+This guide compares the three most prominent Python-native task queue frameworks — **Celery**, **Dramatiq**, and **ARQ** — covering architecture, performance, reliability, and step-by-step deployment with [docker](https://www.docker.com/).
 
 ## Why Self-Host Your Task Queue?
 
@@ -63,7 +63,7 @@ Celery uses a distributed architecture with a clear separation of concerns:
 
 Celery supports multiple message brokers (Redis, RabbitMQ, SQS, Zookeeper) and multiple result backends (Redis, Memcached, RPC, database). Its feature set includes:
 
-- **Task chaining and grouping**: Compose complex workflows with `chain()`, `group()`, `chord()`.
+- **Task chaining and grouping**: Compose com[plex](https://www.plex.tv/) workflows with `chain()`, `group()`, `chord()`.
 - **Rate limiting**: Cap task execution frequency per worker or per task type.
 - **Time and count-based retries**: Automatic retry with exponential backoff.
 - **Task routing**: Route tasks to specific queues based on routing keys.
@@ -566,7 +566,7 @@ Flower provides task status, worker statistics, broker information, and the abil
 
 Dramatiq has community-built monitoring dashboards like **dramatiq-board**, which displays queue depths, processing rates, and failure rates.
 
-ARQ has no built-in monitoring UI, but its structured logging and Redis keyspace make it straightforward to build custom dashboards using Grafana or any metrics tool.
+ARQ has no built-in monitoring UI, but its structured logging and Redis keyspace make i[grafana](https://grafana.com/)ghtforward to build custom dashboards using Grafana or any metrics tool.
 
 ## Common Pitfalls and Best Practices
 
@@ -593,3 +593,34 @@ Celery remains the most feature-complete option, ideal for complex workflows and
 All three can be self-hosted with minimal infrastructure — typically just a Redis instance and a handful of worker containers. The choice depends on your application's architecture, concurrency model, and workflow complexity.
 
 For most new projects starting in 2026, **Dramatiq** provides the best balance of simplicity and reliability. If your stack is async-first, **ARQ** reduces boilerplate significantly. If you need enterprise-grade workflow composition, **Celery** remains unmatched.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

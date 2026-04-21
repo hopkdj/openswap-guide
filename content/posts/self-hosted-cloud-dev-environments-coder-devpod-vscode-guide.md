@@ -34,11 +34,11 @@ The architecture typically has three layers:
 - **Workspace runtime** — the actual container or VM where code lives and builds run
 - **Editor frontend** — VS Code in the browser, JetBrains Gateway, or a custom web IDE
 
-The tools we're comparing differ primarily in how they handle orchestration and which editors they support. All of them can run on a single server for small teams or scale to Kubernetes for larger organizations.
+The tools we're comparing differ primarily in how they handle orchestration and which editors they support. All of them can run on a single server for small teams or scale to [kubernetes](https://kubernetes.io/) for larger organizations.
 
 ## Option 1: Coder — Enterprise-Grade Workspace Platform
 
-[Coder](https://coder.com) (open-source version) is the most mature and feature-complete self-hosted cloud development platform. It provides a full workspace management layer with Terraform-based provisioning, meaning you can define workspaces as infrastructure code and deploy them anywhere — Docker, Kubernetes, AWS, GCP, Azure, or bare metal.
+[Coder](https://coder.com) (open-source version) is the most mature and feature-complete self-hosted cloud development platform. It provides a full workspace management layer with Terraform-based provisioning, meaning you can define workspaces as infrastructure code and deploy them anywhere — [docker](https://www.docker.com/), Kubernetes, AWS, GCP, Azure, or bare metal.
 
 ### Key Features
 
@@ -400,7 +400,7 @@ commands:
 Eclipse Che is the right choice when:
 
 - Your infrastructure is Kubernetes-first and you want dev environments managed by the same orchestration layer
-- You need the devfile standard for complex multi-container workspaces (app + database + cache + message broker)
+- You need the devfile standard for com[plex](https://www.plex.tv/) multi-container workspaces (app + database + cache + message broker)
 - You're already invested in the Red Hat/OpenShift ecosystem
 - You need built-in multi-tenancy at the platform level
 
@@ -521,3 +521,34 @@ The gap between commercial cloud IDE platforms and self-hosted alternatives has 
 The decision comes down to your scale and infrastructure preferences: DevPod for individual developers who want simplicity, Coder for teams that need a full-featured platform, openvscode-server for lightweight remote editing, and Eclipse Che for Kubernetes-native organizations. Each option is mature, well-documented, and actively maintained.
 
 Pick the one that matches your current setup, start with a single workspace, and expand from there. Your developers will thank you.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

@@ -8,7 +8,7 @@ description: "Complete guide to self-hosted package registries. Compare Sonatype
 
 ## Why Self-Host Your Package Registry?
 
-Every modern software project depends on external packages — npm modules, Python wheels, Maven artifacts, Docker images. Pulling these directly from public registries introduces real risks and costs that compound as your infrastructure grows.
+Every modern software project depends on external packages — npm modules, Python wheels, Maven artifacts, [docker](https://www.docker.com/) images. Pulling these directly from public registries introduces real risks and costs that compound as your infrastructure grows.
 
 - **Supply chain security** — public registries are frequent targets for typosquatting, dependency confusion, and malicious package injections. A private registry lets you audit and whitelist every dependency before it reaches your developers.
 - **Build reliability** — public registries go down, throttle requests, and introduce latency. A local cache ensures builds complete in seconds even during npm or PyPI outages.
@@ -164,7 +164,7 @@ Configure the HTTP connector on port 8082 in the docker group repo settings. The
 
 ```bash
 docker login nexus-server:8082
-docker pull nexus-server:8082/library/nginx:latest
+docker pull[nginx](https://nginx.org/)s-server:8082/library/nginx:latest
 ```
 
 Add to `/etc/docker/daemon.json` to allow insecure registry access on your network:
@@ -439,7 +439,7 @@ pulp task-schedule create \
 
 ## Putting It All Together: Reverse Proxy and HTTPS
 
-Regardless of which registry you choose, putting it behind a reverse proxy with HTTPS is essential for production use. Here is a Caddy configuration that handles TLS automatically:
+Regardless of which registry you choose, putting it behind a reverse proxy with [caddy](https://caddyserver.com/) is essential for production use. Here is a Caddy configuration that handles TLS automatically:
 
 ```caddyfile
 registry.example.com {
@@ -516,3 +516,34 @@ docker cp nexus-repo:/tmp/nexus-backup-*.tar.gz ./backups/
 - **Choose Pulp** if you work heavily with Python packages, Linux distribution repositories, or Ansible content. Its Python-native architecture and plugin system make it highly extensible.
 
 All three are production-ready, open-source, and free to run. The best choice depends on your team's primary package ecosystems and infrastructure constraints. Set one up this weekend and your next dependency outage will be a non-event.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

@@ -6,7 +6,7 @@ draft: false
 description: "Compare OpenObserve, Quickwit, and SigLens — three lightweight, self-hosted observability platforms that offer cost-effective alternatives to Datadog, Splunk, and the ELK stack."
 ---
 
-When your infrastructure grows beyond a handful of servers, log aggregation and observability stop being nice-to-have features and become critical operational requirements. The traditional answer — the ELK stack (Elasticsearch, Logstash, Kibana) or a SaaS platform like Datadog — comes with significant cost, complexity, and data sovereignty trade-offs.
+When your infrastructure grows beyond a handful of servers, log aggregation and observability stop being nice-to-have features and become critical operational requirements. The traditional answer — the ELK stack (Elasticsearch, Logstash, Kibana) or a SaaS platform like Datadog — comes with significant cost, com[plex](https://www.plex.tv/)ity, and data sovereignty trade-offs.
 
 In 2026, three lightweight, open-source observability platforms have emerged as compelling self-hosted alternatives: **OpenObserve**, **Quickwit**, and **SigLens**. Each takes a different approach to the problem, promising dramatically lower storage costs and simpler deployment than the established players. This guide compares all three across features, performance, deployment, and operational maturity to help you pick the right tool for your stack.
 
@@ -18,7 +18,7 @@ The cost argument is equally compelling. Datadog charges per ingested gigabyte a
 
 There's also the operational simplicity angle. The ELK stack requires managing three separate components (Elasticsearch, Logstash/Fluent Bit, Kibana), each with its own scaling concerns. The platforms covered here ship as single binaries or minimal container deployments, dramatically reducing the operational overhead.
 
-For teams already running Grafana for dashboards, our [Prometheus vs Grafana vs VictoriaMetrics comparison](../prometheus-vs-grafana-vs-victoriametrics/) covers the metrics side of observability. And if you need comprehensive log management beyond these lightweight options, check our [Loki vs Graylog vs OpenSearch guide](../self-hosted-log-management-loki-graylog-opensearch/).
+For teams already running Grafa[prometheus](https://prometheus.io/)hboards, our [Prometheus vs Grafana vs VictoriaMetrics comparison](../prometheus-vs-grafana-vs-victoriametrics/) covers the metrics side of observability. And if you need comprehensive log management beyond these lightweight options, check our [Loki vs Graylog vs OpenSearch guide](../self-hosted-log-management-loki-graylog-opensearch/).
 
 ## OpenObserve — Full-Stack Observability in One Binary
 
@@ -34,7 +34,7 @@ What sets OpenObserve apart is its breadth: it handles logs, metrics, distribute
 - **RUM**: Real-user monitoring for frontend performance and error tracking
 - **Compression**: Claims 140x lower storage than Elasticsearch through columnar storage
 - **Multi-tenancy**: Organizations, streams, and role-based access control built in
-- **Alerts**: SQL-based alert conditions with Slack, email, and webhook notifications
+- **Alerts**: SQL-based alert conditions with Slack, email, and web[docker](https://www.docker.com/)otifications
 
 ### Docker Deployment
 

@@ -16,11 +16,11 @@ Running load tests through a cloud provider introduces several problems that bec
 
 - **Cost at scale**: Most commercial platforms charge per virtual user or per test run. Running daily regression tests with thousands of concurrent users quickly costs more than a modest cloud VM.
 - **Data privacy**: Your test scenarios contain API endpoints, authentication tokens, and internal service URLs. Sending this to a third-party platform creates a security surface that compliance teams will flag.
-- **Internal network access**: Cloud-based load generators cannot reach services behind your firewall, on private subnets, or in staging environments without complex tunneling setups.
+- **Internal network access**: Cloud-based load generators cannot reach services behind your firewall, on private subnets, or in staging environments without com[plex](https://www.plex.tv/) tunneling setups.
 - **Reproducibility**: Self-hosted environments guarantee identical test conditions. You control the network, the hardware, the test data snapshots, and the monitoring stack — all of which are essential for comparing results across releases.
 - **CI/CD integration**: When the load testing tool runs in your own infrastructure, integrating it into GitLab CI, Jenkins, or GitHub Actions is a matter of adding a pipeline step, not configuring webhooks and API keys to an external service.
 
-The trade-off is operational overhead — you manage the load generator machines and the results storage. But with Docker and a few configuration files, this overhead is minimal compared to the cost savings and control you gain.
+The trade-off is operational overhead — you manage the load generator machines and the re[docker](https://www.docker.com/)storage. But with Docker and a few configuration files, this overhead is minimal compared to the cost savings and control you gain.
 
 ## k6: Developer-First Load Testing
 
@@ -34,7 +34,7 @@ The trade-off is operational overhead — you manage the load generator machines
 | **Performance** | Written in Go, a single k6 instance can generate tens of thousands of virtual users |
 | **CI/CD ready** | Designed for pipeline integration from day one; supports thresholds that fail builds automatically |
 | **Extensibility** | Extensions (xk6) written in Go for custom protocols, output formats, and integrations |
-| **Results export** | Native exporters for InfluxDB, Prometheus, Datadog, New Relic, JSON, CSV, and more |
+| *[prometheus](https://prometheus.io/)xport** | Native exporters for InfluxDB, Prometheus, Datadog, New Relic, JSON, CSV, and more |
 | **Resource efficiency** | Lower memory footprint than JVM-based tools, making it cheaper to run on small VMs |
 
 ### Installing k6
@@ -684,3 +684,34 @@ Configure Prometheus to scrape your application metrics endpoints. When you run 
 Self-hosted load testing is not about avoiding cloud providers — it is about owning your testing pipeline, controlling costs, and integrating performance validation into your development workflow. Whether you choose k6 for its developer-friendly JavaScript API, Locust for its Python ecosystem and live web UI, or Gatling for its JVM-based performance and rich reporting, you get a production-grade tool without subscription fees, usage limits, or vendor lock-in.
 
 All three tools support Docker, CI/CD integration, and distributed execution. The decision comes down to your team's language preference, the protocols you need to test, and the reporting format that fits your workflow. Start with a single test scenario, integrate it into your pipeline, and expand from there — your production environment will thank you.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

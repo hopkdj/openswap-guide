@@ -30,8 +30,8 @@ Not all caching software is created equal. When evaluating options for a self-ho
 - **Cache invalidation** — Support for PURGE, BAN, and soft-purge operations
 - **SSL/TLS termination** — Built-in HTTPS support with Let's Encrypt integration
 - **Load balancing** — Ability to distribute requests across multiple backend servers
-- **Varnish Configuration Language or equivalent** — Scriptable cache logic for complex routing
-- **Monitoring and metrics** — Export of cache hit/miss ratios, bandwidth, and response times to Prometheus, Grafana, or similar tools
+- **Varnish Configuration Language or equivalent** — Scriptable cache logic for com[plex](https://www.plex.tv/) routing
+- **Monitoring and metrics** — Export of cache hit/miss ratios, bandwidth[prometheus](https://prometheus.io/)onse times to Prometheus, Grafana, or similar tools
 - **Horizontal scaling** — Support for running multiple cache nodes behind a DNS-based or anycast routing layer
 
 ## Varnish Cache
@@ -44,7 +44,7 @@ Varnish Cache is the gold standard for HTTP acceleration. Originally designed to
 - VCL (Varnish Configuration Language) for flexible cache logic
 - Edge Side Includes (ESI) for assembling cached page fragments
 - Grace mode to serve stale content when backends are down
-- Built-in health checks for backend servers
+- Built-in health checks f[docker](https://www.docker.com/)kend servers
 
 ### Docker Deployment
 
@@ -782,3 +782,34 @@ nginx_connections_active
 10. Set up Grafana dashboards for ongoing monitoring
 
 A self-hosted caching layer is one of the highest-ROI infrastructure improvements you can make. It reduces origin server load, cuts bandwidth costs, improves page load times, and keeps your traffic under your own control. Start with a single node, validate your cache hit ratios, and expand to a multi-node setup as your traffic grows.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

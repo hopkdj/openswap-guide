@@ -23,7 +23,7 @@ Key advantages of self-hosted orchestration:
 - **Privacy** — no telemetry or usage reporting to third parties
 - **Custom scheduling** — fine-tune placement policies for your hardware
 
-Whether you're running Jellyfin for media, Nextcloud for files, or dozens of microservices, a proper orchestrator handles health checks, rolling updates, service discovery, and load balancing automatically.
+Whether you're running [jellyfin](https://jellyfin.org/) for media, [nextcloud](https://nextcloud.com/) for files, or dozens of microservices, a proper orchestrator handles health checks, rolling updates, service discovery, and load balancing automatically.
 
 ---
 
@@ -169,7 +169,7 @@ docker service ls         # List all services
 
 ### Swarm Strengths and Weaknesses
 
-| Aspect | Assessment |
+| Aspec[plex](https://www.plex.tv/)Assessment |
 |--------|-----------|
 | Setup complexity | Very low — `docker swarm init` and you're done |
 | Learning curve | Minimal if you know Docker |
@@ -763,3 +763,34 @@ That said, **Docker Swarm** remains the right choice if you want something that 
 The good news? All three are open source, free to run, and can be tested on a single machine. Spin up a VM or container, try each one for a weekend, and see which workflow fits your brain.
 
 Whichever you choose, you'll have taken your self-hosted infrastructure to the next level — multi-node, self-healing, rolling-update-capable, and fully under your control.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

@@ -20,7 +20,7 @@ The business case for self-hosting a CRM is straightforward:
 - **No vendor lock-in**: Migrate away from a SaaS CRM is painful. With self-hosted solutions, your database and files are yours.
 - **Offline access**: On-premise deployments keep working during internet outages — critical for field teams.
 
-In 2026, three open-source CRM platforms stand out for different use cases: **EspoCRM**, **SuiteCRM**, and **Dolibarr**. This guide compares them head-to-head and provides step-by-step Docker installation instructions for each.
+In 2026, three open-source CRM platforms stand out for different use cases: **EspoCRM**, **SuiteCRM**, and **Dolibarr**. This guide compares them head-to-head and provides step-by-step [docker](https://www.docker.com/) installation instructions for each.
 
 ## Quick Comparison
 
@@ -57,7 +57,7 @@ EspoCRM is a lightweight, single-page application built with a modern JavaScript
 
 - **No built-in ERP**: EspoCRM is focused purely on CRM functionality. Invoicing, inventory, and project management require extensions.
 - **Smaller extension ecosystem**: The marketplace has fewer plugins compared to SuiteCRM.
-- **Limited reporting**: Basic reporting tools; complex analytics require custom development.
+- **Limited reporting**: Basic reporting tools; com[plex](https://www.plex.tv/) analytics require custom development.
 
 ### Installation with Docker
 
@@ -406,7 +406,7 @@ Dolibarr is the Swiss Army knife of business software. If your needs extend beyo
 | **PHP workers** | 4 | 8 | 4 |
 | **Handles 100+ users** | Yes | Yes | Yes (with tuning) |
 
-For production deployments, all three benefit from a reverse proxy (Nginx or Caddy), HTTPS via Let's Encrypt, and regular database backups. Here's a minimal Nginx configuration that works for any of them:
+For production de[nginx](https://nginx.org/)ents, all three benefit from a reverse proxy (Nginx or Caddy), HTTPS via Let's Encrypt, and regular database backups. Here's a minimal Nginx configuration that works for any of them:
 
 ```nginx
 server {
@@ -462,3 +462,34 @@ There's no single "best" self-hosted CRM — the right choice depends on your pr
 - **Dolibarr** wins on breadth of business functionality. It's a CRM, ERP, and invoicing system in one.
 
 All three are free, open-source, and actively maintained. The best way to decide is to spin up each one using the Docker configurations above and test them with your actual data. You'll know within a day which platform feels right for your team.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

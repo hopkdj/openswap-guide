@@ -6,7 +6,7 @@ draft: false
 description: "Complete guide to self-hosted LDAP directory servers in 2026. Compare OpenLDAP, 389 Directory Server, and FreeIPA with Docker setups, configuration examples, and a decision framework for choosing the right identity backend."
 ---
 
-Every growing infrastructure eventually hits the same wall: user accounts scattered across servers, services, and applications with no single source of truth. Passwords managed manually. SSH keys copied by hand. Service accounts created and forgotten. The solution has existed for decades — an LDAP directory server — but choosing and configuring one remains daunting.
+Every growing infrastructure eventually hits the same wall: user accounts scattered across servers, services, and applications with no single source of truth. Passwords managed manually. SSH keys copied by hand. Service accounts created and forgotten. The solution has existed for decades — an LDAP direct[ory](https://www.ory.sh/) server — but choosing and configuring one remains daunting.
 
 This guide covers the three most capable open-source LDAP directory servers you can self-host: **OpenLDAP**, **389 Directory Server**, and **FreeIPA**. Each serves a different audience and operational philosophy. By the end, you will know which one fits your environment and how to deploy it.
 
@@ -43,7 +43,7 @@ OpenLDAP is the oldest and most widely deployed open-source LDAP implementation.
 - **Manual schema management**: Adding custom schemas requires careful LDIF work and server reloads.
 - **No integrated DNS or Kerberos**: You must provision these separately for full identity infrastructure.
 
-### Docker Deployment
+### [docker](https://www.docker.com/) Deployment
 
 ```yaml
 # docker-compose.yml — OpenLDAP with phpLDAPadmin
@@ -161,7 +161,7 @@ olcSyncRepl: rid=001
 
 ### Strengths
 
-- **Easier administration**: `dsconf` and `dscreate` CLI tools replace complex LDIF manipulation for most operations.
+- **Easier administration**: `dsconf` and `dscreate` CLI tools replace com[plex](https://www.plex.tv/) LDIF manipulation for most operations.
 - **Web console**: Built-in Cockpit-based management interface for monitoring and configuration.
 - **Active Directory compatibility**: Synchronized password handling and schema extensions for mixed environments.
 - **Better defaults**: Automatic indexing, sensible access controls, and performance tuning enabled by default.
@@ -484,3 +484,34 @@ Once you have deployed your directory server, follow these steps to bring it int
 Self-hosting an LDAP directory server puts you in full control of your identity infrastructure. OpenLDAP gives you the most flexibility with the steepest learning curve. 389 Directory Server modernizes the experience with better tooling and defaults. FreeIPA delivers a complete identity platform that rivals Active Directory for Linux environments.
 
 The right choice depends on your scale, existing infrastructure, and whether you need just a directory or a full identity management ecosystem. All three are production-ready, actively maintained, and free — there is no reason to pay per-user licensing fees for core identity services in 2026.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

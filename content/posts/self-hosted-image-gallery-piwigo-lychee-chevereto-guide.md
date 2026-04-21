@@ -38,7 +38,7 @@ Piwigo has been around since 2002 and is arguably the most feature-complete open
 - **Multi-size derivatives** (thumbnails, medium, HD) generated automatically
 - **REST API** for integration with external applications
 
-### Docker Deployment
+### [docker](https://www.docker.com/) Deployment
 
 ```yaml
 version: "3.8"
@@ -198,7 +198,7 @@ Chevereto occupies a different niche entirely. It is designed as an image hostin
 - **Content moderation** tools including flagging, approval queues, and keyword filters
 - **Monetization support** with ad placement and premium membership tiers
 - **Custom fields** for metadata, licensing, and source attribution
-- **S3-compatible storage** for offloading images to Backblaze B2, Cloudflare R2, or MinIO
+- **S3-compatible storage** for offloading images to Backb[minio](https://min.io/)B2, Cloudflare R2, or MinIO
 - **API-first design** with full CRUD operations over REST
 
 ### Docker Deployment
@@ -278,7 +278,7 @@ With external storage configured, new uploads go directly to the S3 bucket while
 | **S3 Integration** | Via plugin | No | Native |
 | **Docker Image** | linuxserver/piwigo | lycheeorg/lychee | ghcr.io/chevereto/chevereto |
 | **Resource Usage** | Moderate (PHP-heavy) | Light | Moderate |
-| **Setup Complexity** | Medium (many options) | Low (works immediately) | Medium (richer config) |
+| **Setup Com[plex](https://www.plex.tv/)ity** | Medium (many options) | Low (works immediately) | Medium (richer config) |
 
 ## Choosing the Right Gallery
 
@@ -434,3 +434,34 @@ Run this script, then use Piwigo's batch manager or Lychee's CLI sync to import 
 The choice between Piwigo, Lychee, and Chevereto comes down to your primary use case. Piwigo is the most flexible and extensible, making it ideal for photographers who need fine-grained control. Lychee delivers the best visual experience with the simplest setup, perfect for portfolios and personal galleries. Chevereto provides the infrastructure for multi-user image communities with monetization and moderation built in.
 
 All three support Docker deployment, can sit behind a reverse proxy with TLS, and give you complete ownership of your images. The real question is not whether to self-host — it is which tool best matches your workflow.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

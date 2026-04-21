@@ -6,7 +6,7 @@ draft: false
 description: "Compare gVisor, Kata Containers, and Firecracker for container sandboxing in 2026. Complete installation guides, runtime configuration, and performance benchmarks for self-hosted secure container workloads."
 ---
 
-When you run containers on a shared kernel, a single exploit can compromise every workload on that host. Container runtimes like Docker and containerd rely on Linux namespaces and cgroups for isolation — effective for accidental misconfiguration, but insufficient against a determined attacker who escapes the container boundary. Sandbox runtimes solve this by adding an additional isolation layer between the container and the host kernel.
+When you run containers on a shared kernel, a single exploit can compromise every workload on that host. Container runtimes like [docker](https://www.docker.com/) and containerd rely on Linux namespaces and cgroups for isolation — effective for accidental misconfiguration, but insufficient against a determined attacker who escapes the container boundary. Sandbox runtimes solve this by adding an additional isolation layer between the container and the host kernel.
 
 In this guide, we compare the three leading open-source container sandboxing technologies: **gVisor** by Google, **Kata Containers** (a CNCF project), and **Firecracker** by AWS. Each takes a fundamentally different approach to isolation, and understanding those differences is critical to choosing the right tool for your infrastructure.
 
@@ -94,7 +94,7 @@ For Docker, add this to `/etc/docker/daemon.json`:
 | Minimal performance overhead for CPU-bound workloads | Incompatible with some syscalls (custom kernel modules, raw sockets) |
 | Easy to adopt — drop-in replacement for runc | Memory overhead from user-space kernel (~100-200 MB per sandbox) |
 | Actively developed by Google with strong CVE response | Not suitable for GPU passthrough or eBPF-based monitoring |
-| Supports Docker, containerd, and Kubernetes out of the box | Networking performance reduced by user-space Netstack |
+| Suppor[kubernetes](https://kubernetes.io/) containerd, and Kubernetes out of the box | Networking performance reduced by user-space Netstack |
 
 ## Kata Containers: Lightweight VMs That Feel Like Containers
 
@@ -165,7 +165,7 @@ spec:
 | Full kernel isolation — no shared kernel between container and host | VM boot adds 1-2 seconds to cold start times |
 | Supports GPU passthrough, VFIO devices, and custom kernels | Higher memory footprint per workload (VM kernel + init system) |
 | Compatible with virtually all Linux applications and syscalls | Requires KVM support on the host CPU |
-| CNCF graduated project with multi-vendor backing (Intel, AMD, Red Hat) | More complex troubleshooting (issues could be in the guest kernel, hypervisor, or shim) |
+| CNCF graduated project with multi-vendor backing (Intel, AMD, Red Hat) | More com[plex](https://www.plex.tv/) troubleshooting (issues could be in the guest kernel, hypervisor, or shim) |
 
 ## Firecracker: MicroVMs for Serverless and FaaS
 

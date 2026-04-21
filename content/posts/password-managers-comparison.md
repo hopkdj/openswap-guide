@@ -16,7 +16,7 @@ Storing passwords on your own server means:
 
 ## Comparison Matrix
 
-| Feature | Bitwarden (Official) | Vaultwarden | KeePassXC |
+| Feature | [bitwarden](https://bitwarden.com/) (Official) | [vaultwarden](https://github.com/dani-garcia/vaultwarden) | KeePassXC |
 |---------|---------------------|-------------|-----------|
 | **Cost** | Free / $10/yr | 100% Free | 100% Free |
 | **Open Source** | ✅ Yes | ✅ Yes | ✅ Yes |
@@ -42,7 +42,7 @@ Storing passwords on your own server means:
 - Emergency access
 - Secret manager add-on
 
-### Docker Deployment
+### [docker](https://www.docker.com/) Deployment
 
 ```bash
 # Official installation script

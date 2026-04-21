@@ -6,7 +6,7 @@ draft: false
 description: "Complete guide to self-hosted TURN and STUN servers in 2026. Compare Coturn, Restund, and Pion TURN with Docker setups, configuration examples, performance benchmarks, and security hardening."
 ---
 
-Every self-hosted real-time communication setup eventually hits the same wall: NAT. Whether you're running Jitsi Meet, Nextcloud Talk, a Matrix homeserver with VoIP, or a custom WebRTC application, roughly 20–30% of connections will fail without a TURN relay. STUN helps devices discover their public addresses, but when symmetric NATs or strict firewalls block direct peer-to-peer traffic, you need a TURN server to relay media.
+Every self-hosted real-time communication setup eventually hits the same wall: NAT. Whether you're running Jitsi Meet, [nextcloud](https://nextcloud.com/) Talk, a Matrix homeserver with VoIP, or a custom WebRTC application, roughly 20–30% of connections will fail without a TURN relay. STUN helps devices discover their public addresses, but when symmetric NATs or strict firewalls block direct peer-to-peer traffic, you need a TURN server to relay media.
 
 Running your own TURN/STUN server means no reliance on free public relays (which are slow, throttled, or unreliable), full control over your media infrastructure, and compliance with data sovereignty requirements. This guide compares the three leading open-source TURN/STUN servers—**Coturn**, **Restund**, and **Pion TURN**—and walks you through production deployment.
 
@@ -39,13 +39,13 @@ In practice, ICE tries STUN first (direct connection), then falls back to TURN (
 
 - Full STUN/TURN/TURN-TCP/TURN-TLS/TURN-DTLS support
 - REST API authentication with HMAC-based time-limited tokens
-- Redis, MySQL, PostgreSQL, and MongoDB backends for credential storage
+- Redis, MySQL, PostgreSQL, and MongoDB backends[prometheus](https://prometheus.io/)ntial storage
 - Prometheus metrics export
 - Horizontal scaling via shared Redis backend
 - Mobile ICE support (RFC 6544)
 - IPv6 support
 - Bandwidth quotas and per-user rate limiting
-- WebRTC-optimized defaults
+- WebRT[docker](https://www.docker.com/)mized defaults
 
 ### Docker Deployment
 
@@ -581,3 +581,34 @@ turnutils_uclient -u testuser -w $(echo -n "testuser:$(date +%s):$SECRET" | open
 Replace `YOUR_PUBLIC_IP` with your server's public address and `turn.yourdomain.com` with your domain. Once verified, integrate the TURN server into your WebRTC application or self-hosted communication platform.
 
 Your users' calls will thank you.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

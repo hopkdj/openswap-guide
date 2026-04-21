@@ -42,7 +42,7 @@ The current standard is MQTT 5.0, which adds reason codes, shared subscriptions,
 
 ## Option 1: Eclipse Mosquitto
 
-Mosquitto is the most widely deployed open-source MQTT broker, maintained by the Eclipse Foundation. It is lightweight, battle-tested, and the default broker for many home automation platforms including Home Assistant.
+Mosquitto is the most widely deployed open-source MQTT broker, maintained by the Eclipse Foundation. It is lightweight, battle-tested, and the default broker for many home automation platforms including [home assistant](https://www.home-assistant.io/).
 
 ### Key Features
 
@@ -52,7 +52,7 @@ Mosquitto is the most widely deployed open-source MQTT broker, maintained by the
 - TLS/SSL encryption with certificate-based authentication
 - Password file and plugin-based authentication
 - Bridging to other MQTT brokers
-- Available on virtually every Linux distribution
+- Available on virtua[docker](https://www.docker.com/)ery Linux distribution
 
 ### Docker Setup
 
@@ -476,7 +476,7 @@ docker network create iot-network
 # Use Caddy, Traefik, or Nginx to handle HTTPS for browser clients
 
 # 6. Monitor broker health
-# Mosquitto: Monitor log files and connection counts
+# Mosquitto: Monitor log files [prometheus](https://prometheus.io/)tion counts
 # EMQX: Use the built-in dashboard and Prometheus metrics endpoint
 # HiveMQ CE: Use JMX metrics or the Control Center
 
@@ -489,3 +489,34 @@ docker network create iot-network
 Self-hosting an MQTT broker is one of the highest-return infrastructure decisions you can make for an IoT or home automation setup. Mosquitto remains the best choice for lightweight, single-node deployments — especially with Home Assistant. EMQX brings enterprise-grade clustering and a powerful rule engine to the open-source world. HiveMQ CE offers a mature Java-based platform with extensive plugin support.
 
 All three are production-ready, support MQTT 5.0, and can be deployed with Docker in under five minutes. The right choice depends on your scale, existing infrastructure, and feature requirements — but any of them will give you the speed, privacy, and reliability that cloud-hosted MQTT services simply cannot match.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

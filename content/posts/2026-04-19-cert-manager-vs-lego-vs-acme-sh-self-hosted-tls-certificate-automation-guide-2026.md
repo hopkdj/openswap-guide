@@ -8,7 +8,7 @@ description: "Compare cert-manager, LEGO, and acme.sh for self-hosted TLS certif
 
 Managing TLS certificates manually is one of the most common causes of service outages. Expired certificates bring down websites, break API endpoints, and disrupt email delivery. In 2026, the solution is straightforward: automate certificate provisioning and renewal using a self-hosted ACME client.
 
-This guide compares three leading open-source tools for self-hosted TLS certificate management: **cert-manager** (Kubernetes-native), **LEGO** (standalone Go binary), and **acme.sh** (shell-script based). We'll cover installation, DNS challenge configuration, Docker deployment, and auto-renewal strategies so you can choose the right tool for your infrastructure.
+This guide compares three leading open-source tools for self-hosted TLS certificate management: **cert-manager** ([kubernetes](https://kubernetes.io/)-native), **LEGO** (standalone Go binary), and **acme.sh** (shell-script based). We'll cover installation, DNS challenge configuration, [docker](https://www.docker.com/) deployment, and auto-renewal strategies so you can choose the right tool for your infrastructure.
 
 ## Why Self-Host Your TLS Certificate Management?
 
@@ -255,7 +255,7 @@ DNS-01 challenges require API access to your DNS provider. Here's how the three 
 | Porkbun | ✅ Webhook | ✅ Built-in | ✅ Built-in |
 | **Total providers** | ~20 (native) + webhooks | 80+ built-in | 100+ built-in |
 
-cert-manager relies on external webhook extensions for less common providers, which adds deployment complexity. LEGO and acme.sh have broader built-in support, making them easier to deploy across diverse DNS infrastructures.
+cert-manager relies on external webhook extensions for less common providers, which adds deployment com[plex](https://www.plex.tv/)ity. LEGO and acme.sh have broader built-in support, making them easier to deploy across diverse DNS infrastructures.
 
 ## Security Best Practices
 

@@ -47,7 +47,7 @@ This model is particularly powerful for large projects with many concurrent cont
 - Integration with CI systems via the `Verified` label
 - Submit strategies: merge, rebase, cherry-pick, or fast-forward only
 
-### Installation with Docker Compose
+### Installation with [docker](https://www.docker.com/) Compose
 
 Gerrit ships as a single Java application. The official Docker image makes deployment straightforward:
 
@@ -149,7 +149,7 @@ For production deployments, you will want to configure a reverse proxy, set up L
 | Excellent for high-volume, multi-contributor projects | UI feels dated compared to modern Git forges |
 | Rich plugin ecosystem | Plugin quality varies; some are unmaintained |
 | Strong access control and submit strategies | Java-based — requires significant memory (2 GB+ minimum) |
-| SSH-native workflow is fast for CLI users | Initial configuration is complex |
+| SSH-native workflow is fast for CLI users | Initial configuration is com[plex](https://www.plex.tv/) |
 
 ---
 
@@ -472,8 +472,7 @@ The decision comes down to your team's workflow, technical stack, and growth tra
 ## Production Hardening Checklist
 
 Regardless of which platform you choose, these steps should be part of any production deployment:
-
-```bash
+[caddy](https://caddyserver.com/)ash
 # 1. Always put a reverse proxy in front (Caddy example)
 cat > Caddyfile << 'EOF'
 review.example.com {
@@ -518,3 +517,34 @@ mysqldump -h db -u phorge -p'PhorgePass2026!' phorge > /backup/phorge-$(date +%Y
 The best self-hosted code review platform is the one that matches your team's workflow, technical preferences, and growth plans. Gerrit excels in high-volume Git environments with strict governance requirements. Review Board shines in heterogeneous VCS environments where simplicity and speed matter. Phorge delivers the most comprehensive all-in-one experience for teams that want review, tasks, and documentation under one roof.
 
 All three are mature, open-source, and production-ready. You cannot make a bad choice — the real question is which philosophy aligns with how your team works today and how it will scale tomorrow.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

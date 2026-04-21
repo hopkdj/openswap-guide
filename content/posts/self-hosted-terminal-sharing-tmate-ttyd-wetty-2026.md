@@ -6,11 +6,11 @@ draft: false
 description: "Complete guide to self-hosted terminal sharing and pair programming tools in 2026. Compare tmate, ttyd, and Wetty with Docker setup instructions, security hardening, and real-world use cases."
 ---
 
-Every developer has been in this situation: a production server is misbehaving, a junior engineer is stuck on a configuration issue, or you need to walk a teammate through a complex debugging session. You could paste commands over chat, ship a screen recording, or grant SSH access and hope for the best. Or you could share your terminal in real time, with a single link.
+Every developer has been in this situation: a production server is misbehaving, a junior engineer is stuck on a configuration issue, or you need to walk a teammate through a com[plex](https://www.plex.tv/) debugging session. You could paste commands over chat, ship a screen recording, or grant SSH access and hope for the best. Or you could share your terminal in real time, with a single link.
 
 Terminal sharing tools solve this problem elegantly. They let you broadcast a live terminal session to anyone with a URL, support multi-user collaboration where both parties can type, and work entirely in the browser — no client installation required. In 2026, three open-source tools dominate this space: **tmate**, **ttyd**, and **Wetty**. Each takes a fundamentally different approach, and each has strengths that make it the right choice for specific scenarios.
 
-This guide compares all three, provides complete Docker-based deployment instructions, and covers security hardening so you can run these tools in production without exposing your infrastructure.
+This guide compares all t[docker](https://www.docker.com/)provides complete Docker-based deployment instructions, and covers security hardening so you can run these tools in production without exposing your infrastructure.
 
 ## Why Self-Host Terminal Sharing
 
@@ -168,7 +168,7 @@ services:
     command: ["-c", "admin:secretpassword", "--writable", "/bin/bash"]
 ```
 
-The `-c` flag sets basic HTTP authentication credentials. For production use, place ttyd behind a reverse proxy with proper TLS and authentication:
+The `-c` flag sets basic HTTP authentication credentials. For production use, place ttyd behind a rev[nginx](https://nginx.org/)proxy with proper TLS and authentication:
 
 ```nginx
 # /etc/nginx/sites-available/ttyd
@@ -440,3 +440,34 @@ Terminal sharing should not require a commercial SaaS subscription, and it certa
 For most development teams, running **tmate** on a small VPS covers the majority of collaboration needs: instant sharing, read-only links for stakeholders, and session recording for documentation. **ttyd** fills the gap when you need to expose specific tools through a browser. **Wetty** provides the bridge between existing SSH infrastructure and browser-based access.
 
 All three tools are open source, free to run, and deployable with Docker in under five minutes. The only question is which one matches your workflow.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

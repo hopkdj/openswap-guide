@@ -6,7 +6,7 @@ draft: false
 description: "Compare Volcano, Apache YuniKorn, and Kueue — the top open-source batch schedulers for Kubernetes. Learn which one fits your HPC, ML, or multi-tenant workload queueing needs."
 ---
 
-Kubernetes was designed primarily for long-running services, not batch workloads. The default scheduler makes no distinction between a web server that needs to stay up 24/7 and a data processing job that should run to completion and exit. For organizations running high-performance computing (HPC), machine learning training, ETL pipelines, or any job-queueing workload on self-hosted Kubernetes clusters, the default scheduler falls short.
+[kubernetes](https://kubernetes.io/) was designed primarily for long-running services, not batch workloads. The default scheduler makes no distinction between a web server that needs to stay up 24/7 and a data processing job that should run to completion and exit. For organizations running high-performance computing (HPC), machine learning training, ETL pipelines, or any job-queueing workload on self-hosted Kubernetes clusters, the default scheduler falls short.
 
 Three open-source projects have emerged to fill this gap: [**Volcano**](https://volcano.sh/), [**Apache YuniKorn**](https://yunikorn.apache.org/), and [**Kueue**](https://kueue.sigs.k8s.io/). Each takes a different approach to batch scheduling on Kubernetes, with distinct architectures, feature sets, and target use cases.
 
@@ -344,11 +344,11 @@ The fundamental difference between these three projects lies in **where they sit
 
 ## Monitoring and Observability
 
-All three schedulers expose Prometheus metrics for integration with your existing monitoring stack. For a complete self-hosted observability setup, consider pairing your scheduler with dedicated [Prometheus and Grafana instances](https://hopkdj.github.io/openswap-guide/posts/) to track queue depths, admission latency, resource utilization, and job completion times.
+Al[prometheus](https://prometheus.io/)hedulers expose Prometheus metrics for integration with your existing monitoring stack. For a complete self-hosted observability setup, consider pairing your scheduler with dedicated [Prometheus and Grafana instances](https://hopkdj.github.io/openswap-guide/posts/) to track queue depths, admission latency, resource utilization, and job completion times.
 
 Volcano provides the richest built-in monitoring with its dedicated monitoring manifest (`volcano-monitoring.yaml`) that pre-configures Grafana dashboards. Kueue offers the most comprehensive Prometheus metrics of the three, with dedicated metrics for admission wait times, queue depth, and resource preemption events.
 
-For clusters running multiple schedulers or complex job orchestration, you may also want a dedicated [Kubernetes-native CI/CD pipeline](../tekton-vs-argo-workflows-vs-jenkins-x-self-hosted-kubernetes-native-cicd-guide-2026/) to automate scheduler configuration testing and rollout.
+For clusters running multiple schedulers or com[plex](https://www.plex.tv/) job orchestration, you may also want a dedicated [Kubernetes-native CI/CD pipeline](../tekton-vs-argo-workflows-vs-jenkins-x-self-hosted-kubernetes-native-cicd-guide-2026/) to automate scheduler configuration testing and rollout.
 
 ## Migration Considerations
 

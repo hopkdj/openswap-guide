@@ -16,10 +16,9 @@ description: "Complete guide to building a self-hosted AI stack with Ollama, Ope
 ## The Self-Hosted AI Architecture
 
 ```
-User → Open WebUI → Ollama API → LLM (Llama/Mistral/Qwen)
+User → Open WebUI → [ollama](https://ollama.com/) API → LLM (Llama/Mistral/Qwen)
                 ↘ Embeddings → Vector DB → RAG
-                ↘ TTS/STT → Voice Interface
-```
+                ↘ TTS/STT → Voice Inte[docker](https://www.docker.com/)```
 
 ## Complete Docker Compose Stack
 
@@ -115,7 +114,7 @@ Open http://localhost:3000 and create your account.
 | Llama 3.2 3B | 2GB | 4GB | Quick tasks |
 | Llama 3.2 8B | 5GB | 8GB | General chat |
 | Qwen 2.5 14B | 9GB | 12GB | Reasoning |
-| Mistral Large | 12GB | 16GB | Complex tasks |
+| Mistral Large | 12GB | 16GB | Com[plex](https://www.plex.tv/) tasks |
 
 ### Specialized
 | Model | Purpose | Size |

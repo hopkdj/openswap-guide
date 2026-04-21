@@ -27,7 +27,7 @@ Self-hosting eliminates the data exfiltration risk, works without internet conne
 | **Architecture** | Unified API gateway | Standalone server | JavaScript library |
 | **Multi-engine** | Yes (PlantUML, Mermaid, Graphviz, etc.) | Single engine (PlantUML) | Single engine (Mermaid) |
 | **REST API** | Yes | Yes | No (client-side only) |
-| **Docker support** | Official image | Official image | Official image |
+| **[docker](https://www.docker.com/) support** | Official image | Official image | Official image |
 | **CI/CD friendly** | Excellent (HTTP API) | Excellent (CLI + server) | Good (CLI tool) |
 | **Language syntax** | Depends on engine | Custom DSL | Markdown-like |
 | **Learning curve** | Medium (multiple syntaxes) | Medium (custom syntax) | Low (markdown-friendly) |
@@ -580,7 +580,7 @@ services:
 
 ### Caching Strategy
 
-Diagram rendering is CPU-intensive. Cache rendered outputs aggressively:
+Diagram rendering is CPU-intensive. Cache rendered[nginx](https://nginx.org/)uts aggressively:
 
 ```nginx
 # nginx reverse proxy with caching
@@ -668,9 +668,7 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
       - caddy-config:/config
-    restart: unless-stopped
-
-  # Monitor with Prometheus metrics
+    restart: unless[prometheus](https://prometheus.io/)  # Monitor with Prometheus metrics
   node-exporter:
     image: prom/node-exporter:latest
     ports:
@@ -712,3 +710,34 @@ With this setup, you get:
 ## Conclusion
 
 Self-hosted text-to-diagram platforms give you full control over your documentation pipeline. PlantUML offers the deepest UML support and maturity, Mermaid provides the gentlest learning curve and widest platform adoption, and Kroki delivers the flexibility of a unified API spanning every diagram engine. For most teams building internal documentation, running Kroki as the primary API with PlantUML and Mermaid as backend engines delivers the best balance of capability, simplicity, and future-proofing.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

@@ -18,7 +18,7 @@ Three tools dominate the self-hosted network simulation space: **GNS3**, **EVE-N
 
 [GNS3](https://github.com/GNS3/gns3-server) (Graphical Network Simulator-3) is the most widely known open-source network emulation platform. Originally released in 2008, it has grown into a mature ecosystem with over 2,500 stars on its GUI repository and 988 stars on the server component (last updated April 2026).
 
-GNS3 uses Dynamips for Cisco IOS emulation, QEMU/KVM for full virtual machine support, and Docker for container-based nodes. Its graphical desktop client provides a drag-and-drop canvas where you connect virtual routers, switches, firewalls, and PCs with virtual wires.
+GNS3 uses Dynamips for Cisco IOS emulation, QEMU/KVM for full virtual machine support, and [docker](https://www.docker.com/) for container-based nodes. Its graphical desktop client provides a drag-and-drop canvas where you connect virtual routers, switches, firewalls, and PCs with virtual wires.
 
 ### Architecture
 
@@ -305,7 +305,7 @@ Yes, the Community Edition is free to use for personal and educational purposes.
 
 ### Can I use Containerlab with my existing Docker Compose infrastructure?
 
-Absolutely. Containerlab uses Docker under the hood, and its containers coexist with your Docker Compose services. You can run a monitoring stack (Prometheus, Grafana) alongside your network lab and connect them via Docker networks. Just ensure Containerlab's virtual bridges don't conflict with your existing Docker bridge subnets.
+Absolutely. Containerlab uses Docker under the hood, and its containers coexist with your Docker Compose services. You c[prometheus](https://prometheus.io/)onitoring stack (Prometheus, Grafana) alongside your network lab and connect them via Docker networks. Just ensure Containerlab's virtual bridges don't conflict with your existing Docker bridge subnets.
 
 ### How do I back up my network lab configurations?
 
@@ -338,4 +338,4 @@ Containerlab is the strongest choice for network automation workflows. Its YAML-
 }
 </script>
 
-For related reading, see our [K3s vs K0s vs Talos Kubernetes guide](../k3s-vs-k0s-vs-talos-linux-self-hosted-kubernetes-guide-2026/) for container orchestration fundamentals, the [eBPF networking observability guide](../ebpf-networking-observability-cilium-pixie-tetragon-guide-2026/) for modern network monitoring techniques, and the [container runtimes comparison](../containerd-vs-cri-o-vs-podman-self-hosted-container-runtimes-guide-2026/) to understand the Docker engine layer that Containerlab builds on.
+For related reading, se[kubernetes](https://kubernetes.io/) vs K0s vs Talos Kubernetes guide](../k3s-vs-k0s-vs-talos-linux-self-hosted-kubernetes-guide-2026/) for container orchestration fundamentals, the [eBPF networking observability guide](../ebpf-networking-observability-cilium-pixie-tetragon-guide-2026/) for modern network monitoring techniques, and the [container runtimes comparison](../containerd-vs-cri-o-vs-podman-self-hosted-container-runtimes-guide-2026/) to understand the Docker engine layer that Containerlab builds on.

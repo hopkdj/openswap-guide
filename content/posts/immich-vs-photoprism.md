@@ -8,7 +8,7 @@ description: "Immich vs PhotoPrism in 2026: detailed comparison of features, Doc
 
 If you're looking to take back control of your photo library from Google Photos, iCloud, or Amazon Photos, two projects dominate the self-hosted photo management space in 2026: **Immich** and **PhotoPrism**.
 
-Both offer AI-powered organization, facial recognition, and beautiful web interfaces. But they take very different approaches. In this guide, we'll compare them feature by feature, walk through Docker Compose deployments, and help you pick the right one for your setup.
+Both offer AI-powered organization, facial recognition, and beautiful web interfaces. But they take very different approaches. In this guide, we'll compare them feature by feature, walk through [docker](https://www.docker.com/) Compose deployments, and help you pick the right one for your setup.
 
 ---
 
@@ -314,7 +314,7 @@ We benchmarked both tools on identical hardware (4-core Intel N100, 8 GB RAM, NV
 - ✅ **RAW format support** is critical (especially for DSLR/mirrorless workflows)
 - ✅ You want **read-only indexing** — never touch your original files
 - ✅ You use **Lightroom or Digikam** and want WebDAV integration
-- ✅ You prefer **SQLite simplicity** over PostgreSQL complexity
+- ✅ You prefer **SQLite simplicity** over PostgreSQL com[plex](https://www.plex.tv/)ity
 - ✅ You want the **most AI classification labels** (10,000+ vs Immich's CLIP-based approach)
 
 ### Can You Run Both?
@@ -331,7 +331,7 @@ Yes. Immich has been stable for production use since v1.90+ (late 2024). The pro
 
 ### Can PhotoPrism replace Google Photos for mobile users?
 
-Not directly. PhotoPrism has no native mobile app — it offers a responsive web interface and PWA support. For automatic mobile backup, you'd need a third-party sync tool like Syncthing or FolderSync to push photos from your phone to the PhotoPrism originals folder, then let PhotoPrism index them. Immich has this built-in with native apps.
+Not directly. PhotoPrism has no native mobile app — it offers a responsive web interface and PWA support. For automatic mobi[syncthing](https://syncthing.net/), you'd need a third-party sync tool like Syncthing or FolderSync to push photos from your phone to the PhotoPrism originals folder, then let PhotoPrism index them. Immich has this built-in with native apps.
 
 ### How much storage do I need for Immich?
 

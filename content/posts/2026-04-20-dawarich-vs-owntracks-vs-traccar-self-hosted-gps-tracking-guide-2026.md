@@ -34,9 +34,9 @@ Self-hosting your GPS tracking platform eliminates these risks. Your location da
 - **Export capabilities** — download your data in multiple formats
 - **Multi-user support** — separate accounts for family members or team users
 
-### Dawarich Docker Compose Setup
+### Dawarich [docker](https://www.docker.com/) Compose Setup
 
-Dawarich requires three services: the Rails application, a PostgreSQL database with PostGIS extension, and a Redis cache. Here's the production-ready configuration sourced directly from the [official repository](https://github.com/Freika/dawarich):
+Dawarich requires three services: the Rails application, a PostgreSQL database wit[redis](https://redis.io/)tGIS extension, and a Redis cache. Here's the production-ready configuration sourced directly from the [official repository](https://github.com/Freika/dawarich):
 
 ```yaml
 networks:
@@ -297,7 +297,7 @@ Yes, provided you have sufficient resources. Dawarich needs approximately 1-2 GB
 
 ### How do I access my self-hosted GPS tracking platform from outside my home network?
 
-Set up a reverse proxy (like Nginx or Caddy) with TLS certificates from Let's Encrypt. Forward port 443 on your router to the reverse proxy, and configure the proxy to route traffic to each platform's internal port. For Traccar, you'll also need to forward the protocol port range (5000-5150) if you plan to connect hardware GPS trackers.
+Se[nginx](https://nginx.org/)a reverse proxy (like Nginx or Caddy) with TLS certificates from Let's Encrypt. Forward port 443 on your router to the reverse proxy, and configure the proxy to route traffic to each platform's internal port. For Traccar, you'll also need to forward the protocol port range (5000-5150) if you plan to connect hardware GPS trackers.
 
 ### Is my location data secure on a self-hosted platform?
 

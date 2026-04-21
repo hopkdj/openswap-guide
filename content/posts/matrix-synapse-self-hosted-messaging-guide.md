@@ -48,7 +48,7 @@ Before deploying, it helps to understand how the pieces fit together:
 
 For most users, **Synapse** is the safest choice — it has the most features, best bridge support, and largest community. If you are running on a tiny VPS, **Conduit** offers the smallest footprint.
 
-## Deploying Synapse with Docker
+## Deploying Synapse with [docker](https://www.docker.com/)
 
 Here is a complete production-ready setup using Docker Compose. This configuration includes Synapse, Element Web, and a reverse proxy-ready layout.
 
@@ -66,8 +66,7 @@ matrix-server/
 ├── synapse/
 │   ├── homeserver.yaml
 │   └── data/
-├── element/
-│   └── config.json
+├── elemen[nginx](https://nginx.org/)  └── config.json
 └── nginx/
     └── conf.d/
 ```
@@ -553,7 +552,7 @@ Use the `slack-dump` tool to export your Slack workspace, then import into Matri
 
 ```bash
 # Export Slack data
-slack-dump -c config.yaml --export-format mattermost
+slack-dump -c c[mattermost](https://mattermost.com/) --export-format mattermost
 
 # Import via the matterbridge or a custom script
 # Matrix does not have a direct Slack importer yet, but the
@@ -591,3 +590,34 @@ For organizations that need a clean migration, running both platforms in paralle
 - [ ] Configure Element push notifications for mobile
 
 The Matrix ecosystem is mature, actively developed, and backed by a non-profit foundation. Whether you are a family wanting private messaging, a team needing Slack without the data harvesting, or a community seeking federated communication — Matrix with Synapse and Element delivers a production-ready solution that puts you back in control of your conversations.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

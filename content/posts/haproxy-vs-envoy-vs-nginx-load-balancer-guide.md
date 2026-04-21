@@ -12,7 +12,7 @@ A load balancer sits in front of your services and distributes incoming traffic 
 
 - **High Availability**: If one backend goes down, traffic routes to healthy instances automatically.
 - **Horizontal Scaling**: Add more application instances behind the balancer without changing your DNS or client configuration.
-- **SSL/TLS Termination**: Offload certificate management to a single point, reducing complexity across your services.
+- **SSL/TLS Termination**: Offload certificate management to a single point, reducing com[plex](https://www.plex.tv/)ity across your services.
 - **Health Checking**: Automatically detect and remove unhealthy backends from the pool.
 - **Traffic Management**: Route requests based on path, headers, weight, or geolocation.
 
@@ -36,7 +36,7 @@ If you run anything beyond a single hobby service — a self-hosted SaaS, a team
 | **Configuration** | Simple, declarative | Complex, hierarchical | Declarative (nginx.conf) |
 | **Learning Curve** | Low-Medium | High | Medium |
 | **Performance** | Excellent | Very Good | Excellent |
-| **Best For** | Traditional LB, simplicity | Kubernetes, microservices | Web serving + LB combined |
+| **Best For** | Tradi[kubernetes](https://kubernetes.io/) simplicity | Kubernetes, microservices | Web serving + LB combined |
 
 ## HAProxy: The Battle-Tested Choice
 
@@ -48,7 +48,7 @@ HAProxy has been the gold standard for software load balancing since 2001. It po
 - **Simplicity**: The configuration file is intuitive. A basic load balancer setup takes fewer than 20 lines.
 - **Layer 4 + Layer 7**: Full support for both TCP (Layer 4) and HTTP (Layer 7) load balancing in a single binary.
 - **Runtime API**: Change backend server weights, enable/disable servers, and view stats without reloading the process.
-- **Stick Tables**: Powerful rate limiting and abuse prevention using in-memory key-value stores.
+- **Stick Tables**: Powerful rate limiting and abuse prevention using in-memory key-val[docker](https://www.docker.com/)res.
 
 ### HAProxy Docker Setup
 
@@ -725,3 +725,34 @@ docker run -d --name nginx-exporter \
 All three tools are production-grade, open-source, and capable of handling enterprise-scale traffic. For most self-hosted enthusiasts starting out, **HAProxy** offers the best balance of simplicity and power. If you're already invested in the cloud-native ecosystem with Kubernetes and service meshes, **Envoy** is the natural choice. And if you need a web server that also load balances, **Nginx** remains the versatile default.
 
 The self-hosting advantage? You control every layer of the stack. No vendor lock-in, no hidden costs, and the ability to tune every parameter for your specific workload. Pick the tool that matches your operational comfort level and scale it as your infrastructure grows.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

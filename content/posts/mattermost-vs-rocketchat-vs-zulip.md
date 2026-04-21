@@ -16,7 +16,7 @@ Slack and Microsoft Teams dominate team communication, but they come with real t
 - **Vendor Lock-in**: Migrating years of chat history, files, and integrations is painful
 - **Compliance Requirements**: Healthcare, finance, and government sectors often require data residency
 
-Self-hosted messaging platforms solve all of these problems. You own your data, control your infrastructure, and pay zero per-seat licensing fees. In 2026, three platforms stand out as mature, production-ready Slack alternatives: **Mattermost**, **Rocket.Chat**, and **Zulip**.
+Self-hosted messaging platforms solve all of these problems. You own your data, control your infrastructure, and pay zero per-seat licensing fees. In 2026, three platforms stand out as mature, production-ready Slack alternatives: **[mattermost](https://mattermost.com/)**, **Rocket.Chat**, and **Zulip**.
 
 ## Quick Comparison Table
 
@@ -34,7 +34,7 @@ Self-hosted messaging platforms solve all of these problems. You own your data, 
 | **E2E Encryption** | ✅ Enterprise | ✅ Community | ❌ (in transit only) |
 | **Bot/API** | REST + Webhooks | REST + Realtime API | REST + Python API |
 | **Slack Import** | ✅ Native | ✅ Native | ✅ Native |
-| **Docker Support** | ✅ Official | ✅ Official | ✅ Official |
+| **[docker](https://www.docker.com/) Support** | ✅ Official | ✅ Official | ✅ Official |
 | **Minimum RAM** | 2 GB | 2 GB | 3 GB |
 | **Best For** | DevOps/Enterprise | Customer-facing chat | Technical teams |
 
@@ -406,7 +406,7 @@ This is the single biggest differentiator:
 - **Rocket.Chat** uses a similar channel + thread model but with better thread visibility. Threads appear as a sidebar panel.
 - **Zulip** requires every message to have a topic. You can have 10 parallel conversations in one stream without confusion. This is transformative for large teams.
 
-### Self-Hosting Complexity
+### Self-Hosting Com[plex](https://www.plex.tv/)ity
 
 | Metric | Mattermost | Rocket.Chat | Zulip |
 |--------|-----------|-------------|-------|

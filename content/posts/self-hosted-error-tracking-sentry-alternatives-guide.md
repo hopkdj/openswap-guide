@@ -50,7 +50,7 @@ HyperDX is built on ClickHouse for storage, providing fast aggregation and searc
 2. **ClickHouse** — columnar storage engine for logs and traces
 3. **Web UI** — React-based dashboard for querying and analysis
 
-### Docker Installation
+### [docker](https://www.docker.com/) Installation
 
 Create a `docker-compose.yml` file:
 
@@ -287,8 +287,7 @@ SigNoz also provides a one-liner install script:
 
 ```bash
 git clone -b main https://github.com/SigNoz/signoz.git && cd signoz/deploy/
-./install.sh
-```
+./inst[kubernetes](https://kubernetes.io/)
 
 This sets up a Kubernetes-based deployment with Helm charts, suitable for production environments.
 
@@ -563,7 +562,7 @@ WHERE datetime < NOW() - INTERVAL '180 days';
 
 ### Reverse Proxy Setup
 
-For production deployments, put the UI behind a reverse proxy with TLS:
+For production deployme[nginx](https://nginx.org/)put the UI behind a reverse proxy with TLS:
 
 ```nginx
 # /etc/nginx/sites-available/error-tracking
@@ -638,3 +637,34 @@ cd signoz/deploy/
 Each platform provides a web UI within minutes of starting the containers. Create a test project, integrate the SDK into a development application, trigger some test errors, and evaluate the debugging experience firsthand.
 
 Self-hosting your error tracking puts you in control of your data, your costs, and your incident response workflow. In 2026, there's no reason to settle for a cloud provider's limitations when powerful, production-ready alternatives are just a `docker compose up` away.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

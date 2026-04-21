@@ -21,7 +21,7 @@ Running a GitOps controller on your own cluster — rather than relying on a man
 - **Cost**: No per-seat pricing, no per-deployment fees. The only cost is your own infrastructure.
 - **Compliance**: Keep deployment data inside your own network for regulatory requirements like SOC 2, HIPAA, or GDPR.
 
-If you are already running Kubernetes (or plan to), self-hosting a GitOps platform is one of the highest-leverage infrastructure decisions you can make.
+If you are already running [kubernetes](https://kubernetes.io/) (or plan to), self-hosting a GitOps platform is one of the highest-leverage infrastructure decisions you can make.
 
 ## What Is GitOps, Exactly?
 
@@ -129,7 +129,7 @@ Key components:
 | **Secrets Integration** | External secrets, Sealed Secrets | SOPS encryption built-in |
 | **Notification** | Webhook, Slack (via Notification Controller) | Slack, Discord, Teams (built-in) |
 | **Progressive Delivery** | Argo Rollouts integration | Flagger integration |
-| **Dashboard/Metrics** | Built-in + Prometheus metrics | Prometheus metrics + Grafana dashboards |
+| **Dashboa[prometheus](https://prometheus.io/)** | B[grafana](https://grafana.com/) + Prometheus metrics | Prometheus metrics + Grafana dashboards |
 | **Resource Requirements** | ~500m CPU, 512Mi RAM (minimum) | ~200m CPU, 256Mi RAM (minimum) |
 
 ## Installing ArgoCD
@@ -495,3 +495,34 @@ Both ArgoCD and Flux are CNCF-graduated, production-proven GitOps platforms that
 Many organizations actually run both: Flux for core infrastructure (because of its SOPS integration and small footprint) and ArgoCD for application deployments (because of its superior UI and sync controls). There is no rule against this — they can coexist in the same cluster without conflict.
 
 The most important step is to adopt GitOps at all. Once your desired state lives in Git and a controller continuously reconciles it, the specific tool matters far less than the discipline of never deploying outside of Git.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

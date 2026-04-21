@@ -8,7 +8,7 @@ description: "Compare Talos Linux, Flatcar Container Linux, and Bottlerocket —
 
 When running containerized workloads at scale, the traditional general-purpose Linux distribution — with its package manager, shell access, and mutable filesystem — is more of a liability than an asset. Immutable operating systems eliminate entire classes of problems: configuration drift, unauthorized changes, unnecessary attack surfaces, and unpredictable updates.
 
-This guide compares the three leading immutable, container-optimized OS options for self-hosted Kubernetes and container infrastructure: **Talos Linux**, **Flatcar Container Linux**, and **Bottlerocket OS**.
+This guide compares the three leading immutable, container-optimized OS options for self-hosted [kubernetes](https://kubernetes.io/) and container infrastructure: **Talos Linux**, **Flatcar Container Linux**, and **Bottlerocket OS**.
 
 ## What Is an Immutable Operating System?
 
@@ -30,7 +30,7 @@ This design makes these OSes ideal for running Kubernetes nodes, container orche
 | **Last Updated** | April 2026 | April 2026 | April 2026 |
 | **License** | MPL 2.0 | Apache 2.0 / BSD | Apache 2.0 / MIT |
 | **Language** | Go | C (CoreOS heritage) | Rust |
-| **Container Runtime** | containerd | containerd | containerd + Docker (via admin) |
+| **Container Runtime** | containerd | containerd | containerd + [docker](https://www.docker.com/) (via admin) |
 | **Init System** | Custom (no systemd) | systemd | systemd |
 | **Configuration** | Machine config (YAML) via API | Ignition / Butane (YAML) | Settings API (TOML) |
 | **Kubernetes** | Built-in (self-hosting) | Bring your own | Bring your own (EKS optimized) |
@@ -106,7 +106,7 @@ machine:
         dhcp: true
   kubelet:
     extraArgs:
-      feature-gates: RotateKubeletServerCertificate=true
+      feature-gates: RotateKubeletServerCertifica[ory](https://www.ory.sh/)true
   install:
     disk: /dev/sda
     image: factory.talos.dev/installer/xxx

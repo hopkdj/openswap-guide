@@ -40,7 +40,7 @@ Joplin Server acts as a synchronization backend for the Joplin client apps avail
 
 The Joplin ecosystem includes a web clipper browser extension, markdown import/export, notebook organization, and support for attachments and images. The server component itself is lightweight — it handles authentication, note storage, and delta sync without running a full web UI.
 
-### Deploying Joplin Server with Docker Compose
+### Deploying Joplin Server with [docker](https://www.docker.com/) Compose
 
 Joplin Server requires a PostgreSQL database. Here is a production-ready `docker-compose.yml`:
 
@@ -101,7 +101,7 @@ Configure your Joplin clients by navigating to **Tools > Options > Synchronizati
 - **Notebook hierarchy** — organize notes into nested notebooks with tags for cross-cutting categorization.
 - **Attachment support** — images, PDFs, and files sync alongside note text.
 
-For a reverse proxy setup with HTTPS, see our [file sync and sharing guide](../self-hosted-file-sync-sharing-nextcloud-seafile-syncthing-guide/) which covers Traefik and Nginx proxy patterns applicable to Joplin Server as well.
+For a reverse proxy setup with HTTPS, see our [file sync and sharing guide](../self-hosted-file-sync-sharing-[nextcloud](https://nextcloud.com/)-seafile-syncthing-guide/) which covers Traefik and Nginx proxy patterns applicable to Joplin Server as well.
 
 ## Trilium Notes: Hierarchical Knowledge Base
 
@@ -262,7 +262,7 @@ Access AFFiNE at `http://your-server-ip:3010` and log in with the admin credenti
 | Minimum CPU | 1 core | 1 core | 2 cores |
 | Storage (base) | ~200 MB + note data | ~100 MB + note data | ~500 MB + workspace data |
 | External Services | PostgreSQL | None | PostgreSQL, Redis |
-| Docker Images | 2 (server + db) | 1 | 3 (server + db + redis) |
+| Docker Images | 2 (server + db) | 1 | 3 (server + [plex](https://www.plex.tv/) redis) |
 | Backup Complexity | Dump PostgreSQL + data dir | Copy data directory | Dump PostgreSQL + storage volume |
 | Reverse Proxy | Standard HTTP | Standard HTTP | Standard HTTP + WebSocket support |
 

@@ -59,7 +59,7 @@ oVirt is the upstream open source project for Red Hat Virtualization (RHV). It u
 
 Key architectural decisions:
 - KVM hypervisor on each node (called "Hosts")
-- Centralized oVirt Engine for management (PostgreSQL-backed, Java-based)
+- Centralized oVirt Engine for management ([postgresql](https://www.postgresql.org/)-backed, Java-based)
 - Uses libvirt and VDSM (Virtual Desktop and Server Manager) on each host
 - Supports iSCSI, FC, NFS, GlusterFS, and local storage domains
 - Designed for scale: manages large clusters with advanced scheduling and load balancing
@@ -188,7 +188,7 @@ Xen Orchestra is the management interface. The recommended approach is to run it
 ```bash
 # Quick source build on a Debian/Ubuntu management machine
 # Install dependencies
-sudo apt install -y build-essential redis-server libvhdi-dev lvm2
+sudo apt install -y build-essential [redis](https://redis.io/)-server libvhdi-dev lvm2
 
 # Clone and build
 git clone https://github.com/vatesfr/xen-orchestra
@@ -522,7 +522,7 @@ Xen Orchestra provides built-in backup with multiple strategies:
 
 ### oVirt Backup
 
-oVirt does not include a built-in backup solution. Common approaches:
+oVirt does not include [ansible](https://www.ansible.com/)-in backup solution. Common approaches:
 
 - **Ansible ovirt-ansible-collection** — automate VM export via the API
 - **Third-party tools** — `ovirt-engine-backup` for the Engine database, guest-level backups inside VMs
@@ -631,3 +631,34 @@ For most self-hosters, homelab enthusiasts, and small businesses in 2026, **Prox
 **oVirt** remains the right choice for large-scale enterprise deployments that need centralized management of hundreds of hosts with advanced scheduling and policy-driven automation. However, Red Hat's strategic shift toward OpenShift Virtualization means oVirt's long-term trajectory is less certain than the other two platforms.
 
 All three are production-ready, open source, and completely free to use. The best choice depends on your existing infrastructure, team expertise, and scale requirements — not on any fundamental technical limitation.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

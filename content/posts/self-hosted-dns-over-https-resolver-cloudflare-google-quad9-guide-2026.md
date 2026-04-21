@@ -27,7 +27,7 @@ The benefits are concrete:
 DNS-over-HTTPS works by sending DNS queries over standard HTTPS (port 443) instead of traditional DNS (port 53). The protocol uses HTTP POST or GET requests to transmit DNS wire-format data, encrypted with TLS. This approach has several advantages over DNS-over-TLS (DoT):
 
 - **Port 443 blending**: DoH traffic looks identical to regular HTTPS traffic, making it harder to block or throttle.
-- **HTTP/2 multiplexing**: Multiple queries can share a single TCP connection, reducing overhead.
+- **HTTP/2 multi[plex](https://www.plex.tv/)ing**: Multiple queries can share a single TCP connection, reducing overhead.
 - **Browser-native support**: Firefox, Chrome, and Edge all have built-in DoH configuration.
 - **Flexible routing**: You can route DoH through any HTTP proxy, CDN, or load balancer.
 
@@ -41,7 +41,7 @@ Cloudflared is Cloudflare's official daemon that acts as a local DoH proxy. It l
 
 **Pros**: Extremely easy to set up, actively maintained, built-in DNS caching, automatic failover to multiple upstream DoH providers.
 
-**Cons**: Tied to Cloudflare's ecosystem by default, limited built-in filtering (requires external tools like AdGuard Home).
+**Cons**: Tied to Cloudflare's ecosystem by default, limited built-in filtering (requi[adguard home](https://adguard.com/en/adguard-home/overview.html) tools like AdGuard Home).
 
 **Docker Compose Setup**:
 
@@ -70,7 +70,7 @@ Once running, point your router's DNS or individual devices to `your-server-ip:5
 
 ### AdGuard Home
 
-AdGuard Home is a full-featured network-wide ad and tracker blocker that supports DoH, DoT, and DNSCrypt as both client and server protocols. It's the most popular self-hosted DNS solution for homelabs. For a detailed comparison with Pi-hole, see our [AdGuard Home vs Pi-hole guide](../adguard-home-vs-pihole/).
+AdGuard Home is a full-featured network-wide ad and tracker blocker that supports DoH, DoT, and DNSCrypt as both client and server protocols. It's the most p[pi-hole](https://pi-hole.net/)self-hosted DNS solution for homelabs. For a detailed comparison with Pi-hole, see our [AdGuard Home vs Pi-hole guide](../adguard-home-vs-pihole/).
 
 **Pros**: Beautiful web dashboard, comprehensive filtering (adlists, custom blocklists), DoH/DoT/DNSCrypt support, DNS caching, per-client configuration, query logging with analytics.
 

@@ -10,7 +10,7 @@ Every software team faces the same challenge: code quality degrades over time un
 
 Commercial SaaS platforms have dominated this space for years, but the landscape has shifted dramatically. Today, you can run powerful, enterprise-grade code quality pipelines entirely on your own infrastructure. No external API calls, no code sent to third-party servers, no per-developer licensing fees. Just pure, self-hosted code analysis under your full control.
 
-This guide covers the three most capable self-hosted code quality platforms available in 2026: **SonarQube**, **Semgrep**, and **GitHub CodeQL**. We will walk through what each tool does, how to deploy them with Docker, and which one fits your team's workflow.
+This guide covers the three most capable self-hosted code quality platforms available in 2026: **SonarQube**, **Semgrep**, and **GitHub CodeQL**. We will walk through what each tool does, how to deploy them with [docker](https://www.docker.com/), and which one fits your team's workflow.
 
 ## Why Self-Host Your Code Quality Tools
 
@@ -172,8 +172,7 @@ services:
       SEMGREP_VERSION_CHECK_URL: ""
     volumes:
       - semgrep_data:/data
-    depends_on:
-      - postgres
+    depends_on[redis](https://redis.io/)   - postgres
       - redis
 
   postgres:
@@ -245,7 +244,7 @@ jobs:
 
 ## CodeQL: Deep Semantic Analysis from GitHub
 
-CodeQL is GitHub's semantic code analysis engine. Unlike pattern matching, CodeQL builds a full database representation of your codebase and lets you query it using a SQL-like language. This means it can find complex bugs that span multiple functions, classes, or even files — problems that simple pattern matching cannot detect.
+CodeQL is GitHub's semantic code analysis engine. Unlike pattern matching, CodeQL builds a full database representation of your codebase and lets you query it using a SQL-like language. This means it can find com[plex](https://www.plex.tv/) bugs that span multiple functions, classes, or even files — problems that simple pattern matching cannot detect.
 
 ### Key Features
 
@@ -442,3 +441,34 @@ This layered approach gives you Semgrep's speed for immediate developer feedback
 The era of sending your source code to third-party servers for analysis is over. In 2026, self-hosted code quality tools are mature, well-documented, and easier to deploy than ever. Whether you choose SonarQube for comprehensive quality management, Semgrep for fast pattern-based scanning, or CodeQL for deep semantic security analysis — or all three — you can build a world-class code quality pipeline that keeps your code private, your costs predictable, and your standards high.
 
 Start with one tool, integrate it into your CI/CD pipeline, and expand from there. Your future self — and your future code reviewers — will thank you.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

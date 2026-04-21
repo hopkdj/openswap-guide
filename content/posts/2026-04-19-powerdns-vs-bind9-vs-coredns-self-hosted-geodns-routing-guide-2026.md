@@ -99,7 +99,7 @@ webserver-address=0.0.0.0
 webserver-port=8081
 ```
 
-### Docker Compose Setup
+### [docker](https://www.docker.com/) Compose Setup
 
 PowerDNS provides an official docker-compose configuration. Here's a production-ready setup combining the authoritative server with a backend database:
 
@@ -359,13 +359,13 @@ CoreDNS is the simplest to deploy of the three options — it's a single binary,
 | **Database support** | MaxMind, DB-IP | External CIDR mapping | MaxMind GeoLite2 |
 | **Granularity** | Country, continent | CIDR-based | Country, continent |
 | **Dynamic updates** | API-driven, live reload | Requires `rndc reload` | Hot-reload Corefile |
-| **Setup complexity** | Medium | High (manual ACLs) | Low |
+| **Setup com[plex](https://www.plex.tv/)ity** | Medium | High (manual ACLs) | Low |
 | **Performance** | Excellent | Excellent | Excellent |
 | **Memory usage** | ~100-200 MB | ~50-150 MB | ~20-50 MB |
 | **Web UI / API** | Yes (built-in REST API) | No | No (plugins available) |
 | **Docker image** | Official | Community (ubuntu/bind9) | Official |
 | **Cloud-native** | No | No | Yes (CNCF graduated) |
-| **Best for** | Large deployments with DB backends | Legacy DNS infra, enterprise | Kubernetes, microservices |
+| **Best for** | Large deployments[kubernetes](https://kubernetes.io/)ackends | Legacy DNS infra, enterprise | Kubernetes, microservices |
 | **GitHub stars** | 4,345 | 737 | 13,997 |
 | **Language** | C++ | C | Go |
 

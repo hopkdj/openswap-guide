@@ -6,7 +6,7 @@ draft: false
 description: "Compare Rook Ceph, Longhorn, and OpenEBS — the top three self-hosted Kubernetes-native storage solutions. Installation guides, feature comparison, and recommendations for 2026."
 ---
 
-Running stateful workloads on Kubernetes requires reliable, performant, and self-managed persistent storage. While cloud providers offer managed block and file storage out of the box, self-hosted Kubernetes clusters need their own storage layer. That's where CNCF-grade storage orchestrators come in.
+Running stateful workloads on [kubernetes](https://kubernetes.io/) requires reliable, performant, and self-managed persistent storage. While cloud providers offer managed block and file storage out of the box, self-hosted Kubernetes clusters need their own storage layer. That's where CNCF-grade storage orchestrators come in.
 
 In this guide, we compare the three leading self-hosted Kubernetes storage solutions: **Rook Ceph**, **Longhorn**, and **OpenEBS**. All three are open-source, production-ready, and widely deployed across bare-metal, edge, and on-premises environments.
 
@@ -40,7 +40,7 @@ Rook runs Ceph daemons (monitors, OSDs, managers, metadata servers) as Kubernete
 
 - Full Ceph stack: block, file, and object storage from a single cluster
 - Automatic data rebalancing and healing when nodes fail
-- Encryption at rest (LUKS) and in transit (msgr2 protocol)
+- Encryption at rest (LUKS) and in transit (m[prometheus](https://prometheus.io/)col)
 - Built-in Prometheus metrics and Grafana dashboards
 - Supports erasure coding for efficient storage utilization
 - Multi-cluster stretched deployments for disaster recovery
@@ -138,7 +138,7 @@ OpenEBS requirements vary by engine:
 
 OpenEBS shines when you need flexibility — different workloads can use different storage engines on the same cluster. Use Mayastor for databases requiring NVMe performance, LocalPV for stateless caches, and ZFS LocalPV for datasets needing snapshots. It's also the default storage choice for many Kubernetes platforms.
 
-For teams running object storage workloads, OpenEBS pairs well with a dedicated [MinIO S3 deployment](../minio-self-hosted-s3-object-storage-guide-2026/).
+For teams running object stor[minio](https://min.io/)orkloads, OpenEBS pairs well with a dedicated [MinIO S3 deployment](../minio-self-hosted-s3-object-storage-guide-2026/).
 
 ## Head-to-Head Comparison
 

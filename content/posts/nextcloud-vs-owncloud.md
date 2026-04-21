@@ -8,13 +8,13 @@ description: "Compare Nextcloud and ownCloud for self-hosted file sync and share
 
 ## The Fork History
 
-Nextcloud was forked from ownCloud in 2016 by ownCloud's founder. Since then, they've taken different paths.
+[nextcloud](https://nextcloud.com/) was forked from ownCloud in 2016 by ownCloud's founder. Since then, they've taken different paths.
 
 ## Feature Comparison
 
 | Feature | Nextcloud Hub | ownCloud Infinite Scale (oCIS) |
 |---------|---------------|-------------------------------|
-| **Architecture** | PHP + MySQL | Go + Microservices |
+|[mysql](https://www.mysql.com/)chitecture** | PHP + MySQL | Go + Microservices |
 | **Performance** | Good | Excellent |
 | **Resource Usage** | Medium-High | Low |
 | **File Sync** | ✅ Desktop/Mobile | ✅ Desktop/Mobile |
@@ -40,7 +40,7 @@ Nextcloud was forked from ownCloud in 2016 by ownCloud's founder. Since then, th
 - 200+ app ecosystem
 - End-to-end encryption
 - Group folders and sharing
-- External storage support
+- Exte[docker](https://www.docker.com/)torage support
 
 ### Docker Deployment
 

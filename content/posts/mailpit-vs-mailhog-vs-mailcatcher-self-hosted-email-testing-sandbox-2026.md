@@ -10,7 +10,7 @@ Every application that sends email — whether it's password resets, order confi
 
 An email testing sandbox intercepts outgoing SMTP traffic, captures every message, and presents it through a web interface or API so you can inspect headers, view HTML renderings, and verify content — all without a single email leaving your machine.
 
-In this guide, we'll compare the three leading open-source solutions: **Mailpit**, **MailHog**, and **MailCatcher**. We'll cover installation, Docker configurations, framework integrations, and help you pick the right tool for your workflow.
+In this guide, we'll compare the three leading open-source solutions: **Mailpit**, **MailHog**, and **MailCatcher**. We'll cover installation, [docker](https://www.docker.com/) configurations, framework integrations, and help you pick the right tool for your workflow.
 
 ## Why You Need a Self-Hosted Email Testing Sandbox
 
@@ -18,7 +18,7 @@ Testing email delivery is one of the most fragile parts of any development pipel
 
 - **Sending to real addresses** — Clutters inboxes, risks accidentally emailing customers, and burns through SMTP quota.
 - **Using cloud testing services** — Services like Mailtrap or Mailosaur are convenient but come with monthly costs, rate limits, and privacy concerns since your email content passes through third-party servers.
-- **Mocking the SMTP client in tests** — Works for unit tests but doesn't verify actual email formatting, HTML rendering, or attachment handling.
+- **Mocking the SMTP client in tests** — Works for uni[actual](https://actualbudget.org/)s but doesn't verify actual email formatting, HTML rendering, or attachment handling.
 
 A self-hosted email sandbox solves all of these problems:
 
@@ -442,7 +442,7 @@ jobs:
 
           # Verify specific email content
           SEARCH=$(curl -s "http://localhost:8025/api/v1/search?q=password+reset")
-          echo "$SEARCH" | jq '.messages[] | {subject, from}'
+          echo "$SEARCH" | jq '.messages[] |[gitlab](https://about.gitlab.com/)ect, from}'
 ```
 
 ### GitLab CI
@@ -538,3 +538,34 @@ For most developers and teams in 2026, **Mailpit** is the clear choice. It's act
 **MailHog** still works and may be present in many existing configurations, but its archived status means no new features, no security updates, and no support for modern email protocols like TLS and SMTP AUTH.
 
 Set up your email testing sandbox today — your future self (and your production email quota) will thank you.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

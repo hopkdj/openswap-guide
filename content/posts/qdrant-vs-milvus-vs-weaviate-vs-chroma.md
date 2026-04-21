@@ -8,7 +8,7 @@ description: "Qdrant vs Milvus vs Weaviate vs Chroma in 2026: comprehensive comp
 
 Building AI-powered search, retrieval-augmented generation (RAG), or semantic similarity features in 2026 almost always means working with **vector embeddings** — numerical representations of text, images, or audio. And that means you need a **vector database**.
 
-The four leading open-source options are **Qdrant**, **Milvus**, **Weaviate**, and **Chroma**. Each has a different philosophy, architecture, and ideal use case. In this guide, we compare them head-to-head, walk through Docker Compose deployments, and help you pick the right vector database for your project.
+The four leading open-source options are **Qdrant**, **Milvus**, **Weaviate**, and **Chroma**. Each has a different philosophy, architecture, and ideal use case. In this guide, we compare them head-to-head, walk through [docker](https://www.docker.com/) Compose deployments, and help you pick the right vector database for your project.
 
 ---
 
@@ -88,7 +88,7 @@ Access the Web UI at `http://localhost:6333/dashboard`.
 
 ### When to Choose Qdrant
 
-Pick Qdrant when you need **production-grade vector search with complex filtering**. Its Rust foundation gives it excellent memory efficiency, and the payload filtering system is the most flexible in the space. If your RAG pipeline needs to filter by date ranges, categories, user permissions, or any structured metadata alongside vector similarity, Qdrant is the strongest choice.
+Pick Qdrant when you need **production-grade vector search with com[plex](https://www.plex.tv/) filtering**. Its Rust foundation gives it excellent memory efficiency, and the payload filtering system is the most flexible in the space. If your RAG pipeline needs to filter by date ranges, categories, user permissions, or any structured metadata alongside vector similarity, Qdrant is the strongest choice.
 
 ---
 
@@ -262,7 +262,7 @@ Choose Weaviate when you want the **smoothest developer experience** and built-i
 - **Python-native API** — designed by Python developers, for Python developers
 - **Collection-based organization** — group embeddings by topic or project
 - **Where clause filtering** — simple metadata filtering on collection queries
-- **Embedding function interface** — pluggable embedding providers (OpenAI, Cohere, HuggingFace, Ollama)
+- **Embedding function interface** — pluggable embedding providers (OpenA[ollama](https://ollama.com/)ere, HuggingFace, Ollama)
 - **Overloaded collections** — automatic document chunking and embedding
 - **LangChain/LlamaIndex integration** — first-class support in both frameworks
 - **Lightweight** — runs comfortably on a laptop with 4GB RAM

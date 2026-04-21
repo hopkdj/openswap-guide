@@ -18,7 +18,7 @@ Cloud network monitoring platforms like Datadog Network Monitoring, Cisco Umbrel
 
 Beyond cost, self-hosting network analysis gives you:
 
-- **Full packet capture** — Cloud providers typically only store flow metadata (NetFlow/IPFIX). Self-hosted systems can retain actual packet data for forensic investigation.
+- **Full packet capture** — Cloud providers typically only store flow metadata (NetFlow/IPFIX). Self-hosted systems can retain [actual](https://actualbudget.org/) packet data for forensic investigation.
 - **No data exfiltration** — Sensitive internal traffic patterns, DNS queries, and encrypted TLS metadata never leave your network.
 - **Custom detection logic** — Write bespoke Zeek scripts or Arkime queries tuned to your specific infrastructure rather than relying on vendor-defined rules.
 - **Unlimited retention** — Store packet captures and logs as long as your storage budget allows, with no artificial caps from SaaS providers.
@@ -40,7 +40,7 @@ Zeek operates through a modular event engine:
 4. **Script Interpreter** — A purpose-built scripting language reacts to events, generating logs or triggering alerts
 5. **Log Writer** — Outputs structured logs to files, Elasticsearch, or other sinks
 
-### Installing Zeek via Docker
+### Installing Zeek via [docker](https://www.docker.com/)
 
 The fastest way to get Zeek running is through the official Docker image:
 
@@ -360,7 +360,7 @@ Where Arkime stores every packet and Zeek generates detailed protocol logs, Ntop
 ### Ntopng Architecture
 
 1. **nProbe** (optional) — NetFlow/IPFIX probe that exports flow data from network devices
-2. **ntopng** — Core daemon that receives flows, performs DPI, and serves the web interface
+2. **ntopng** — Core daemon that receives flows, performs DPI, and ser[redis](https://redis.io/)he web interface
 3. **Redis** — In-memory data store for active flows and real-time statistics
 4. **n2disk** (optional) — Companion tool for packet-to-disk recording
 
@@ -675,3 +675,34 @@ Zeek, Arkime, and Ntopng represent three complementary approaches to self-hosted
 The right choice depends on what questions you need to answer. If you need to know "what happened on my network last week," Zeek's structured logs are invaluable. If you need to prove "what exactly was in that suspicious packet," Arkime's PCAP search is essential. If you need to know "why is the network slow right now," Ntopng's real-time dashboards are the answer.
 
 Deploying all three together — with shared Elasticsearch indexing — provides complete network visibility from real-time monitoring through forensic investigation, all self-hosted, all open-source, and fully under your control.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

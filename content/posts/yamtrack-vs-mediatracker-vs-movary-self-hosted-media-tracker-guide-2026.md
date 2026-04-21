@@ -19,7 +19,7 @@ There are several compelling reasons to move away from centralized tracking plat
 - **Unlimited API access**: Trakt and TMDB impose rate limits on third-party apps. A self-hosted tracker using your own API key avoids shared quotas.
 - **Offline access**: Your media library and history remain available even when external services experience outages.
 - **Privacy**: No behavioral tracking, no targeted advertising, no data harvesting from your viewing patterns.
-- **Integration with self-hosted media servers**: Tools like Jellyfin, Plex, and Emby can sync playback status directly to your tracker.
+- **Integration with self-hosted media servers**: Tools like [jellyfin](https://jellyfin.org/), Plex, and Emby can sync playback status directly to your tracker.
 
 For readers managing their own media infrastructure — perhaps running a [Jellyfin vs Plex vs Emby media server](../jellyfin-vs-plex-vs-emby/) or a [video transcoding pipeline with Tdarr](../tdarr-vs-unmanic-vs-handbrake-self-hosted-video-transcoding-guide-2026/) — a self-hosted media tracker completes the ecosystem.
 
@@ -32,12 +32,12 @@ Yamtrack covers the widest range of media types: movies, TV shows, anime, video 
 ### Key Features
 
 - **Multi-media support**: Movies, TV shows, anime, games, books, and manga in a single interface
-- **TMDB and IGDB integration**: Automatic metadata fetching with poster art and descriptions
+- **TMDB and IGDB integration**: Automatic metadata fetching with poster [redis](https://redis.io/)nd descriptions
 - **Redis caching**: Built-in Redis layer for fast page loads and reduced API calls
 - **PostgreSQL or SQLite**: Choose a lightweight SQLite setup for single users or PostgreSQL for multi-user deployments
 - **User accounts**: Multi-user support with per-user watch histories
 - **Import/Export**: Import data from Trakt, Letterboxd, and Goodreads via CSV
-- **Responsive UI**: Clean Tailwind CSS interface that works on desktop and mobile
+- **Responsive UI**: Clean Tailwind CSS interface that works on[docker](https://www.docker.com/)op and mobile
 
 ### Docker Compose Setup
 

@@ -35,9 +35,7 @@ The case for self-hosted email marketing has never been stronger:
 - **Subscriber management.** Import CSV files, manage subscription lists, handle opt-in/opt-out, and track subscriber attributes.
 - **Campaign types.** Regular one-time campaigns, recurring scheduled campaigns, and transactional emails via API.
 - **Built-in HTTP API.** RESTful API for creating subscribers, launching campaigns, and retrieving statistics from external systems.
-- **Minimal footprint.** A single binary plus PostgreSQL. No Redis, no message queues, no complex dependency chain.
-
-### Installation with Docker Compose
+- **Minimal footprint.** A single binary plus PostgreSQL. No Redis, no message queues, no com[plex](https://www.plex.tv/) dependency chain.[docker](https://www.docker.com/)Installation with Docker Compose
 
 The recommended way to run Listmonk is with Docker Compose. Here is a production-ready configuration:
 
@@ -254,7 +252,7 @@ services:
       RABBITMQ_DEFAULT_USER: postal
       RABBITMQ_DEFAULT_PASS: rabbitmq_password_secure
     volumes:
-      - postal-rabbitmq-data:/var/lib/rabbitmq
+      - postal-rabbitmq-data:/var/lib/r[caddy](https://caddyserver.com/)mq
     networks:
       - postal-net
 
@@ -412,3 +410,34 @@ The decision comes down to what problem you are actually solving:
 **Choose Postal if** you want to replace SendGrid or Mailgun entirely. It handles the full email delivery pipeline — queueing, DNS, bounce processing, webhooks, and delivery tracking. It is the right choice for development teams that send programmatic emails and want complete visibility and control over the delivery infrastructure.
 
 You can also combine these tools. A common pattern is running Postal as your mail delivery infrastructure, with Listmonk on top for newsletter campaigns and Mautic for marketing automation — all feeding through the same Postal mail server. This gives you the best of all three worlds: delivery infrastructure, newsletter simplicity, and marketing automation, all self-hosted and fully under your control.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

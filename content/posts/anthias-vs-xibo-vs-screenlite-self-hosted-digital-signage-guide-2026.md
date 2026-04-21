@@ -66,11 +66,11 @@ Xibo is the most feature-complete open-source digital signage platform available
 
 ### Best For
 
-Organizations that need enterprise-grade features: multiple users with different roles, complex layouts with mixed media, dynamic data-driven content, and support for diverse display hardware. Xibo is the choice for universities, hospitals, corporate offices, and retail chains.
+Organizations that need enterprise-grade features: multiple users with different roles, com[plex](https://www.plex.tv/) layouts with mixed media, dynamic data-driven content, and support for diverse display hardware. Xibo is the choice for universities, hospitals, corporate offices, and retail chains.
 
 ### Deployment Architecture
 
-Xibo's server runs as a Docker-based stack with MySQL, memcached, and an XMR (cross-media renderer) service for real-time player communication:
+[docker](https://www.docker.com/) server runs as a Docker-based stack with MySQL, memcached, and an XMR (cross-media renderer) service for real-time player communication:
 
 ```yaml
 version: "2.1"
@@ -149,7 +149,7 @@ ScreenLite is a modern, cloud-native digital signage platform built with Node.js
 
 ### Best For
 
-Development teams that want a modern, API-first digital signage platform they can extend and integrate into existing infrastructure. ScreenLite's architecture makes it ideal for organizations already running Kubernetes or container-based infrastructure.
+Development teams that want a modern, API-first digital signage platform they can extend and integrate into existing infrastructure. ScreenLite's architectur[kubernetes](https://kubernetes.io/) ideal for organizations already running Kubernetes or container-based infrastructure.
 
 ### Docker Compose Configuration
 

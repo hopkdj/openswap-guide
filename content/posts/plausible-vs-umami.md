@@ -8,7 +8,7 @@ description: "In-depth comparison of Plausible Analytics and Umami — two leadi
 
 Looking for a **privacy-friendly Google Analytics alternative** you can self-host in 2026? You're not alone. Thousands of website owners are ditching GA4 for lightweight, cookie-free analytics tools that respect visitor privacy while still delivering actionable insights.
 
-The two most popular open source options are **Plausible Analytics** and **Umami**. Both are privacy-first, GDPR-compliant, and can be deployed with Docker Compose on a single server. But which one should you choose?
+The two most popular open source options are **Plausible Analytics** and **Umami**. Both are privacy-first, GDPR-compliant, and can be deployed with [docker](https://www.docker.com/) Compose on a single server. But which one should you choose?
 
 In this guide, we break down every feature, compare performance and resource usage, and provide ready-to-use Docker Compose configurations so you can deploy either tool in minutes.
 
@@ -40,7 +40,7 @@ In this guide, we break down every feature, compare performance and resource usa
 
 **Plausible Analytics** is a lightweight, open source web analytics platform built with Elixir and the Phoenix framework. It uses a dual-database architecture — PostgreSQL for site settings and user data, and ClickHouse for high-performance event analytics.
 
-Plausible's philosophy is simplicity: a single-page dashboard that shows all essential metrics at a glance. No complex configurations, no custom report builders — just clean, actionable data.
+Plausible's philosophy is simplicity: a single-page dashboard that shows all essential metrics at a glance. No com[plex](https://www.plex.tv/) configurations, no custom report builders — just clean, actionable data.
 
 ### Key Features
 
@@ -290,7 +290,7 @@ Yes. Both Plausible and Umami are **GDPR compliant out of the box**. They don't 
 
 ### 4. Do I need a reverse proxy to deploy Plausible or Umami?
 
-For production use, **yes** — you should put either tool behind a reverse proxy like Nginx, Caddy, or Traefik to handle HTTPS termination. A typical setup uses:
+For production use, **yes** — you [nginx](https://nginx.org/)d put either tool behind a reverse proxy like Nginx, Caddy, or Traefik to handle HTTPS termination. A typical setup uses:
 - **Caddy** (easiest — automatic HTTPS with Let's Encrypt)
 - **Nginx + Certbot** (most common)
 - **Traefik** (best for Docker-native setups)

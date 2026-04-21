@@ -6,9 +6,9 @@ draft: false
 description: "Complete guide to self-hosted video transcoding in 2026. Compare Tdarr, Unmanic, and HandBrake for automated media library optimization with Docker setup instructions."
 ---
 
-Video files are among the largest consumers of storage in any self-hosted media setup. Whether you are running Jellyfin, Plex, Emby, or simply archiving content, unoptimized video libraries waste disk space and strain playback devices. The solution is automated transcoding — batch-converting your media to efficient formats like H.265/HEVC or AV1 without manual intervention.
+Video files are among the largest consumers of storage in any self-hosted media setup. Whether you are running [jellyfin](https://jellyfin.org/), Plex, Emby, or simply archiving content, unoptimized video libraries waste disk space and strain playback devices. The solution is automated transcoding — batch-converting your media to efficient formats like H.265/HEVC or AV1 without manual intervention.
 
-In 2026, three tools dominate the self-hosted video transcoding landscape: **Tdarr**, **Unmanic**, and **HandBrake** (CLI). Each takes a different approach to the problem. This guide compares them head-to-head and walks you through setting up each one with Docker.
+In 2026, three tools dominate the self-hosted video transcoding landscape: **Tdarr**, **Unmanic**, and **HandBrake** (CLI). Each takes a different approach to the problem. This guide compares them head-to-head and walks you through [docker](https://www.docker.com/)g up each one with Docker.
 
 ## Why Self-Host Video Transcoding
 
@@ -22,7 +22,7 @@ Running your own transcoding pipeline gives you control over quality, format, an
 
 ## Tdarr: Distributed Transcoding at Scale
 
-Tdarr is the most feature-rich option for large media libraries. It uses a server-and-node architecture where a central server manages a queue and worker nodes handle the actual encoding — enabling you to spread work across multiple machines.
+Tdarr is the most feature-rich option for large media libraries. It uses a server-and-node architecture where a central[actual](https://actualbudget.org/)r manages a queue and worker nodes handle the actual encoding — enabling you to spread work across multiple machines.
 
 ### Key Features
 
@@ -355,3 +355,34 @@ If you are starting from an unoptimized library:
 5. **Monitor thermals** — Sustained encoding pushes hardware hard. Ensure adequate cooling, especially in compact NAS enclosures.
 
 The right transcoding tool transforms a bloated, inconsistent media library into a streamlined, space-efficient collection that plays smoothly on any device. Pick the tool that matches your scale and complexity needs, and let automation handle the rest.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

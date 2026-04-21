@@ -20,7 +20,7 @@ Developer portals contain your organization's entire service topology — intern
 
 **Vendor lock-in.** Once your teams depend on a proprietary portal, migrating away becomes a multi-month project. Open-source platforms keep your data in standard formats (YAML, JSON) that you own.
 
-**Cost at scale.** SaaS developer portals typically charge per active user or per registered service. At 200+ engineers and 500+ microservices, annual costs easily exceed $50,000. Self-hosting costs a fraction — typically a single small VM or Kubernetes cluster.
+**Cost at scale.** SaaS developer portals typically charge per active user or per registered service. At 200+ engineers and 500+ microservices, annual costs easily exceed $50,000. Self-hosting costs a fraction — typically a single small VM or [kubernetes](https://kubernetes.io/) cluster.
 
 **Deep customization.** Open-source portals let you build plugins for your exact stack: custom CI/CD integrations, internal tool links, proprietary metrics dashboards, and authentication flows that SaaS products won't support.
 
@@ -35,7 +35,7 @@ The developer portal market has settled into three distinct approaches:
 | **License** | Apache 2.0 | Commercial SaaS | Commercial SaaS |
 | **Self-hostable** | Yes, fully | No | No |
 | **Primary focus** | Service catalog + extensible plugin ecosystem | Developer experience + self-service | Code-centric service discovery |
-| **Setup complexity** | Moderate to high | Low (SaaS signup) | Low (SaaS signup) |
+| **Setup com[plex](https://www.plex.tv/)ity** | Moderate to high | Low (SaaS signup) | Low (SaaS signup) |
 | **Customization depth** | Unlimited (React + TypeScript plugins) | Limited to platform features | Limited to Atlassian ecosystem |
 | **Community size** | 40,000+ GitHub stars, CNCF project | Growing SaaS customer base | Atlassian enterprise customers |
 | **Plugin ecosystem** | 500+ official and community plugins | Native integrations only | Atlassian marketplace apps |
@@ -52,7 +52,7 @@ Backstage is the CNCF-hosted developer portal originally built by Spotify. It pr
 
 - Node.js 20.x or 22.x LTS
 - Yarn 1.x (classic) or npm
-- PostgreSQL 14+ (for production)
+- PostgreSQL[docker](https://www.docker.com/)for production)
 - Docker and Docker Compose (optional, for containerized deployment)
 
 ### Quick Start with npx
@@ -567,3 +567,34 @@ Self-hosting your developer portal gives you full ownership of your service cata
 Start with the Docker Compose setup to validate the concept, then move to Kubernetes with the Helm chart once your team confirms the value. The plugin ecosystem means you can grow from a simple service catalog into a full developer platform without switching tools.
 
 For more self-hosted infrastructure guides, check out our comparisons of [CI/CD platforms](/self-hosted-ci-cd-woodpecker-drone-jenkins-concourse-2026/), [container management dashboards](/self-hosted-container-management-dashboards-portainer-dockge-yacht-guide/), and [monitoring stacks](/self-hosted-datadog-alternative-signoz-grafana-hyperdx-2026/).
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

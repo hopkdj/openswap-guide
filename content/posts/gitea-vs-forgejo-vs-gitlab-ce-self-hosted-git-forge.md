@@ -6,7 +6,7 @@ draft: false
 description: "Complete comparison of self-hosted Git forges in 2026: Gitea, Forgejo, and GitLab Community Edition. Docker setup, feature breakdown, and migration guide."
 ---
 
-When you want full control over your source code, nothing beats running your own Git forge. The big three in the self-hosted space — **Gitea**, **Forgejo**, and **GitLab CE** — each take a different approach to the same problem. This guide breaks down their differences, shows you how to deploy each one, and helps you pick the right fit for your team.
+When you want full control over your source code, nothing beats running your own Git forge. The big three in the self-hosted space — **[gitea](https://gitea.io/)**, **Forgejo**, and **GitLab CE** — each take a different approach to the same problem. This guide breaks down their differences, shows you how to deploy each one, and helps you pick the right fit for your team.
 
 ## Why Self-Host Your Git Forge
 
@@ -72,7 +72,7 @@ The tradeoff is resource consumption: GitLab recommends **4 CPU cores and 8 GB R
 | **Migration from GitHub** | Yes | Yes | Yes |
 | **Governance** | Corporate (Gitea Ltd) | Community (non-profit) | Corporate (GitLab Inc.) |
 
-## Deployment: Docker Compose
+## Deployment: [docker](https://www.docker.com/) Compose
 
 ### Gitea
 
@@ -180,7 +180,7 @@ services:
       GITLAB_OMNIBUS_CONFIG: |
         external_url 'https://git.example.com'
         gitlab_rails['gitlab_shell_ssh_port'] = 2222
-        # Disable unused services to save resources
+        # Disable unused services[prometheus](https://prometheus.io/)esources
         prometheus_monitoring['enable'] = false
         nginx['redirect_http_to_https'] = true
         nginx['ssl_certificate'] = "/etc/gitlab/ssl/fullchain.pem"
@@ -463,3 +463,34 @@ If you are already comfortable with Gitea and do not have governance concerns, G
 GitLab CE is the pick for organizations that need an integrated DevOps platform and have the infrastructure to back it up. Nothing else comes close to its feature set, but the resource requirements are real.
 
 No matter which you choose, the days of relying on a single corporate platform for all your source code are over. Self-hosting your Git forge gives you control, privacy, and peace of mind — and with modern Docker deployment, it has never been easier to set up.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

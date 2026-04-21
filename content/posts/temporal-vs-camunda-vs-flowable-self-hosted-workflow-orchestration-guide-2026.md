@@ -8,7 +8,7 @@ description: "Compare Temporal, Camunda, and Flowable — the top self-hosted wo
 
 ## Why Self-Host Your Workflow Orchestration Engine
 
-Workflow orchestration engines coordinate complex, multi-step business processes across distributed systems. They manage state, handle retries, enforce timeouts, and guarantee exactly-once execution semantics — capabilities that cloud services like AWS Step Functions, Azure Logic Apps, and Google Cloud Workflows provide out of the box.
+Workflow orchestration engines coordinate com[plex](https://www.plex.tv/), multi-step business processes across distributed systems. They manage state, handle retries, enforce timeouts, and guarantee exactly-once execution semantics — capabilities that cloud services like AWS Step Functions, Azure Logic Apps, and Google Cloud Workflows provide out of the box.
 
 But self-hosting your workflow engine offers critical advantages that cloud platforms cannot match:
 
@@ -18,7 +18,7 @@ But self-hosting your workflow engine offers critical advantages that cloud plat
 - **Deep customization** — full access to source code means you can extend schedulers, add custom persistence backends, integrate with proprietary systems, and optimize for your specific workload patterns.
 - **Offline operation** — critical workflows continue running even during cloud provider outages or network partitions.
 
-Three platforms dominate the open-source workflow orchestration space in 2026: **Temporal**, **Camunda 8**, and **Flowable**. Each takes a fundamentally different architectural approach to solving the same problem. This guide compares them across every dimension that matters and provides production-ready Docker deployment instructions.
+Three platforms dominate the open-source workflow orchestration space in 2026: **Temporal**, **Camunda 8**, and **Flowable**. Each takes a fundamentally different architectural approach to solving the same problem. This guide compares them across every dimension that matters and pr[docker](https://www.docker.com/) production-ready Docker deployment instructions.
 
 ---
 
@@ -550,7 +550,7 @@ Regardless of which platform you choose, follow these practices for production r
 3. **Resource limits** — set CPU and memory limits on all containers. Zeebe brokers benefit from 4 GB minimum; Temporal workers scale with workload complexity.
 4. **Health checks** — configure liveness and readiness probes. Temporal provides `/health` endpoints; Camunda exposes metrics on port 9600; Flowable uses Spring Boot Actuator.
 5. **Log aggregation** — ship all engine logs to a centralized system. Workflow execution histories are valuable for debugging and compliance audits.
-6. **Monitoring** — track workflow completion rates, average execution duration, failed workflow counts, and queue depths. All three platforms export Prometheus metrics.
+6. **Monitoring** — track workflow completion rates, average execution duration, failed workflow co[prometheus](https://prometheus.io/)queue depths. All three platforms export Prometheus metrics.
 7. **Version management** — never deploy incompatible workflow definition changes alongside running instances. Use canary deployments for worker updates and maintain backward-compatible versioning.
 
 ---
@@ -566,3 +566,34 @@ The choice between Temporal, Camunda 8, and Flowable comes down to your team's w
 **Flowable** delivers the simplest deployment model with embedded execution in a Spring Boot application and standard SQL storage. It's ideal for Java-centric teams that value operational simplicity and direct data access.
 
 All three platforms are production-ready, actively maintained, and capable of orchestrating complex business processes at scale. The best approach is to prototype your most critical workflow on each platform and evaluate developer experience, operational overhead, and performance under your specific workload.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

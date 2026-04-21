@@ -68,11 +68,11 @@ Leantime is a PHP-based application with modest resource requirements:
 | **Storage** | 5 GB | 20 GB+ (for file uploads) |
 | **Database** | MySQL 8.0 / MariaDB 10.5 | MySQL 8.0 / MariaDB 10.11 |
 | **PHP** | 8.1 | 8.3 |
-| **Web Server** | Apache 2.4 / NGINX | NGINX with PHP-FPM |
+| **Web Server** | Apache 2.4 / [nginx](https://nginx.org/) | NGINX with PHP-FPM |
 
 For a team of up to 50 users, a $6/month VPS with 2 vCPUs and 2 GB RAM handles Leantime comfortably alongside the database.
 
-## Deployment with Docker Compose
+## Deployment with [docker](https://www.docker.com/) Compose
 
 The fastest way to deploy Leantime is with Docker Compose. This setup runs Leantime alongside a MariaDB database with persistent volumes and automatic restart policies.
 
@@ -482,10 +482,41 @@ Leantime provides import functionality for migrating from other project manageme
 - **Trello migration** — Export board data via Trello's JSON export, then use a conversion script to transform cards into Leantime tasks with milestones
 - **Jira migration** — Export issues as CSV from Jira, ensuring the CSV includes status, assignee, priority, and description fields
 
-For complex migrations involving multiple projects with custom fields, consider a phased approach: migrate completed projects as read-only archives, then start fresh with active projects in Leantime.
+For com[plex](https://www.plex.tv/) migrations involving multiple projects with custom fields, consider a phased approach: migrate completed projects as read-only archives, then start fresh with active projects in Leantime.
 
 ## Conclusion
 
 Leantime fills a distinct niche in the self-hosted project management landscape. While tools like Vikunja and Taiga excel at task tracking and Kanban workflows, Leantime is designed for teams that need to connect strategic planning with execution. The built-in idea boards, research boards, and strategy canvases provide a structured framework for going from concept to delivery without switching between multiple tools.
 
 Combined with the zero per-seat pricing model, complete data ownership, and straightforward Docker deployment, Leantime is a compelling choice for product teams, agencies, and organizations that want enterprise-grade project management without the enterprise price tag or the privacy compromises of cloud-hosted solutions.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

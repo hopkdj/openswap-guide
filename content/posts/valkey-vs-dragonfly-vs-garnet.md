@@ -29,7 +29,7 @@ Whether you're running a high-throughput API, a session store, or a real-time an
 | **Cluster Support** | ✅ Native | ✅ Native (Dragonfly Cluster) | ❌ Single-node only |
 | **Persistence** | RDB + AOF | RDB + AOF | Checkpointing |
 | **Min RAM** | ~10 MB | ~64 MB | ~128 MB |
-| **Docker Image Size** | ~80 MB | ~50 MB | ~200 MB |
+| **[docker](https://www.docker.com/) Image Size** | ~80 MB | ~50 MB | ~200 MB |
 | **Replication** | ✅ Master-Replica | ✅ Multi-master | ✅ Primary-Replica |
 | **TLS Support** | ✅ | ✅ | ✅ |
 | **Backed By** | Linux Foundation (AWS, Google, Oracle) | DragonflyDB Inc. | Microsoft Research |
@@ -146,7 +146,7 @@ services:
     deploy:
       resources:
         limits:
-          memory: 2G
+         [prometheus](https://prometheus.io/)G
 
   # Optional: Prometheus metrics scraping
   prometheus:
@@ -220,8 +220,7 @@ services:
       timeout: 5s
       retries: 3
     deploy:
-      resources:
-        limits:
+      resources:[grafana](https://grafana.com/)  limits:
           memory: 2G
 
   # Optional: Grafana dashboard for monitoring

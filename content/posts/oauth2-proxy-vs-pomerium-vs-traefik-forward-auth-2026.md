@@ -8,7 +8,7 @@ description: "Compare OAuth2-Proxy, Pomerium, and Traefik-Forward-Auth — the t
 
 If you self-host web applications — dashboards, admin panels, internal tools, or APIs — one of the first questions you face is: **how do I protect them from unauthorized access?**
 
-You cannot expose a Grafana dashboard, a Portainer instance, or a custom internal API directly to the internet without authentication. Yet managing separate login systems for every service is tedious and error-prone.
+You cannot expose a [grafana](https://grafana.com/) dashboard, a Portainer instance, or a custom internal API directly to the internet without authentication. Yet managing separate login systems for every service is tedious and error-prone.
 
 The answer is an **authentication proxy** — a reverse proxy that intercepts requests, verifies the user's identity against an identity provider (IdP), and forwards authenticated traffic to your backend services. In this guide, we compare the three leading open-source options: **OAuth2-Proxy**, **Pomerium**, and **Traefik-Forward-Auth**.
 
@@ -19,7 +19,7 @@ Self-hosting your authentication proxy gives you full control over who can acces
 - **Single sign-on (SSO)** — authenticate once, access all protected services
 - **Centralized access control** — manage permissions from one place
 - **No per-service auth setup** — protect apps that lack built-in authentication
-- **Identity provider flexibility** — use Google, GitHub, Keycloak, Authentik, OIDC, or dozens of others
+- **Identity provider flexibility*[keycloak](https://www.keycloak.org/)Google, GitHub, Keycloak, Authentik, OIDC, or dozens of others
 - **Zero-trust architecture** — every request is verified, regardless of network location
 
 Rather than configuring OAuth or basic auth separately for each application, an auth proxy sits in front of everything and handles authentication uniformly.
@@ -38,7 +38,7 @@ Rather than configuring OAuth or basic auth separately for each application, an 
 | **Policy Engine (RBAC)** | Basic headers | Full CEL policies | None |
 | **WebSocket Support** | Yes | Yes | Yes |
 | **Traefik Integration** | Via forwardAuth | Via forwardAuth | Native (same project) |
-| **Docker Image Size** | ~25 MB | ~45 MB | ~15 MB |
+| **[docker](https://www.docker.com/) Image Size** | ~25 MB | ~45 MB | ~15 MB |
 | **Best For** | General-purpose auth proxy | Zero-trust / enterprise | Simple Google/OIDC + Traefik |
 
 ## OAuth2-Proxy: The Swiss Army Knife

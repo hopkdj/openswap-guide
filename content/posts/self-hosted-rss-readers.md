@@ -8,7 +8,7 @@ description: "Compare the top self-hosted RSS feed readers in 2026. Complete set
 
 RSS is not dead. In fact, self-hosted RSS readers are experiencing a renaissance in 2026. As social media algorithms bury content behind paywalls and engagement-driven feeds, a growing number of people are returning to RSS to reclaim control over what they read, when they read it, and who tracks their reading habits.
 
-Self-hosting your RSS reader means no subscription fees, no account lock-in, no data mining, and no surprise shutdowns. Your feeds, your server, your rules. This guide covers the three best open-source, self-hosted RSS readers available today and walks you through deploying each one with Docker.
+Self-hosting your RSS reader means no subscription fees, no account lock-in, no data mining, and no surprise shutdowns. Your feeds, your server, your rules. This guide covers the three best open-source, self-hosted RSS readers available today and walks you through deploying each one with [docker](https://www.docker.com/).
 
 ## Why Self-Host Your RSS Reader in 2026
 
@@ -258,7 +258,7 @@ Tiny Tiny RSS (often abbreviated as tt-rss) is the veteran of self-hosted RSS re
 
 tt-rss is for users who want maximum control. Its plugin system is mature and includes plugins for全文 fetching, YouTube channel tracking, IRC/XMPP notifications, and integration with read-it-later services. The article scoring system lets you prioritize important feeds and deprioritize noisy ones. The label system provides an alternative to traditional folder organization.
 
-The trade-off is complexity. tt-rss has more configuration options than most people need, and its interface, while functional, feels dated compared to FreshRSS. But if you're willing to invest time in configuration, tt-rss is the most capable self-hosted RSS reader available.
+The trade-off is com[plex](https://www.plex.tv/)ity. tt-rss has more configuration options than most people need, and its interface, while functional, feels dated compared to FreshRSS. But if you're willing to invest time in configuration, tt-rss is the most capable self-hosted RSS reader available.
 
 ### Docker Installation
 
@@ -364,7 +364,7 @@ rss.your-domain.com {
     reverse_proxy localhost:8080
     encode gzip
     log {
-        output file /var/log/caddy/rss.log
+        outpu[nginx](https://nginx.org/)e /var/log/caddy/rss.log
     }
 }
 ```
@@ -411,3 +411,34 @@ The decision comes down to your priorities:
 - **Choose Tiny Tiny RSS** if you're a power user who wants deep customization, article scoring, advanced filtering, and the most mature plugin ecosystem. The configuration overhead is real, but the payoff is a reader that adapts to your exact workflow.
 
 All three are excellent, actively maintained, and free. You can't make a wrong choice — the best RSS reader is the one you actually use every day.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

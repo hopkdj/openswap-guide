@@ -8,9 +8,9 @@ description: "Compare Vikunja and Todoist for task management in 2026. Learn how
 
 Managing tasks, projects, and deadlines is a universal challenge. Whether you're running a small team, coordinating a homelab, or simply trying to organize your personal life, the right task management tool can make a significant difference. For years, Todoist has been the default recommendation — but [Vikunja](https://vikunja.io), an open-source alternative, has matured into a genuinely compelling option that puts you in full control of your data.
 
-In this guide, we'll compare Vikunja and Todoist across features, pricing, self-hosting options, and real-world usability. We'll also walk through deploying Vikunja on your own infrastructure with Docker Compose.
+In this guide, we'll compare Vikunja and Todoist across features, pricing, self-hosting options, and real-world usability. We'll also walk through deploying Vikunja on your own infrastructure with [docker](https://www.docker.com/) Compose.
 
-For those looking at broader task organization tools, our [self-hosted Kanban boards guide](../self-hosted-kanban-boards-guide/) covers visual board options, while the [Leantime project management guide](../leantime-self-hosted-project-management-strategy-guide/) explores strategy-focused planning. If you need a full wiki alongside your task manager, the [Outline Notion alternative guide](../outline-self-hosted-notion-alternative-guide/) is worth a read.
+For those looking at broader task organization tools, our [self-hosted Kanban boards guide](../self-hosted-kanban-boards-guide/) covers visual board options, while the [Leantime project management guide](../leantime-self-hosted-project-management-strategy-guide/) explores strategy-focused planning. If you need a full wiki alongsi[outline](https://www.getoutline.com/) task manager, the [Outline Notion alternative guide](../outline-self-hosted-notion-alternative-guide/) is worth a read.
 
 ## Why Self-Host Your Task Management?
 
@@ -297,7 +297,7 @@ Moving from Todoist to Vikunja? Here's how to make the transition smoother:
 
 1. **Export your Todoist data**: Go to Settings → Export as CSV from Todoist
 2. **Use the Vikunja API**: Write a simple script to import your CSV data via the REST API, or use community import tools
-3. **Recreate project structure manually**: For complex hierarchies, manual recreation ensures labels, due dates, and assignments transfer correctly
+3. **Recreate project structure manually**: For com[plex](https://www.plex.tv/) hierarchies, manual recreation ensures labels, due dates, and assignments transfer correctly
 4. **Run both in parallel**: Keep Todoist for 1-2 weeks while populating Vikunja, then make the full switch
 5. **Set up reminders**: Vikunja's email notification system needs SMTP configuration — set this up early so you don't miss deadlines during the transition
 

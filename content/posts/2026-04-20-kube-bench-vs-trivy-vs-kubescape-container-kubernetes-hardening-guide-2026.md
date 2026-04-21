@@ -6,15 +6,15 @@ draft: false
 description: "Compare the best open-source container and Kubernetes hardening tools — kube-bench, Trivy, and Kubescape — with Docker configs, installation guides, and CIS compliance benchmarks."
 ---
 
-Running containers and Kubernetes clusters in production without security scanning is like leaving your server's front door unlocked. Misconfigurations, outdated base images, overly permissive RBAC policies, and exposed secrets are the top causes of container breaches. The good news: you don't need expensive commercial tools to catch them.
+Running containers and [kubernetes](https://kubernetes.io/) clusters in production without security scanning is like leaving your server's front door unlocked. Misconfigurations, outdated base images, overly permissive RBAC policies, and exposed secrets are the top causes of container breaches. The good news: you don't need expensive commercial tools to catch them.
 
 This guide compares three leading open-source hardening and scanning tools that cover different layers of your container and Kubernetes stack: **kube-bench** (CIS compliance auditing), **Trivy** (vulnerability + misconfiguration scanning), and **Kubescape** (comprehensive Kubernetes security platform).
 
 ## Why Harden Your Container and Kubernetes Infrastructure?
 
-Container orchestration has become the standard for deploying applications at scale. But with that complexity comes a dramatically expanded attack surface:
+Container orchestration has become the standard for deploying applications at scale. But with that com[plex](https://www.plex.tv/)ity comes a dramatically expanded attack surface:
 
-- **CIS Benchmarks**: The Center for Internet Security publishes detailed hardening guides for Docker and Kubernetes. Following them prevents hundreds of known misconfigurations.
+- **CIS Benchmarks**: The Center for Internet Security publishes detail[docker](https://www.docker.com/)dening guides for Docker and Kubernetes. Following them prevents hundreds of known misconfigurations.
 - **Supply chain risk**: Every container image pulls in dozens of dependencies. A single vulnerable package can compromise your entire cluster.
 - **Runtime exposure**: Default Kubernetes configurations often allow privilege escalation, host network access, and unrestricted pod-to-pod communication.
 - **Compliance requirements**: SOC 2, HIPAA, PCI DSS, and ISO 27001 all require evidence of infrastructure security scanning.

@@ -16,7 +16,7 @@ Running your own CI/CD infrastructure offers several concrete advantages over cl
 
 - **Cost predictability**: Cloud CI/CD charges per-minute of build time. With self-hosted runners on your own hardware or cheap spot instances, your cost per build drops dramatically as volume scales. Teams running thousands of builds per month often save 60-80% compared to cloud alternatives.
 - **Data sovereignty**: Build logs, artifact caches, and environment variables often contain sensitive information. Self-hosting keeps everything within your network boundary, simplifying compliance with SOC 2, HIPAA, and GDPR requirements.
-- **No vendor lock-in**: Cloud CI/CD platforms gradually entrench you with proprietary syntax, marketplace dependencies, and platform-specific features. Self-hosted tools based on open standards (Docker containers, YAML pipelines) let you migrate between code forges freely.
+- **No vendor lock-in**: Cloud CI/CD platforms gradually entrench you with proprietary syntax, marketplace dependencies, and platform-specific features. Self-hosted tools based on open standards ([docker](https://www.docker.com/) containers, YAML pipelines) let you migrate between code forges freely.
 - **Custom infrastructure**: Need GPUs for ML model training? Specialized hardware for embedded compilation? GPU passthrough in self-hosted runners is straightforward, while cloud CI/CD either lacks support or charges premium rates.
 - **Offline and air-gapped builds**: Some environments cannot connect to external services. Self-hosted CI/CD works entirely on-premises with zero external dependencies.
 - **Fine-grained access control**: Control exactly who can trigger builds, approve deployments, and access secrets — integrated with your existing LDAP, OIDC, or SAML infrastructure.
@@ -115,7 +115,7 @@ steps:
 **Strengths:**
 - Extremely fast startup — server and agent each under 50 MB
 - Active community with regular releases and responsive maintainers
-- Clean, modern web UI with real-time build logs
+- Clean, modern web UI w[kubernetes](https://kubernetes.io/)ime build logs
 - Kubernetes agent support for running steps as pods instead of Docker containers
 - Matrix builds for testing across multiple environments in parallel
 - Built-in approval gates for production deployments
@@ -124,7 +124,7 @@ steps:
 **Weaknesses:**
 - Smaller plugin ecosystem compared to Jenkins
 - No built-in artifact storage — requires external S3 or similar backend
-- Less mature for complex multi-repository pipeline orchestration
+- Less mature for com[plex](https://www.plex.tv/) multi-repository pipeline orchestration
 - Limited built-in reporting dashboards
 
 ## 2. Drone — The Original Container-Native CI
@@ -624,3 +624,34 @@ docker run --cpus=4 --memory=8g --memory-swap=8g ...
 The self-hosted CI/CD landscape in 2026 offers mature options for every scenario. **Woodpecker CI** leads in simplicity and community momentum, making it the best choice for new deployments. **Drone** provides enterprise stability with a rich plugin ecosystem. **Jenkins** remains unmatched for complex, heterogeneous build environments despite its operational overhead. **Concourse CI** excels for teams practicing GitOps who prioritize reproducibility and immutability above all else.
 
 For most teams starting a new self-hosted CI/CD deployment in 2026, Woodpecker CI offers the best balance of features, simplicity, and active development. Its clean YAML syntax, low resource footprint, and strong Gitea/Forgejo integration make it the natural choice for organizations that value developer experience alongside infrastructure control.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

@@ -10,7 +10,7 @@ Accurate time synchronization is the invisible backbone of every reliable infras
 
 In 2026, three serious open-source NTP server implementations dominate the landscape: **Chrony**, **NTPsec**, and **OpenNTPd**. Each takes a fundamentally different approach to the same problem, and choosing the right one for your environment can mean the difference between sub-millisecond precision and seconds of drift.
 
-This guide compares all three implementations head-to-head and provides complete Docker and bare-metal installation instructions for each.
+This guide compares all three implementations head-to-head and provides complete [docker](https://www.docker.com/) and bare-metal installation instructions for each.
 
 ## Why Self-Host Your Own NTP Server
 
@@ -290,7 +290,7 @@ OpenNTPd comes from the OpenBSD project and embodies their philosophy: secure by
 
 ### Key Advantages
 
-- **Simplicity.** A working configuration can be as simple as two lines: one server directive and one listen directive. There are no complex tuning parameters to understand.
+- **Simplicity.** A working configuration can be as simple as two lines: one server directive and one listen directive. There are no com[plex](https://www.plex.tv/) tuning parameters to understand.
 - **Privilege separation.** OpenNTPd uses OpenBSD-style pledge and unveil system calls to restrict what the daemon can do, even in the event of a compromise. On Linux, this is approximated with seccomp filters.
 - **DNS-based server selection.** Instead of manually selecting individual NTP servers, OpenNTPd resolves DNS hostnames and automatically cycles through results, providing built-in load distribution.
 - **No drift file needed.** OpenNTPd adjusts clock rate without requiring a persistent drift file, simplifying container deployments.
@@ -500,7 +500,7 @@ Regardless of which NTP server you choose, monitoring is essential. Set up alert
 - **Offset exceeding 100ms** — indicates synchronization problems
 - **Stratum increasing** — your server is losing sync with upstream
 - **Reach value dropping** — network issues with upstream servers
-- **Frequency drift exceeding 10 ppm** — hardware clock issues
+- **Frequency dri[prometheus](https://prometheus.io/)ng 10 ppm** — hardware clock issues
 
 ### Prometheus Metrics Exporter
 
@@ -547,3 +547,34 @@ Time synchronization is foundational infrastructure — the kind of thing you on
 - **OpenNTPd** is perfect for simple setups where "good enough" precision and dead-simple configuration win.
 
 Start with Chrony unless you have a specific reason to choose otherwise. Set up monitoring. Test your NTP hierarchy by temporarily blocking upstream servers. And remember: accurate time is not optional — it's the foundation every other service builds upon.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

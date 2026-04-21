@@ -87,13 +87,13 @@ NetBird's peer-to-peer model means traffic between two connected devices doesn't
 | **Audit Logging** | ✅ Full session logs | ✅ Connection logs | ✅ Activity logs |
 | **Self-Hosted Free** | ✅ (open source) | ✅ (open source) | ✅ (open source, MPL-2.0) |
 | **Multi-Server** | ❌ (single gateway) | ✅ (distributed) | ✅ (distributed management) |
-| **Installation** | Docker Compose | apt/yum packages | Single binary / Docker |
+| **Installation** | [docker](https://www.docker.com/) Compose | apt/yum packages | Single binary / Docker |
 
 ## Deployment: Docker Compose Setups
 
 ### Firezone
 
-Firezone provides an official Docker Compose configuration. The setup includes the Portal service (web UI + API) and uses PostgreSQL for persistence.
+Firezone provides an official Docker Compose configuration. The setup includes the Portal servi[postgresql](https://www.postgresql.org/) + API) and uses PostgreSQL for persistence.
 
 First, create a `.env` file with your configuration:
 
@@ -158,7 +158,7 @@ Start the services:
 docker compose up -d
 ```
 
-The web UI will be available at `http://your-server-ip:8080`. For production, place a reverse proxy (like Caddy or Nginx) in front with TLS termination.
+The web UI will be available at `http://your-server-ip:8080`. For production, place a re[nginx](https://nginx.org/) proxy (like Caddy or Nginx) in front with TLS termination.
 
 ### Pritunl
 

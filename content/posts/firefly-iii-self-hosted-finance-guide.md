@@ -47,7 +47,7 @@ Firefly III is a PHP/Laravel application backed by MySQL, MariaDB, or PostgreSQL
 
 A Raspberry Pi 4 or any small VPS with 1 GB of RAM handles Firefly III comfortably.
 
-## Docker Installation
+## [docker](https://www.docker.com/) Installation
 
 The recommended deployment method is Docker Compose. This gives you Firefly III, a database, and a cron container for scheduled tasks in one stack.
 
@@ -161,7 +161,7 @@ Look for the line indicating the database migration completed successfully, then
 
 ## Reverse Proxy Setup
 
-Exposing Firefly III directly on port 8080 is not recommended for production. Place it behind a reverse proxy with TLS termination.
+Exposing Firefly III directly on port 8080 is not recommended for production. Place it behind a reverse proxy [caddy](https://caddyserver.com/)TLS termination.
 
 ### Caddy (simplest option)
 
@@ -175,7 +175,7 @@ finance.yourdomain.com {
         -Server
         X-Frame-Options "DENY"
         X-Content-Type-Options "nosniff"
-        Referrer-Policy "strict-origin-when-cross-origin"
+        Referrer-Policy "strict-origin-when-cros[nginx](https://nginx.org/)gin"
     }
 }
 ```
@@ -566,3 +566,34 @@ Banks sometimes paginate or limit exports. If you're missing data:
 - **Reddit**: r/FireflyIII for user tips and workflows
 
 Firefly III turns personal finance management from a monthly chore into an automated, privacy-respecting system that gives you genuine insight into where your money goes — without selling your data to advertisers or charging subscription fees.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

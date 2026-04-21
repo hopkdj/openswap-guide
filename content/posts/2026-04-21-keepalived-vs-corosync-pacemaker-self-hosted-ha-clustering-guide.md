@@ -56,7 +56,7 @@ Keepalived is ideal when you need **simple active/passive failover** for a singl
 - STONITH (Shoot The Other Node In The Head) for fencing failed nodes
 - Rich CLI tools (`crm`, `pcs`) and CIB (Cluster Information Base) XML configuration
 
-This combination is the foundation of Red Hat High Availability, SUSE HA, and many enterprise Linux distributions. It is ideal when you need to manage **multiple resources** (VIP, filesystem, database, application) with complex dependencies and placement rules.
+This combination is the foundation of Red Hat High Availability, SUSE HA, and many enterprise Linux distributions. It is ideal when you need to manage **multiple resources** (VIP, filesystem, database, application) with com[plex](https://www.plex.tv/) dependencies and placement rules.
 
 ## Architecture Comparison
 
@@ -71,7 +71,7 @@ This combination is the foundation of Red Hat High Availability, SUSE HA, and ma
 | **Configuration** | Single declarative file | CIB XML + CLI tools (`pcs`, `crm`) |
 | **Learning curve** | Low — 20-line config for basic setup | Medium-High — requires understanding of cluster concepts |
 | **Resource dependencies** | None — manages VIP only | Full DAG of start/stop/migrate dependencies |
-| **Monitoring** | Syslog + custom scripts | CIB status, `crm_mon`, Prometheus exporters |
+| **Monitoring** | Syslog + custom scripts |[prometheus](https://prometheus.io/)s, `crm_mon`, Prometheus exporters |
 | **Node count** | 2-3 typical | 2+ (odd number recommended for quorum) |
 | **Binary size** | ~2MB | ~50MB (combined) |
 | **Memory footprint** | ~10MB | ~100-200MB |
@@ -197,7 +197,7 @@ logger -t keepalived "Transition to $STATE for $NAME"
 if [ "$STATE" = "MASTER" ]; then
     curl -s -X POST http://your-monitoring-endpoint/webhook \
         -H "Content-Type: application/json" \
-        -d "{\"event\":\"keepalived_master\",\"node\":\"$(hostname)\",\"timestamp\":\"$(date -Iseconds)\"}"
+        -d "{\"event\":\"keepalived_master\",\"node\":\"$(hostname)\",\"timestamp\":\"$(date -Is[docker](https://www.docker.com/))\"}"
 fi
 ```
 

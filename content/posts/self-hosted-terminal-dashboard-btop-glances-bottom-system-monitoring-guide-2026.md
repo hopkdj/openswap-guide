@@ -6,7 +6,7 @@ draft: false
 description: "Compare btop, glances, and bottom — the best open-source terminal dashboards for self-hosted system monitoring in 2026. Includes Docker configs, install guides, and performance benchmarks."
 ---
 
-When you manage self-hosted infrastructure, knowing what your servers are doing in real time isn't optional — it's essential. While full-stack monitoring platforms like Prometheus, Grafana, and Zabbix excel at long-term metrics collection and alerting, there are moments when you need an immediate, at-a-glance view of system health directly in your terminal. No web interface to load, no API keys to configure, no dashboards to build. Just SSH into a machine and see everything that matters.
+When you manage self-hosted infrastructure, knowing what your servers are doing in real time isn't optional — it's essential. While full-stack monitoring platforms like [prometheus](https://prometheus.io/), Grafana, and Zabbix excel at long-term metrics collection and alerting, there are moments when you need an immediate, at-a-glance view of system health directly in your terminal. No web interface to load, no API keys to configure, no dashboards to build. Just SSH into a machine and see everything that matters.
 
 This guide compares the three best open-source terminal dashboards for system monitoring in 2026: **btop**, **glances**, and **bottom**. Each takes a different approach to presenting CPU, memory, disk, network, and process data, and the right choice depends on your workflow and environment.
 
@@ -75,7 +75,7 @@ make
 sudo make install
 ```
 
-### Docker Container
+### [docker](https://www.docker.com/) Container
 
 Run btop inside a container to monitor the host system via shared `/proc`:
 
@@ -130,7 +130,7 @@ Glances takes a different approach. Rather than focusing purely on interactivity
 - Sensor data: temperatures, fan speeds, battery levels
 - RAID array status and SMART disk health
 - Process list with CPU and memory sorting
-- **Export plugins** — send metrics to InfluxDB, Prometheus, Elasticsearch, StatsD, RabbitMQ, CSV, JSON, REST API, and more
+- **Export plugins** — send met[rabbitmq](https://www.rabbitmq.com/)InfluxDB, Prometheus, Elasticsearch, StatsD, RabbitMQ, CSV, JSON, REST API, and more
 - Web server mode — serve a browser-based dashboard on a configurable port
 - Alert system with configurable thresholds and color coding
 - Client/server mode — monitor multiple remote servers from a single glances instance
@@ -455,3 +455,34 @@ Terminal dashboards are not a replacement for full observability stacks — they
 For most self-hosted setups, **btop** is the best daily driver — it has the richest feature set, the best visuals, and excellent performance. **Glances** earns its place when you need Docker monitoring or metric export capabilities. **Bottom** is the go-to choice for minimal resource usage and cross-platform consistency.
 
 Install all three, use each where it shines, and you'll never need to guess what your servers are doing again.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

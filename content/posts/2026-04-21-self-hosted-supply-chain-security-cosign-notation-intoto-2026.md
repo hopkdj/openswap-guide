@@ -35,7 +35,7 @@ The three tools covered here represent distinct philosophies:
 | **Verification Model** | Transparency log (Rekor) | Registry-based (notation) | Step-by-step provenance verification |
 | **Artifact Types** | Containers, binaries, files | OCI artifacts (containers, Helm charts) | Any file, any build step |
 | **OCI Compliance** | Yes (cosign attest/sign) | Yes (native OCI spec) | No (external framework) |
-| **Best For** | CI/CD pipelines, container signing | Kubernetes, OCI registries | Multi-step build pipelines, compliance |
+| **Best For** | CI/CD pipelines, container signing | [kubernetes](https://kubernetes.io/), OCI registries | Multi-step build pipelines, compliance |
 | **Language** | Go | Go | Python |
 | **GitHub Stars** | 5,834 (cosign) | 477 (notation) | 994 (in-toto) |
 | **Last Active** | April 2026 | March 2026 | April 2026 |
@@ -63,7 +63,7 @@ cosign version
 # macOS
 brew install cosign
 
-# Docker
+# [docker](https://www.docker.com/)
 docker pull gcr.io/projectsigstore/cosign:v2.4.0
 ```
 
@@ -357,7 +357,7 @@ in-toto-verify --layout layout.template \
 
 | Criterion | Cosign | Notation | in-toto |
 |-----------|--------|----------|---------|
-| **Setup Complexity** | Low | Medium | High |
+| **Setup Com[plex](https://www.plex.tv/)ity** | Low | Medium | High |
 | **Key Management** | Keyless (OIDC) or local keys | X.509 PKI | Custom key pairs |
 | **Registry Integration** | Good (OCI) | Excellent (OCI-native) | None (external) |
 | **Kubernetes Support** | Via Kyverno/Gatekeeper | Via Ratify admission controller | Via custom controllers |

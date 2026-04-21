@@ -18,7 +18,7 @@ The benefits of self-hosting your profiling infrastructure include:
 
 - **Data sovereignty** — profiles contain stack traces, function names, and sometimes argument hints. Keeping them on your own infrastructure avoids sending potentially sensitive code paths to third-party services.
 - **Cost control** — continuous profiling generates significant data volume. Self-hosted solutions avoid per-GB or per-host SaaS pricing that scales with your infrastructure.
-- **Integration with existing tooling** — self-hosted profilers integrate directly with your Prometheus, Grafana, and alerting stack without cross-vendor authentication.
+- **Integration with existing tooling** — self-hosted profilers integrate directly with your [prometheus](https://prometheus.io/), Grafana, and alerting stack without cross-vendor authentication.
 - **No vendor lock-in** — open-source profiling platforms use standard formats like pprof, making your data portable across tools.
 
 If you're already running a self-hosted observability stack, adding continuous profiling is a natural extension. For teams using tools like [Signoz, Grafana, or HyperDX for APM monitoring](../self-hosted-datadog-alternative-signoz-grafana-hyperdx-2026/), profiling adds the missing dimension of resource-level performance data. And for those building observability pipelines with [OpenTelemetry collectors](../self-hosted-opentelemetry-collector-observability-pipeline-2026/), profiling data can be correlated with traces and metrics for a complete performance picture.
@@ -38,7 +38,7 @@ If you're already running a self-hosted observability stack, adding continuous p
 | **eBPF Support** | Yes | Yes | No |
 | **Storage Backend** | Built-in / S3 / GCS | Object storage (S3, GCS, Azure) | Local disk / PostgreSQL |
 | **Grafana Integration** | Native datasource | Via plugin | No |
-| **Kubernetes Operator** | Yes | Yes | No |
+| **[kubernetes](https://kubernetes.io/) Operator** | Yes | Yes | No |
 | **Profile Types** | CPU, memory, goroutine, block, mutex | CPU, memory, goroutine, block, mutex | CPU, memory (Go only) |
 | **Language Support** | Go, Java, Python, Ruby, .NET, Rust | Go, Java, Python, Ruby, .NET, eBPF | Go (primary), any pprof-compatible |
 | **License** | AGPLv3 | Apache 2.0 | Apache 2.0 |
@@ -91,7 +91,7 @@ Profefe was one of the first continuous profiling platforms designed specificall
 - **Lightweight** — minimal resource footprint, suitable for small deployments
 - **PostgreSQL backend** — optional database storage for multi-node setups
 
-## Docker Deployment Guides
+## [docker](https://www.docker.com/) Deployment Guides
 
 ### Grafana Pyroscope Docker Setup
 

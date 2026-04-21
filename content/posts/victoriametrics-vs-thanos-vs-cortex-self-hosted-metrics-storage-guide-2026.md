@@ -6,7 +6,7 @@ draft: false
 description: "Compare VictoriaMetrics, Thanos, and Cortex — the top three self-hosted distributed metrics storage backends for Prometheus. Includes Docker Compose configs, architecture comparisons, and deployment guides."
 ---
 
-When running Prometheus at scale, you eventually hit the limits of local storage. Metrics accumulate fast, retention policies become critical, and you need horizontal scalability and high availability. That is where distributed metrics storage backends come in.
+When running [prometheus](https://prometheus.io/) at scale, you eventually hit the limits of local storage. Metrics accumulate fast, retention policies become critical, and you need horizontal scalability and high availability. That is where distributed metrics storage backends come in.
 
 The three leading open-source solutions are **VictoriaMetrics**, **Thanos**, and **Cortex**. Each extends Prometheus with long-term storage, but they take fundamentally different architectural approaches. This guide compares all three with real deployment configurations so you can pick the right one for your infrastructure.
 
@@ -57,7 +57,7 @@ VictoriaMetrics offers two deployment modes:
 - **vmagent** — lightweight, Prometheus-compatible scraper with better resource efficiency than Prometheus itself
 - **MetricsQL** — extended PromQL with additional functions (`histogram_quantile`, `topk_avg`, rate over rate)
 
-### Docker Compose — Single Node Setup
+### [docker](https://www.docker.com/) Compose — Single Node Setup
 
 The official VictoriaMetrics repo ships with production-ready compose files. Here is a simplified single-node deployment:
 
@@ -417,7 +417,7 @@ If you are running a multi-tenant environment (SaaS platform, shared infrastruct
 ## Decision Framework
 
 Choose **VictoriaMetrics** if:
-- You want the best performance with the least operational complexity
+- You want the best performance with the least operational com[plex](https://www.plex.tv/)ity
 - You are comfortable with a single-vendor solution (the VictoriaMetrics ecosystem)
 - You need automatic downsampling and long retention without manual compaction setup
 - Resource efficiency is a priority

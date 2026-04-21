@@ -30,7 +30,7 @@ The self-hosted BaaS space has three dominant players, each with a different phi
 
 | Feature | **PocketBase** | **Appwrite** | **Supabase** |
 |---------|---------------|--------------|--------------|
-| **Language** | Go (embedded) | Node.js / Docker | PostgreSQL ecosystem |
+| **Language** | Go (embedded) | Node.js / [docker](https://www.docker.com/) | PostgreSQL ecosystem |
 | **Database** | SQLite (embedded) | MariaDB / MariaDB Galera | PostgreSQL |
 | **Architecture** | Single binary | Microservices (10+ containers) | Managed PostgreSQL + edge functions |
 | **Authentication** | Built-in (email, OAuth2, SAML) | Built-in (email, phone, OAuth2, SAML, magic URL) | Built-in (email, phone, OAuth2, SAML, magic URL, MFA) |
@@ -104,7 +104,7 @@ systemctl start pocketbase
 
 Access the admin panel at `http://your-server:8080/_/` and create your first admin account.
 
-For production with HTTPS behind Caddy:
+For pr[caddy](https://caddyserver.com/)ion with HTTPS behind Caddy:
 
 ```caddyfile
 # Caddyfile
@@ -290,7 +290,7 @@ volumes:
   storage-data:
 ```
 
-The Supabase stack is more complex because each component is a separate service. The Kong API gateway routes requests, GoTrue handles authentication, PostgREST auto-generates the REST API from your Postgres schema, Realtime listens to database changes via PostgreSQL replication, and Storage manages file uploads.
+The Supabase stack is more com[plex](https://www.plex.tv/) because each component is a separate service. The Kong API gateway routes requests, GoTrue handles authentication, PostgREST auto-generates the REST API from your Postgres schema, Realtime listens to database changes via PostgreSQL replication, and Storage manages file uploads.
 
 ## Authentication Deep Dive
 
@@ -648,3 +648,34 @@ npx supabase init && npx supabase start
 ```
 
 All three are production-ready, actively maintained, and backed by vibrant open-source communities. The best choice depends on your project's scale, your team's expertise, and your infrastructure preferences. What they all share is something Firebase cannot offer: your data stays on your servers, under your control, forever.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

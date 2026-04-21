@@ -22,7 +22,7 @@ Running your own IRC infrastructure solves problems that cloud chat platforms cr
 - **Decentralized** — No single point of failure. Thousands of independent IRC networks exist worldwide, and you can run your own.
 - **Open standards** — IRCv3 extensions add modern features like message tagging, account authentication, and real-time typing indicators.
 
-For related reading on self-hosted messaging alternatives, see our [Matrix/Synapse messaging guide](../matrix-synapse-self-hosted-messaging-guide/) and [Revolt Discord alternative](../revolt-self-hosted-discord-alternative-guide/). If you're building a broader communication stack, our [Mattermost vs Rocket.Chat vs Zulip comparison](../mattermost-vs-rocketchat-vs-zulip/) covers team chat platforms.
+For related reading on self-hosted messaging alternatives, see our [Matrix/Synapse messaging guide](../matrix-synapse-self-hosted-messaging-guide/) and [Revolt Discord alternative](../revolt-self-hosted-discord-alternative-guide/). If you're building a broader communication stack, our [[mattermost](https://mattermost.com/) vs Rocket.Chat vs Zulip comparison](../mattermost-vs-rocketchat-vs-zulip/) covers team chat platforms.
 
 ## The Three Solutions at a Glance
 
@@ -42,7 +42,7 @@ These three tools solve different problems in the IRC ecosystem:
 | **SASL Auth** | Yes | Yes | Yes |
 | **Message Storage** | In-memory (optional file logging) | Playback buffer on reconnect | Built-in message history |
 | **Bouncer Mode** | Yes (always-on client) | Yes (dedicated bouncer) | Yes (bouncer built in) |
-| **Docker Image** | LinuxServer.io / GHCR | LinuxServer.io | GHCR |
+| **[docker](https://www.docker.com/) Image** | LinuxServer.io / GHCR | LinuxServer.io | GHCR |
 | **Best For** | Users who want a web-based IRC experience | Users connecting to multiple IRC networks | Organizations wanting a private IRC network |
 
 ## The Lounge — Modern Self-Hosted Web IRC Client
@@ -297,7 +297,7 @@ The decision depends on what problem you're solving:
 
 These tools are not mutually exclusive. A common setup is **Ergo + The Lounge**: run Ergo as your private IRC server and connect The Lounge to it for a web-based experience. Another popular combination is **ZNC + The Lounge**, where The Lounge connects to ZNC as its upstream, giving you both bouncer-level persistence and a beautiful web interface.
 
-For the reverse proxy in front of these services, our [Nginx vs Caddy vs Traefik comparison](../nginx-vs-caddy-vs-traefik-self-hosted-web-server-guide-2026/) covers the best options for exposing your IRC web interface securely over HTTPS. If you're accessing your IRC server remotely, consider setting up a [WireGuard VPN](../self-hosted-vpn-solutions-wireguard-openvpn-tailscale-guide/) for encrypted tunnel access.
+F[nginx](https://nginx.org/)e reverse proxy in front of these services, our [Nginx vs Caddy vs Traefik comparison](../nginx-vs-caddy-vs-traefik-self-hosted-web-server-guide-2026/) covers the best options for exposing your IRC web interface securely over HTTPS. If you're accessing your IRC server remotely, consider setting up a [WireGuard VPN](../self-hosted-vpn-solutions-wireguard-openvpn-tailscale-guide/) for encrypted tunnel access.
 
 ## SSL/TLS Configuration for IRC
 

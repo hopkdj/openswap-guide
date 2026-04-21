@@ -48,7 +48,7 @@ pypiserver is the simplest option for hosting a private collection of Python pac
 pip install pypiserver
 ```
 
-### Running with Docker
+### Running with [docker](https://www.docker.com/)
 
 The official image makes it trivial to deploy:
 
@@ -151,7 +151,7 @@ Bandersnatch (maintained by the Python Packaging Authority) mirrors the entire P
 
 ### How It Works
 
-Bandersnatch is a **synchronization tool**, not a server. It downloads the PyPI package index and files to a local directory. You then serve that directory with any HTTP server (nginx, Apache, Caddy).
+Bandersnatch is a **synchronization tool**, not a server. It downloads the PyPI package index and files to a local directory. You then serve that direc[nginx](https://nginx.org/)with any HTTP server (nginx, Apache, Caddy).
 
 ### Installation
 
@@ -213,7 +213,7 @@ server {
 pip install --index-url http://pypi.internal/simple/ requests
 ```
 
-A full PyPI mirror requires significant storage (over 1 TB as of 2026). Bandersnatch supports plugins to filter by package name, allowing you to mirror only the packages you actually need.
+A full PyPI mirror requires significant storage (over 1 TB as of 2026). Bandersnatch supports plugins to filter by package na[actual](https://actualbudget.org/)lowing you to mirror only the packages you actually need.
 
 ## Comparison: When to Use Each Tool
 

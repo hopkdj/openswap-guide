@@ -10,7 +10,7 @@ description: "Complete guide to replacing Google services with self-hosted open 
 
 Google services to replace:
 1. **Gmail** → Mailcow / Mailu
-2. **Google Drive** → Nextcloud
+2. **Google Drive** → [nextcloud](https://nextcloud.com/)
 3. **Google Calendar** → Nextcloud Calendar / Radicale
 4. **Google Contacts** → Nextcloud Contacts / CardDAV
 5. **Google Photos** → Immich / PhotoPrism
@@ -23,7 +23,7 @@ Google services to replace:
 ### Core Infrastructure
 ```yaml
 # Infrastructure
-- Caddy (Reverse Proxy + SSL)
+- Cadd[adguard home](https://adguard.com/en/adguard-home/overview.html)roxy + SSL)
 - AdGuard Home (DNS Ad Blocking)
 - Vaultwarden (Password Manager)
 ```
@@ -44,8 +44,7 @@ Google services to replace:
 - Vikunja (Task Management)
 ```
 
-### Media
-```yaml
+### Media[jellyfin](https://jellyfin.org/)
 # Media Server
 - Jellyfin (Movies & TV)
 - Immich (Photos)

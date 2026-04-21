@@ -6,7 +6,7 @@ draft: false
 description: "Complete comparison of Syncthing and Resilio Sync for self-hosted file synchronization. Installation guides, Docker setups, performance benchmarks, and migration tips."
 ---
 
-When you need files available across all your devices without trusting a third-party cloud, self-hosted file synchronization is the answer. Two tools dominate this space: Syncthing and Resilio Sync (formerly BitTorrent Sync). Both use peer-to-peer technology to keep your files in sync, but they differ dramatically in philosophy, features, and licensing.
+When you need files available across all your devices without trusting a third-party cloud, self-hosted file synchronization is the answer. Two tools dominate this space: [syncthing](https://syncthing.net/) and Resilio Sync (formerly BitTorrent Sync). Both use peer-to-peer technology to keep your files in sync, but they differ dramatically in philosophy, features, and licensing.
 
 This guide compares them side by side, walks through installation on any platform, and helps you pick the right tool for your setup.
 
@@ -63,7 +63,7 @@ Key characteristics:
 | **NAT Traversal** | Yes (built-in STUN) | Yes (via relay servers) |
 | **Block-Level Sync** | Yes | Yes |
 | **Delta Sync** | Yes | Yes |
-| **Cross-Platform** | Windows, macOS, Linux, BSD, Android, Docker | Windows, macOS, Linux, NAS, Docker, iOS, Android |
+| **Cross-Platform** | Windows, macOS, Linux, BSD, Android, [docker](https://www.docker.com/) | Windows, macOS, Linux, NAS, Docker, iOS, Android |
 | **CLI Interface** | Yes (REST API + syncthing cli) | Limited |
 | **Community** | Large, active forum and GitHub | Smaller, company-controlled forums |
 
@@ -248,7 +248,7 @@ In real-world testing with a 50 GB mixed-content folder (documents, photos, vide
 |--------|-----------|--------------|
 | Initial sync time | 4m 12s | 3m 48s |
 | Incremental sync (100 MB changed) | 8s | 6s |
-| Small files (10,000 × 10 KB) | 45s | 38s |
+| Small files (10,000 × 10 KB) | 45s | 38[ory](https://www.ory.sh/)
 | CPU usage during sync | 12–18% | 15–25% |
 | Memory usage | 120–200 MB | 200–350 MB |
 | Idle memory | 40–60 MB | 80–120 MB |
@@ -394,3 +394,34 @@ For most self-hosters in 2026, **Syncthing is the default choice**. It's free, o
 **Resilio Sync** earns its place when you need official mobile apps with a polished experience, or when raw sync speed for massive folders is the top priority. The free tier is functional, but the device and folder limits push power users toward the paid plans — at which point you're paying for a proprietary tool when Syncthing does the job for free.
 
 Both tools are mature and reliable. You won't go wrong with either. But if forced to pick one for a new self-hosted setup, Syncthing's combination of openness, zero cost, and proven reliability makes it the recommendation for 2026.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

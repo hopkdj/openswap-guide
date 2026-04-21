@@ -16,7 +16,7 @@ In 2026, three open-source wiki platforms stand out as the best self-hosted alte
 - **BookStack** — the most organized, uses a book/chapter/page hierarchy that makes large wikis navigable
 - **Outline** — the fastest and cleanest, a Notion-like editor with real-time collaboration
 
-This guide compares all three in detail, provides Docker Compose deployment configs, and helps you pick the right tool for your team.
+This guide compares all three in detail, provides [docker](https://www.docker.com/) Compose deployment configs, and helps you pick the right tool for your team.
 
 ---
 
@@ -277,7 +277,7 @@ Outline feels like an open-source Notion. Its block-based editor supports real-t
 
 ### Docker Compose Deployment
 
-Outline requires PostgreSQL, Redis, and S3-compatible storage. Here's a complete setup using MinIO for local S3:
+Outline requires PostgreSQL, Redis, and S3-compatible storage. Her[minio](https://min.io/) complete setup using MinIO for local S3:
 
 ```yaml
 # docker-compose.yml
@@ -404,7 +404,7 @@ services:
 | **Page Load Speed** | Fast | Fast | Very Fast |
 | **Search Speed** | Good (built-in) | Good (database) | Excellent (optimized) |
 | **Scalability** | Good (up to ~10k pages) | Good (up to ~50k pages) | Excellent (designed for large teams) |
-| **Backup Complexity** | Simple (database + data dir) | Simple (database + storage dir) | Moderate (DB + Redis + S3) |
+| **Backup Com[plex](https://www.plex.tv/)ity** | Simple (database + data dir) | Simple (database + storage dir) | Moderate (DB + Redis + S3) |
 | **Easiest to Deploy** | ✅ Single container + DB | ✅ Single container + DB | ⚠️ Requires 4+ services |
 
 ### Resource Footprint Summary

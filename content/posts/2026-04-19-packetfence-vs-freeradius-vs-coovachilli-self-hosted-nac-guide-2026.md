@@ -57,7 +57,7 @@ sudo systemctl enable packetfence
 sudo systemctl start packetfence
 ```
 
-For containerized deployments, PacketFence includes Docker support files in its `containers/` directory:
+For containerized deployments, PacketFence includes [docker](https://www.docker.com/) support files in its `containers/` directory:
 
 ```bash
 # Set up iptables rules for containerized mode
@@ -89,7 +89,7 @@ The system supports both inline and out-of-band enforcement modes. In inline mod
 - **Full RADIUS protocol support** — authentication, authorization, and accounting (AAA) over RADIUS
 - **EAP methods** — EAP-TLS, EAP-TTLS, PEAP, EAP-FAST for 802.1X wireless authentication
 - **LDAP/Active Directory integration** — authenticate users against existing directory services
-- **SQL backends** — MySQL, PostgreSQL, SQLite for user databases and accounting records
+-[postgresql](https://www.postgresql.org/)kends** — MySQL, PostgreSQL, SQLite for user databases and accounting records
 - **daloRADIUS web UI** — user management, accounting reports, billing engine, and graphical dashboards
 - **Extensible via modules** — hundreds of modules for custom authentication logic, SQL queries, and external lookups
 
@@ -341,7 +341,7 @@ For many use cases, yes. PacketFence supports 802.1X authentication, captive por
 
 ### Does FreeRADIUS support modern EAP methods like EAP-TLS?
 
-Yes. FreeRADIUS supports all standard EAP methods including EAP-TLS (certificate-based), EAP-TTLS (tunneled TLS), PEAP (Protected EAP), and EAP-FAST. EAP-TLS is the most secure option for enterprise deployments, as it uses client certificates instead of passwords for authentication. FreeRADIUS can also integrate with Windows Certificate Services or a self-hosted PKI (see our [PKI and certificate management guide](../self-hosted-pki-certificate-management-step-ca-caddy-nginx-proxy-manager-2026/)) to automate certificate issuance and revocation.
+Yes. FreeRADIUS supports all standard EAP methods including EAP-TLS (certificate-based), EAP-TTLS (tunneled TLS), PEAP (Protected EAP), and EAP-FAST. EAP-TLS is the most secure option for enterprise deployments, as it uses client certificates instead of passwords for authentication. FreeRADIUS can also integrate with Windows Certificate Services or a self-hosted PKI (see our [PKI and certificate management guide](../self-hosted-pki-certificat[nginx](https://nginx.org/)agement-step-ca-caddy-nginx-proxy-manager-2026/)) to automate certificate issuance and revocation.
 
 ### How do I monitor NAC authentication events?
 

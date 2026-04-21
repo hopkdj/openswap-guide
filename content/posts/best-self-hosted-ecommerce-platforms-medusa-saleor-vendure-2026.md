@@ -51,7 +51,7 @@ Saleor is a Python (Django + Graphene) headless commerce platform that is GraphQ
 
 ### Vendure — The TypeScript GraphQL Platform
 
-Vendure is a headless commerce framework built entirely in TypeScript using NestJS and GraphQL. It emphasizes developer experience with strong typing, a clean plugin API, and a focus on B2B and complex catalog scenarios. Vendure's architecture is designed to be extended rather than modified — you build on top of its core rather than patching internals.
+Vendure is a headless commerce framework built entirely in TypeScript using NestJS and GraphQL. It emphasizes developer experience with strong typing, a clean plugin API, and a focus on B2B and com[plex](https://www.plex.tv/) catalog scenarios. Vendure's architecture is designed to be extended rather than modified — you build on top of its core rather than patching internals.
 
 **Architecture:** NestJS backend with GraphQL API. Admin UI and storefront starter kits provided separately.
 
@@ -86,7 +86,7 @@ Vendure is a headless commerce framework built entirely in TypeScript using Nest
 | **Plugin system** | Modules & plugins | Plugins & webhooks | Plugins (NestJS providers) |
 | **Storefront starters** | Next.js, Gatsby | React Storefront, PWA | Next.js, Astro, React |
 | **License** | MIT | BSD 3-Clause | MIT |
-| **GitHub stars** | 25,000+ | 20,000+ | 5,000+ |
+| **GitHub stars** | 25,000+ |[docker](https://www.docker.com/)0+ | 5,000+ |
 | **Docker support** | Yes | Yes | Yes |
 
 ## Self-Hosting Guide: Medusa
@@ -381,7 +381,7 @@ volumes:
 
 Saleor-specific considerations for production:
 
-- Enable TLS termination at the reverse proxy level (Nginx, Caddy, or Traefik)
+- [nginx](https://nginx.org/)e TLS termination at the reverse proxy level (Nginx, Caddy, or Traefik)
 - Configure `ALLOWED_GRAPHQL_ORIGINS` strictly for your frontend domains
 - Use Saleor's webhook system to sync orders with external ERP or accounting systems
 - The GraphQL Playground at `/graphql/` is invaluable for testing queries during development
@@ -672,3 +672,34 @@ All three platforms are production-ready, well-maintained, and genuinely open so
 For a solo developer or small team building a standard B2C store quickly, **Medusa** offers the gentlest learning curve and the richest plugin ecosystem. For a growing international brand that needs multi-channel sales and GraphQL APIs, **Saleor** provides the most polished experience. For a B2B-focused operation or a TypeScript-heavy team, **Vendure** delivers the strongest developer experience and extensibility.
 
 Regardless of which platform you choose, self-hosting your e-commerce backend gives you complete control over your data, your customer relationships, and your technology stack — without paying platform fees or accepting vendor-imposed limitations.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

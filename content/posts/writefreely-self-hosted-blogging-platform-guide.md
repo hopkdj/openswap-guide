@@ -8,7 +8,7 @@ description: "Complete guide to WriteFreely, the minimalist self-hosted blogging
 
 Blogging is not dead — it just got decentralized. In 2026, a growing number of writers, developers, and creators are walking away from Medium, Substack, and WordPress.com in favor of self-hosted blogging platforms that give them full ownership of their content, audience, and data. At the forefront of this movement is **WriteFreely**, an open-source, minimalist publishing platform that doubles as a node in the Fediverse.
 
-This guide covers why WriteFreely has become the go-to choice for self-hosted blogging, walks you through a complete Docker deployment, and compares it against the leading alternatives including Ghost and the proprietary platforms you're probably already paying for.
+This guide covers why WriteFreely has become the go-to choice for self-hosted blogging, walks you through a complete [docker](https://www.docker.com/) deployment, and compares it against the lead[ghost](https://ghost.org/)lternatives including Ghost and the proprietary platforms you're probably already paying for.
 
 ## Why Self-Host Your Blog in 2026
 
@@ -84,7 +84,7 @@ Before deploying WriteFreely, make sure you have:
 
 - A Linux server (Ubuntu 22.04+, Debian 12+, or any modern distro)
 - Docker and Docker Compose installed
-- A domain name pointing to your server's IP address
+- A domain name pointing to your server's IP ad[nginx](https://nginx.org/)
 - (Optional) A reverse proxy like Caddy or Nginx for HTTPS
 
 If you don't have Docker installed yet:
@@ -585,3 +585,34 @@ WriteFreely represents what self-hosted blogging should be: simple, fast, privat
 If you're tired of platform risk, algorithmic feeds, and the endless feature creep of modern publishing tools, WriteFreely offers a refreshing alternative. Pair it with Caddy for HTTPS, enable ActivityPub for federation, and you have a complete, production-ready blog that runs on less than 40 MB of RAM.
 
 The best part? Once it's deployed, you barely think about it. You just write.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

@@ -16,10 +16,10 @@ Running LLMs on your own hardware gives you:
 
 ## Quick Comparison
 
-| Feature | Ollama | LM Studio | LocalAI |
+| Feature | [ollama](https://ollama.com/) | LM Studio | LocalAI |
 |---------|--------|-----------|---------|
 | **Primary Use** | CLI & API | Desktop GUI | OpenAI-compatible API |
-| **Supported OS** | Linux/macOS/WSL | Win/Mac/Linux | Linux/Docker |
+| **Supported OS** | Linux/macOS/WSL |[docker](https://www.docker.com/)ac/Linux | Linux/Docker |
 | **Model Format** | GGUF | GGUF | GGUF/GPTQ |
 | **GPU Support** | Metal/CUDA | Metal/CUDA | CUDA/Vulkan |
 | **API Compatibility** | Custom | None | OpenAI Drop-in |
@@ -108,7 +108,7 @@ services:
 ```
 
 **Pros**: OpenAI API compatible, feature-rich, production ready
-**Cons**: Complex setup, higher resource usage
+**Cons**: Com[plex](https://www.plex.tv/) setup, higher resource usage
 
 ---
 

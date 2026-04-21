@@ -44,7 +44,7 @@ DNSCrypt is a protocol designed specifically for DNS encryption. Unlike DoH and 
 
 Cloudflared is Cloudflare's official DoH proxy. It listens on a local port, forwards queries to Cloudflare's DoH endpoint over HTTPS, and caches responses.
 
-### Docker Compose Setup
+### [docker](https://www.docker.com/) Compose Setup
 
 Create a directory for your DoH proxy:
 
@@ -332,7 +332,7 @@ One of dnscrypt-proxy's strongest features is its built-in ad and malware blocki
     prefix = 'ads-'
 
   [sources.'malware-domain-list']
-    urls = ['https://malware.gitlab.io/-/raw/main/output/domains-md.txt']
+  [gitlab](https://about.gitlab.com/) = ['https://malware.gitlab.io/-/raw/main/output/domains-md.txt']
     format = 'domains'
     cache_file = '/etc/dnscrypt-proxy/malware.txt'
     refresh_delay = 72
@@ -365,7 +365,7 @@ This automatically downloads and maintains blocklists from OISD (one of the best
 
 - **Choose dnscrypt-proxy** if you want the most features — protocol flexibility, caching, ad blocking, cloaking, and detailed logging. It's the Swiss Army knife of encrypted DNS.
 
-## Integrating with Pi-hole or AdGuard Home
+## Integrating with Pi-hole or [adguard home](https://adguard.com/en/adguard-home/overview.html)
 
 The most powerful setup combines encrypted DNS upstream with a local DNS filter. Here's how to chain them together.
 
@@ -516,3 +516,34 @@ networks:
 Encrypting your DNS traffic is one of the highest-impact privacy improvements you can make with minimal effort. The three tools covered here — cloudflared, stubby, and dnscrypt-proxy — each serve different needs, from the simplest possible setup to a fully-featured encrypted DNS proxy with caching and filtering.
 
 The recommended path for most homelab users is **dnscrypt-proxy paired with Pi-hole or AdGuard Home**: the filter handles ad blocking and local DNS, while dnscrypt-proxy encrypts all upstream queries and adds an additional layer of blocklist protection on top. Run both in Docker, point your router's DNS to the filter, and every device on your network gets encrypted DNS without any client-side configuration.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

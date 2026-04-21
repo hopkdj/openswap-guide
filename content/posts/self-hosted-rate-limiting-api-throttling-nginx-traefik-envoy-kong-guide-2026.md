@@ -48,7 +48,7 @@ NGINX has been the workhorse of web infrastructure for over two decades. Its `li
 
 NGINX allocates a shared memory zone that tracks client identifiers (usually IP addresses) across worker processes. Each request is checked against the zone, and the token bucket determines whether to accept, delay, or reject the request.
 
-### Docker Setup
+### [docker](https://www.docker.com/) Setup
 
 ```yaml
 version: "3.8"
@@ -130,7 +130,7 @@ server {
 
 ## Traefik Rate Limiting
 
-Traefik is a modern, cloud-native reverse proxy designed for container environments. Its middleware system makes rate limiting declarative and easy to integrate with Docker Compose and Kubernetes.
+Traefik is a modern, cloud-native reverse proxy designed for container environments. Its middleware system makes rate limiting declarative and easy to integra[kubernetes](https://kubernetes.io/)cker Compose and Kubernetes.
 
 ### How It Works
 
@@ -481,7 +481,7 @@ The `redis` policy is recommended for multi-node deployments. Redis stores the c
 | **Burst Handling** | Yes (burst + nodelay) | Yes (burst parameter) | Yes (token bucket max) | Yes (burst config) |
 | **Memory per 1K IPs** | ~64 KB | ~128 KB | ~256 KB | Depends on backend |
 | **Max Throughput** | ~500K rps | ~200K rps | ~400K rps | ~300K rps |
-| **Config Complexity** | Low | Low | Medium-High | Medium |
+| **Config Com[plex](https://www.plex.tv/)ity** | Low | Low | Medium-High | Medium |
 | **Learning Curve** | Easy | Easy | Steep | Moderate |
 | **License** | BSD-2 | MIT | Apache 2.0 | Apache 2.0 |
 
@@ -610,3 +610,34 @@ plugins:
 7. **Document your policy.** Publish rate limit documentation for API consumers. Include the limits, the algorithm used, and the response format for 429 errors.
 
 Self-hosted rate limiting is one of those infrastructure investments that pays for itself the moment it stops an abuse attempt or prevents an outage. The tools are mature, the configurations are well-documented, and the cost is essentially zero. In 2026, there is no excuse for leaving your API unprotected.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

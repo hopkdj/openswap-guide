@@ -37,7 +37,7 @@ All three engines covered here are self-hosted, run on-premises or in your own c
 - **DRL (Drools Rule Language)** — native rule syntax with pattern matching, conditions, and actions
 - **DMN (Decision Model and Notation)** — industry-standard decision tables for business analysts
 - **BPMN (Business Process Model and Notation)** — full workflow/process engine integration
-- **CEP (Complex Event Processing)** — temporal reasoning over event streams
+- **CEP (Com[plex](https://www.plex.tv/) Event Processing)** — temporal reasoning over event streams
 - **Decision Server (KIE Server)** — REST/Kafka API for remote rule evaluation
 - **Business Central** — web-based rule authoring and management UI
 - **Maven integration** — rules packaged as KJAR artifacts with version management
@@ -60,7 +60,7 @@ Drools runs as a multi-component platform:
 ┌──────────────────▼──────────────────────────────┐
 │              Application (Java/HTTP)             │
 │  Your service sends facts, gets decisions back   │
-└─────────────────────────────────────────────────┘
+└────────────────────────────────────[docker](https://www.docker.com/)───────┘
 ```
 
 ### Docker Deployment
@@ -414,7 +414,7 @@ curl -u kieserver:kieserver1! http://localhost:8080/kie-server/services/rest/ser
 # OpenL Tablets service check
 curl http://localhost:8081/ws/rest/services
 
-# Easy Rules: add metrics to your application
+# Easy Rules: a[prometheus](https://prometheus.io/) to your application
 # Use Micrometer or Prometheus client to track rule execution counts and latencies
 ```
 

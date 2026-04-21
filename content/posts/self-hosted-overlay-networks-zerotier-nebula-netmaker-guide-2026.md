@@ -6,7 +6,7 @@ draft: false
 description: "Compare ZeroTier, Nebula, and Netmaker for self-hosted overlay networks and SD-WAN. Complete Docker setups, architecture comparison, and deployment guides for secure multi-site connectivity in 2026."
 ---
 
-Connecting servers, laptops, and IoT devices across the internet as if they were on the same local network used to require complex VPN setups, port forwarding, and static IPs. In 2026, overlay network technologies make this trivial — but most people still rely on centralized, proprietary services that can see your network topology, throttle your bandwidth, or shut down without warning.
+Connecting servers, laptops, and IoT devices across the internet as if they were on the same local network used to require com[plex](https://www.plex.tv/) VPN setups, port forwarding, and static IPs. In 2026, overlay network technologies make this trivial — but most people still rely on centralized, proprietary services that can see your network topology, throttle your bandwidth, or shut down without warning.
 
 This guide covers the three leading open-source overlay network platforms you can self-host: **ZeroTier** (via the open-source controller), **Nebula**, and **Netmaker**. Each takes a fundamentally different architectural approach to solving the same problem — creating secure, encrypted, peer-to-peer virtual networks that span the globe.
 
@@ -43,7 +43,7 @@ Whether you're running a homelab across multiple locations, connecting branch of
 | **Web UI** | Basic API; third-party UIs available | CLI only (no official UI) | Full web management dashboard |
 | **Access Control** | Network-level rules (flow rules in MOF language) | Firewall rules per node, group-based | ACLs, user management, SSO integration |
 | **DNS** | Built-in DNS for network members | No built-in DNS | Built-in DNS resolution across networks |
-| **Subnet Routing** | Yes (route declarations) | Yes (static routes via lighthouses) | Yes (ingress/egress gateways) |
+| **Subnet Routing** | Yes (route declarations) | Yes (static routes via lighthouses) | Yes (ingress[docker](https://www.docker.com/)s gateways) |
 | **Docker Support** | Official images | Official images | Official images with full compose stack |
 | **Maturity** | 2014 — very mature, production-hardened | 2017 — mature, used at scale (Slack) | 2020 — actively developed, growing adoption |
 | **GitHub Stars** | 20,000+ | 9,000+ | 7,000+ |
@@ -530,7 +530,7 @@ Home Server (10.0.0.0/24) ──┘
 | **Simple homelab, 5-20 nodes** | ZeroTier (easiest to set up) |
 | **Enterprise zero-trust, identity-based access** | Nebula (certificate-based, proven at Slack scale) |
 | **Team collaboration, need UI and SSO** | Netmaker (dashboard, user management, DNS) |
-| **IoT devices, minimal resources** | Nebula (smallest binary, ~30MB RAM) |
+| **IoT devices, minimal resou[kubernetes](https://kubernetes.io/)ebula (smallest binary, ~30MB RAM) |
 | **Kubernetes cluster networking** | Nebula or Netmaker (better integration patterns) |
 | **Replacing Tailscale with self-hosted** | Netmaker (closest feature parity) |
 | **Maximum performance** | Netmaker/WireGuard (kernel-level, 1-2 Gbps) |
@@ -618,3 +618,34 @@ Self-hosting saves $480–660 per year for 50 nodes, with the added benefit of f
 **Choose Netmaker if** you're replacing Tailscale or need a team-friendly platform with a web dashboard, SSO, DNS, and the performance of WireGuard. It has the steepest initial setup but the most complete feature set for production environments.
 
 All three are production-ready, open-source, and free to run. The best choice depends on your team size, security requirements, and tolerance for operational complexity. For most homelab users starting out, ZeroTier offers the fastest path to a working network. For enterprise deployments, Nebula's identity-based security or Netmaker's management features will serve you better.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

@@ -18,7 +18,7 @@ Self-hosting a time-series database gives you:
 - **Full query flexibility**: Run arbitrary aggregations, joins, and window functions without API limits
 - **Horizontal scalability**: Scale across your own hardware or VPS instances on your terms
 
-In 2026, three open-source time-series databases stand out for self-hosted deployments: **InfluxDB**, **QuestDB**, and **TimescaleDB**. Each takes a fundamentally different architectural approach. This guide compares them head-to-head and provides production-ready Docker configurations for each.
+In 2026, three open-source time-series databases stand out for self-hosted deployments: **InfluxDB**, **QuestDB**, and **TimescaleDB**. Each takes a fundamentally different architectural approach. This guide compares them head-to-head and provides production-ready [docker](https://www.docker.com/) configurations for each.
 
 ## Understanding Time-Series Databases
 
@@ -44,7 +44,7 @@ A general-purpose database like PostgreSQL or MySQL can store time-series data, 
 | **Compression Ratio** | 10-20x raw | 8-15x raw | 5-10x raw |
 | **Built-in Downsampling** | ✅ Task scheduler | ✅ Continuous queries | ✅ Continuous aggregates |
 | **Joins Support** | ⚠️ Limited | ✅ Full SQL joins | ✅ Full SQL joins |
-| **Ecosystem** | Telegraf, Grafana, Kapacitor | Grafana, pandas, Kafka | pgAdmin, PostGIS, all PG tools |
+|[grafana](https://grafana.com/)ystem** | Telegraf, Grafana, Kapacitor | Grafana, pandas, Kafka | pgAdmin, PostGIS, all PG tools |
 | **Clustering** | ❌ OSS is single-node | ❌ OSS is single-node | ✅ Citus distributed |
 | **Disk Usage (1B points)** | ~2-4 GB | ~3-5 GB | ~5-10 GB |
 | **Docker Image Size** | ~200 MB | ~150 MB | ~400 MB (with PostgreSQL) |
@@ -672,7 +672,7 @@ pg_basebackup -h localhost -U postgres -D /backup/timescaledb -P -v --checkpoint
 Regardless of which database you choose, you should monitor the database itself:
 
 ```yaml
-# Add monitoring to any Docker Compose stack with Prometheus
+# Add monitoring to any[prometheus](https://prometheus.io/)mpose stack with Prometheus
   prometheus:
     image: prom/prometheus:latest
     ports:
@@ -713,3 +713,34 @@ If you are moving from a cloud-hosted service to a self-hosted database:
 5. **Set up replication first**: Run both systems in parallel, validate data consistency, then switch traffic
 
 For InfluxDB Cloud → InfluxDB 3 Core migrations, the `influxctl` CLI tool handles bulk export and import. For PostgreSQL-based migrations, `pg_dump`/`pg_restore` work seamlessly with TimescaleDB. QuestDB supports importing CSV files directly through its web console or REST API.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

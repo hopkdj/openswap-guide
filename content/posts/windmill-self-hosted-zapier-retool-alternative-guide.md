@@ -23,7 +23,7 @@ In this guide, you'll learn what Windmill is, how it compares to Zapier and Reto
 | **Language Support** | Python, TypeScript, Go, SQL, Bash, Shell | No-code only | JavaScript |
 | **Code-First** | ✅ Scripts are version-controlled code | ❌ | ⚠️ JS snippets |
 | **Git Integration** | ✅ Full (push/pull, branches) | ❌ | ⚠️ Limited |
-| **Self-Hosted** | ✅ Docker / Kubernetes | ❌ | ✅ (Enterprise only) |
+| **Self-Hosted** | ✅ [docker](https://www.docker.com/) / Kubernetes | ❌ | ✅ (Enterprise only) |
 | **AI Code Generation** | ✅ Built-in AI script generation | ✅ (AI Zap creation) | ✅ (AI component gen) |
 | **Min RAM** | 2 GB | N/A | 4 GB |
 | **Best For** | Dev teams, SREs, data engineers | Non-technical users, marketing ops | Internal tools, admin panels |
@@ -673,7 +673,7 @@ The UI shows:
 
 ### API Monitoring
 
-Windmill exposes metrics at `/api/admin/metrics` in Prometheus format:
+Windmill exposes metrics [prometheus](https://prometheus.io/)dmin/metrics` in Prometheus format:
 
 ```bash
 curl http://localhost:8000/api/admin/metrics
@@ -721,7 +721,7 @@ Then configure Promtail or Fluent Bit to scrape the container logs and ship them
 - Your team is entirely non-technical — Zapier or n8n's visual editor may be easier
 - You need heavy IoT / MQTT integration — Node-RED is purpose-built for that
 - You want a managed service with zero ops — Windmill is self-hosted only
-- You need complex data pipeline orchestration with backfill — Apache Airflow is more mature for that specific use case
+- You need com[plex](https://www.plex.tv/) data pipeline orchestration with backfill — Apache Airflow is more mature for that specific use case
 
 ---
 
@@ -732,3 +732,34 @@ Windmill consolidates three platforms — workflow automation, internal tools, a
 For teams that are comfortable writing code and want to move away from per-execution SaaS pricing, Windmill is one of the most capable self-hosted automation platforms available in 2026. The combination of multi-language scripting, a DAG-based flow engine, auto-generated UIs, and full Git integration makes it a compelling foundation for any self-hosted automation stack.
 
 Get started with the Docker Compose setup above, connect your database as a resource, and have your first script running within 10 minutes.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

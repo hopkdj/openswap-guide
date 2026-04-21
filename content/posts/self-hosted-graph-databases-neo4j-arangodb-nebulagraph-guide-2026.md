@@ -73,7 +73,7 @@ NebulaGraph is designed from the ground up for massive, distributed graph worklo
 | **Graph Algorithms** | ❌ (Enterprise only) | ✅ Built-in (Pregel framework) | ✅ via NebulaGraph Algorithm |
 | **Full-Text Search** | ❌ (requires plugin) | ✅ Built-in | ⚠️ Via Elasticsearch plugin |
 | **Web UI** | Neo4j Browser | ArangoDB Web UI | NebulaGraph Studio |
-| **Docker Support** | ✅ Official image | ✅ Official image | ✅ Official compose |
+| **[docker](https://www.docker.com/) Support** | ✅ Official image | ✅ Official image [kubernetes](https://kubernetes.io/)al compose |
 | **Kubernetes** | ✅ Helm chart | ✅ Helm chart (KubeArangoDB) | ✅ Helm chart |
 | **Language Drivers** | Java, Python, Go, .NET, JS, Rust | Java, Python, Go, .NET, JS, Rust, C# | Java, Python, Go, C++, Rust |
 | **Import Tools** | `neo4j-admin`, APOC | `arangoimp` (CSV, JSON, TSV) | `nebula-importer` |
@@ -453,7 +453,7 @@ RETURN f.username, p.content
 |----------|------------|-----|
 | **Prototype / learn graph databases** | Neo4j | Best documentation, largest community, Cypher is intuitive |
 | **Small to medium graphs (< 1B edges)** | Neo4j or ArangoDB | Single-node performance is excellent for moderate datasets |
-| **Multi-model workloads** | ArangoDB | Graph + document + key-value in one engine reduces infrastructure complexity |
+| **Multi-model workloads** | ArangoDB | Graph + document + key-value in one engine reduces infrastructure com[plex](https://www.plex.tv/)ity |
 | **Large-scale graphs (10B+ edges)** | NebulaGraph | Horizontal scale-out with storage-compute separation |
 | **Graph algorithms (PageRank, Louvain, shortest path)** | ArangoDB | Built-in Pregel framework in Community Edition |
 | **Existing SQL team** | ArangoDB or NebulaGraph | AQL and nGQL are SQL-inspired and feel familiar |
@@ -711,3 +711,34 @@ nebula-importer --config config.yaml
 **Choose NebulaGraph** if you are dealing with massive graphs that exceed single-node capacity. Its storage-compute separation architecture, horizontal scalability, and cloud-native design make it the only practical choice for billion-node, trillion-edge graphs at scale.
 
 All three are production-ready, open source, and fully self-hostable. The best choice depends on your data volume, team expertise, and infrastructure requirements.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

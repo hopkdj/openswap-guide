@@ -69,9 +69,9 @@ APISIX stands out for raw throughput and dynamic configuration. The etcd-backed 
 
 The plugin ecosystem is extensive. Built-in plugins cover authentication (JWT, Key Auth, OAuth2, LDAP, OpenID Connect), traffic control (rate limiting, request ID, proxy cache), security (CORS, IP restriction, URI blocker, WAF), observability (Prometheus, SkyWalking, Zipkin, OpenTelemetry), and serverless integrations (AWS Lambda, Apache OpenWhisk).
 
-APISIX also supports Apache APISIX Ingress Controller for Kubernetes environments, making it a natural fit for teams already running K8s.
+APISIX also supports Apache APISIX Ingress Controller for [kubernetes](https://kubernetes.io/) environments, making it a natural fit for teams already running K8s.
 
-### Docker Deployment
+### [docker](https://www.docker.com/) Deployment
 
 The fastest way to run APISIX locally or in production is with Docker Compose:
 
@@ -482,7 +482,7 @@ curl -X POST http://localhost:8080/tyk/keys/create \
 
 ## Performance and Architecture Comparison
 
-The architectural differences between these three gateways have real implications for performance, operational complexity, and extensibility.
+The architectural differences between these three gateways have real implications for performance, operational com[plex](https://www.plex.tv/)ity, and extensibility.
 
 ### Runtime Performance
 
@@ -545,3 +545,34 @@ The decision comes down to your team's priorities and existing infrastructure:
 **Choose Tyk if** your team is Go-centric and values a simpler operational model. The Redis-backed configuration is easy to understand and debug, the Go plugin system is performant, and the API-first design feels natural to developers.
 
 All three are excellent choices for self-hosted API management in 2026. You cannot go wrong with any of them — the key is to start, iterate on your configuration, and let your actual traffic patterns guide your optimization decisions.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

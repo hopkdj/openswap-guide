@@ -25,7 +25,7 @@ In 2026, three open-source platforms dominate the self-hosted ITAM space:
 - **Ralph** — a data center and back-office asset manager with strong procurement and cost tracking
 - **NetBox** — the definitive IP address management (IPAM) and data center infrastructure management (DCIM) tool
 
-This guide compares all three in detail, provides Docker Compose deployment configurations, and helps you choose the right platform for your use case.
+This guide compares all three in detail, provides [docker](https://www.docker.com/) Compose deployment configurations, and helps you choose the right platform for your use case.
 
 ## Quick Comparison Table
 
@@ -242,7 +242,7 @@ NetBox, developed by DigitalOcean, is purpose-built for network infrastructure m
 - **Circuits**: Track ISP circuits, provider assignments, and commit speeds
 - **Virtualization**: Virtual machine and cluster management with interface mapping
 - **Power Tracking**: Power panels, feeds, and port-level power connection mapping
-- **REST API + GraphQL**: Fully documented API with GraphQL support for complex queries
+- **REST API + GraphQL**: Fully documented API with GraphQL support for com[plex](https://www.plex.tv/) queries
 - **Webhooks & Events**: Trigger external integrations on model changes
 - **Custom Fields & Tags**: Extensible data model with tagging and filtering
 - **Plugin System**: Rich plugin ecosystem for extending functionality
@@ -265,8 +265,7 @@ services:
       - ALLOWED_HOSTS=netbox.yourdomain.com
       - DB_HOST=netbox-postgres
       - DB_NAME=netbox
-      - DB_USER=netbox
-      - DB_PASSWORD=changeme_db_password
+      - DB_USER=netbo[redis](https://redis.io/)   - DB_PASSWORD=changeme_db_password
       - REDIS_HOST=netbox-redis
       - REDIS_PASSWORD=changeme_redis_password
     volumes:
@@ -439,3 +438,34 @@ All three platforms are production-ready, actively maintained, and have strong c
 - **NetBox** for network infrastructure and IP address management
 
 Start with the tool that solves your most painful problem today. All three support Docker Compose deployment, can be running in under 15 minutes, and will immediately replace the spreadsheets that are silently costing you time and money.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

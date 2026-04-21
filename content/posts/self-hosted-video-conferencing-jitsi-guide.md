@@ -26,14 +26,14 @@ Before deploying, it helps to understand what makes up a Jitsi installation. The
 
 | Component | Purpose |
 |-----------|---------|
-| **Jitsi Meet (Web UI)** | React-based web interface, served via nginx |
+| **Jitsi Meet (Web UI)** | React-based web interface, served via [nginx](https://nginx.org/) |
 | **Jitsi Videobridge (JVB)** | SFU (Selective Forwarding Unit) — routes video streams between participants |
 | **Jicofo** | Focus component — manages conference rooms, allocates bridges, handles SIP gateway |
 | **Prosody** | XMPP server — the messaging backbone connecting all components |
 | **Jigasi** | SIP gateway — bridges Jitsi meetings with traditional phone networks |
 | **Jibri** | Recording and streaming service — captures meetings to file or streams to YouTube |
 
-The official Jitsi Docker compose setup packages these components together, making deployment straightforward. For small to medium deployments (up to ~50 concurrent participants), a single server is sufficient. Larger deployments require horizontal scaling with multiple JVB instances.
+The official Jitsi [docker](https://www.docker.com/) compose setup packages these components together, making deployment straightforward. For small to medium deployments (up to ~50 concurrent participants), a single server is sufficient. Larger deployments require horizontal scaling with multiple JVB instances.
 
 ## Quick Start: Deploy Jitsi Meet with Docker
 
@@ -389,7 +389,7 @@ While Jitsi is the most mature option, several other self-hosted video conferenc
 |---------|------------|---------------|---------|
 | **License** | Apache 2.0 | LGPL 3.0 | AGPL 3.0 |
 | **Protocol** | WebRTC (SFU) | WebRTC (SFU) | WebRTC (SFU) |
-| **Setup Complexity** | Moderate | High | Moderate |
+| **Setup Com[plex](https://www.plex.tv/)ity** | Moderate | High | Moderate |
 | **Max Participants** | 100+ (with scaling) | 250+ | 1000+ |
 | **Recording** | Via Jibri | Built-in | Via Egress |
 | **Whiteboard** | Via Etherpad | Built-in | Via LiveKit Agents |
@@ -463,3 +463,34 @@ Self-hosting Jitsi Meet in 2026 is more practical than ever. The Docker compose 
 For most users, the standard Docker deployment with internal authentication, Let's Encrypt TLS, and a properly configured firewall provides everything needed for secure, private video conferencing. Start small, monitor your resource usage, and scale horizontally as your participant count grows.
 
 Your communications infrastructure is worth owning. With a few Docker commands and a domain name, you can run a professional-grade video conferencing platform that answers to no one but you.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

@@ -41,7 +41,7 @@ As of April 2026, dnsdist is part of the [PowerDNS/pdns](https://github.com/Powe
 - **REST API**: real-time metrics, backend management, and configuration via HTTP API
 - **eBPF support**: kernel-level packet filtering for DDoS mitigation at line rate
 
-### Docker Compose Deployment
+### [docker](https://www.docker.com/) Compose Deployment
 
 The official PowerDNS repository includes a multi-service Docker Compose setup that runs dnsdist alongside an authoritative server and recursor:
 
@@ -125,7 +125,7 @@ The recursor shares the same GitHub repository as dnsdist ([PowerDNS/pdns](https
 - **Forward zones**: per-zone forwarding to specific upstream servers with load balancing
 - **Lua scripting**: custom response policy zones (RPZ) and query manipulation via Lua
 - **Tag-based routing**: route queries based on client IP, query type, or domain
-- **DNSSEC validation**: built-in validating resolver — no separate stub resolver needed
+- **DNSSEC validation**: built-in validating resolver — no separat[prometheus](https://prometheus.io/)olver needed
 - **Prometheus metrics**: native export of query statistics, cache hit rates, and latency histograms
 
 ### Docker Deployment
@@ -314,7 +314,7 @@ The choice between these three depends on your architecture:
 - You want **encrypted DNS termination** (DoT/DoH) in front of unencrypted backends
 - You need a **real-time dashboard and API** for monitoring query distribution
 
-dnsdist is the right tool when your DNS infrastructure has grown beyond a single resolver and you need intelligent query distribution. If you're comparing it to application-layer solutions, see our [HAProxy vs Envoy vs nginx load balancer guide](../haproxy-vs-envoy-vs-nginx-load-balancer-guide/) for the HTTP-layer perspective.
+dnsdist is the right tool when your DNS infrastructure has grown beyond a single resolver and you need intelligent query distribution. If you're comparing it to appli[nginx](https://nginx.org/)n-layer solutions, see our [HAProxy vs Envoy vs nginx load balancer guide](../haproxy-vs-envoy-vs-nginx-load-balancer-guide/) for the HTTP-layer perspective.
 
 ### Use PowerDNS Recursor when:
 

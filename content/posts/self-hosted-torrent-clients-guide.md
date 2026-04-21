@@ -8,7 +8,7 @@ description: "Complete guide to self-hosting torrent clients in 2026. Compare qB
 
 Running a torrent client on a always-on home server or VPS is one of the most practical self-hosted services you can set up. Whether you're downloading Linux ISOs, archiving public domain content, or managing large dataset transfers, a self-hosted torrent client gives you full control over your downloads — no desktop required, no closed-source telemetry, and accessible from any browser.
 
-In this guide, we compare the three most popular self-hosted torrent clients of 2026 — **qBittorrent**, **Transmission**, and **Deluge** — and walk through complete Docker deployment for each.
+In this guide, we compare the three most popular self-hosted torrent clients of 2026 — **qBittorrent**, **Transmission**, and **Deluge** — and walk through complete [docker](https://www.docker.com/) deployment for each.
 
 ## Why Self-Host a Torrent Client
 
@@ -462,7 +462,7 @@ services:
       retries: 3
 ```
 
-Pair this with self-hosted **ntfy** for push notifications, and an **Execute** plugin script that moves completed media files into a Jellyfin library folder for automatic indexing.
+Pair this with self-hosted **ntfy** for push notifications, and an **Execute** plugin script that moves completed media files into a [jellyfin](https://jellyfin.org/) library folder for automatic indexing.
 
 ## Security and Privacy Hardening
 
@@ -493,7 +493,7 @@ Configure SSL certificates through the NPM interface and proxy to your torrent c
 
 - Never use default passwords
 - Use passwords with at least 16 characters
-- If your client supports it (qBittorrent 5.0+), enable two-factor authentication or use Authentik/Authelia as a forward authentication gateway
+- If your client supports it (qBittor[authentik](https://goauthentik.io/)), enable two-factor authentication or use Authentik/Authelia as a forward authentication gateway
 
 **3. Use a VPN or WireGuard tunnel**
 
@@ -524,3 +524,34 @@ All three clients are excellent choices, and you can't go wrong with any of them
 - **Deluge** — The customizer's dream. Ideal if you want to build exactly the tool you need through plugins and script hooks.
 
 For a typical self-hosted home server in 2026, qBittorrent is our recommendation. It strikes the best balance between features, usability, and resource usage, and its built-in RSS and search features eliminate the need for additional automation services.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

@@ -10,7 +10,7 @@ Voice chat is the backbone of online gaming, remote team coordination, and live 
 
 In this guide, we compare three of the most capable self-hosted voice communication platforms: **Mumble** (open-source, low-latency voice), **TeamSpeak** (commercial-grade self-hosted server), and **Jamulus** (ultra-low-latency audio for musicians). Each serves a different use case, and the right choice depends on whether you need gaming comms, persistent team channels, or near-zero-latency audio performance.
 
-For related reading, see our [self-hosted VoIP PBX guide](../kamailio-vs-asterisk-vs-freeswitch-self-hosted-voip-pbx-guide-2026/) for enterprise telephony, the [Matrix messaging guide](../matrix-synapse-self-hosted-messaging-guide/) for text-based communication, and our [Jitsi video conferencing guide](../self-hosted-video-conferencing-jitsi-guide/) for full video call infrastructure.
+For related reading, see our [self-hosted VoIP PBX guide](../kamailio-vs-asterisk-vs-freeswitch-self-hosted-voip-pbx-guide-2026/) for enterprise telephony, the [Matrix messaging guide](../matrix-synapse-self-hosted-messaging-guide/) for text-based communication, and our [[jitsi](https://jitsi.org/) video conferencing guide](../self-hosted-video-conferencing-jitsi-guide/) for full video call infrastructure.
 
 ## Why Self-Host Your Voice Server?
 
@@ -43,7 +43,7 @@ Running your own voice server offers several advantages over relying on centrali
 | Platform support | Windows, Linux, macOS, Android, iOS |
 | License | BSD |
 
-### Mumble Docker Compose Deployment
+### Mumble [docker](https://www.docker.com/) Compose Deployment
 
 The community-maintained `goofball222/murmur` Docker image (2.7M+ pulls) is the most convenient way to deploy Mumble:
 
@@ -176,7 +176,7 @@ Create a systemd unit file for reliable operation:
 sudo tee /etc/systemd/system/teamspeak.service << 'EOF'
 [Unit]
 Description=TeamSpeak 3 Server
-After=network.target
+After=network.t[ory](https://www.ory.sh/)et
 
 [Service]
 User=ts3

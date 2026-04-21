@@ -28,7 +28,7 @@ Below, we compare three of the most popular self-hosted download managers in 202
 | **GitHub Stars** | 3,745 | 40,678 | N/A (not on GitHub) |
 | **Last Updated** | April 2026 | March 2026 | Active (continuous) |
 | **Web Interface** | ✅ Built-in | ❌ Requires AriaNg or similar | ✅ Built-in (MyJDownloader) |
-| **Docker Support** | ✅ Official image | ✅ Community images | ✅ LinuxServer.io image |
+| **[docker](https://www.docker.com/) Support** | ✅ Official image | ✅ Community images | ✅ LinuxServer.io image |
 | **HTTP/HTTPS** | ✅ Yes | ✅ Yes | ✅ Yes |
 | **FTP/SFTP** | ✅ Yes | ✅ Yes | ✅ Yes |
 | **BitTorrent** | ❌ No | ✅ Yes | ❌ No |
@@ -262,8 +262,8 @@ Aria2's C++ implementation gives it the edge in raw throughput and resource effi
 
 Download managers shine when integrated into a broader homelab ecosystem:
 
-- **Media servers**: Point your download destination to a Jellyfin or Plex media library. Combine with Sonarr/Radarr-style automation for fully automated media pipelines.
-- **File sync**: Sync downloads to mobile devices using Nextcloud or Syncthing. See our [file sync and sharing guide](../self-hosted-file-sync-sharing-nextcloud-seafile-syncthing-guide/) for setup details.
+- **Media servers**: Point your download destination to a [jellyfin](https://jellyfin.org/) or Plex media library. Combine with Sonarr/Radarr-style automation for fully automated media pipelines.
+- **File sync**: Sync downloads to mobile devices using [nextcloud](https://nextcloud.com/) or Syncthing. See our [file sync and sharing guide](../self-hosted-file-sync-sharing-nextcloud-seafile-syncthing-guide/) for setup details.
 - **Torrent alternatives**: For BitTorrent downloads, consider dedicated torrent clients like qBittorrent or Transmission. Our [self-hosted torrent clients guide](../self-hosted-torrent-clients-guide/) covers the best options.
 - **NAS storage**: Store downloads on a NAS with RAID redundancy. Our [NAS solutions guide](../self-hosted-nas-solutions-openmediavault-truenas-rockstor-guide/) compares OpenMediaVault, TrueNAS, and Rockstor for home server storage.
 

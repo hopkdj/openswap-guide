@@ -10,14 +10,14 @@ description: "Compare UFW, Firewalld, and iptables for securing self-hosted serv
 
 Every self-hosted server is exposed to the internet — and the internet is noisy. Within minutes of connecting a fresh VPS, you'll see SSH brute-force attempts, port scans, and automated exploit probes in your logs. A properly configured firewall is your first and most critical line of defense.
 
-Linux offers three mainstream firewall management tools: **UFW** (Uncomplicated Firewall), **Firewalld**, and raw **iptables** (now transitioning to **nftables**). Each has a different philosophy, feature set, and learning curve. If you're running services like Jellyfin, Nextcloud, Gitea, or a mail server, choosing the right firewall tool and configuring it correctly is essential.
+Linux offers three mainstream firewall management tools: **UFW** (Uncomplicated Firewall), **Firewalld**, and raw **iptables** (now transitioning to **nftables**). Each has a different philosophy, feature set, and learning curve. If you're running services like Jellyfin, [nextcloud](https://nextcloud.com/), Gitea, or a mail server, choosing the right firewall tool and configuring it correctly is essential.
 
 This guide compares all three, covers Docker networking implications, and gives you ready-to-use configuration recipes so you can lock down your server in minutes.
 
 ## Quick Comparison Table
 
 | Feature | UFW | Firewalld | iptables / nftables |
-|---------|-----|-----------|---------------------|
+|---------|-----|-----------|----[plex](https://www.plex.tv/)-------------|
 | **Complexity** | Very Low | Low-Medium | High |
 | **Default On** | Ubuntu/Debian | RHEL/Fedora/SUSE | Arch, Alpine |
 | **Syntax Style** | Simple English-like | Zone-based | Rule-based |
@@ -79,7 +79,7 @@ sudo ufw allow 80/tcp comment 'HTTP'
 sudo ufw allow 443/tcp comment 'HTTPS'
 
 # Reverse proxy (if you run Caddy or Traefik)
-sudo ufw allow 80,443/tcp comment 'Web traffic'
+sudo ufw allow 80,443/tcp co[adguard home](https://adguard.com/en/adguard-home/overview.html)raffic'
 
 # DNS (if running Pi-hole or AdGuard Home)
 sudo ufw allow 53/tcp comment 'DNS TCP'
@@ -559,3 +559,34 @@ Regardless of which tool you choose, every self-hosted server should have:
 For most self-hosters running Ubuntu or Debian, **UFW** provides the best balance of simplicity and security. If you're on a Red Hat-based distribution, **Firewalld** is the natural choice. Reserve raw **iptables/nftables** for scenarios where you need custom NAT, complex routing, or want to understand the fundamentals of Linux networking.
 
 The most important thing isn't which tool you pick — it's that you actually configure one, test it, and keep it maintained. An unconfigured server is an open door.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

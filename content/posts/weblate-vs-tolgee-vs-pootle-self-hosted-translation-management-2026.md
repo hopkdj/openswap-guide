@@ -26,7 +26,7 @@ This guide compares the three leading self-hosted translation management platfor
 | **License** | GPL-3.0 | Apache-2.0 (Community), Paid tiers | GPL-3.0 |
 | **Language** | Python/Django | Java/Spring + React | Python/Django |
 | **Database** | PostgreSQL + Redis | PostgreSQL | PostgreSQL |
-| **Docker Image** | `weblate/weblate` | `tolgee/tolgee` | `translatehouse/pootle` |
+| **[docker](https://www.docker.com/) Image** | `weblate/weblate` | `tolgee/tolgee` | `translatehouse/pootle` |
 | **File Formats** | 30+ (PO, XLIFF, JSON, XML, CSV, RESX, ARB, STRINGS, and more) | JSON, XLIFF, PO, CSV, Apple Strings, Android XML | 20+ (PO, XLIFF, JSON, CSV, DTD, RESX, and more) |
 | **Built-in MT** | Google Translate, DeepL, Amazon Translate, OpenAI, Custom | Built-in MT (OpenAI, DeepL), Custom providers | Limited — relies on external tools |
 | **Translation Memory** | Shared TM across projects | Project-level TM | Basic TM |
@@ -42,7 +42,7 @@ This guide compares the three leading self-hosted translation management platfor
 | **Community Activity** | Very active — monthly releases, large contributor base | Very active — rapid release cycle, VC-backed | Low — infrequent releases, small maintainer team |
 | **Ease of Setup** | Moderate — multiple services in Docker Compose | Easy — single Docker container | Moderate — requires careful setup |
 | **UI/UX** | Functional, information-dense | Modern, polished, developer-friendly | Dated interface, functional but showing age |
-| **Best For** | Large open-source projects, enterprises with complex workflows | Developer teams wanting in-context editing and SDKs | Legacy Pootle deployments, specific VCS needs |
+| **Best For** | Large open-source projects, enterprises with com[plex](https://www.plex.tv/) workflows | Developer teams wanting in-context editing and SDKs | Legacy Pootle deployments, specific VCS needs |
 
 ## Weblate: The Enterprise-Grade Choice
 
@@ -442,7 +442,7 @@ translate.example.com {
         X-Content-Type-Options "nosniff"
         X-Frame-Options "DENY"
         Referrer-Policy "strict-origin-when-cross-origin"
-        Strict-Transport-Security "max-age=31536000; includeSubDomains"
+        Strict-Transport-Security "max-age[nginx](https://nginx.org/)6000; includeSubDomains"
     }
 }
 ```
@@ -524,3 +524,34 @@ For Weblate specifically, you can also migrate directly from a Pootle database u
 Self-hosting your translation management system gives you complete control over your localization pipeline. Weblate remains the gold standard for large-scale, enterprise-grade translation workflows with unmatched quality checks and format support. Tolgee is the modern challenger, winning developer hearts with in-context editing and excellent SDK integration. Pootle, while showing its age, still serves teams with legacy requirements.
 
 The best choice depends on your team size, technical stack, and workflow preferences — but all three eliminate the recurring costs and data exposure of commercial translation platforms.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

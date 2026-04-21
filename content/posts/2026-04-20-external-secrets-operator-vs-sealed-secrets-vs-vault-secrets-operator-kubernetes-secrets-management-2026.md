@@ -6,7 +6,7 @@ draft: false
 description: "Compare External Secrets Operator, Sealed Secrets, and Vault Secrets Operator for managing secrets in Kubernetes clusters. Full deployment guides, feature comparison, and best practices for 2026."
 ---
 
-Managing secrets in Kubernetes is one of the most critical challenges for platform engineers running self-hosted clusters. The native `Secret` object stores data as base64-encoded strings — not encrypted at rest by default — making it unsuitable for production workloads without additional tooling.
+Managing secrets in [kubernetes](https://kubernetes.io/) is one of the most critical challenges for platform engineers running self-hosted clusters. The native `Secret` object stores data as base64-encoded strings — not encrypted at rest by default — making it unsuitable for production workloads without additional tooling.
 
 Three open-source operators have emerged as the leading solutions for this problem: **External Secrets Operator** (ESO), **Sealed Secrets** by Bitnami, and **Vault Secrets Operator** (VSO) from HashiCorp. Each takes a fundamentally different approach to the same problem. This guide compares them side by side and provides complete deployment instructions.
 
@@ -106,8 +106,7 @@ ESO supports the widest range of backends of any tool covered here:
 | HashiCorp Vault | KV v1/v2, PKI, transit |
 | Cloud providers | AWS Secrets Manager, GCP Secret Manager, Azure Key Vault |
 | Self-hosted | Akeyless, 1Password, Keeper, Doppler |
-| Infrastructure | Git (encrypted repos), Kubernetes native secrets |
-| Password managers | Bitwarden, 1Password, Keeper |
+| Infrastructure | Git (encrypted repos), Kubernetes native secret[bitwarden](https://bitwarden.com/)sword managers | Bitwarden, 1Password, Keeper |
 | Specialized | CyberArk Conjur, IBM Secrets Manager, Pulumi ESC |
 
 ## Sealed Secrets
@@ -328,7 +327,7 @@ Sealed Secrets has the highest star count because it's the simplest to deploy. N
 - You want deep Vault-specific features (PKI, transit, response wrapping)
 - Your organization has standardized on the HashiCorp ecosystem
 
-VSO is the specialist's choice. If you're already running Vault, it gives you the tightest integration — especially for dynamic secrets that auto-rotate database passwords and cloud credentials. Note that VSO uses the BUSL 1.1 license (HashiCorp's post-2023 license change), which restricts commercial redistribution.
+VSO is the specialist's choice. If you're already running Vault, it gives you the tightest integration — especially for dynamic secrets that auto-rotate database passwords and cloud credentials. Note that VSO uses the BUSL 1.1 license (HashiCorp's po[redis](https://redis.io/)23 license change), which restricts commercial redistribution.
 
 ## Deployment Guide: Full Self-Hosted Stack
 

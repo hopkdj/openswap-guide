@@ -61,7 +61,7 @@ For a fully self-hosted setup, combine DVC with MinIO (S3-compatible object stor
 
 ```bash
 # 1. Start MinIO
-docker run -d --name minio-dvc \
+[docker](https://www.docker.com/) run -d --name minio-dvc \
   -p 9000:9000 -p 9001:9001 \
   -v /data/dvc-storage:/data \
   -e MINIO_ROOT_USER=dvcadmin \
@@ -306,7 +306,7 @@ df_v2 = pd.read_parquet(
 
 ## Pachyderm: Data Pipelines with Provenance
 
-[Pachyderm](https://www.pachyderm.com) takes the most opinionated approach. It combines **data versioning with pipeline orchestration** — every pipeline stage automatically tracks its inputs, outputs, and the code that produced them. Think of it as "DVC plus Kubernetes-native pipelines."
+[Pachyderm](https://www.pachyderm.com) takes the most opinionated approach. It combines **data versioning with pipeline orchestration** — every pipeline stage automatically tracks its inputs, outputs, and the code that produced them[kubernetes](https://kubernetes.io/) it as "DVC plus Kubernetes-native pipelines."
 
 ### Key Features
 
@@ -432,7 +432,7 @@ pachctl create branch raw-data@master \
 **Cons:**
 
 - Kubernetes dependency — significant operational overhead
-- Complex setup compared to DVC
+- Com[plex](https://www.plex.tv/) setup compared to DVC
 - Learning curve for Pachyderm concepts
 - No standalone mode (always needs K8s or Docker emulation)
 - Enterprise features locked behind commercial license
@@ -509,3 +509,34 @@ Data versioning is no longer optional for teams working with large datasets. The
 - **Pachyderm** delivers the strongest provenance tracking and pipeline automation for production workloads.
 
 All three are open source, self-hostable, and free to use. The best approach is to start simple — try DVC first — and graduate to LakeFS or Pachyderm as your needs grow.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

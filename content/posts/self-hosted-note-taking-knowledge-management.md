@@ -58,7 +58,7 @@ Joplin is the most mature self-hosted note-taking app in 2026. It's been around 
 - Todo lists with alarms and notifications
 - Conflict resolution across devices
 
-### Docker Setup (Joplin Server)
+### [docker](https://www.docker.com/) Setup (Joplin Server)
 
 The Joplin Server provides optimized sync for Joplin clients. It's much faster than generic WebDAV:
 
@@ -101,7 +101,7 @@ services:
     volumes:
       - ./joplin-data:/home/joplin
 
-  # Optional: Reverse proxy with Let's Encrypt
+  # Optional: Reverse [caddy](https://caddyserver.com/) with Let's Encrypt
   caddy:
     image: caddy:2-alpine
     container_name: joplin-caddy
@@ -356,7 +356,7 @@ AppFlowy has a Notion import feature:
 3. Download and extract the .zip file
 4. In AppFlowy, open **Settings → Import**
 5. Select the extracted folder
-6. Review imported pages — some complex Notion blocks may need manual adjustment
+6. Review imported pages — some com[plex](https://www.plex.tv/) Notion blocks may need manual adjustment
 
 ---
 
@@ -432,3 +432,34 @@ For most users starting their self-hosted note-taking journey in 2026:
 - **Pick AppFlowy** if you're migrating from Notion and want the closest open-source equivalent with block editing, databases, and team collaboration.
 
 You can also run multiple tools — many users keep Joplin for quick notes and mobile capture, while maintaining a Trilium instance as their deep knowledge base. The self-hosted approach means you're not locked into any single ecosystem, and you can export and migrate your data at any time.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

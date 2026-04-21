@@ -96,7 +96,7 @@ const crawler = new PlaywrightCrawler({
 await crawler.run(['https://example-shop.com/products']);
 ```
 
-### Docker Deployment
+### [docker](https://www.docker.com/) Deployment
 
 ```dockerfile
 # Dockerfile
@@ -217,7 +217,7 @@ services:
       - PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 ```
 
-## Playwright: Browser Automation for Complex Pages
+## Playwright: Browser Automation for Com[plex](https://www.plex.tv/) Pages
 
 **Best for**: Sites requiring complex interaction, login workflows, dynamic content, screenshot capture
 
@@ -432,7 +432,7 @@ CONCURRENT_REQUESTS_PER_DOMAIN = 2
 
 ## Proxy Rotation and Anti-Detection
 
-Even the best scraping framework will get blocked if every request comes from the same IP address. Proxy rotation is essential for production scraping.
+Even the best scraping framework will get blocked if every request comes from the same IP address. Proxy rotatio[caddy](https://caddyserver.com/)essential for production scraping.
 
 ```yaml
 # Caddy reverse proxy for rotating outbound requests
@@ -452,3 +452,34 @@ Use residential proxy providers for sites with aggressive anti-bot measures, and
 ## Conclusion
 
 Self-hosted web scraping gives you complete control over your data pipeline. Crawlee excels at modern JavaScript-heavy sites with minimal setup. Scrapy dominates when raw throughput and data processing pipelines are the priority. Playwright is indispensable for pages that require full browser interaction. In practice, many production stacks combine all three — Scrapy for high-volume static page crawling, Crawlee for JavaScript-rendered content, and Playwright for edge cases requiring complex browser automation. With Docker, Redis, and a PostgreSQL database, you can run a scraping operation that handles millions of pages per month for a fraction of the cost of any managed service.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

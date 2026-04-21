@@ -8,7 +8,7 @@ description: "Compare Uptime Kuma, UptimeRobot, and Pingdom for website and serv
 
 ## Why Self-Host Your Uptime Monitoring?
 
-Commercial uptime monitors charge recurring fees for basic functionality, impose strict limits on check intervals, and store all your infrastructure data on their servers. Self-hosting Uptime Kuma eliminates every one of these problems:
+Commercial uptime monitors charge recurring fees for basic functionality, impose strict limits on check intervals, and store all your infrastructure data on their servers. Self-hosting [uptime kuma](https://github.com/louislam/uptime-kuma) eliminates every one of these problems:
 
 - **Zero subscription costs** — monitor unlimited endpoints without monthly fees
 - **Complete data ownership** — all monitoring history, response times, and incident logs stay on your own hardware
@@ -29,7 +29,7 @@ For homelab operators, small businesses, and anyone who values privacy and contr
 | **Status Pages** | Unlimited, public/private | 1 (free), 5 (paid) | 1 per plan |
 | **SSL Monitoring** | ✅ Native | ✅ Paid only | ✅ Native |
 | **Keyword Monitoring** | ✅ Yes | ✅ Yes | ✅ Yes |
-| **Docker Support** | ✅ Official image | ❌ N/A | ❌ N/A |
+| **[docker](https://www.docker.com/) Support** | ✅ Official image | ❌ N/A | ❌ N/A |
 | **Incident History** | Unlimited | 30 days (free), 1 year (paid) | Unlimited |
 | **Multi-location Checks** | ❌ Single location | 5 locations (free), 20 (paid) | Multiple locations |
 | **API Access** | ✅ REST API | ✅ REST API | ✅ REST API |
@@ -38,7 +38,7 @@ For homelab operators, small businesses, and anyone who values privacy and contr
 | **JSON Query Monitor** | ✅ Yes | ❌ No | ❌ No |
 | **gRPC Monitoring** | ✅ Yes | ❌ No | ❌ No |
 
-Uptime Kuma supports **12 monitor types** out of the box: HTTP(s), TCP port, Ping, DNS record, Push/Heartbeat, Steam game server, Docker container, MQTT, Kubernetes, gRPC, SQL database, and keyword-based checks. Neither UptimeRobot's free tier nor Pingdom's base plan comes close to this breadth of monitoring capability.
+Uptime Kuma supports **12 monitor types** out of the box: HTTP(s), TCP port, Ping, DNS record, Push/Heartbeat, Steam game serve[kubernetes](https://kubernetes.io/)container, MQTT, Kubernetes, gRPC, SQL database, and keyword-based checks. Neither UptimeRobot's free tier nor Pingdom's base plan comes close to this breadth of monitoring capability.
 
 ## Installation: Docker Compose Deployment
 
@@ -364,3 +364,34 @@ For everyone else — homelab users, freelancers, small teams, and privacy-consc
 Self-hosted uptime monitoring with Uptime Kuma eliminates subscription fees, keeps your infrastructure data private, and supports more monitor types than most paid services. The Docker deployment takes under five minutes, notification setup covers every major platform, and status pages provide transparent service reporting to your users.
 
 The combination of Uptime Kuma for monitoring, a reverse proxy for TLS termination, and automated backups creates a production-ready monitoring stack that costs nothing beyond the hardware it runs on. For most operators, this is the right choice — more control, more features, zero recurring cost.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

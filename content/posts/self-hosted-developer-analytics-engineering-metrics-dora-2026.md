@@ -59,7 +59,7 @@ Augur excels at repository-level and community-level analytics. It collects data
 
 The platform is particularly strong for organizations managing multiple repositories. It can ingest data from hundreds of repos in parallel, normalize contributor identities across platforms (matching the same person across GitHub commits and GitLab merge requests), and produce cross-repository trend reports.
 
-### Docker Deployment
+### [docker](https://www.docker.com/) Deployment
 
 ```yaml
 version: "3.8"
@@ -221,7 +221,7 @@ Once running, Kibiter at `http://localhost:5601` provides pre-built dashboards f
 
 GrimoireLab is ideal when you need a comprehensive, out-of-the-box analytics solution that covers the full spectrum of software development activity — not just Git metrics but also issue tracker behavior, community discussion, and contribution patterns. It's particularly popular with open-source foundations and large engineering organizations that need to report on cross-team development health.
 
-The trade-off is complexity. GrimoireLab runs four interconnected services and requires understanding of Elasticsearch index management. For teams that just need DORA metrics, a simpler solution may be more appropriate.
+The trade-off is com[plex](https://www.plex.tv/)ity. GrimoireLab runs four interconnected services and requires understanding of Elasticsearch index management. For teams that just need DORA metrics, a simpler solution may be more ap[prometheus](https://prometheus.io/)
 
 ## Custom DORA Metrics Pipeline: Git + Prometheus + Grafana
 
@@ -517,3 +517,34 @@ If you're new to engineering metrics and want to get value quickly, start with t
 Once you understand which metrics your team actually uses and which ones they ignore, you can graduate to a full-featured platform like Augur or GrimoireLab for broader repository analytics, identity resolution, and community health tracking.
 
 The most important thing is to start measuring. Teams that track their DORA metrics consistently — even with imperfect initial data — see measurable improvements in deployment frequency and lead time within six months. The data creates accountability, and accountability creates improvement.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

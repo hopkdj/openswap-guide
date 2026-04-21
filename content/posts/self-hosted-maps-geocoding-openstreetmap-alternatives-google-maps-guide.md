@@ -10,7 +10,7 @@ Google Maps is the default choice for anything involving maps, geocoding, or rou
 
 The open-source alternative is the **OpenStreetMap (OSM) ecosystem**: a complete stack of self-hosted services for geocoding, routing, tile rendering, and spatial analysis that costs nothing in API fees and keeps all your data under your control.
 
-This guide covers the entire self-hosted geospatial stack — what you can replace, what tools to use, and exactly how to deploy them with Docker.
+This guide covers the entire self-hosted geospatial stack — what you can replace, what tools to use, and exactly how to deploy them with [docker](https://www.docker.com/).
 
 ## Why Self-Host Maps and Geocoding Services
 
@@ -217,7 +217,7 @@ services:
       - IMPORT_STYLE=full
     volumes:
       - ../data:/data
-      - nominatim-data:/var/lib/postgresql/14/main
+     [postgresql](https://www.postgresql.org/)im-data:/var/lib/postgresql/14/main
     shm_size: "2g"
     restart: unless-stopped
 
@@ -356,7 +356,7 @@ Or with Docker Compose for persistent deployment:
 
 ```bash
 # Route between two points (Berlin Brandenburg Gate to Alexanderplatz)
-curl "http://localhost:5000/route/v1/driving/13.3777041,52.5162746;13.4132148,52.5219184?overview=full&geometries=json"
+curl "http://localhost:5000/route/v1/driving/13.3777041,52.5162746;13.4132[matrix](https://matrix.org/).5219184?overview=full&geometries=json"
 
 # Distance matrix (3x3)
 curl "http://localhost:5000/table/v1/driving/13.377,52.516;13.413,52.522;13.405,52.520?annotations=duration,distance"
@@ -727,3 +727,34 @@ Self-hosting the OSM geospatial stack is the right choice when:
 - You're building a fleet management, logistics, or delivery platform that makes thousands of routing calls daily
 
 For small projects with occasional map display needs, managed APIs may still be more convenient. But as soon as your application scales, the self-hosted OSM stack becomes the more economical and powerful option.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

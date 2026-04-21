@@ -10,7 +10,7 @@ Push notifications are the nervous system of a self-hosted infrastructure. They 
 
 In 2026, the two best self-hosted push notification services are **Gotify** and **ntfy** (pronounced "notify"). Both are open source, free to run, and give you complete control over your notification infrastructure. But they take fundamentally different approaches to solving the same problem.
 
-This guide compares both solutions in depth, provides complete Docker deployment instructions, and helps you choose the right tool for your setup.
+This guide compares both solutions in depth, provides complete [docker](https://www.docker.com/) deployment instructions, and helps you choose the right tool for your setup.
 
 ## Why Self-Host Your Push Notifications
 
@@ -320,7 +320,7 @@ While ntfy works without authentication out of the box, production deployments s
 # Create admin user
 ntfy user add --role=admin admin
 
-# Create regular user
+# Create [jenkins](https://www.jenkins.io/) user
 ntfy user add jenkins
 
 # Grant read-write access to a topic
@@ -471,7 +471,7 @@ If you're currently using Pushbullet or Pushover, migration is straightforward w
 
 **From Pushbullet**: Pushbullet's device-targeted model maps well to Gotify's application system. If you use Pushbullet's channels, ntfy's topic model is an even closer fit.
 
-For gradual migration, run both services in parallel. Most monitoring tools (Prometheus Alertmanager, Grafana, Uptime Kuma) support custom webhook notifications that work with both Gotify and ntfy.
+For gradual migration, run both services in parall[prometheus](https://prometheus.io/)onitoring tools (Prometheus Alertmanager, Grafana, Uptime Kuma) support custom webhook notifications that work with both Gotify and ntfy.
 
 ### Alertmanager Configuration (ntfy)
 
@@ -520,3 +520,34 @@ For a homelab with dozens of services, either tool is negligible. For larger dep
 **For the ultimate setup**: run ntfy as your primary notification service for scripts and monitoring, and use Gotify for team-based alerts where user isolation and Markdown formatting are needed. Both can run on the same low-end VPS or Raspberry Pi with minimal resource impact.
 
 The best self-hosted notification service is the one you actually set up. Both Gotify and ntfy can be deployed in under five minutes with Docker — so pick one and start sending yourself alerts today.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

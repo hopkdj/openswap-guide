@@ -50,7 +50,7 @@ Key features:
 **GitHub:** [huginn/huginn](https://github.com/huginn/huginn)
 **Stars:** 43,000+
 **Language:** Ruby
-**Best for:** Advanced users who want to build complex monitoring pipelines
+**Best for:** Advanced users who want to build com[plex](https://www.plex.tv/) monitoring pipelines
 
 Huginn is more than a change monitor — it's a full automation platform. You create "agents" that perform actions, and connect them into workflows. A WebsiteAgent can scrape pages, extract data with XPath or CSS selectors, and trigger downstream agents when changes are detected. The learning curve is steeper, but the flexibility is unmatched.
 
@@ -90,7 +90,7 @@ Key features:
 | Notification Channels | 40+ | 20+ | Email, custom hooks |
 | Multi-User | Yes | Yes | No |
 | Proxy Support | Yes | Yes | Yes |
-| Resource Usage | Low | Moderate-High | Minimal |
+| Resource Usage | Low | Mode[docker](https://www.docker.com/)igh | Minimal |
 | Docker Support | Excellent | Good | Good |
 | Active Development | Very Active | Moderate | Active |
 
@@ -166,7 +166,7 @@ Start the stack:
 docker compose up -d
 ```
 
-Access the web interface at `http://localhost:5000`. No login is required by default — you should set one up immediately in Settings.
+Access the web interface at `http://localhost:5000`. No login is required by default — y[nginx](https://nginx.org/)ould set one up immediately in Settings.
 
 ### Nginx Reverse Proxy
 
@@ -528,3 +528,34 @@ For automated backups, add a cron job:
 Self-hosted website change monitoring puts you in full control of your data, check intervals, and notification workflows. **Changedetection.io** stands out as the best all-around choice with its intuitive interface, broad notification support, and active development. For advanced automation scenarios, **Huginn** offers unmatched flexibility, while **URLWatch** appeals to terminal-first users who prefer YAML-driven configuration.
 
 The beauty of these self-hosted tools is that they cost nothing to run beyond your server — no per-watch fees, no tiered pricing, no data caps. Set up monitoring for 10 pages or 10,000, and the experience is the same. Whether you're tracking prices, watching for job postings, or monitoring regulatory changes, a self-hosted website monitor is a tool that pays for itself the first time it catches a change you would have otherwise missed.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

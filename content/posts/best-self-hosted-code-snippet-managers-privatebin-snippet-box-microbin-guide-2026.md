@@ -28,7 +28,7 @@ Before diving into the tools, here's why running your own snippet manager makes 
 | **Language** | PHP | TypeScript (Node.js) | Rust |
 | **GitHub Stars** | 8,200+ | 1,080+ | 4,100+ |
 | **License** | zlib | MIT | Apache 2.0 |
-| **Docker Image** | Official | Official | Official |
+| **[docker](https://www.docker.com/) Image** | Official | Official | Official |
 | **Encryption** | Client-side AES-256 | Server-side | Server-side |
 | **Syntax Highlighting** | Yes | Yes | Yes |
 | **Password Protection** | Yes | No (built-in) | Yes |
@@ -70,7 +70,7 @@ docker run -d \
   -p 8080:8080 \
   -v ~/privatebin/cfg:/srv/cfg \
   -v ~/privatebin/data:/srv/data \
-  -e TZ=UTC \
+[nginx](https://nginx.org/)TZ=UTC \
   privatebin/nginx-fpm-alpine:latest
 ```
 
@@ -217,7 +217,7 @@ services:
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000"]
       interval: 30s
-      timeout: 5s
+     [caddy](https://caddyserver.com/)out: 5s
       retries: 3
 
   # Optional: add Caddy reverse proxy for HTTPS
@@ -578,3 +578,34 @@ The right tool depends on your specific needs:
 Self-hosting your code snippets is one of the highest-return infrastructure investments a developer can make. All three tools are free, open-source, and actively maintained. PrivateBin leads in security, Snippet Box excels in organization and developer experience, and microbin wins on minimalism and performance.
 
 For most developers, we recommend starting with **Snippet Box** for day-to-day snippet management and running **PrivateBin** alongside it for sharing sensitive information. Both can coexist on the same server with minimal resource overhead, giving you the best of both worlds.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

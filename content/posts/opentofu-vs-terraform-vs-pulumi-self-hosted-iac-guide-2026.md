@@ -19,7 +19,7 @@ Running IaC tools entirely on your own infrastructure gives you several advantag
 - **Custom provider development** — When you control the toolchain, you can build and distribute custom providers tailored to your internal APIs and hardware.
 - **Compliance and auditability** — Every binary is built from source. Every deployment is reproducible. Auditors can trace exactly what code runs in your environment.
 
-For teams managing hundreds of servers, Kubernetes clusters, or hybrid cloud environments, these factors make self-hosted IaC not just a preference — a requirement.
+For teams managing hundreds of servers, [kubernetes](https://kubernetes.io/) clusters, or hybrid cloud environments, these factors make self-hosted IaC not just a preference — a requirement.
 
 ## OpenTofu: The Open-Source Terraform Fork
 
@@ -55,7 +55,7 @@ sudo mv tofu /usr/local/bin/
 tofu --version
 ```
 
-### Running OpenTofu with Docker
+### Running OpenTofu with [docker](https://www.docker.com/)
 
 For reproducible builds in CI/CD pipelines, containerize your IaC workflow:
 
@@ -532,7 +532,7 @@ The decision comes down to your team's existing skills and organizational requir
 
 **Choose Pulumi if:**
 - Your team prefers writing infrastructure in general-purpose languages
-- You need complex logic, loops, and conditionals in your infrastructure code
+- You need com[plex](https://www.plex.tv/) logic, loops, and conditionals in your infrastructure code
 - You want first-class Kubernetes SDK support
 - You are building reusable infrastructure libraries with testing frameworks
 
@@ -583,3 +583,34 @@ tofu apply
 ```
 
 The infrastructure you manage should be under your control — including the tools that define it. Self-hosted IaC gives you that control, and in 2026, the options have never been stronger.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

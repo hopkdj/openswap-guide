@@ -26,7 +26,7 @@ Self-hosting gives you:
 
 **Falco** (8,881 stars, last updated April 2026) is a CNCF-graduated project by Sysdig that uses eBPF and kernel modules to monitor system calls in real-time. It ships with a curated rule set for detecting suspicious behavior in containers and hosts, and can forward alerts to Slack, PagerDuty, webhooks, and more via Falco Sidekick.
 
-Falco is the right choice when you need **real-time, behavior-based detection** in Kubernetes or container-heavy environments. It detects things like:
+Falco is the right choice when you need **real-time, behavior-based detection** in [kubernetes](https://kubernetes.io/) or container-heavy environments. It detects things like:
 
 - Shell spawned inside a container
 - Unexpected outbound network connection from a database container
@@ -39,7 +39,7 @@ Falco is the right choice when you need **real-time, behavior-based detection** 
 Falco operates at the kernel level, intercepting system calls via eBPF probes (preferred) or kernel modules. When a system call matches a rule condition, Falco generates an alert with full context: process name, user, container ID, and command line.
 
 ```yaml
-# docker/docker-compose/docker-compose.yaml (from official Falco repo)
+# [docker](https://www.docker.com/)/docker-compose/docker-compose.yaml (from official Falco repo)
 version: "3"
 services:
   falco:
@@ -252,7 +252,7 @@ sudo aureport -au --summary -i --failed
 | **Container Support** | Excellent (Docker + K8s native) | Good (can query container metadata) | Basic (logs host-level events) |
 | **Performance Impact** | Low (eBPF) to Medium (kernel module) | Low-Medium (scheduled queries) | Low-Medium (depends on rule count) |
 | **Alerting** | Built-in + Sidekick (Slack, webhooks) | Via external log consumers | Via audisp plugins |
-| **Ease of Use** | Moderate (rule writing required) | Easy (SQL is familiar) | Moderate (complex rule syntax) |
+| **Ease of Use** | Moderate (rule writing required) | Easy (SQL is familiar) | Moderate (com[plex](https://www.plex.tv/) rule syntax) |
 | **Kubernetes Integration** | Native (DaemonSet via Helm) | Via FleetDM + K8s operator | Requires DaemonSet wrapper |
 | **Historical Queries** | No (event stream only) | Yes (query any point in time) | Yes (search logs with ausearch) |
 | **eBPF Support** | Yes (preferred driver) | Limited (via custom tables) | No |

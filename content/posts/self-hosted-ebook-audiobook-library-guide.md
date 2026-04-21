@@ -55,7 +55,7 @@ Calibre-Web is not a standalone library manager. It reads an existing Calibre da
 - Public shelf creation and curation
 - Content restriction by category, tag, or series
 
-### Docker Setup
+### [docker](https://www.docker.com/) Setup
 
 ```yaml
 services:
@@ -303,7 +303,7 @@ The decision comes down to what you read and listen to most:
 - You listen across multiple devices and need progress sync
 
 **Combine them for a complete library:**
-Many self-hosters run all three. They coexist peacefully on the same server since each uses different default ports. A reverse proxy like Nginx Proxy Manager or Caddy routes traffic based on domain or path:
+Many self-hosters run all three. They coexist peacefully on the same server since each uses different default p[nginx](https://nginx.org/) A reverse proxy like Nginx Proxy Manager or Caddy routes traffic based on domain or path:
 
 ```yaml
 services:
@@ -353,7 +353,7 @@ OPDS turns your self-hosted server into a universal content source that any comp
 
 ## Backup and Disaster Recovery
 
-Your book collection is only as safe as your backup strategy. Here's a minimal backup approach using restic:
+Your book collection is only as safe as your backup [restic](https://restic.net/)gy. Here's a minimal backup approach using restic:
 
 ```bash
 #!/bin/bash
@@ -391,3 +391,34 @@ Never expose these services directly to the internet without authentication and 
 ## Conclusion
 
 Self-hosting your digital library is one of the most practical first steps into the self-hosted world. The services covered here run on minimal hardware — a Raspberry Pi 4 with an external USB drive handles thousands of ebooks and hundreds of audiobooks without breaking a sweat. Start with the tool that matches your primary content type, and expand as your collection grows. Your books, your server, your rules.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

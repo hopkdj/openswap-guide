@@ -8,7 +8,7 @@ description: "Compare HedgeDoc and Etherpad for self-hosted real-time collaborat
 
 Real-time collaborative editing has transformed how teams work together on documents, notes, and technical content. Whether you are writing meeting minutes, drafting technical documentation, or brainstorming project ideas, having a self-hosted collaborative editor gives you full control over your data without relying on cloud services like Google Docs.
 
-Two open-source projects dominate this space: [HedgeDoc](https://hedgedoc.org), a markdown-first collaborative editor, and [Etherpad](https://etherpad.org), the veteran rich-text collaborative platform with 18,000+ stars on GitHub. In this guide, we will compare both tools head-to-head, walk through Docker deployments, and help you choose the right one for your team.
+Two open-source projects dominate this space: [HedgeDoc](https://hedgedoc.org), a markdown-first collaborative editor, and [Etherpad](https://etherpad.org), the veteran rich-text collaborative platform with 18,000+ stars on GitHub. In this guide, we will compare both tools head-to-head, walk through [docker](https://www.docker.com/) deployments, and help you choose the right one for your team.
 
 ## Why Self-Host a Collaborative Editor
 
@@ -22,7 +22,7 @@ Running your own collaborative editing server offers several advantages over clo
 
 **Cost predictability.** Once deployed, your only ongoing costs are server hosting and maintenance. There are no per-user licenses, no premium tier upgrades, and no surprise price hikes.
 
-For teams that also need structured knowledge management, our [Wiki.js vs BookStack vs Outline comparison](../wiki-js-vs-bookstack-vs-outline/) covers wiki-style alternatives. If you need visual collaboration alongside text editing, check our [self-hosted whiteboard tools guide](../self-hosted-whiteboard-tools-excalidraw-wbo-drawio-guide/).
+For teams that also need structured [wiki.js](https://js.wiki/)ge management, our [Wiki.js vs BookStack vs Outline comparison](../wiki-js-vs-bookstack-vs-outline/) covers wiki-style alternatives. If you need visual collaboration alongside text editing, check our [self-hosted whiteboard tools guide](../self-hosted-whiteboard-tools-excalidraw-wbo-drawio-guide/).
 
 ## HedgeDoc: Markdown-First Collaborative Editing
 
@@ -197,7 +197,7 @@ Run `docker compose up -d` and access Etherpad at `http://your-server:9001`. For
 | **License** | AGPL-3.0 | Apache-2.0 |
 | **GitHub stars** | 7,097 | 18,250 |
 | **Database** | PostgreSQL | PostgreSQL, MySQL, SQLite, MongoDB, Redis |
-| **Docker complexity** | 4 containers (front/back/db/proxy) | 2 containers (app/db) |
+| **Docker com[plex](https://www.plex.tv/)ity** | 4 containers (front/back/db/proxy) | 2 containers (app/db) |
 
 ## Which One Should You Choose?
 

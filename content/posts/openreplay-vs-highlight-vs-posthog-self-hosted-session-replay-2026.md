@@ -10,7 +10,7 @@ Session replay has become one of the most valuable debugging and product intelli
 
 In 2026, self-hosted session replay has matured into a practical alternative. Three open-source platforms stand out: **OpenReplay**, **Highlight.io**, and **PostHog** (with its session replay module). Each can replace commercial session replay products while keeping user data on your own servers, under your control, and without per-session pricing surprises.
 
-This guide compares all three, with step-by-step Docker deployment instructions, configuration details, and a head-to-head feature breakdown to help you choose the right platform for your team.
+This guide compares all three, with step-by-step [docker](https://www.docker.com/) deployment instructions, configuration details, and a head-to-head feature breakdown to help you choose the right platform for your team.
 
 ## Why Self-Host Your Session Replay
 
@@ -60,7 +60,7 @@ Unlike actual screen recording, session replay does not capture video frames. In
 
 ### Architecture
 
-OpenReplay runs as a collection of microservices deployed via Docker Compose or Kubernetes:
+OpenReplay runs as a collection of microservices depl[kubernetes](https://kubernetes.io/)ocker Compose or Kubernetes:
 
 1. **Chasqu (frontend)** — the web UI for replay viewing, search, and analytics
 2. **Backend API** — handles session ingestion, storage, and query processing
@@ -376,7 +376,7 @@ H.init('YOUR_PROJECT_ID', {
 
 ### Architecture
 
-PostHog's self-hosted deployment is more complex than the other two options, reflecting its broader feature set:
+PostHog's self-hosted deployment is more com[plex](https://www.plex.tv/) than the other two options, reflecting its broader feature set:
 
 1. **Web app** — Django-based frontend and API
 2. **Event pipeline** — Kafka-based event ingestion and processing
@@ -562,3 +562,34 @@ posthog.init('YOUR_KEY', {
 Self-hosted session replay in 2026 is a practical, production-ready alternative to commercial platforms. OpenReplay leads in feature breadth and support team capabilities, Highlight.io offers the cleanest error-to-replay workflow with minimal deployment overhead, and PostHog delivers the deepest integration with product analytics. All three keep your session data on your own infrastructure, eliminate per-session pricing, and give you full control over retention and privacy policies.
 
 Pick the platform that matches your team's primary workflow, deploy it with Docker, and start understanding exactly what your users experience — without sending a byte of session data to a third party.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

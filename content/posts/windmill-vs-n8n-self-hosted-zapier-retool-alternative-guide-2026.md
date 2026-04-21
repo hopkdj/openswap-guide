@@ -6,7 +6,7 @@ draft: false
 description: "Complete guide to self-hosting Windmill — an open-source workflow automation and internal tool builder. Compare with n8n, Zapier, and Retool. Docker setup, scripts, and best practices."
 ---
 
-If you are looking for a self-hosted alternative to Zapier, Make (formerly Integromat), or Retool, **Windmill** deserves serious attention. While n8n gets most of the spotlight in the open-source automation space, Windmill takes a fundamentally different approach — one that treats developers as first-class users while still offering a visual workflow builder for non-technical team members.
+If you are looking for a self-hosted alternative to Zapier, Make (formerly Integromat), or Retool, **Windmill** deserves serious attention. While [n8n](https://n8n.io/) gets most of the spotlight in the open-source automation space, Windmill takes a fundamentally different approach — one that treats developers as first-class users while still offering a visual workflow builder for non-technical team members.
 
 Windmill combines workflow automation, internal tool building, and scheduled job execution into a single platform. It is written in Rust, supports Python, TypeScript, Go, Bash, SQL, and more, and ships with a powerful UI builder for creating dashboards and admin panels.
 
@@ -46,7 +46,7 @@ Unlike n8n, which uses a node-based visual editor where every step is a drag-and
 - **Worker pools** — scale horizontally by adding worker nodes for specific script types
 - **Enterprise SSO** — SAML, OIDC, and LDAP support in the Enterprise edition
 
-## Installation: Docker Compose Setup
+## Installation: [docker](https://www.docker.com/) Compose Setup
 
 The fastest way to get Windmill running is with Docker Compose. The official setup includes the Windmill server, a PostgreSQL database, and LSP (Language Server Protocol) servers for code intelligence.
 
@@ -145,7 +145,7 @@ For a production deployment, you should:
 # Do this via the UI or set the env var before starting:
 ADMIN_PASSWORD=your-secure-password-123!
 
-# 2. Use a reverse proxy with TLS
+# 2[caddy](https://caddyserver.com/) a reverse proxy with TLS
 # Example with Caddy (place in Caddyfile):
 # windmill.example.com {
 #     reverse_proxy localhost:8000
@@ -364,3 +364,34 @@ Windmill fills a unique position in the self-hosted automation landscape. It is 
 If you are already using n8n and are happy with it, there is no urgent reason to switch. But if you find yourself writing custom code inside n8n's Function nodes, struggling with performance at scale, or wishing you had a built-in UI builder for internal tools, Windmill is worth evaluating.
 
 The platform is actively developed, backed by a well-funded company (Windmill Labs), and the open-source edition is genuinely feature-rich — not a crippled free tier. For organizations that take data sovereignty seriously, it is one of the strongest self-hosted workflow automation options available in 2026.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

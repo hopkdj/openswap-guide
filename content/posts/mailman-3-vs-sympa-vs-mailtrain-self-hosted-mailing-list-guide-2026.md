@@ -50,7 +50,7 @@ This separation means you can scale components independently, swap out the web i
 
 ### Deployment
 
-Mailman 3 is complex to deploy from scratch because it requires Postgres, an MTA (Postfix or Exim), and three application components. The recommended path is the official Docker Compose setup maintained by Abhilash Raj:
+Mailman 3 is com[plex](https://www.plex.tv/) to deploy from scratch because it requires Postgres, an MTA (Postfix or Exim), and three application components. The recommend[docker](https://www.docker.com/)h is the official Docker Compose setup maintained by Abhilash Raj:
 
 ```yaml
 version: '2'
@@ -332,7 +332,7 @@ The migration path depends on the source platform. Google Groups allows you to e
 
 Postfix is the recommended MTA for Mailman 3. The Docker Compose setup assumes Postfix routing list-domain mail to Mailman Core's LMTP port (8024). You can also use Exim, but the configuration is more complex. For a complete guide to setting up Postfix with Dovecot and Rspamd, see our [self-hosted email server guide](../self-hosted-email-server-postfix-dovecot-rspamd-complete-guide-2026/).
 
-### Can I use Mailman 3 with an existing mail server like Mailcow or Stalwart?
+### Can[mailcow](https://mailcow.email/)Mailman 3 with an existing mail server like Mailcow or Stalwart?
 
 Yes. Mailman 3 can integrate with any MTA that supports LMTP or local delivery agents. If you are running [Mailcow, Stalwart, or Mailu](../stalwart-vs-mailcow-vs-mailu/), you can configure the MTA to route specific virtual domains to Mailman Core while handling regular mail delivery normally.
 

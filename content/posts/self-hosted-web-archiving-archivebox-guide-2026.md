@@ -53,7 +53,7 @@ ArchiveBox is not just a downloader — it is a full-featured archiving platform
 | Bookmark import | ✅ 15+ sources | ❌ No | ❌ No | ❌ No | ❌ No |
 | JavaScript rendering | ✅ Headless Chrome | ✅ Yes | ✅ Via extension | ❌ No | ✅ Yes |
 | Media extraction | ✅ yt-dlp | ❌ No | ❌ No | ❌ No | ❌ No |
-| Docker support | ✅ Official image | ❌ N/A | ✅ Community | ✅ Yes | ✅ Yes |
+| [docker](https://www.docker.com/) support | ✅ Official image | ❌ N/A | ✅ Community | ✅ Yes | ✅ Yes |
 | Active development | ✅ Very active | ✅ Active | ✅ Active | ⚠️ Low activity | ⚠️ Low activity |
 
 For most users who want a complete self-hosted web archiving solution, ArchiveBox is the clear choice. It combines the capture capabilities of multiple tools into a single platform with a polished interface and active community.
@@ -306,7 +306,7 @@ docker compose exec archivebox archivebox add 'https://example.com/private-artic
   --chrome-proxy-cookies=/data/cookies.txt
 ```
 
-For more complex authentication flows, you can configure a browser user data directory with saved sessions:
+For more com[plex](https://www.plex.tv/) authentication flows, you can configure a browser user data directory with saved sessions:
 
 ```yaml
 volumes:
@@ -385,7 +385,7 @@ docker compose exec archivebox archivebox update --resume --overwrite
 docker compose exec archivebox archivebox list --json --html > archive_export.json
 
 # Run the built-in health check
-docker compose exec archivebox archivebox manage check
+docker compose exec archivebox a[uptime kuma](https://github.com/louislam/uptime-kuma)anage check
 ```
 
 Set up monitoring with Uptime Kuma or similar tools to track ArchiveBox availability:
@@ -497,3 +497,34 @@ Self-hosted web archiving with ArchiveBox gives you a personal Wayback Machine t
 The combination of multi-format capture, full-text search, bookmark importing, REST API, and scheduling makes it the most complete self-hosted web archiving solution available. With Docker deployment, you can have a working instance running in under five minutes.
 
 Start arching today — the page you bookmark now might be gone tomorrow.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

@@ -8,7 +8,7 @@ description: "Compare Apache Iceberg, Apache Hudi, and Delta Lake — the three 
 
 The modern data stack has shifted from monolithic data warehouses to **lakehouse architectures** — systems that combine the scalability and cost-efficiency of data lakes with the ACID transaction guarantees and performance optimizations of traditional databases. At the heart of every lakehouse sits an **open table format**: a layer that adds structure, metadata, and transaction support to raw files stored in object storage or distributed filesystems.
 
-Three projects dominate this space: **Apache Iceberg**, **Apache Hudi**, and **Delta Lake**. All are open-source, all support ACID transactions on big data, and all aim to make data lakes as reliable as databases. But they differ significantly in design philosophy, ecosystem integration, and operational complexity.
+Three projects dominate this space: **Apache Iceberg**, **Apache Hudi**, and **Delta Lake**. All are open-source, all support ACID transactions on big data, and all aim to make data lakes as reliable as databases. But they differ significantly in design philosophy, ecosystem integration, and operational com[plex](https://www.plex.tv/)ity.
 
 This guide compares all three table formats across architecture, features, performance, tooling, and self-hosted deployment to help you choose the right foundation for your data platform.
 
@@ -16,7 +16,7 @@ This guide compares all three table formats across architecture, features, perfo
 
 Running a data lakehouse on your own infrastructure gives you:
 
-- **Full data sovereignty** — data never leaves your storage (S3, MinIO, Ceph, or local disks)
+- **Full data sovereignty** — data never l[minio](https://min.io/) your storage (S3, MinIO, Ceph, or local disks)
 - **No vendor lock-in** — open table formats work across compute engines (Spark, Trino, Flink, Presto, DuckDB)
 - **Cost control** — pay only for your compute and storage, no per-query SaaS fees
 - **Compliance** — meet GDPR, HIPAA, or SOC 2 requirements with on-premises data governance
@@ -116,9 +116,7 @@ Each format makes different trade-offs between read and write performance:
 
 **Delta Lake** — Optimized for Spark workloads. The transaction log design means metadata reads are fast and consistent. `OPTIMIZE` and `VACUUM` commands handle file-size management and cleanup. Z-ORDER indexing provides multi-column clustering for selective queries.
 
-## Self-Hosted Deployment
-
-### Apache Iceberg: Docker Compose Quickstart
+## Self-Hosted Deployme[docker](https://www.docker.com/)# Apache Iceberg: Docker Compose Quickstart
 
 The Tabular team maintains the canonical Spark-Iceberg environment:
 

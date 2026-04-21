@@ -33,12 +33,12 @@ For teams already running self-hosted SIEMs like [Wazuh or Security Onion](../se
 | **Language** | JavaScript | Python | Python |
 | **License** | AGPL-3.0 | Apache-2.0 | LGPL-3.0 |
 | **Last Updated** | April 2026 | February 2026 | April 2026 |
-| **Docker Support** | Native docker-compose | st2-docker repo | Native docker-compose |
+| **[docker](https://www.docker.com/) Support** | Native docker-compose | st2-docker repo | Native docker-compose |
 | **Web UI** | Built-in workflow editor | Web UI (st2web) | Built-in case management UI |
 | **Workflow Builder** | Visual drag-and-drop | YAML-based workflows | Timeline and case workflows |
 | **Integrations** | 300+ native apps | 160 packs (6,000+ actions) | DFIR-focused analyzers |
 | **MITRE ATT&CK** | Native mapping | Community packs | Native framework support |
-| **ChatOps** | Built-in | Excellent (Slack, Mattermost, Teams) | Via webhooks |
+| **ChatOps** | Bu[mattermost](https://mattermost.com/)xcellent (Slack, Mattermost, Teams) | Via webhooks |
 | **API** | REST API | REST + CLI | REST API |
 | **Best For** | Security teams wanting visual automation | DevOps/SRE teams needing event-driven ops | DFIR teams needing case management |
 
@@ -50,7 +50,7 @@ IRIS takes a different angle entirely. Rather than focusing on workflow automati
 
 ## Shuffle SOAR: Visual Security Automation
 
-Shuffle SOAR's standout feature is its drag-and-drop workflow editor. Security analysts who aren't developers can build complex playbooks by connecting nodes: trigger (a new alert), action (enrich with threat intel), decision (if score > threshold), and response (block IP, create ticket).
+Shuffle SOAR's standout feature is its drag-and-drop workflow editor. Security analysts who aren't developers can build com[plex](https://www.plex.tv/) playbooks by connecting nodes: trigger (a new alert), action (enrich with threat intel), decision (if score > threshold), and response (block IP, create ticket).
 
 ### Key Features
 

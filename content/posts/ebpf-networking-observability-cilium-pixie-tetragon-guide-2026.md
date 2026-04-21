@@ -22,7 +22,7 @@ Here is why eBPF-based observability is fundamentally different from traditional
 - **Programmable data collection** — instead of pre-defined metrics, eBPF lets you write programs that extract exactly the data you need, reducing cardinality and storage costs dramatically
 - **Unified networking and security** — eBPF tools replace iptables, implement service meshes without sidecars, enforce network policies, and detect security threats from the same data plane
 
-For teams running Kubernetes clusters, bare metal servers, or hybrid infrastructure, self-hosted eBPF tools provide the visibility that cloud APM tools charge thousands per month for — with better depth and full data ownership.
+For teams running [kubernetes](https://kubernetes.io/) clusters, bare metal servers, or hybrid infrastructure, self-hosted eBPF tools provide the visibility that cloud APM tools charge thousands per month for — with better depth and full data ownership.
 
 ## Cilium: eBPF-Powered Networking, Service Mesh, and Security
 
@@ -385,7 +385,7 @@ These tools are complementary rather than competing. Most production environment
 | **Performance Overhead** | <1% CPU | 2-5% CPU | <1% CPU | On-demand only |
 | **Best For** | Infrastructure teams | Developer experience | Security teams | SRE troubleshooting |
 
-## Complete Self-Hosted eBPF Stack: Docker Compose Setup
+## Complete Self-Hosted eBPF Stack: [docker](https://www.docker.com/) Compose Setup
 
 For teams not yet on Kubernetes, you can run Cilium, Tetragon, and observability backends on bare metal using Docker Compose:
 
@@ -559,6 +559,37 @@ kubectl logs -n kube-system ds/tetragon | grep -i "violation"
 
 ## Conclusion
 
-Self-hosted eBPF tools deliver the deepest possible infrastructure visibility without the cost, complexity, or vendor lock-in of cloud observability platforms. Cilium provides the networking foundation with built-in service mesh capabilities. Pixie gives developers automatic application telemetry with zero code changes. Tetragon enforces runtime security policies at the kernel level. Inspektor Gadget provides on-demand debugging when things go wrong.
+Self-hosted eBPF tools deliver the deepest possible infrastructure visibility without the cost, com[plex](https://www.plex.tv/)ity, or vendor lock-in of cloud observability platforms. Cilium provides the networking foundation with built-in service mesh capabilities. Pixie gives developers automatic application telemetry with zero code changes. Tetragon enforces runtime security policies at the kernel level. Inspektor Gadget provides on-demand debugging when things go wrong.
 
 Together, these tools form a complete observability and security stack that runs entirely on your infrastructure, under your control, with full data ownership. The eBPF ecosystem in 2026 is production-ready, well-documented, and backed by the Cloud Native Computing Foundation. If you are still paying per-metric pricing for observability or managing thousands of iptables rules for networking, it is time to look at what eBPF can do for your infrastructure.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

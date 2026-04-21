@@ -10,7 +10,7 @@ Running a software team on SaaS project management tools means paying per seat, 
 
 In 2026, three open-source platforms lead the self-hosted project management space, each with a different philosophy. **Plane** positions itself as a modern, developer-first alternative to Jira and Linear. **Huly** takes an all-in-one approach, combining issue tracking, documents, real-time chat, and video calls into a single platform. **Taiga** has been the agile standard for over a decade, built specifically for cross-functional scrum teams.
 
-This guide compares all three head-to-head, walks you through Docker deployments for each, and helps you pick the right platform for your team's workflow.
+This guide compares all three head-to-head, walks you through [docker](https://www.docker.com/) deployments for each, and helps you pick the right platform for your team's workflow.
 
 ## Why Self-Host Your Project Management Platform
 
@@ -61,7 +61,7 @@ For teams migrating from Linear or Jira, Plane's CSV import handles issues, comm
 
 ### Docker Deployment
 
-Plane ships with an official Docker Compose setup that includes PostgreSQL, Redis, RabbitMQ, and MinIO (for file storage). Here's a production-ready configuration:
+Plane ships with an official Docker Compose setup that includes Postgr[minio](https://min.io/) Redis, RabbitMQ, and MinIO (for file storage). Here's a production-ready configuration:
 
 ```bash
 # Clone the Plane repository
@@ -123,7 +123,7 @@ Huly's document system is tightly integrated with issues. You can embed live iss
 
 ### Docker Deployment
 
-Huly's compose file is more complex than Plane's, reflecting its broader feature set:
+Huly's compose file is more com[plex](https://www.plex.tv/) than Plane's, reflecting its broader feature set:
 
 ```bash
 # Clone the Huly repository

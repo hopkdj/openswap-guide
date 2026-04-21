@@ -36,7 +36,7 @@ Before diving into tools, it's important to understand what "sandboxing" actuall
 - **Privilege escalation** — exploiting kernel vulnerabilities, container escapes
 - **Persistent processes** — spawning daemons that survive the execution window
 
-Every serious code execution sandbox addresses these threats through a combination of containerization (Docker, LXC), system call filtering (seccomp-bpf, AppArmor), resource cgroups, and network namespace isolation. The differences between tools lie in how they implement these protections and how easy they are to deploy and manage.
+Every serious code execution sandbox addresses these threats through a combination of containerization ([docker](https://www.docker.com/), LXC), system call filtering (seccomp-bpf, AppArmor), resource cgroups, and network namespace isolation. The differences between tools lie in how they implement these protections and how easy they are to deploy and manage.
 
 ## Judge0: The Industry-Standard Code Execution Engine
 
@@ -375,7 +375,7 @@ Unlike Judge0 and Piston, RunTipi uses container image layering to minimize star
 
 ### Installation
 
-RunTipi provides a Helm chart for Kubernetes and a Docker Compose setup for single-node deployments:
+RunTipi[kubernetes](https://kubernetes.io/)a Helm chart for Kubernetes and a Docker Compose setup for single-node deployments:
 
 ```yaml
 version: "3.8"
@@ -460,7 +460,7 @@ curl http://localhost:3000/api/v1/languages
 | File I/O limits | Configurable | Configurable | Configurable |
 | Built-in metrics | Basic (stats endpoint) | Basic | Prometheus endpoint |
 | Kubernetes native | No | No | Yes (Helm chart) |
-| API complexity | Moderate (many endpoints) | Simple (2 endpoints) | Moderate |
+| API com[plex](https://www.plex.tv/)ity | Moderate (many endpoints) | Simple (2 endpoints) | Moderate |
 | Documentation | Extensive | Good | Growing |
 
 ### Deployment Complexity
@@ -715,3 +715,34 @@ The choice depends on your specific needs:
 - **Enterprise and high-security environments** → RunTipi for Firecracker-based isolation
 
 All three tools are open-source, actively maintained, and can be deployed with Docker in under 10 minutes. By self-hosting, you gain full control over your code execution infrastructure, eliminate per-call costs, and keep your data private.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

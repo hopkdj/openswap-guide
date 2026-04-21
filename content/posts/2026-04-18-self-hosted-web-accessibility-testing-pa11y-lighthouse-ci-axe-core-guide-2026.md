@@ -8,7 +8,7 @@ description: "Compare Pa11y, Lighthouse CI, and axe-core for self-hosted automat
 
 Web accessibility is no longer optional. With the European Accessibility Act taking effect in 2025 and lawsuits increasing worldwide, every public-facing website must meet WCAG 2.2 AA standards. Automated accessibility testing catches 30-50% of compliance issues before they reach production — but commercial platforms like Siteimprove and Deque University charge hundreds of dollars per month.
 
-This guide covers three powerful open-source tools you can self-host for free: **Pa11y**, **Lighthouse CI**, and **axe-core**. We'll compare features, show Docker Compose configurations, and walk through CI/CD pipeline integration so you can run accessibility audits on every commit without sending data to third-party services.
+This guide covers three powerful open-source tools you can self-host for free: **Pa11y**, **Lighthouse CI**, and **axe-core**. We'll compare features, show [docker](https://www.docker.com/) Compose configurations, and walk through CI/CD pipeline integration so you can run accessibility audits on every commit without sending data to third-party services.
 
 ## Why Self-Host Accessibility Testing
 
@@ -35,7 +35,7 @@ Pa11y is a command-line accessibility testing tool maintained by the accessibili
 - Dashboard web UI via the separate `pa11y-dashboard` project
 - Scheduled monitoring with `pa11y-webservice`
 
-Pa11y is ideal for teams that want quick, reliable accessibility audits without complex setup. Its CLI-first design makes it easy to integrate into shell scripts, cron jobs, and CI pipelines.
+Pa11y is ideal for teams that want quick, reliable accessibility audits without com[plex](https://www.plex.tv/) setup. Its CLI-first design makes it easy to integrate into shell scripts, cron jobs, and CI pipelines.
 
 ### Lighthouse CI (30,067 GitHub Stars)
 
@@ -211,7 +211,7 @@ services:
     volumes:
       - ./tests:/app/tests
       - ./reports:/app/reports
-    depends_on:
+    [nginx](https://nginx.org/)ds_on:
       - web-app
 
   web-app:

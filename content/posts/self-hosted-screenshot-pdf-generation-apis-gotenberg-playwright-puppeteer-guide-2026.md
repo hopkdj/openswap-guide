@@ -28,7 +28,7 @@ There are several compelling reasons to move PDF and screenshot generation in-ho
 
 Before comparing options, it helps to understand the landscape. There are three categories of self-hosted rendering tools:
 
-**Dedicated rendering APIs** wrap headless Chromium in a REST API. You send HTML or a URL, and get back a PDF or screenshot. Gotenberg is the standout here — it's purpose-built for this exact workflow, with a clean API, Docker-native deployment, and features like PDF merging, form filling, and office document conversion.
+**Dedicated rendering APIs** wrap headless Chromium in a REST API. You send HTML or a URL, and get back a PDF or screenshot. Gotenberg is the standout here — it's purpose-built for this exact workflow, with a clean API, [docker](https://www.docker.com/)-native deployment, and features like PDF merging, form filling, and office document conversion.
 
 **Browser automation frameworks** give you programmatic control over a headless browser. Playwright and Puppeteer let you write scripts that navigate pages, fill forms, take screenshots, and export PDFs. They're more flexible but require more code to achieve the same result as a dedicated API.
 
@@ -278,7 +278,7 @@ const pdf = await page.pdf({
 require("fs").writeFileSync("invoice.pdf", pdf);
 ```
 
-Playwright's strength is in complex workflows — logging into a dashboard, navigating to a report page, waiting for charts to render, then capturing a screenshot. It handles authentication, JavaScript execution, and dynamic content far better than simple HTML-to-PDF converters.
+Playwright's strength is in com[plex](https://www.plex.tv/) workflows — logging into a dashboard, navigating to a report page, waiting for charts to render, then capturing a screenshot. It handles authentication, JavaScript execution, and dynamic content far better than simple HTML-to-PDF converters.
 
 ## Puppeteer: The Original Headless Chrome API
 
@@ -431,7 +431,7 @@ Rendering performance depends heavily on page complexity, but here are baseline 
 
 **Playwright:** Browser startup adds 2–3 seconds on first request, but browser reuse cuts subsequent renders to under 1 second. The key optimization is keeping a single browser instance alive and creating new contexts per request — contexts are lightweight and isolated.
 
-**Puppeteer with Browserless:** The built-in connection pool handles up to `CONCURRENT` simultaneous sessions. Queue length limits prevent memory exhaustion. The health check endpoint integrates cleanly with Docker Swarm and Kubernetes for automatic scaling.
+**Puppeteer with Browserless:** The built-in connection pool handles up to `CONCURRENT` simultaneous sessions. Queue length limits prevent memory exhaustion. The health check[kubernetes](https://kubernetes.io/)integrates cleanly with Docker Swarm and Kubernetes for automatic scaling.
 
 ### Scaling with Traefik
 
@@ -640,3 +640,34 @@ The decision comes down to your use case complexity:
 **Use Puppeteer with Browserless** if you're already invested in the Puppeteer ecosystem or need the specific features of the Browserless platform — connection pooling, session management, and the built-in REST API. It's a solid middle ground between Gotenberg's simplicity and Playwright's flexibility.
 
 All three are open-source, self-hostable, and eliminate the need to send your documents through third-party APIs. The rendering infrastructure you run yourself will always be cheaper at scale, more private by default, and more reliable because you control the entire stack.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

@@ -26,7 +26,7 @@ Whether you need branded short links for marketing campaigns, internal redirect 
 | **Language** | PHP (Swoole/ReactPHP) | Node.js | PHP |
 | **License** | MIT | MIT | MIT |
 | **Database** | PostgreSQL, MySQL, MariaDB, SQLite | PostgreSQL, SQLite | MySQL, MariaDB |
-| **Docker Image Size** | ~120 MB | ~180 MB | ~90 MB |
+| **[docker](https://www.docker.com/) Image Size** | ~120 MB | ~180 MB | ~90 MB |
 | **Min RAM** | 256 MB | 512 MB | 128 MB |
 | **Web UI** | ✅ (separate image) | ✅ (built-in) | ✅ (built-in) |
 | **REST API** | ✅ Full | ✅ Full | ✅ Plugin-based |
@@ -458,12 +458,12 @@ If you run a WordPress site, YOURLS integration is unmatched. The plugin ecosyst
 | **RAM (idle)** | ~256 MB | ~512 MB | ~128 MB |
 | **RAM (under load)** | ~512 MB | ~768 MB | ~256 MB |
 | **CPU** | Low | Low-Medium | Very Low |
-| **Backup Complexity** | Low (dump DB) | Medium (dump DB + Redis) | Low (dump DB) |
+| **Backup Com[plex](https://www.plex.tv/)ity** | Low (dump DB) | Medium (dump DB + Redis) | Low (dump DB) |
 | **Scaling** | Horizontal (stateless API) | Horizontal (stateless app) | Vertical (monolithic) |
 
 ## Reverse Proxy Setup (All Three)
 
-Regardless of which option you choose, you'll want a reverse proxy for HTTPS. Here's a Caddy configuration that works for all three:
+Regardless of which option you choos[caddy](https://caddyserver.com/)u'll want a reverse proxy for HTTPS. Here's a Caddy configuration that works for all three:
 
 ```caddyfile
 # Caddyfile
@@ -558,3 +558,34 @@ All three options are production-ready and will serve you well. Your choice come
 - **YOURLS** if you want maximum extensibility and WordPress integration — the plugin ecosystem is unmatched.
 
 The common thread is that all three give you what commercial services can't: complete ownership of your link data, zero per-link costs, and the freedom to run on whatever infrastructure you choose. Once deployed behind a reverse proxy with HTTPS, any of these will reliably serve millions of redirects with minimal maintenance.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting

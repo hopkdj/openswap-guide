@@ -8,7 +8,7 @@ description: "Complete guide to self-hosting the OpenTelemetry Collector as a ve
 
 Observability is no longer optional for modern infrastructure. The challenge is not collecting data — it is deciding where that data goes, how to process it, and how to avoid vendor lock-in. The OpenTelemetry (OTel) Collector solves exactly this problem. It is a vendor-agnostic, open-source telemetry data plane that receives, processes, and exports traces, metrics, and logs from any source to any backend.
 
-This guide walks you through self-hosting the OpenTelemetry Collector, building a complete observability pipeline, and connecting it to popular open-source backends like Prometheus, Jaeger, Grafana Loki, and ClickHouse.
+This guide walks you through self-hosting the OpenTelemetry Collector, building a complete observability pipeline, and connecting it to popular open-source backends like [prometheus](https://prometheus.io/), Jaeger, Grafana Loki, and ClickHouse.
 
 ## Why Self-Host the OpenTelemetry Collector?
 
@@ -77,10 +77,10 @@ The Collector supports three deployment topologies. Most production setups use a
 
 ### Pattern 1: Agent (DaemonSet)
 
-Deploy one Collector instance per host (Kubernetes DaemonSet or systemd service). The agent collects local telemetry and forwards it to a gateway.
+Deploy one Collector instance per host ([kubernetes](https://kubernetes.io/) DaemonSet or systemd service). The agent collects local telemetry and forwards it to a gateway.
 
 ```yaml
-# docker-compose.yml — Agent mode
+# [docker](https://www.docker.com/)-compose.yml — Agent mode
 services:
   otel-agent:
     image: otel/opentelemetry-collector-contrib:0.122.1
@@ -731,3 +731,34 @@ exporters:
 7. **Test failover** — Kill your backend and verify the persistent queue buffers data. Restart the backend and confirm replay.
 
 The OpenTelemetry Collector is the most flexible building block in the modern observability stack. By self-hosting it, you gain complete control over your telemetry pipeline — from ingestion to export — without locking into any single vendor's ecosystem.
+
+## Frequently Asked Questions (FAQ)
+
+### Which one should I choose in 2026?
+
+The best choice depends on your specific requirements:
+
+- **For beginners**: Start with the simplest option that covers your core use case
+- **For production**: Choose the solution with the most active community and documentation
+- **For teams**: Look for collaboration features and user management
+- **For privacy**: Prefer fully open-source, self-hosted options with no telemetry
+
+Refer to the comparison table above for detailed feature breakdowns.
+
+### Can I migrate between these tools?
+
+Most tools support data import/export. Always:
+1. Backup your current data
+2. Test the migration on a staging environment
+3. Check official migration guides in the documentation
+
+### Are there free versions available?
+
+All tools in this guide offer free, open-source editions. Some also provide paid plans with additional features, priority support, or managed hosting.
+
+### How do I get started?
+
+1. Review the comparison table to identify your requirements
+2. Visit the official documentation (links provided above)
+3. Start with a Docker Compose setup for easy testing
+4. Join the community forums for troubleshooting
