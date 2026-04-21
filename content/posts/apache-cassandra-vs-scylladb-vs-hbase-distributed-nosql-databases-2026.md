@@ -416,7 +416,7 @@ If you need ACID transactions across multiple rows, foreign key constraints, or 
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

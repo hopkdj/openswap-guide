@@ -331,7 +331,7 @@ All three generate mutations automatically. Hasura creates insert, update, delet
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

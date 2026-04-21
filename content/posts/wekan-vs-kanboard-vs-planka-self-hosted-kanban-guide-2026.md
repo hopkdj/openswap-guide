@@ -398,7 +398,7 @@ For Docker-based deployments, back up the named volumes. WeKan: back up the Mong
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

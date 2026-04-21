@@ -440,7 +440,7 @@ Pumba can also be scripted via its CLI with `--interval` flags for recurring cha
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

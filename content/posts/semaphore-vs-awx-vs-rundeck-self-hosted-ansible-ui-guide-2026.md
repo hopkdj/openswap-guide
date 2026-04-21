@@ -253,7 +253,7 @@ Direct migration is not supported because each platform uses different data mode
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

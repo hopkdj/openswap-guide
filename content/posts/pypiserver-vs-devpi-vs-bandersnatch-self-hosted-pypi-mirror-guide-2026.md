@@ -280,7 +280,7 @@ devpi is the strongest choice for CI/CD. Its transparent caching proxy means the
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

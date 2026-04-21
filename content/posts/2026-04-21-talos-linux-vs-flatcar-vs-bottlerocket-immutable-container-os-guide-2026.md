@@ -441,7 +441,7 @@ Yes. Talos Linux is licensed under MPL 2.0, Flatcar under Apache 2.0 and BSD lic
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

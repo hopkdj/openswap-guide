@@ -536,7 +536,7 @@ With **Cosign keyless mode**, there are no persistent keys to rotate — each si
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

@@ -302,7 +302,7 @@ For related reading, see our [OpenProject vs Jira comparison](../openproject-vs-
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

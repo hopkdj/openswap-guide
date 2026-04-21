@@ -595,7 +595,7 @@ Yes. Argo Rollouts supports Nginx ingress controller and AWS ALB for traffic spl
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

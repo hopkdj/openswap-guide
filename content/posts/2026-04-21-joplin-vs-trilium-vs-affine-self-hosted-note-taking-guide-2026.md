@@ -339,7 +339,7 @@ Trilium Notes has been tested with 100,000+ notes thanks to its efficient SQLite
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

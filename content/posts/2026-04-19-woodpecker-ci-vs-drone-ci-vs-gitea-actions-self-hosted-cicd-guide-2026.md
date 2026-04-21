@@ -359,7 +359,7 @@ Gitea Actions uses the nektos/act runtime, which provides high but not 100% GitH
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

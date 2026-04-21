@@ -515,7 +515,7 @@ For related personal finance tools, check out our [Actual Budget vs Firefly III 
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

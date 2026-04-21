@@ -313,7 +313,7 @@ For LibreSpeed, set a password via the `PASSWORD` environment variable to restri
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

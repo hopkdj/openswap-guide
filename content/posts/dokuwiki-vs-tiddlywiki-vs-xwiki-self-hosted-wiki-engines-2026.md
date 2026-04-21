@@ -324,7 +324,7 @@ DokuWiki runs comfortably on 64-128 MB of RAM and minimal CPU. TiddlyWiki5 in No
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

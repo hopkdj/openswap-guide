@@ -374,7 +374,7 @@ Yes. CoovaChilli's walled garden feature allows you to configure a payment porta
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

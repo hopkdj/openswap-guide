@@ -333,7 +333,7 @@ Yes. Each tool uses different ports and can be deployed alongside others. A comm
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

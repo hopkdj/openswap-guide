@@ -465,7 +465,7 @@ Yes. In-memory rule evaluation in all three engines executes in sub-millisecond 
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

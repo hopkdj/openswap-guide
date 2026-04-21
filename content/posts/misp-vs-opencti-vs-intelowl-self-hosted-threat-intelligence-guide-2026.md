@@ -380,7 +380,7 @@ Yes, and this is actually a common architecture. Use IntelOwl for initial IOC en
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

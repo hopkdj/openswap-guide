@@ -462,7 +462,7 @@ For a proof-of-concept with 5-10 test endpoints: Fleet runs on 2 CPU cores and 4
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

@@ -456,7 +456,7 @@ Velero works with most distributions (kubeadm, k3s, EKS, GKE, AKS, OpenShift). S
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

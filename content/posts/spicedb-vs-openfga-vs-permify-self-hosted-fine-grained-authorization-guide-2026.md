@@ -381,7 +381,7 @@ In benchmark tests, SpiceDB leads with 100,000+ checks/second on a single node (
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

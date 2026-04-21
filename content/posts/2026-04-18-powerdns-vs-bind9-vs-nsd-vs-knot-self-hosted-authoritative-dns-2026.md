@@ -412,7 +412,7 @@ Authoritative DNS servers listen on **port 53** for both TCP and UDP. TCP is use
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

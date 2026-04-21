@@ -546,7 +546,7 @@ Shuffle SOAR supports local accounts, SSO via OpenID Connect, and API keys. Stac
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

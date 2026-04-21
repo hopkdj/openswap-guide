@@ -482,7 +482,7 @@ Casbin provides `enforcer.Enforce()` calls that you can wrap in unit tests in yo
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

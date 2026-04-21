@@ -522,7 +522,7 @@ Yes. Configure your DHCP server to serve `undionly.kpxe` (the iPXE binary that w
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

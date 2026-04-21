@@ -374,7 +374,7 @@ Very little. A lightly-used IRC server with 10-20 concurrent users typically use
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

@@ -353,7 +353,7 @@ JDownloader 2 has built-in captcha solving via integration with 9kw.eu, 2Captcha
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

@@ -438,7 +438,7 @@ Store the FIM database on a separate, access-controlled system. For AIDE and Tri
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

@@ -435,7 +435,7 @@ Yes. Always change default passwords after initial setup. Kiwi TCMS ships with `
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

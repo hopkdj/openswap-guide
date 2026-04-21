@@ -500,7 +500,7 @@ All three support GitOps, but in different ways. Sealed Secrets is the most natu
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

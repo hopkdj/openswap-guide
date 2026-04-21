@@ -428,7 +428,7 @@ OAuth2-Proxy automatically refreshes expiring OAuth tokens and manages session e
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

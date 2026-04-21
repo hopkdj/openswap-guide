@@ -405,7 +405,7 @@ Yes, all three support XMPP Multi-User Chat (MUC, XEP-0045), which provides pers
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

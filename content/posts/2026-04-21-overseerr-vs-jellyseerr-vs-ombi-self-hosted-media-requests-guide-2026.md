@@ -301,7 +301,7 @@ Jellyseerr and Overseerr both support custom CSS themes and allow you to change 
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

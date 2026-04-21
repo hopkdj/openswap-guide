@@ -509,7 +509,7 @@ Yes, but with different approaches. rsyslog and syslog-ng typically require a si
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

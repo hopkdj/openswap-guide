@@ -344,7 +344,7 @@ The fundamental difference between these three projects lies in **where they sit
 
 ## Monitoring and Observability
 
-Al[prometheus](https://prometheus.io/)hedulers expose Prometheus metrics for integration with your existing monitoring stack. For a complete self-hosted observability setup, consider pairing your scheduler with dedicated [Prometheus and Grafana instances](https://hopkdj.github.io/openswap-guide/posts/) to track queue depths, admission latency, resource utilization, and job completion times.
+Al[prometheus](https://prometheus.io/)hedulers expose Prometheus metrics for integration with your existing monitoring stack. For a complete self-hosted observability setup, consider pairing your scheduler with dedicated [Prometheus and Grafana instances](https://www.pistack.xyz/posts/) to track queue depths, admission latency, resource utilization, and job completion times.
 
 Volcano provides the richest built-in monitoring with its dedicated monitoring manifest (`volcano-monitoring.yaml`) that pre-configures Grafana dashboards. Kueue offers the most comprehensive Prometheus metrics of the three, with dedicated metrics for admission wait times, queue depth, and resource preemption events.
 
@@ -404,7 +404,7 @@ Benchmarking results vary by workload, but general patterns are: Kueue has the l
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

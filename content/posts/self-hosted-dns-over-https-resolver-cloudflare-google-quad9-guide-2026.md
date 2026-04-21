@@ -471,7 +471,7 @@ AdGuard Home and Technitium DNS Server include built-in ad blocking. You can add
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

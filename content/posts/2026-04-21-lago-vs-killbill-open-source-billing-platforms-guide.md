@@ -474,7 +474,7 @@ Both platforms are free and open-source. Lago is licensed under MIT and Kill Bil
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

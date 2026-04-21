@@ -474,7 +474,7 @@ Use cron on the backup server. For pgBackRest: `0 2 * * * pgbackrest --stanza=de
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

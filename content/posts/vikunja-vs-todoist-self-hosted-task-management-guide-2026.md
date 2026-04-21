@@ -348,7 +348,7 @@ Yes. As of April 2026, the project has nearly 4,000 GitHub stars and receives re
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

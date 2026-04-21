@@ -353,7 +353,7 @@ Yes. Mailman 3 can integrate with any MTA that supports LMTP or local delivery a
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

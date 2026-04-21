@@ -505,7 +505,7 @@ All three tools implement automatic reconnection. **frp** uses heartbeat detecti
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

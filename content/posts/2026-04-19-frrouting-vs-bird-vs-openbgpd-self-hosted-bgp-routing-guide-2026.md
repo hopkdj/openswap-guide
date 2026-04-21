@@ -540,7 +540,7 @@ Use network simulation tools like [GNS3, EVE-NG, or Containerlab](../2026-04-18-
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

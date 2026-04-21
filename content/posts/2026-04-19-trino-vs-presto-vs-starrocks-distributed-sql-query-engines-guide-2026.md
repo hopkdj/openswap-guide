@@ -356,7 +356,7 @@ For a development setup, any engine runs on 4 CPU cores and 8GB RAM. For product
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

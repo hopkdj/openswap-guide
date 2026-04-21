@@ -319,7 +319,7 @@ For podcast subscriptions, factor in an additional 1-5 GB per actively-subscribe
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

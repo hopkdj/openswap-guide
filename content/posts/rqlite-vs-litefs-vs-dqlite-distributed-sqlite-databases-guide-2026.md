@@ -422,7 +422,7 @@ Yes. **rqlite** has been in production since 2015 with 17,000+ GitHub stars and 
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

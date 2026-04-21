@@ -348,7 +348,7 @@ All three platforms support Kubernetes secrets and ConfigMaps for passing config
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

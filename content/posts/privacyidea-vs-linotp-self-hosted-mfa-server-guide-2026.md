@@ -324,7 +324,7 @@ Both platforms provide PAM modules. Install the PAM module on your Linux server,
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

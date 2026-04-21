@@ -516,7 +516,7 @@ Run benchmarks with varying concurrency levels (`-c`) and thread counts (`-T`) t
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

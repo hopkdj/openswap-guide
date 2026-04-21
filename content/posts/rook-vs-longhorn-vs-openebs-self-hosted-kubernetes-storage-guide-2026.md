@@ -335,7 +335,7 @@ Yes, all three are compatible with K3s, k0s, k3d, and Talos Linux. Longhorn is p
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }

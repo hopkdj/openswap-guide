@@ -403,7 +403,7 @@ Snipe-IT runs comfortably on a VPS with 2 GB RAM and 20 GB storage (PHP + MariaD
     "name": "OpenSwap Guide",
     "logo": {
       "@type": "ImageObject",
-      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+      "url": "https://www.pistack.xyz/logo.png"
     }
   }
 }
