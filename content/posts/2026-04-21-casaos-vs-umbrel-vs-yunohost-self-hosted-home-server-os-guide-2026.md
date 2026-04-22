@@ -4,7 +4,10 @@ date: 2026-04-21
 tags: ["comparison", "guide", "self-hosted", "home-server", "personal-cloud"]
 draft: false
 description: "Compare CasaOS, Umbrel, and YunoHost — three open-source home server operating systems. Learn which personal cloud OS fits your self-hosting needs in 2026."
+cover: "/img/screenshots/casaos-dashboard.jpg"
 ---
+
+![CasaOS Dashboard](/img/screenshots/casaos-dashboard.jpg "CasaOS provides a clean, modern web interface for managing apps, files, and storage")
 
 Taking control of your data by running a home server is one of the most rewarding projects you can tackle. Instead of relying on Google Drive, iCloud, or Spotify, you can host your own file sync, media streaming, password vault, and dozens of other services on hardware you own.
 
@@ -89,6 +92,8 @@ CasaOS manages these containers from its dashboard, handling port mapping and vo
 
 [Umbrel](https://github.com/getumbrel/umbrel) positions itself as a beautiful, plug-and-play home server OS. With over 11,000 GitHub stars, Umbrel has built a strong following, particularly in the Bitcoin and privacy communities. Umbrel can run as a full operating system on dedicated hardware (Umbrel Home, Raspberry Pi 5) or install on existing x86 systems.
 
+![Umbrel Dashboard](/img/screenshots/umbrel-dashboard.jpg "umbrelOS features a sleek, app-store-driven interface for self-hosted services")
+
 ### Key Features
 
 - **300+ app catalog** — one of the largest curated app libraries for self-hosting
@@ -132,7 +137,9 @@ Umbrel uses Docker Compose under the hood. Each app in the catalog is defined wi
 
 ## YunoHost — The Complete Server OS
 
-[YunoHost](https://github.com/YunoHost/yunohost) is the oldest and most comprehensive of the three platforms. Built on Debian, YunoHost is a full operating system designed from the ground up to make server administration accessible to non-technical users. With nearly 2,900 GitHub stars and an active community since 2012, it has the most mature ecosystem.
+[YunoHost](https://github.com/YunoHost/yunohost) is a Debian-based operating system designed to make server administration accessible to everyone. With a strong focus on self-hosting freedom and privacy, YunoHost provides both a user portal (for accessing apps) and a web administration panel (for server management). It supports over 270 curated applications.
+
+![YunoHost Admin Panel](/img/screenshots/yunohost-admin.jpg "YunoHost's web admin panel provides centralized management for users, domains, apps, and services")
 
 ### Key Features
 
