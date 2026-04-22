@@ -1,6 +1,7 @@
 {{ define "main" }}
 
-{{/* Featured Hero — first post */}}
+{{/* ── Featured Hero — page 1 only ── */}}
+{{ if eq .Paginator.PageNumber 1 }}
 {{ $posts := where .Site.RegularPages "Type" "posts" }}
 {{ if gt (len $posts) 0 }}
 {{ $featured := index $posts 0 }}
@@ -20,31 +21,19 @@
     </div>
     <div class="featured-visual">
       <div class="featured-visual-pattern"></div>
-      <div class="featured-visual-text">OS</div>
+      <div class="featured-visual-text">PS</div>
     </div>
   </a>
 </section>
 {{ end }}
-
-{{/* Collect unique tags */}}
-{{ $allTags := slice }}
-{{ range $posts }}
-  {{ range .Params.tags }}
-    {{ $allTags = $allTags | append . }}
-  {{ end }}
 {{ end }}
-{{ $uniqueTags := $allTags | uniq | first 6 }}
 
-{{/* Section header with tabs and view toggle */}}
+{{/* ── Section header ── */}}
 <div class="section-header">
-  <h2 class="section-title">Latest Posts</h2>
+  <h2 class="section-title">
+    {{ if gt .Paginator.PageNumber 1 }}Latest Posts — Page {{ .Paginator.PageNumber }}{{ else }}Latest Posts{{ end }}
+  </h2>
   <div class="section-controls">
-    <div class="tabs">
-      <button class="tab active" onclick="filterPosts('all', this)">All</button>
-      {{ range $uniqueTags }}
-      <button class="tab" onclick="filterPosts('{{ . | urlize }}', this)">{{ . | title }}</button>
-      {{ end }}
-    </div>
     <div class="view-toggle">
       <button class="view-btn active" onclick="setView('grid', this)" title="Grid view">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
@@ -56,11 +45,11 @@
   </div>
 </div>
 
-{{/* Posts container */}}
+{{/* ── Posts container (server-side paginated) ── */}}
 <div class="posts-container">
   {{/* Grid View */}}
   <div class="posts-grid active" id="postsGrid">
-    {{ range after 1 $posts }}
+    {{ range .Paginator.Pages }}
     {{ $tagClasses := slice "tag-purple" "tag-green" "tag-blue" "tag-orange" }}
     {{ $firstTag := "general" }}
     {{ $tagClass := "tag-purple" }}
@@ -71,11 +60,7 @@
       {{ if or (eq $firstTag "ai") (eq $firstTag "self-hosted") }}{{ $tagClass = "tag-blue" }}{{ end }}
       {{ if or (eq $firstTag "privacy") (eq $firstTag "tools") }}{{ $tagClass = "tag-orange" }}{{ end }}
     {{ end }}
-    {{ $tagSlugs := slice }}
-    {{ range .Params.tags }}
-      {{ $tagSlugs = $tagSlugs | append (. | urlize) }}
-    {{ end }}
-    <a href="{{ .RelPermalink }}" class="post-card" data-tags="{{ delimit $tagSlugs " " }}">
+    <a href="{{ .RelPermalink }}" class="post-card">
       <div class="post-tags">
         <span class="tag {{ $tagClass }}">{{ $firstTag | title }}</span>
       </div>
@@ -83,7 +68,7 @@
       <div class="post-excerpt">{{ .Params.excerpt | default (.Summary | plainify | truncate 180) }}</div>
       <div class="post-footer">
         <div class="post-author">
-          <div class="author-avatar">{{ substr (.Params.author | default "O") 0 1 | upper }}</div>
+          <div class="author-avatar">{{ substr (.Params.author | default "P") 0 1 | upper }}</div>
           <span class="author-name">{{ .Params.author | default "Pi Stack Team" }}</span>
         </div>
         <span class="post-date">{{ .Date.Format "Jan 2" }}</span>
@@ -92,14 +77,10 @@
     {{ end }}
   </div>
 
-  {{/* List View */}}
+  {{/* List View (same paginated data) */}}
   <div class="posts-list" id="postsList">
-    {{ range after 1 $posts }}
-    {{ $tagSlugs := slice }}
-    {{ range .Params.tags }}
-      {{ $tagSlugs = $tagSlugs | append (. | urlize) }}
-    {{ end }}
-    <a href="{{ .RelPermalink }}" class="list-item" data-tags="{{ delimit $tagSlugs " " }}">
+    {{ range .Paginator.Pages }}
+    <a href="{{ .RelPermalink }}" class="list-item">
       <span class="list-date">{{ .Date.Format "2006-01-02" }}</span>
       <div class="list-content">
         <span class="list-title">{{ .Title }}</span>
@@ -113,25 +94,74 @@
     </a>
     {{ end }}
   </div>
+
+  {{/* ── Pagination ── */}}
+  {{ if gt .Paginator.TotalPages 1 }}
+  <nav class="pagination" aria-label="Page navigation">
+    {{ if .Paginator.HasPrev }}
+    <a href="{{ .Paginator.Prev.URL }}" class="pagination-btn prev" rel="prev">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M11 2L5 8l6 6"/></svg>
+      Previous
+    </a>
+    {{ else }}
+    <span class="pagination-btn prev disabled">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M11 2L5 8l6 6"/></svg>
+      Previous
+    </span>
+    {{ end }}
+
+    <div class="pagination-numbers">
+      {{ $currentPage := .Paginator.PageNumber }}
+      {{ $totalPages := .Paginator.TotalPages }}
+
+      {{/* Always show page 1 */}}
+      {{ if gt $currentPage 1 }}
+      <a href="{{ .Paginator.First.URL }}" class="pagination-num">1</a>
+      {{ if gt $currentPage 3 }}
+      <span class="pagination-ellipsis">…</span>
+      {{ end }}
+      {{ end }}
+
+      {{/* Pages around current */}}
+      {{ range seq $totalPages }}
+      {{ $pageNum := . }}
+      {{ if and (ge $pageNum (sub $currentPage 2)) (le $pageNum (add $currentPage 2)) (ne $pageNum 1) (ne $pageNum $totalPages) }}
+      {{ if eq $pageNum $currentPage }}
+      <span class="pagination-num active">{{ $pageNum }}</span>
+      {{ else }}
+      <a href="{{ printf "/page/%d/" $pageNum | relURL }}" class="pagination-num">{{ $pageNum }}</a>
+      {{ end }}
+      {{ end }}
+      {{ end }}
+
+      {{/* Always show last page */}}
+      {{ if lt $currentPage (sub $totalPages 2) }}
+      <span class="pagination-ellipsis">…</span>
+      {{ end }}
+      {{ if lt $currentPage $totalPages }}
+      <a href="{{ .Paginator.Last.URL }}" class="pagination-num">{{ $totalPages }}</a>
+      {{ end }}
+    </div>
+
+    {{ if .Paginator.HasNext }}
+    <a href="{{ .Paginator.Next.URL }}" class="pagination-btn next" rel="next">
+      Next
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M5 2l6 6-6 6"/></svg>
+    </a>
+    {{ else }}
+    <span class="pagination-btn next disabled">
+      Next
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M5 2l6 6-6 6"/></svg>
+    </span>
+    {{ end }}
+  </nav>
+  {{ end }}
 </div>
 
 {{ end }}
 
 {{ define "scripts" }}
 <script>
-function filterPosts(tag, btn) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  btn.classList.add('active');
-  document.querySelectorAll('.post-card, .list-item').forEach(el => {
-    const tags = el.dataset.tags || '';
-    if (tag === 'all' || tags.includes(tag)) {
-      el.style.display = '';
-    } else {
-      el.style.display = 'none';
-    }
-  });
-}
-
 function setView(view, btn) {
   document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
