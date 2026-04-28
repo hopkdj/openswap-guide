@@ -1,52 +1,122 @@
 {{ define "main" }}
-<div class="posts-container" style="padding-top: 40px;">
-  <div class="section-header" style="padding: 0 0 32px;">
-    <div>
-      <nav class="breadcrumbs" aria-label="Breadcrumb">
-        <a href="{{ .Site.BaseURL }}">Home</a> &rsaquo;
-        <span>{{ .Title }}</span>
-      </nav>
-      <h1 class="section-title">{{ .Title }}</h1>
-    </div>
-    <a href="{{ .Site.BaseURL }}" class="back-link" style="margin: 0;">&larr; Back to home</a>
-  </div>
-  {{/* AADS Ad - top of listing */}}
-  {{ partial "ad-unit.html" . }}
-  <div class="posts-grid active">
-    {{ range .RegularPages }}
-    {{ $tagClasses := slice "tag-purple" "tag-green" "tag-blue" "tag-orange" }}
-    {{ $firstTag := "general" }}
-    {{ $tagClass := "tag-purple" }}
-    {{ if .Params.tags }}
-      {{ $firstTag = index .Params.tags 0 }}
-      {{ if eq $firstTag "comparison" }}{{ $tagClass = "tag-purple" }}{{ end }}
-      {{ if or (eq $firstTag "guide") (eq $firstTag "tutorial") }}{{ $tagClass = "tag-green" }}{{ end }}
-      {{ if or (eq $firstTag "ai") (eq $firstTag "self-hosted") }}{{ $tagClass = "tag-blue" }}{{ end }}
-      {{ if or (eq $firstTag "privacy") (eq $firstTag "tools") }}{{ $tagClass = "tag-orange" }}{{ end }}
+
+<div class="container">
+  
+  {{/* ── List Header ── */}}
+  <header class="list-header">
+    <h1 class="list-title">
+      {{ if eq .Kind "term" }}
+        {{ .Data.Singular | title }}: {{ .Title }}
+      {{ else if .IsSection }}
+        {{ .Title }}
+      {{ else }}
+        {{ .Title }}
+      {{ end }}
+    </h1>
+    {{ if .Description }}
+    <p class="list-description">{{ .Description }}</p>
     {{ end }}
-    <a href="{{ .RelPermalink }}" class="post-card">
-      <div class="post-tags">
-        {{ range first 2 .Params.tags }}
-        {{ $tc := "tag-purple" }}
-        {{ if or (eq . "guide") (eq . "tutorial") }}{{ $tc = "tag-green" }}{{ end }}
-        {{ if or (eq . "ai") (eq . "self-hosted") }}{{ $tc = "tag-blue" }}{{ end }}
-        {{ if or (eq . "privacy") (eq . "tools") }}{{ $tc = "tag-orange" }}{{ end }}
-        <span class="tag {{ $tc }}">{{ . }}</span>
+    <div class="list-count">
+      {{ len .Pages }} post{{ if ne (len .Pages) 1 }}s{{ end }}
+    </div>
+  </header>
+
+  {{/* ── Posts List (Linear style) ── */}}
+  <div class="posts-list active">
+    {{ range .Paginator.Pages }}
+    {{ $firstTag := "general" }}
+    {{ if .Params.tags }}{{ $firstTag = index .Params.tags 0 }}{{ end }}
+    <a href="{{ .RelPermalink }}" class="list-item">
+      <span class="list-date">{{ .Date.Format "2006-01-02" }}</span>
+      <div class="list-content">
+        <span class="list-title">{{ .Title }}</span>
+        {{ with .Params.tags }}
+        <div class="list-tags">
+          {{ range first 2 . }}
+          <span class="list-tag">{{ . }}</span>
+          {{ end }}
+        </div>
         {{ end }}
       </div>
-      <h3 class="post-title">{{ .Title }}</h3>
-      <p class="post-excerpt">{{ .Params.excerpt | default .Params.description | default .Summary }}</p>
-      <div class="post-footer">
-        <div class="post-author">
-          <div class="author-avatar">{{ substr (.Params.author | default "O") 0 1 | upper }}</div>
-          <span class="author-name">{{ .Params.author | default "Pi Stack Team" }}</span>
-        </div>
-        <span class="post-date">{{ .Date.Format "Jan 2" }}</span>
-      </div>
+      <span class="list-author">{{ .Params.author | default "Pi Stack Team" }}</span>
     </a>
     {{ end }}
   </div>
-  {{/* AADS Ad - bottom of listing */}}
-  {{ partial "ad-unit.html" . }}
+
+  {{/* ── Pagination ── */}}
+  {{ if gt .Paginator.TotalPages 1 }}
+  <nav class="pagination" aria-label="Page navigation">
+    {{ if .Paginator.HasPrev }}
+    <a href="{{ .Paginator.Prev.URL }}" class="pagination-btn prev" rel="prev">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M11 2L5 8l6 6"/></svg>
+      Previous
+    </a>
+    {{ else }}
+    <span class="pagination-btn prev disabled">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M11 2L5 8l6 6"/></svg>
+      Previous
+    </span>
+    {{ end }}
+
+    <div class="pagination-numbers">
+      {{ $currentPage := .Paginator.PageNumber }}
+      {{ $totalPages := .Paginator.TotalPages }}
+
+      {{ if gt $currentPage 1 }}
+      <a href="{{ .Paginator.First.URL }}" class="pagination-num">1</a>
+      {{ if gt $currentPage 3 }}
+      <span class="pagination-ellipsis">…</span>
+      {{ end }}
+      {{ end }}
+
+      {{ range seq $totalPages }}
+      {{ $pageNum := . }}
+      {{ if and (ge $pageNum (sub $currentPage 2)) (le $pageNum (add $currentPage 2)) (ne $pageNum 1) (ne $pageNum $totalPages) }}
+      {{ if eq $pageNum $currentPage }}
+      <span class="pagination-num active">{{ $pageNum }}</span>
+      {{ else }}
+      <a href="{{ printf "/page/%d/" $pageNum | relURL }}" class="pagination-num">{{ $pageNum }}</a>
+      {{ end }}
+      {{ end }}
+      {{ end }}
+
+      {{ if lt $currentPage (sub $totalPages 2) }}
+      <span class="pagination-ellipsis">…</span>
+      {{ end }}
+      {{ if lt $currentPage $totalPages }}
+      <a href="{{ .Paginator.Last.URL }}" class="pagination-num">{{ $totalPages }}</a>
+      {{ end }}
+    </div>
+
+    {{ if .Paginator.HasNext }}
+    <a href="{{ .Paginator.Next.URL }}" class="pagination-btn next" rel="next">
+      Next
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M5 2l6 6-6 6"/></svg>
+    </a>
+    {{ else }}
+    <span class="pagination-btn next disabled">
+      Next
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M5 2l6 6-6 6"/></svg>
+    </span>
+    {{ end }}
+  </nav>
+  {{ end }}
+
+  {{/* ── All Tags Cloud ── */}}
+  {{ if eq .Kind "taxonomy" }}
+  <section class="tag-cloud">
+    <h2>All Tags</h2>
+    <div class="tag-cloud-grid">
+      {{ range $name, $taxonomy := .Site.Taxonomies.tags }}
+      <a href="/tags/{{ $name | urlize }}/" class="tag-cloud-item">
+        {{ $name | title }}
+        <span class="tag-count">{{ $taxonomy.Count }}</span>
+      </a>
+      {{ end }}
+    </div>
+  </section>
+  {{ end }}
+
 </div>
+
 {{ end }}
