@@ -1,80 +1,129 @@
 {{ define "main" }}
-<article class="post-single" itemscope itemtype="https://schema.org/Article">
-  <meta itemprop="headline" content="{{ .Title }}">
-  <meta itemprop="datePublished" content="{{ .Date.Format "2006-01-02" }}">
-  <meta itemprop="dateModified" content="{{ .Lastmod.Format "2006-01-02" }}">
-  <meta itemprop="author" content="Pi Stack Team">
-  <meta itemprop="publisher" content="{{ .Site.Title }}">
-  <meta itemprop="mainEntityOfPage" content="{{ .Permalink }}">
 
-  <a href="{{ .Site.BaseURL }}" class="back-link">&larr; Back to posts</a>
-
-  {{/* Breadcrumb */}}
-  <nav class="breadcrumbs" aria-label="Breadcrumb">
-    <a href="{{ .Site.BaseURL }}">Home</a> &rsaquo;
-    <a href="{{ .Site.BaseURL }}posts/">Articles</a> &rsaquo;
-    <span>{{ .Title }}</span>
-  </nav>
-
-  <header class="post-single-header">
-    <div class="post-single-meta">
-      {{ if .Params.tags }}
-        {{ range first 3 .Params.tags }}
-        {{ $tc := "tag-purple" }}
-        {{ if or (eq . "guide") (eq . "tutorial") }}{{ $tc = "tag-green" }}{{ end }}
-        {{ if or (eq . "ai") (eq . "self-hosted") }}{{ $tc = "tag-blue" }}{{ end }}
-        {{ if or (eq . "privacy") (eq . "tools") }}{{ $tc = "tag-orange" }}{{ end }}
-        <span class="tag {{ $tc }}" itemprop="keywords">{{ . }}</span>
-        {{ end }}
-        <span>·</span>
+<article class="container-narrow">
+  
+  {{/* ── Post Header (Anthropic style) ── */}}
+  <header class="post-header">
+    {{ with .Params.tags }}
+    <div class="post-tags">
+      {{ range first 3 . }}
+      {{ $tagClass := "tag-purple" }}
+      {{ if eq . "comparison" }}{{ $tagClass = "tag-purple" }}{{ end }}
+      {{ if or (eq . "guide") (eq . "tutorial") }}{{ $tagClass = "tag-green" }}{{ end }}
+      {{ if or (eq . "ai") (eq . "self-hosted") }}{{ $tagClass = "tag-blue" }}{{ end }}
+      {{ if or (eq . "privacy") (eq . "tools") }}{{ $tagClass = "tag-orange" }}{{ end }}
+      <span class="tag {{ $tagClass }}">{{ . | title }}</span>
       {{ end }}
-      <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "January 2, 2006" }}</time>
-      <span>·</span>
-      <span>{{ .ReadingTime }} min read</span>
     </div>
-    <h1 class="post-single-title" itemprop="name">{{ .Title }}</h1>
-    {{ with .Params.description }}
-    <p class="post-single-excerpt" itemprop="description">{{ . }}</p>
     {{ end }}
-    <div class="author-block">
-      <div class="author-avatar">OS</div>
-      <div class="author-details">
-        <span class="author-name" itemprop="author">Pi Stack Team</span>
-        <span class="author-role">Editorial Team</span>
+    
+    <h1>{{ .Title }}</h1>
+    
+    <div class="post-meta">
+      <div class="author-info">
+        <div class="author-avatar">{{ substr (.Params.author | default "P") 0 1 | upper }}</div>
+        <span>{{ .Params.author | default "Pi Stack Team" }}</span>
       </div>
+      <span>{{ .Date.Format "January 2, 2006" }}</span>
+      <span>{{ .ReadingTime }} min read</span>
+      {{ if .Params.lastmod }}
+      <span>Updated {{ .Lastmod.Format "January 2, 2006" }}</span>
+      {{ end }}
     </div>
   </header>
-  <div class="post-single-content" itemprop="articleBody">
+
+  {{/* ── Table of Contents ── */}}
+  {{ if .TableOfContents }}
+  <aside class="toc-sidebar">
+    <details>
+      <summary>Table of Contents</summary>
+      <div class="toc-content">
+        {{ .TableOfContents }}
+      </div>
+    </details>
+  </aside>
+  {{ end }}
+
+  {{/* ── Post Content ── */}}
+  <div class="post-content">
     {{ .Content }}
   </div>
 
-  {{/* Tags footer */}}
-  {{ with .Params.tags }}
-  <div class="post-tags-footer">
-    <span class="tags-label">Tags:</span>
-    {{ range . }}
-    <a href="{{ $.Site.BaseURL }}tags/{{ . | urlize }}/" class="tag-link">{{ . }}</a>
+  {{/* ── Post Footer ── */}}
+  <footer class="post-footer">
+    <div class="post-share">
+      <span>Share:</span>
+      <a href="https://twitter.com/intent/tweet?text={{ .Title }}&url={{ .Permalink }}" target="_blank" rel="noopener" class="share-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        X/Twitter
+      </a>
+      <a href="https://news.ycombinator.com/submitlink?u={{ .Permalink }}&t={{ .Title }}" target="_blank" rel="noopener" class="share-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043l-3.75-6.094h2.344l1.406 2.344 1.406-2.344h2.344l-3.75 6.094v3.957h-2.344v-3.957z"/></svg>
+        Hacker News
+      </a>
+    </div>
+    
+    {{ with .Params.tags }}
+    <div class="post-related-tags">
+      <span>Related topics:</span>
+      {{ range . }}
+      <a href="/tags/{{ . | urlize }}/" class="tag-link">{{ . | title }}</a>
+      {{ end }}
+    </div>
     {{ end }}
-  </div>
-  {{ end }}
+  </footer>
 
-  {{/* AADS Ad - bottom of article */}}
-  {{ partial "ad-unit.html" . }}
-
-  {{/* Related articles */}}
+  {{/* ── Related Posts ── */}}
   {{ $related := .Site.RegularPages.Related . | first 3 }}
   {{ with $related }}
-  <div class="related-posts">
-    <h2 class="related-title">Related Articles</h2>
-    <div class="related-list">
+  <section class="related-posts">
+    <h2>Related Posts</h2>
+    <div class="posts-grid">
       {{ range . }}
-      <a href="{{ .RelPermalink }}" class="related-item">
-        <h3 class="related-item-title">{{ .Title }}</h3>
-        <span class="related-item-date">{{ .Date.Format "Jan 2, 2006" }} · {{ .ReadingTime }} min</span>
+      <a href="{{ .RelPermalink }}" class="post-card">
+        <div class="post-tags">
+          {{ with .Params.tags }}
+          <span class="tag tag-purple">{{ index . 0 | title }}</span>
+          {{ end }}
+        </div>
+        <h3 class="post-title">{{ .Title }}</h3>
+        <div class="post-excerpt">{{ .Summary | plainify | truncate 120 }}</div>
+        <div class="post-footer">
+          <span class="post-date">{{ .Date.Format "Jan 2, 2006" }}</span>
+        </div>
       </a>
       {{ end }}
     </div>
-  </div>
+  </section>
   {{ end }}
+
 </article>
+
+{{ end }}
+
+{{ define "scripts" }}
+<script>
+// Header scroll effect
+window.addEventListener('scroll', () => {
+  const header = document.querySelector('.site-header');
+  if (header) {
+    header.classList.toggle('scrolled', window.scrollY > 10);
+  }
+});
+
+// TOC smooth scroll
+document.addEventListener('DOMContentLoaded', function() {
+  const tocLinks = document.querySelectorAll('.toc-content a');
+  tocLinks.forEach(link => {
+    link.addEventListener('click', function(e) {
+      e.preventDefault();
+      const targetId = this.getAttribute('href').slice(1);
+      const target = document.getElementById(targetId);
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
+});
+</script>
 {{ end }}
