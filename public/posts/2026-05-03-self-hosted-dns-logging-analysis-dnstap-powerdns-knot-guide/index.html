@@ -1,0 +1,452 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted DNS Logging and Analysis: dnstap, PowerDNS-Admin, and go-dnstap Comparison Guide | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-05-03-self-hosted-dns-logging-analysis-dnstap-powerdns-knot-guide/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted DNS Logging and Analysis: dnstap, PowerDNS-Admin, and go-dnstap Comparison Guide"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-05-03-self-hosted-dns-logging-analysis-dnstap-powerdns-knot-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-05-03T17:00:00Z"><meta property="article:modified_time" content="2026-05-03T17:00:00Z"><meta property="article:tag" content="dns"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted DNS Logging and Analysis: dnstap, PowerDNS-Admin, and go-dnstap Comparison Guide"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted DNS Logging and Analysis: dnstap, PowerDNS-Admin, and go-dnstap Comparison Guide","description":"\u003cp\u003eDNS logging and analysis is a critical component of network observability that many self-hosters overlook. While tools like Pi-hole and AdGuard Home focus on blocking and filtering, a dedicated DNS logging pipeline lets you capture every query, analyze traffic patterns, detect anomalies, and maintain audit trails for compliance. This guide compares three approaches to self-hosted DNS logging and analysis: \u003cstrong\u003ednstap-based collectors\u003c\/strong\u003e, \u003cstrong\u003ePowerDNS-Admin\u003c\/strong\u003e for query logging, and \u003cstrong\u003ego-dnstap\u003c\/strong\u003e for high-performance query capture.\u003c\/p\u003e","datePublished":"2026-05-03T17:00:00Z","dateModified":"2026-05-03T17:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-05-03-self-hosted-dns-logging-analysis-dnstap-powerdns-knot-guide\/"},"keywords":["dns","logging","monitoring","self-hosted","network-security","dnstap"],"articleSection":"dns","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted DNS Logging and Analysis: dnstap, PowerDNS-Admin, and go-dnstap Comparison Guide","item":"https:\/\/www.pistack.xyz\/posts\/2026-05-03-self-hosted-dns-logging-analysis-dnstap-powerdns-knot-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Dns</span>
+<span class="tag tag-purple">Logging</span>
+<span class="tag tag-purple">Monitoring</span></div><h1>Self-Hosted DNS Logging and Analysis: dnstap, PowerDNS-Admin, and go-dnstap Comparison Guide</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>May 3, 2026</span>
+<span>9 min read</span>
+<span>Updated May 3, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#what-is-dns-logging-and-why-does-it-matter>What Is DNS Logging and Why Does It Matter?</a></li><li><a href=#comparison-table>Comparison Table</a></li><li><a href=#dnstap-the-gold-standard-for-dns-query-logging>dnstap: The Gold Standard for DNS Query Logging</a><ul><li><a href=#supported-dns-servers>Supported DNS Servers</a></li><li><a href=#go-dnstap-high-performance-dnstap-collector>go-dnstap: High-Performance dnstap Collector</a></li><li><a href=#installing-and-configuring-dnstap>Installing and Configuring dnstap</a></li><li><a href=#parsing-dnstap-data>Parsing dnstap Data</a></li></ul></li><li><a href=#powerdns-admin-with-query-logging>PowerDNS-Admin with Query Logging</a><ul><li><a href=#docker-compose-for-powerdns-admin>Docker Compose for PowerDNS-Admin</a></li><li><a href=#powerdns-recursor-query-logging-configuration>PowerDNS Recursor Query Logging Configuration</a></li><li><a href=#powerdns-admin-web-interface>PowerDNS-Admin Web Interface</a></li></ul></li><li><a href=#knot-resolver-query-logging>Knot Resolver Query Logging</a><ul><li><a href=#docker-compose-for-knot-resolver-with-logging>Docker Compose for Knot Resolver with Logging</a></li><li><a href=#knot-resolver-query-log-configuration>Knot Resolver Query Log Configuration</a></li></ul></li><li><a href=#dns-analysis-tools-and-dashboards>DNS Analysis Tools and Dashboards</a><ul><li><a href=#goaccess-for-dns-log-visualization>GoAccess for DNS Log Visualization</a></li><li><a href=#elk-stack-for-dns-log-aggregation>ELK Stack for DNS Log Aggregation</a></li><li><a href=#loki--grafana-for-lightweight-dns-monitoring>Loki + Grafana for Lightweight DNS Monitoring</a></li></ul></li><li><a href=#self-hosted-dns-privacy-considerations>Self-Hosted DNS Privacy Considerations</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#what-is-dnstap-and-why-is-it-better-than-text-based-dns-logging>What is dnstap and why is it better than text-based DNS logging?</a></li><li><a href=#can-i-use-dnstap-with-pi-hole-or-adguard-home>Can I use dnstap with Pi-hole or AdGuard Home?</a></li><li><a href=#how-much-disk-space-does-dns-logging-consume>How much disk space does DNS logging consume?</a></li><li><a href=#how-do-i-detect-dns-tunneling-from-query-logs>How do I detect DNS tunneling from query logs?</a></li><li><a href=#is-powerdns-admin-suitable-for-smallhome-networks>Is PowerDNS-Admin suitable for small/home networks?</a></li><li><a href=#can-i-forward-dns-logs-to-a-siem-or-security-platform>Can I forward DNS logs to a SIEM or security platform?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><p>DNS logging and analysis is a critical component of network observability that many self-hosters overlook. While tools like Pi-hole and AdGuard Home focus on blocking and filtering, a dedicated DNS logging pipeline lets you capture every query, analyze traffic patterns, detect anomalies, and maintain audit trails for compliance. This guide compares three approaches to self-hosted DNS logging and analysis: <strong>dnstap-based collectors</strong>, <strong>PowerDNS-Admin</strong> for query logging, and <strong>go-dnstap</strong> for high-performance query capture.</p><h2 id=what-is-dns-logging-and-why-does-it-matter>What Is DNS Logging and Why Does It Matter?</h2><p>Every DNS query that passes through your recursive resolver reveals information about which devices on your network are communicating with which external services. DNS logging provides:</p><ul><li><strong>Security forensics</strong> — trace which internal host queried a known malicious domain</li><li><strong>Network troubleshooting</strong> — identify slow resolutions, NXDOMAIN storms, or misconfigured clients</li><li><strong>Compliance auditing</strong> — maintain query logs for regulatory requirements (HIPAA, PCI-DSS, SOC 2)</li><li><strong>Traffic analysis</strong> — understand which services your infrastructure depends on</li><li><strong>Anomaly detection</strong> — spot DNS tunneling, data exfiltration, or C2 beacon patterns</li></ul><p>Unlike basic query logs (text files written by your DNS resolver), structured logging formats like <strong>dnstap</strong> capture rich metadata: query type, response code, round-trip time, client IP, and response data. This structured data is what makes DNS analysis powerful.</p><h2 id=comparison-table>Comparison Table</h2><table><thead><tr><th>Feature</th><th>dnstap + go-dnstap</th><th>PowerDNS-Admin + pdns</th><th>Knot Resolver + log</th></tr></thead><tbody><tr><td>Logging format</td><td>dnstap (binary protobuf)</td><td>pdns query log (JSON/text)</td><td>Knot query log (text)</td></tr><tr><td>Query detail</td><td>Full query/response pairs</td><td>Query + answer + timing</td><td>Query + response codes</td></tr><tr><td>Performance impact</td><td>Low (asynchronous)</td><td>Low (async via Lua)</td><td>Low (built-in)</td></tr><tr><td>Real-time streaming</td><td>Yes (via Unix socket)</td><td>Via PowerDNS API</td><td>Via file tailing</td></tr><tr><td>Storage backend</td><td>Flexible (any dnstap consumer)</td><td>MySQL/PostgreSQL</td><td>File-based</td></tr><tr><td>Web UI</td><td>Third-party (go-dnstap dashboard)</td><td>Built-in (PowerDNS-Admin)</td><td>None (CLI only)</td></tr><tr><td>Docker support</td><td>Yes</td><td>Yes</td><td>Yes</td></tr><tr><td>Active development</td><td>Yes (open-source)</td><td>Yes (open-source)</td><td>Yes (open-source)</td></tr><tr><td>Learning curve</td><td>Medium</td><td>Low</td><td>Low</td></tr><tr><td>Best for</td><td>High-volume logging & analysis</td><td>Full DNS management + logging</td><td>Simple query logging</td></tr></tbody></table><h2 id=dnstap-the-gold-standard-for-dns-query-logging>dnstap: The Gold Standard for DNS Query Logging</h2><p><strong>dnstap</strong> is a flexible, structured logging format for DNS servers developed by ISC (the creators of BIND). It uses Protocol Buffers to encode rich query metadata into a compact binary format, making it ideal for high-throughput DNS logging.</p><h3 id=supported-dns-servers>Supported DNS Servers</h3><p>dnstap is natively supported by several popular DNS servers:</p><ul><li><strong>BIND 9</strong> — via <code>dnstap</code> configuration directive</li><li><strong>Unbound</strong> — via <code>dnstap:</code> configuration block</li><li><strong>Knot Resolver</strong> — via the <code>dnstap</code> module</li><li><strong>PowerDNS Recursor</strong> — via <code>dnstap</code> support (4.4+)</li></ul><h3 id=go-dnstap-high-performance-dnstap-collector>go-dnstap: High-Performance dnstap Collector</h3><p><a href=https://github.com/dnstap/golang-dnstap>go-dnstap</a> and related tooling provide a fast, lightweight dnstap collector written in Go. It reads dnstap data from a Unix socket or file and can forward it to various backends.</p><h4 id=docker-compose-for-go-dnstap-collection>Docker Compose for go-dnstap Collection</h4><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>dnstap-collector</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>ghcr.io/dnstap/dnstap:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>dnstap-collector</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>dnstap-socket:/var/run/dnstap</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>dnstap-data:/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;--socket&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;/var/run/dnstap/dnstap.sock&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;--output&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;/data/dnstap.log&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8080:8080&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>dnstap-viewer</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>ghcr.io/dnstap/dnstap-viewer:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>dnstap-viewer</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>dnstap-collector</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;3000:3000&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>dnstap-data:/data:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>dnstap-socket</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>dnstap-data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h4 id=unbound-configuration-for-dnstap-output>Unbound Configuration for dnstap Output</h4><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>server</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>dnstap-enable</span><span class=p>:</span><span class=w> </span><span class=kc>yes</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>dnstap-socket-path</span><span class=p>:</span><span class=w> </span><span class=l>/var/run/dnstap/dnstap.sock</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>dnstap-send-identity</span><span class=p>:</span><span class=w> </span><span class=kc>yes</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>dnstap-send-version</span><span class=p>:</span><span class=w> </span><span class=kc>yes</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>dnstap-log-resolve-query-messages</span><span class=p>:</span><span class=w> </span><span class=kc>yes</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>dnstap-log-resolve-response-messages</span><span class=p>:</span><span class=w> </span><span class=kc>yes</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>dnstap-log-forward-query-messages</span><span class=p>:</span><span class=w> </span><span class=kc>yes</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>dnstap-log-forward-response-messages</span><span class=p>:</span><span class=w> </span><span class=kc>yes</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=installing-and-configuring-dnstap>Installing and Configuring dnstap</h3><p>To set up dnstap logging with Unbound:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install Unbound with dnstap support</span>
+</span></span><span class=line><span class=cl>sudo apt install unbound
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Create dnstap socket directory</span>
+</span></span><span class=line><span class=cl>sudo mkdir -p /var/run/dnstap
+</span></span><span class=line><span class=cl>sudo chown unbound:unbound /var/run/dnstap
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Add dnstap config to unbound.conf (see above)</span>
+</span></span><span class=line><span class=cl>sudo systemctl restart unbound
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Verify dnstap socket is active</span>
+</span></span><span class=line><span class=cl>sudo ls -la /var/run/dnstap/dnstap.sock
+</span></span></code></pre></td></tr></table></div></div><h3 id=parsing-dnstap-data>Parsing dnstap Data</h3><p>The <code>dnstap</code> command-line tool can decode binary dnstap data into human-readable format:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Decode dnstap data to text</span>
+</span></span><span class=line><span class=cl>dnstap -r /data/dnstap.log
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Filter for specific query types</span>
+</span></span><span class=line><span class=cl>dnstap -r /data/dnstap.log <span class=p>|</span> grep <span class=s2>&#34;type: MX&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Export to JSON for analysis</span>
+</span></span><span class=line><span class=cl>dnstap -r /data/dnstap.log -j &gt; dnstap-data.json
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Count queries per domain</span>
+</span></span><span class=line><span class=cl>dnstap -r /data/dnstap.log <span class=p>|</span> grep <span class=s2>&#34;query:&#34;</span> <span class=p>|</span> awk <span class=s1>&#39;{print $3}&#39;</span> <span class=p>|</span> sort <span class=p>|</span> uniq -c <span class=p>|</span> sort -rn <span class=p>|</span> head -20
+</span></span></code></pre></td></tr></table></div></div><h2 id=powerdns-admin-with-query-logging>PowerDNS-Admin with Query Logging</h2><p><a href=https://github.com/ngoduykhanh/PowerDNS-Admin>PowerDNS-Admin</a> is a web-based management interface for PowerDNS that includes query logging and analytics capabilities. Combined with the PowerDNS Recursor&rsquo;s built-in logging, it provides a complete DNS logging and management solution.</p><h3 id=docker-compose-for-powerdns-admin>Docker Compose for PowerDNS-Admin</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>pdns-recursor</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>powerdns/pdns-recursor-49:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>pdns-recursor</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;53:53/tcp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;53:53/udp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PDNS_recurson=yes</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PDNS_allow_from=0.0.0.0/0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PDNS_webserver=yes</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PDNS_webserver_address=0.0.0.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PDNS_webserver_password=changeme</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PDNS_query_logging=yes</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PDNS_loglevel=9</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>pdns-recursor-data:/etc/powerdns</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>powerdns-admin</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>psitrax/powerdns-admin:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>powerdns-admin</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>db</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;9191:80&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>SQLALCHEMY_DATABASE_URI=mysql://pdns:pdns@db/pdns</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>GUNICORN_TIMEOUT=60</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>GUNICORN_WORKERS=4</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>pdns-admin-data:/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>db</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>mariadb:10.11</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>pdns-db</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>MYSQL_ROOT_PASSWORD=rootpassword</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>MYSQL_DATABASE=pdns</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>MYSQL_USER=pdns</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>MYSQL_PASSWORD=pdns</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>pdns-db-data:/var/lib/mysql</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>pdns-recursor-data</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>pdns-admin-data</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>pdns-db-data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=powerdns-recursor-query-logging-configuration>PowerDNS Recursor Query Logging Configuration</h3><p>PowerDNS Recursor has built-in query logging that can be enabled with minimal configuration:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-lua data-lang=lua><span class=line><span class=cl><span class=c1>-- recursor.lua for advanced query logging</span>
+</span></span><span class=line><span class=cl><span class=kr>function</span> <span class=nf>preresolve</span><span class=p>(</span><span class=n>dq</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=c1>-- Log every query to a file</span>
+</span></span><span class=line><span class=cl>    <span class=n>pdnslog</span><span class=p>(</span><span class=s2>&#34;query: &#34;</span> <span class=o>..</span> <span class=n>dq.qname</span><span class=p>:</span><span class=n>toString</span><span class=p>()</span> <span class=o>..</span> <span class=s2>&#34; type: &#34;</span> <span class=o>..</span> <span class=n>tostring</span><span class=p>(</span><span class=n>dq.qtype</span><span class=p>),</span> <span class=n>pdns.loglevels</span><span class=p>.</span><span class=n>Info</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=kr>return</span> <span class=kc>false</span>
+</span></span><span class=line><span class=cl><span class=kr>end</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>-- Enable query logging in pdns-recursor.conf</span>
+</span></span><span class=line><span class=cl><span class=c1>-- query-logging=yes</span>
+</span></span><span class=line><span class=cl><span class=c1>-- loglevel=9</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=powerdns-admin-web-interface>PowerDNS-Admin Web Interface</h3><p>PowerDNS-Admin provides a comprehensive web dashboard for:</p><ul><li>Viewing and managing DNS zones and records</li><li>Query logging with search and filtering</li><li>Per-domain analytics and query statistics</li><li>User management with role-based access control</li><li>API integration for automation</li></ul><h2 id=knot-resolver-query-logging>Knot Resolver Query Logging</h2><p><a href=https://knot-resolver.readthedocs.io/>Knot Resolver</a> is a modern, high-performance DNS resolver from the CZ.NIC project. It includes built-in query logging capabilities through its Lua module system.</p><h3 id=docker-compose-for-knot-resolver-with-logging>Docker Compose for Knot Resolver with Logging</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>knot-resolver</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>cznic/knot-resolver:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>knot-resolver</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;53:53/tcp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;53:53/udp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8053:8053/tcp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./kresd.conf:/etc/knot-resolver/kresd.conf:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>knot-log-data:/var/log/knot-resolver</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>knot-log-data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=knot-resolver-query-log-configuration>Knot Resolver Query Log Configuration</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-lua data-lang=lua><span class=line><span class=cl><span class=c1>-- kresd.conf</span>
+</span></span><span class=line><span class=cl><span class=c1>-- Enable query logging</span>
+</span></span><span class=line><span class=cl><span class=n>modules</span> <span class=o>=</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=s1>&#39;policy&#39;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s1>&#39;hints&#39;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s1>&#39;view&#39;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>-- Log queries to file</span>
+</span></span><span class=line><span class=cl><span class=n>log_query</span> <span class=o>=</span> <span class=kr>function</span> <span class=p>(</span><span class=n>state</span><span class=p>,</span> <span class=n>req</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=kd>local</span> <span class=n>qname</span> <span class=o>=</span> <span class=n>pkt2str.name</span><span class=p>(</span><span class=n>req</span><span class=p>:</span><span class=n>question</span><span class=p>())</span>
+</span></span><span class=line><span class=cl>    <span class=kd>local</span> <span class=n>qtype</span> <span class=o>=</span> <span class=n>pkt2str.type</span><span class=p>(</span><span class=n>req</span><span class=p>:</span><span class=n>question</span><span class=p>())</span>
+</span></span><span class=line><span class=cl>    <span class=kd>local</span> <span class=n>client</span> <span class=o>=</span> <span class=n>net.ip</span><span class=p>(</span><span class=n>state</span><span class=p>:</span><span class=n>peer</span><span class=p>())</span>
+</span></span><span class=line><span class=cl>    <span class=kd>local</span> <span class=n>timestamp</span> <span class=o>=</span> <span class=n>os.date</span><span class=p>(</span><span class=s1>&#39;%Y-%m-%d %H:%M:%S&#39;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    <span class=n>log</span><span class=p>(</span><span class=n>string.format</span><span class=p>(</span><span class=s1>&#39;[%s] %s %s %s&#39;</span><span class=p>,</span> <span class=n>timestamp</span><span class=p>,</span> <span class=n>client</span><span class=p>,</span> <span class=n>qtype</span><span class=p>,</span> <span class=n>qname</span><span class=p>))</span>
+</span></span><span class=line><span class=cl>    <span class=kr>return</span> <span class=n>state</span>
+</span></span><span class=line><span class=cl><span class=kr>end</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>policy.add</span><span class=p>(</span><span class=n>policy.all</span><span class=p>(</span><span class=n>policy.TURN</span><span class=p>))</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=dns-analysis-tools-and-dashboards>DNS Analysis Tools and Dashboards</h2><p>Once you have DNS logs flowing, you&rsquo;ll want to analyze them. Here are several approaches:</p><h3 id=goaccess-for-dns-log-visualization>GoAccess for DNS Log Visualization</h3><p>GoAccess can parse DNS query logs and generate real-time dashboards:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install goaccess</span>
+</span></span><span class=line><span class=cl>sudo apt install goaccess
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Parse DNS query logs</span>
+</span></span><span class=line><span class=cl>goaccess /var/log/dns-queries.log --log-format<span class=o>=</span><span class=s1>&#39;%^ %h %t %^ %^ %s %^ %^&#39;</span> --date-format<span class=o>=</span><span class=s1>&#39;%Y-%m-%d&#39;</span> --time-format<span class=o>=</span><span class=s1>&#39;%H:%M:%S&#39;</span> -o /var/www/dns-dashboard.html
+</span></span></code></pre></td></tr></table></div></div><h3 id=elk-stack-for-dns-log-aggregation>ELK Stack for DNS Log Aggregation</h3><p>For enterprise-scale DNS log analysis, the ELK stack (Elasticsearch, Logstash, Kibana) is the gold standard:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># ELK Stack Docker Compose</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>elasticsearch</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>docker.elastic.co/elasticsearch/elasticsearch:8.11.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>discovery.type=single-node</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>xpack.security.enabled=false</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;9200:9200&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>logstash</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>docker.elastic.co/logstash/logstash:8.11.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./logstash.conf:/usr/share/logstash/pipeline/logstash.conf:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;5044:5044&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;5140:5140/udp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>kibana</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>docker.elastic.co/kibana/kibana:8.11.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;5601:5601&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>elasticsearch</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=loki--grafana-for-lightweight-dns-monitoring>Loki + Grafana for Lightweight DNS Monitoring</h3><p>For a lighter-weight alternative to ELK:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>loki</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>grafana/loki:2.9.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;3100:3100&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./loki-config.yaml:/etc/loki/local-config.yaml:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>loki-data:/loki</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>promtail</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>grafana/promtail:2.9.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/var/log/dns:/var/log/dns:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./promtail-config.yaml:/etc/promtail/config.yaml:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>grafana</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>grafana/grafana:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;3000:3000&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>GF_SECURITY_ADMIN_PASSWORD=admin</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>grafana-data:/var/lib/grafana</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>loki-data</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>grafana-data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=self-hosted-dns-privacy-considerations>Self-Hosted DNS Privacy Considerations</h2><p>When logging DNS queries, you are collecting sensitive data about user activity on your network. Consider these privacy implications:</p><ul><li><strong>Data retention policies</strong> — define how long query logs are kept and automate deletion</li><li><strong>Anonymization</strong> — strip or hash client IP addresses to protect user privacy</li><li><strong>Access controls</strong> — restrict who can view DNS logs (especially in multi-tenant environments)</li><li><strong>Encryption at rest</strong> — encrypt log files to prevent unauthorized access</li><li><strong>Compliance</strong> — ensure logging practices meet regulatory requirements for your jurisdiction</li></ul><p>For more on protecting DNS privacy at the protocol level, see our <a href=../self-hosted-dns-privacy-doh-dot-dnscrypt-guide/>complete DNS privacy guide</a> covering DoH, DoT, and DNSCrypt implementations.</p><h2 id=faq>FAQ</h2><h3 id=what-is-dnstap-and-why-is-it-better-than-text-based-dns-logging>What is dnstap and why is it better than text-based DNS logging?</h3><p>dnstap is a structured, binary logging format for DNS servers that uses Protocol Buffers. Unlike text-based logs, dnstap captures complete query/response pairs with full metadata (query type, response code, round-trip time, EDNS options) in a compact format. This makes it ideal for high-throughput environments where text logs would be too large or slow to parse.</p><h3 id=can-i-use-dnstap-with-pi-hole-or-adguard-home>Can I use dnstap with Pi-hole or AdGuard Home?</h3><p>Pi-hole uses dnsmasq which does not natively support dnstap. AdGuard Home has its own query log format. However, you can run Unbound as a recursive resolver behind Pi-hole/AdGuard Home and enable dnstap on Unbound to capture the full resolution chain. See our <a href=../self-hosted-dns-filtering-content-blocking-pihole-adguard-technitium-guide-2026/>DNS filtering comparison</a> for more on combining filtering with logging.</p><h3 id=how-much-disk-space-does-dns-logging-consume>How much disk space does DNS logging consume?</h3><p>For a typical home network (50-100 devices), DNS logging generates approximately 100-500 MB per day in dnstap format (compressed). Text-based logs can be 2-5x larger. With compression (gzip/zstd) and log rotation, a week of logs typically fits in 1-3 GB. Enterprise environments with thousands of devices should plan for 10-50 GB per week.</p><h3 id=how-do-i-detect-dns-tunneling-from-query-logs>How do I detect DNS tunneling from query logs?</h3><p>DNS tunneling manifests as: unusually long subdomain names (60+ characters), high query frequency to a single domain, TXT or NULL record queries, and base64-encoded data in domain labels. You can detect this by analyzing query entropy and length distributions using tools like <code>dnstap -r</code> with custom filters, or by importing logs into Elasticsearch/Kibana for real-time anomaly detection dashboards.</p><h3 id=is-powerdns-admin-suitable-for-smallhome-networks>Is PowerDNS-Admin suitable for small/home networks?</h3><p>PowerDNS-Admin is designed for managing authoritative DNS zones at scale. While it can be used on small networks, it&rsquo;s overkill if you only need query logging. For home networks, Unbound with dnstap + go-dnstap is simpler and more lightweight. PowerDNS-Admin shines when you need zone management, per-user access control, and API integration alongside logging. For a broader look at DNS resolver options, see our <a href=../self-hosted-dns-resolvers-unbound-dnsmasq-bind-coredns-guide-2026/>DNS resolver comparison</a>.</p><h3 id=can-i-forward-dns-logs-to-a-siem-or-security-platform>Can I forward DNS logs to a SIEM or security platform?</h3><p>Yes. dnstap data can be forwarded to Security Information and Event Management (SIEM) platforms using collectors like Logstash, Fluent Bit, or Vector. Most SIEMs (Elastic Security, Splunk, Wazuh) have DNS parsing pipelines. You can also use the dnstap-to-Syslog bridge to forward logs to any syslog-compatible platform.</p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted DNS Logging and Analysis: dnstap, PowerDNS-Admin, and go-dnstap Comparison Guide","description":"Compare self-hosted DNS logging solutions: dnstap-based collectors, PowerDNS-Admin, and Knot Resolver query logging. Includes Docker Compose configs, analysis tools, and privacy considerations.","datePublished":"2026-05-03","dateModified":"2026-05-03","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20DNS%20Logging%20and%20Analysis%3a%20dnstap%2c%20PowerDNS-Admin%2c%20and%20go-dnstap%20Comparison%20Guide&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-03-self-hosted-dns-logging-analysis-dnstap-powerdns-knot-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-03-self-hosted-dns-logging-analysis-dnstap-powerdns-knot-guide%2f&t=Self-Hosted%20DNS%20Logging%20and%20Analysis%3a%20dnstap%2c%20PowerDNS-Admin%2c%20and%20go-dnstap%20Comparison%20Guide" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/dns/ class=tag-link>Dns</a>
+<a href=/tags/logging/ class=tag-link>Logging</a>
+<a href=/tags/monitoring/ class=tag-link>Monitoring</a>
+<a href=/tags/self-hosted/ class=tag-link>Self-Hosted</a>
+<a href=/tags/network-security/ class=tag-link>Network-Security</a>
+<a href=/tags/dnstap/ class=tag-link>Dnstap</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-04-29-self-hosted-dns-cache-monitoring-unbound-powerdns-bind9-stats-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Comparison</span></div><h3 class=post-title>Self-Hosted DNS Cache Monitoring: Unbound vs PowerDNS Recursor vs BIND9 Stats Guide 2026</h3><div class=post-excerpt>If you run a self-hosted DNS resolver, knowing what&rsquo;s happening inside your cache is just as important as keeping …</div><div class=post-footer><span class=post-date>Apr 29, 2026</span></div></a><a href=/posts/2026-04-28-dns-drift-detection-change-monitoring-dnscontrol-octodns-terraform-guide-2026/ class=post-card><div class=post-tags><span class="tag tag-purple">Comparison</span></div><h3 class=post-title>DNS Drift Detection & Change Monitoring: DNSControl vs OctoDNS vs Terraform 2026</h3><div class=post-excerpt>Why DNS Drift Detection Matters DNS is the backbone of every networked service. When DNS records change unexpectedly — …</div><div class=post-footer><span class=post-date>Apr 28, 2026</span></div></a><a href=/posts/2026-04-28-mtail-vs-grok-exporter-vs-vector-self-hosted-log-parsing-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Comparison</span></div><h3 class=post-title>mtail vs grok_exporter vs Vector: Self-Hosted Log Parsing Guide 2026</h3><div class=post-excerpt>When your applications generate logs, the raw text is full of useful signals — response times, error rates, request …</div><div class=post-footer><span class=post-date>Apr 28, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>
