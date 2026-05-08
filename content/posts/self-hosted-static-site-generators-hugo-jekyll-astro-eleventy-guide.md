@@ -202,7 +202,7 @@ email: you@example.com
 description: >-
   A blog about self-hosting, open source software, and
   taking control of your digital life.
-baseurl: ""
+baseurl: "
 url: "https://example.com"
 
 # Build settings

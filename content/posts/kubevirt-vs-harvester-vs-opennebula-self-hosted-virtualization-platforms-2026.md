@@ -228,7 +228,7 @@ install:
     - 8.8.8.8
   token: "my-cluster-token"
   vip: 192.168.1.200
-  vip_hw_address: ""
+  vip_hw_address: "
 ```
 
 ### Managing VMs in Harvester

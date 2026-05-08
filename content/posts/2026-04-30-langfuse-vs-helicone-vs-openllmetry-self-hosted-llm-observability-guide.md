@@ -134,7 +134,7 @@ services:
       DATABASE_URL: postgresql://postgres:testpassword@postgres:5432/helicone
       CLICKHOUSE_URL: http://clickhouse:8123
       CLICKHOUSE_USER: default
-      CLICKHOUSE_PASSWORD: ""
+      CLICKHOUSE_PASSWORD: "
 
   helicone-web:
     image: helicone/front:latest

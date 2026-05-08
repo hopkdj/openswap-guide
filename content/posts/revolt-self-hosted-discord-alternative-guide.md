@@ -107,10 +107,10 @@ services:
     environment:
       AUTUMN_URL: "http://autumn:8000"
       JANUARY_URL: "http://january:8000"
-      VOSKO_URL: ""
+      VOSKO_URL: "
       MONGO_DATABASE_URL: "mongodb://mongo:27017/revolt"
       REDIS_URL: "redis://redis:6379"
-      RABBITMQ_URL: ""
+      RABBITMQ_URL: "
       SENTRY_DSN: ""
       FRONTEND_URL: "https://app.example.com"
       REVOLT_EXTERNAL_URL: "https://api.example.com"

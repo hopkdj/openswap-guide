@@ -132,7 +132,7 @@ allowVolumeExpansion: true
 parameters:
   numberOfReplicas: "3"
   staleReplicaTimeout: "30"
-  fromBackup: ""
+  fromBackup: "
   fsType: ext4
   dataLocality: "best-effort"
 reclaimPolicy: Delete

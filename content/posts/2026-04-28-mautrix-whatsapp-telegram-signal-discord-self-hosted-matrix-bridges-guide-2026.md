@@ -214,7 +214,7 @@ The Telegram bridge requires a Telegram API ID and hash, which you obtain from [
 ```yaml
 bridge:
     relaybot:
-        auth_key: ""
+        auth_key: "
     telegram_api_id: YOUR_API_ID
     telegram_api_hash: YOUR_API_HASH
 ```

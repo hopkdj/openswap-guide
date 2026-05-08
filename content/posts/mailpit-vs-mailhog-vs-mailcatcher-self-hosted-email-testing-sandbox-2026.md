@@ -219,7 +219,7 @@ services:
     environment:
       MH_STORAGE: maildir          # Store messages on disk
       MH_MAILDIR_PATH: /data       # Directory for maildir storage
-      MH_OUTBOUND_SMTP: ""         # Forward mode (empty = no forwarding)
+      MH_OUTBOUND_SMTP: "         # Forward mode (empty = no forwarding)
     volumes:
       - mailhog-data:/data
 
@@ -378,7 +378,7 @@ spring:
   mail:
     host: localhost
     port: 1025
-    username: ""
+    username: "
     password: ""
     properties:
       mail:
@@ -397,8 +397,8 @@ spring:
     "Host": "localhost",
     "Port": 1025,
     "EnableSsl": false,
-    "Username": "",
-    "Password": ""
+    "Username": ",
+    "Password": "
   }
 }
 ```

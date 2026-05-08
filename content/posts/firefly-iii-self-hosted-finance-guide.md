@@ -335,7 +335,7 @@ awk -F',' 'NR>1 {
     date=$1;
     desc=$2;
     amount=$3;
-    sign = (amount < 0) ? "-" : "";
+    sign = (amount < 0) ? "-" : ";
     gsub(/[$,]/, "", amount);
     printf "%s,%s,%.2f\n", date, desc, sign amount
 }' bank_export.csv > firefly_import.csv

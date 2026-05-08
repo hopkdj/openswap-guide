@@ -168,7 +168,7 @@ services:
       CRON_SECRET: changeme_cron_secret
       SHORT_URL_BASE: http://localhost:3000
       ASSET_PREFIX_URL: http://localhost:3000
-      ENTERPRISE_LICENSE_KEY: ""
+      ENTERPRISE_LICENSE_KEY: "
 
 volumes:
   pg_data:

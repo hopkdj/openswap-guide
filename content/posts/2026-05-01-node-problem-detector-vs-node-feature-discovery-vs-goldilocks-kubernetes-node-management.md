@@ -126,7 +126,7 @@ spec:
   rules:
     - name: "nvidia.gpu.present"
       labels:
-        "gpu.intel.com/device-id": ""
+        "gpu.intel.com/device-id": "
       matchFeatures:
         - feature: pci.device
           matchExpressions:

@@ -144,7 +144,7 @@ engines:
 outgoing:
   request_timeout: 6.0
   max_request_timeout: 15.0
-  useragent_suffix: ""
+  useragent_suffix: "
   pool_connections: 100
   pool_maxsize: 20
 ```

@@ -147,7 +147,7 @@ spec:
     schedule: "0 2 * * *"
     keepJobs: 7
   restore:
-    schedule: ""
+    schedule: "
   check:
     schedule: "0 3 * * 0"
   prune:

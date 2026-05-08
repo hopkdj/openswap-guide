@@ -74,7 +74,7 @@ services:
   "disable_guests": true,
   "default_theme": "dark",
   "brand": "Your Organization Chat",
-  "welcome_user_id": "",
+  "welcome_user_id": ",
   "features": {
     "feature_threads": true,
     "feature_spaces": true

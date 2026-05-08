@@ -368,7 +368,7 @@ services:
       TYK_GW_NODESECRET: "node-secret"
       TYK_GW_STORAGE_HOST: "redis"
       TYK_GW_STORAGE_PORT: 6379
-      TYK_GW_STORAGE_PASSWORD: ""
+      TYK_GW_STORAGE_PASSWORD: "
       TYK_GW_STORAGE_TYPE: "redis"
     volumes:
       - ./tyk.conf:/opt/tyk-gateway/tyk.conf:ro

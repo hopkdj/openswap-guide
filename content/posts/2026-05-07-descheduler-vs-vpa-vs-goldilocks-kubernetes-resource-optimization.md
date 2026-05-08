@@ -231,7 +231,7 @@ installMetricsServer: true
 
 goldilocks:
   flags:
-    vpa-label-selector: ""
+    vpa-label-selector: "
     on-by-default: true
     include-namespaces: "production,staging"
     exclude-namespaces: "kube-system,monitoring"

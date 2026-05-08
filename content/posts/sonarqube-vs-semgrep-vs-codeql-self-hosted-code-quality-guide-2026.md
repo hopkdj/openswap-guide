@@ -169,7 +169,7 @@ services:
     environment:
       SEMGREP_APP_TOKEN: your_app_token
       SEMGREP_BASE_URL: http://semgrep-app
-      SEMGREP_VERSION_CHECK_URL: ""
+      SEMGREP_VERSION_CHECK_URL: "
     volumes:
       - semgrep_data:/data
     depends_on[redis](https://redis.io/)   - postgres

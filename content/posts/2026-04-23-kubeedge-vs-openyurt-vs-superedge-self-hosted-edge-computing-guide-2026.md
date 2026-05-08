@@ -94,7 +94,7 @@ spec:
         app: edge-app
     spec:
       nodeSelector:
-        node-role.kubernetes.io/edge: ""
+        node-role.kubernetes.io/edge: "
       tolerations:
       - key: "node-role.kubernetes.io/edge"
         operator: "Exists"

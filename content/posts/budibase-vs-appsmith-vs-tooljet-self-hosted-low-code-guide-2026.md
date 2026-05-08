@@ -272,7 +272,7 @@ services:
       NODE_ENV: production
       TOOLJET_HOST: "http://localhost:8082"
       SECRET_STORAGE_STRATEGY: ENV
-      CLIENT_ID: ""
+      CLIENT_ID: "
       CLIENT_SECRET: ""
     depends_on:
       - tooljet-db

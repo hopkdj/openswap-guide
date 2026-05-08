@@ -64,7 +64,7 @@ services:
     environment:
       CLICKHOUSE_DB: default
       CLICKHOUSE_USER: default
-      CLICKHOUSE_PASSWORD: ""
+      CLICKHOUSE_PASSWORD: "
     volumes:
       - clickhouse_data:/var/lib/clickhouse
       - ./clickhouse-config.xml:/etc/clickhouse-server/config.d/custom.xml

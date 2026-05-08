@@ -159,7 +159,7 @@ users:
     uidnumber: 5001
     primarygroup: 5501
     passsha256: "SHA256_HASH_OF_PASSWORD"
-    otpsecret: ""
+    otpsecret: "
   - name: deployer
     uidnumber: 5002
     primarygroup: 5502

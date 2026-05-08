@@ -102,7 +102,7 @@ spec:
             readinessProbe:
               type: k8sProbe
               k8sProbeInputs:
-                group: ""
+                group: "
                 version: "v1"
                 resource: pods
                 operation: present

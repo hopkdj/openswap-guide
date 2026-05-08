@@ -351,7 +351,7 @@ max_connections = 100
 PeerTube uses Redis for job queues and caching. For production:
 
 ```yaml
-PEERTUBE_REDIS_AUTH: ""           # Set a password if Redis is network-accessible
+PEERTUBE_REDIS_AUTH: "           # Set a password if Redis is network-accessible
 PEERTUBE_REDIS_DB: 0
 PEERTUBE_WORKERS_VIDEOS_TRANSCODING: "2"   # Match CPU cores
 PEERTUBE_WORKERS_VIDEOS_LIVE: "1"

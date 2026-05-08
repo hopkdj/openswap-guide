@@ -119,9 +119,9 @@ instance_details:
 
 s3:
   enabled: false  # Enable for external storage
-  # endpoint: ""
+  # endpoint: "
   # bucket: ""
-  # region: ""
+  # region: "
 
 webserver:
   enable: true
@@ -220,7 +220,7 @@ paths:
     # Specific path with authentication
     publishUser: publisher
     publishPass: secure_password_here
-    readUser: ""
+    readUser: "
     readPass: ""
 
   camera1:

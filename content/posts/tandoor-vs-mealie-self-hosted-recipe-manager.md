@@ -236,13 +236,13 @@ services:
       # Database (SQLite default — switch to PostgreSQL for production)
       DB_ENGINE: sqlite
       # SMTP for password resets and notifications
-      SMTP_HOST: ""
+      SMTP_HOST: "
       SMTP_PORT: 587
       SMTP_FROM_NAME: "Mealie"
       SMTP_AUTH_STRATEGY: "TLS"
-      SMTP_FROM_EMAIL: ""
+      SMTP_FROM_EMAIL: "
       SMTP_USER: ""
-      SMTP_PASSWORD: ""
+      SMTP_PASSWORD: "
       # Base URL for email links and notifications
       BASE_URL: "http://localhost:9925"
       # Token settings

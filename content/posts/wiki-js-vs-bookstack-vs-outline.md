@@ -309,7 +309,7 @@ services:
       AWS_REGION: "us-east-1"
       AWS_ACCESS_KEY_ID: "minioadmin"
       AWS_SECRET_ACCESS_KEY: "minioadmin-secret"
-      AWS_S3_ACCELERATE_URL: ""
+      AWS_S3_ACCELERATE_URL: "
       AWS_S3_UPLOAD_BUCKET_URL: "http://minio:9000"
       AWS_S3_FORCE_PATH_STYLE: "true"
 
@@ -318,7 +318,7 @@ services:
       SMTP_PORT: "1025"
       SMTP_FROM_EMAIL: "wiki@localhost"
       SMTP_SECURE: "false"
-      SMTP_TLS_CIPHERS: ""
+      SMTP_TLS_CIPHERS: "
     depends_on:
       postgres:
         condition: service_healthy

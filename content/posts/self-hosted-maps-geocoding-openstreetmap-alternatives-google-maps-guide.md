@@ -400,7 +400,7 @@ cat > valhalla.json << 'EOF'
     "actions": ["locate","route","isochrone","sources_to_targets","trace_route","trace_attributes","transit_available","expansion","centroid","status"],
     "logging": {"long_request": 100},
     "service": {
-      "proxy": "",
+      "proxy": ",
       "listen": "0.0.0.0:8002"
     }
   },
@@ -443,7 +443,7 @@ cat > valhalla.json << 'EOF'
   "thor": {
     "costmatrix_allow_second_pass": false,
     "clear_reserved_memory": false,
-    "log_location": "",
+    "log_location": ",
     "max_reserved_labels_count": {
       "auto_default": 200000,
       "bicycle_default": 200000,

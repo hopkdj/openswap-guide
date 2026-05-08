@@ -349,7 +349,7 @@ Yes. Falco can consume Kubernetes audit logs in addition to system calls. This e
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
-  "@type": ""TechArticle",
+  "@type": "TechArticle",
   "headline": "KubeArmor vs Falco vs Tetragon — Kubernetes Runtime Security Enforcement (2026)",
   "description": "Compare KubeArmor, Falco, and Tetragon for Kubernetes runtime security. Covers LSM enforcement, signature detection, and eBPF-based monitoring.",
   "datePublished": "2026-05-07",

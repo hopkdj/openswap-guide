@@ -292,7 +292,7 @@ curl -X POST http://localhost:2000/api/v2/execute \
         "content": "import sys\nprint(f\"Python {sys.version}\")\nfor i in range(5):\n    print(f\"  Count: {i}\")"
       }
     ],
-    "stdin": "",
+    "stdin": ",
     "args": [],
     "compile_timeout": 10000,
     "run_timeout": 3000,
@@ -306,7 +306,7 @@ The response structure is clean and predictable:
 {
   "run": {
     "stdout": "Python 3.12.0\n  Count: 0\n  Count: 1\n  Count: 2\n  Count: 3\n  Count: 4\n",
-    "stderr": "",
+    "stderr": ",
     "output": "Python 3.12.0\n  Count: 0\n  Count: 1\n  Count: 2\n  Count: 3\n  Count: 4\n",
     "code": 0,
     "signal": null

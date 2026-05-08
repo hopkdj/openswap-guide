@@ -235,7 +235,7 @@ curl -X POST http://localhost:9090/api/v1/users \
     "username": "network_ops_01",
     "password": "SecureP@ss789",
     "status": 1,
-    "macaddr": "",
+    "macaddr": ",
     "group_name": "network-admins",
     "exp_date": "2027-04-25"
   }'

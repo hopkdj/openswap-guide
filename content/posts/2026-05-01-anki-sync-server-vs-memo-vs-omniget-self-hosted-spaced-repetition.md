@@ -108,7 +108,7 @@ cat > ~/.memo/decks/go-syntax.md << DECK
 # Go Syntax
 
 Q: What is the zero value of a string in Go?
-A: "" (empty string)
+A: " (empty string)
 
 Q: How do you create a buffered channel?
 A: make(chan Type, bufferSize)

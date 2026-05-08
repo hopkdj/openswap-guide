@@ -174,7 +174,7 @@ teleport:
   log:
     output: stderr
     severity: INFO
-  ca_pin: ""
+  ca_pin: "
 auth_service:
   enabled: "yes"
   listen_addr: 0.0.0.0:3025

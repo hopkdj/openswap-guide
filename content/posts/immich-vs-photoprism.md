@@ -186,7 +186,7 @@ services:
       PHOTOPRISM_SITE_TITLE: "My Photo Library"
       PHOTOPRISM_SITE_CAPTION: "Self-Hosted Photo Management"
       PHOTOPRISM_SITE_DESCRIPTION: "Personal photo collection powered by PhotoPrism"
-      PHOTOPRISM_SITE_AUTHOR: ""
+      PHOTOPRISM_SITE_AUTHOR: "
       PHOTOPRISM_HTTP_PORT: 2342
       PHOTOPRISM_HTTP_COMPRESSION: "gzip"
       PHOTOPRISM_DATABASE_DRIVER: "mysql"

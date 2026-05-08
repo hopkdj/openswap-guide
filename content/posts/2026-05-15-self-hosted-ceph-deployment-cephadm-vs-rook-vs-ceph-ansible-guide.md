@@ -184,7 +184,7 @@ spec:
   storage:
     useAllNodes: true
     useAllDevices: true
-    deviceFilter: ""
+    deviceFilter: "
     config:
       osdsPerDevice: "1"
   network:

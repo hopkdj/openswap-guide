@@ -346,7 +346,7 @@ A typical lifecycle configuration for a backups bucket might look like this:
     {
       "ID": "Delete old backups",
       "Status": "Enabled",
-      "Filter": { "Prefix": "" },
+      "Filter": { "Prefix": " },
       "Expiration": { "Days": 90 }
     },
     {

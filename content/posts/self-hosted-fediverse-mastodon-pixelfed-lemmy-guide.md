@@ -438,7 +438,7 @@ Configuration file (`config.hjson`):
   federation: {
     enabled: true
     sign_fetch: true
-    slur_filter: ""
+    slur_filter: "
     allowed_instances: []
     blocked_instances: []
   }
