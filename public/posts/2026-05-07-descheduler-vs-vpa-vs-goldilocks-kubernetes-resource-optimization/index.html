@@ -1,0 +1,327 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Kubernetes Pod Optimization: Descheduler vs VPA vs Goldilocks — Right-Sizing Resources (2026) | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-05-07-descheduler-vs-vpa-vs-goldilocks-kubernetes-resource-optimization/><meta property="og:type" content="article"><meta property="og:title" content="Kubernetes Pod Optimization: Descheduler vs VPA vs Goldilocks — Right-Sizing Resources (2026)"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-05-07-descheduler-vs-vpa-vs-goldilocks-kubernetes-resource-optimization/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-05-07T12:00:00Z"><meta property="article:modified_time" content="2026-05-07T12:00:00Z"><meta property="article:tag" content="kubernetes"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Kubernetes Pod Optimization: Descheduler vs VPA vs Goldilocks — Right-Sizing Resources (2026)"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Kubernetes Pod Optimization: Descheduler vs VPA vs Goldilocks — Right-Sizing Resources (2026)","description":"\u003cp\u003eKubernetes resource requests and limits are notoriously hard to set correctly. Over-provisioning wastes cluster resources and money. Under-provisioning causes throttling and OOM kills. Three tools help optimize pod resource allocation: \u003cstrong\u003eDescheduler\u003c\/strong\u003e (evicts misconfigured pods), \u003cstrong\u003eVertical Pod Autoscaler\u003c\/strong\u003e (adjusts resource requests), and \u003cstrong\u003eGoldilocks\u003c\/strong\u003e (provides VPA recommendations with a dashboard).\u003c\/p\u003e","datePublished":"2026-05-07T12:00:00Z","dateModified":"2026-05-07T12:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-05-07-descheduler-vs-vpa-vs-goldilocks-kubernetes-resource-optimization\/"},"keywords":["kubernetes","resource-management","autoscaling","self-hosted","optimization","docker"],"articleSection":"kubernetes","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Kubernetes Pod Optimization: Descheduler vs VPA vs Goldilocks — Right-Sizing Resources (2026)","item":"https:\/\/www.pistack.xyz\/posts\/2026-05-07-descheduler-vs-vpa-vs-goldilocks-kubernetes-resource-optimization\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Kubernetes</span>
+<span class="tag tag-purple">Resource-Management</span>
+<span class="tag tag-purple">Autoscaling</span></div><h1>Kubernetes Pod Optimization: Descheduler vs VPA vs Goldilocks — Right-Sizing Resources (2026)</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>May 7, 2026</span>
+<span>8 min read</span>
+<span>Updated May 7, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#quick-comparison>Quick Comparison</a></li><li><a href=#kubernetes-descheduler-evicting-misconfigured-pods>Kubernetes Descheduler: Evicting Misconfigured Pods</a><ul><li><a href=#architecture>Architecture</a></li><li><a href=#installation>Installation</a></li><li><a href=#strategy-removepodsviolatingnodeaffinity>Strategy: RemovePodsViolatingNodeAffinity</a></li><li><a href=#strategy-lownodeutilization-consolidation>Strategy: LowNodeUtilization (Consolidation)</a></li><li><a href=#strategy-pod-lifetime-eviction>Strategy: Pod Lifetime Eviction</a></li><li><a href=#key-strengths>Key Strengths</a></li></ul></li><li><a href=#vertical-pod-autoscaler-vpa-automatic-right-sizing>Vertical Pod Autoscaler (VPA): Automatic Right-Sizing</a><ul><li><a href=#installation-1>Installation</a></li><li><a href=#vpa-resource-definition>VPA Resource Definition</a></li><li><a href=#vpa-recommendation-output>VPA Recommendation Output</a></li><li><a href=#key-strengths-1>Key Strengths</a></li><li><a href=#limitations>Limitations</a></li></ul></li><li><a href=#goldilocks-vpa-recommendations-with-a-dashboard>Goldilocks: VPA Recommendations with a Dashboard</a><ul><li><a href=#installation-2>Installation</a></li><li><a href=#accessing-the-dashboard>Accessing the Dashboard</a></li><li><a href=#key-strengths-2>Key Strengths</a></li></ul></li><li><a href=#choosing-the-right-tool>Choosing the Right Tool</a><ul><li><a href=#using-them-together>Using Them Together</a></li></ul></li><li><a href=#why-resource-optimization-matters>Why Resource Optimization Matters</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#can-vpa-and-hpa-work-together>Can VPA and HPA work together?</a></li><li><a href=#does-descheduler-disrupt-running-applications>Does Descheduler disrupt running applications?</a></li><li><a href=#how-long-does-vpa-need-to-generate-accurate-recommendations>How long does VPA need to generate accurate recommendations?</a></li><li><a href=#can-goldilocks-automatically-apply-recommendations>Can Goldilocks automatically apply recommendations?</a></li><li><a href=#what-happens-if-descheduler-evicts-all-pods-on-a-node>What happens if Descheduler evicts all pods on a node?</a></li><li><a href=#is-vpa-safe-for-production-workloads>Is VPA safe for production workloads?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><p>Kubernetes resource requests and limits are notoriously hard to set correctly. Over-provisioning wastes cluster resources and money. Under-provisioning causes throttling and OOM kills. Three tools help optimize pod resource allocation: <strong>Descheduler</strong> (evicts misconfigured pods), <strong>Vertical Pod Autoscaler</strong> (adjusts resource requests), and <strong>Goldilocks</strong> (provides VPA recommendations with a dashboard).</p><p>This guide compares their approaches, deployment patterns, and when to use each.</p><h2 id=quick-comparison>Quick Comparison</h2><table><thead><tr><th>Feature</th><th>Descheduler</th><th>Vertical Pod Autoscaler (VPA)</th><th>Goldilocks</th></tr></thead><tbody><tr><td><strong>GitHub</strong></td><td>kubernetes-sigs/descheduler</td><td>kubernetes/autoscaler (VPA subdir)</td><td>FairwindsOps/goldilocks</td></tr><tr><td><strong>Stars</strong></td><td>5,397</td><td>8,842 (autoscaler repo)</td><td>3,213</td></tr><tr><td><strong>Primary Function</strong></td><td>Evict poorly scheduled pods</td><td>Auto-adjust resource requests</td><td>VPA recommendations + UI</td></tr><tr><td><strong>Action Type</strong></td><td>Eviction (reactive)</td><td>Patch requests (proactive)</td><td>Recommendations (passive)</td></tr><tr><td><strong>Auto-Apply Changes</strong></td><td>✅ Evicts pods</td><td>✅ Updates requests (auto mode)</td><td>❌ Recommendations only</td></tr><tr><td><strong>Historical Analysis</strong></td><td>❌ Current state only</td><td>✅ Usage history analysis</td><td>✅ Usage history + visualization</td></tr><tr><td><strong>Dashboard UI</strong></td><td>❌ CLI/logs only</td><td>❌ CLI/metrics only</td><td>✅ Web UI with recommendations</td></tr><tr><td><strong>Last Active</strong></td><td>2026-05</td><td>2026-05</td><td>2026-04</td></tr></tbody></table><h2 id=kubernetes-descheduler-evicting-misconfigured-pods>Kubernetes Descheduler: Evicting Misconfigured Pods</h2><p>The Descheduler finds pods that violate scheduling policies and evicts them so the default scheduler can place them better. It does not schedule pods itself — it only triggers evictions.</p><h3 id=architecture>Architecture</h3><p>Descheduler runs as a CronJob or Deployment in the cluster. It periodically analyzes pod placement against strategies and evicts pods that violate policies. The kube-scheduler then re-schedules them.</p><h3 id=installation>Installation</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install Descheduler via Helm</span>
+</span></span><span class=line><span class=cl>helm repo add descheduler https://kubernetes-sigs.github.io/descheduler/
+</span></span><span class=line><span class=cl>helm install descheduler descheduler/descheduler <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --namespace kube-system <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --version 0.30.0 <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -f descheduler-values.yaml
+</span></span></code></pre></td></tr></table></div></div><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># descheduler-values.yaml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Deployment</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>deschedulerPolicy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>strategies</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>RemoveDuplicates</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>enabled</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>LowNodeUtilization</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>enabled</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>params</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>nodeResourceUtilizationThresholds</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>thresholds</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>cpu</span><span class=p>:</span><span class=w> </span><span class=m>20</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>memory</span><span class=p>:</span><span class=w> </span><span class=m>20</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>pods</span><span class=p>:</span><span class=w> </span><span class=m>20</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>targetThresholds</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>cpu</span><span class=p>:</span><span class=w> </span><span class=m>50</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>memory</span><span class=p>:</span><span class=w> </span><span class=m>50</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>pods</span><span class=p>:</span><span class=w> </span><span class=m>50</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>RemovePodsViolatingInterPodAntiAffinity</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>enabled</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>RemovePodsViolatingTopologySpreadConstraint</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>enabled</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>params</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>nodeFit</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>dryRun</span><span class=p>:</span><span class=w> </span><span class=kc>false</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=strategy-removepodsviolatingnodeaffinity>Strategy: RemovePodsViolatingNodeAffinity</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>deschedulerPolicy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>strategies</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>RemovePodsViolatingNodeAffinity</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>enabled</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>params</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>nodeAffinityType</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=l>requiredDuringSchedulingIgnoredDuringExecution</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=strategy-lownodeutilization-consolidation>Strategy: LowNodeUtilization (Consolidation)</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>deschedulerPolicy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>strategies</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>LowNodeUtilization</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>enabled</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>params</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>nodeResourceUtilizationThresholds</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>thresholds</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>cpu</span><span class=p>:</span><span class=w> </span><span class=m>10</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>memory</span><span class=p>:</span><span class=w> </span><span class=m>10</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>pods</span><span class=p>:</span><span class=w> </span><span class=m>5</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>targetThresholds</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>cpu</span><span class=p>:</span><span class=w> </span><span class=m>40</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>memory</span><span class=p>:</span><span class=w> </span><span class=m>40</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>pods</span><span class=p>:</span><span class=w> </span><span class=m>40</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>numberOfNodes</span><span class=p>:</span><span class=w> </span><span class=m>1</span><span class=w>  </span><span class=c># Only act if underutilized nodes &gt;= 1</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=strategy-pod-lifetime-eviction>Strategy: Pod Lifetime Eviction</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>deschedulerPolicy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>strategies</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>PodLifeTime</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>enabled</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>params</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>podLifeTime</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>maxPodLifeTimeSeconds</span><span class=p>:</span><span class=w> </span><span class=m>604800</span><span class=w>  </span><span class=c># 7 days</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>includingInitPodTerminating</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>states</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span>- <span class=nt>phase</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>values</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span>- <span class=l>Running</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span>- <span class=l>Pending</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=key-strengths>Key Strengths</h3><ul><li><strong>Rebalancing</strong>: Consolidates workloads to reduce node count and save costs</li><li><strong>Anti-affinity enforcement</strong>: Ensures pods respect anti-affinity rules after cluster changes</li><li><strong>Topology spread</strong>: Maintains even distribution across zones</li><li><strong>Non-disruptive</strong>: Respects PDBs and gracefully evicts pods</li></ul><h2 id=vertical-pod-autoscaler-vpa-automatic-right-sizing>Vertical Pod Autoscaler (VPA): Automatic Right-Sizing</h2><p>VPA analyzes historical resource usage and adjusts container resource requests to match actual needs. It operates in three modes: Off (recommendations only), Initial (set on pod creation), and Auto (continuously update).</p><h3 id=installation-1>Installation</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Clone the autoscaler repo and install VPA</span>
+</span></span><span class=line><span class=cl>git clone https://github.com/kubernetes/autoscaler.git
+</span></span><span class=line><span class=cl><span class=nb>cd</span> autoscaler/vertical-pod-autoscaler/
+</span></span><span class=line><span class=cl>./hack/vpa-up.sh
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Or install via Helm (third-party chart)</span>
+</span></span><span class=line><span class=cl>helm repo add fairwinds-stable https://registry.fairwinds.com/charts/stable
+</span></span><span class=line><span class=cl>helm install vpa fairwinds-stable/vpa <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --namespace vpa <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --create-namespace
+</span></span></code></pre></td></tr></table></div></div><h3 id=vpa-resource-definition>VPA Resource Definition</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>autoscaling.k8s.io/v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>VerticalPodAutoscaler</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>nginx-vpa</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>production</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>targetRef</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>apps/v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Deployment</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>nginx</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>updatePolicy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>updateMode</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;Auto&#34;</span><span class=w>  </span><span class=c># Off | Initial | Auto</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>resourcePolicy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>containerPolicies</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>containerName</span><span class=p>:</span><span class=w> </span><span class=l>nginx</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>minAllowed</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>cpu</span><span class=p>:</span><span class=w> </span><span class=l>100m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>memory</span><span class=p>:</span><span class=w> </span><span class=l>64Mi</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>maxAllowed</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>cpu</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;2&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>memory</span><span class=p>:</span><span class=w> </span><span class=l>2Gi</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>controlledResources</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>cpu</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>memory</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=vpa-recommendation-output>VPA Recommendation Output</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>kubectl describe vpa nginx-vpa
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Status:</span>
+</span></span><span class=line><span class=cl><span class=c1># Recommendation:</span>
+</span></span><span class=line><span class=cl><span class=c1>#   container: nginx</span>
+</span></span><span class=line><span class=cl><span class=c1>#   Target:</span>
+</span></span><span class=line><span class=cl><span class=c1>#     cpu:     250m</span>
+</span></span><span class=line><span class=cl><span class=c1>#     memory:  256Mi</span>
+</span></span><span class=line><span class=cl><span class=c1>#   Lower Bound:</span>
+</span></span><span class=line><span class=cl><span class=c1>#     cpu:     100m</span>
+</span></span><span class=line><span class=cl><span class=c1>#     memory:  128Mi</span>
+</span></span><span class=line><span class=cl><span class=c1>#   Uncapped Target:</span>
+</span></span><span class=line><span class=cl><span class=c1>#     cpu:     250m</span>
+</span></span><span class=line><span class=cl><span class=c1>#     memory:  256Mi</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=key-strengths-1>Key Strengths</h3><ul><li><strong>Data-driven</strong>: Based on actual resource usage, not guesses</li><li><strong>Auto mode</strong>: Continuously adjusts without manual intervention</li><li><strong>Min/max bounds</strong>: Prevents extreme recommendations</li><li><strong>Works with HPA</strong>: VPA for requests, HPA for replica count</li></ul><h3 id=limitations>Limitations</h3><ul><li><strong>Pod restart required</strong>: Changing requests forces pod restart (except with in-place VPA on Kubernetes 1.27+)</li><li><strong>Not for all workloads</strong>: StatefulSets and DaemonSets need careful configuration</li><li><strong>History dependency</strong>: Needs time to build accurate recommendations</li></ul><h2 id=goldilocks-vpa-recommendations-with-a-dashboard>Goldilocks: VPA Recommendations with a Dashboard</h2><p>Goldilocks wraps VPA with a web dashboard that displays resource recommendations across all namespaces. It runs VPA in &ldquo;Off&rdquo; mode (recommendations only) and visualizes the results.</p><h3 id=installation-2>Installation</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install Goldilocks via Helm</span>
+</span></span><span class=line><span class=cl>helm repo add fairwinds-stable https://registry.fairwinds.com/charts/stable
+</span></span><span class=line><span class=cl>helm install goldilocks fairwinds-stable/goldilocks <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --namespace goldilocks <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --create-namespace <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --set <span class=nv>installVPA</span><span class=o>=</span><span class=nb>true</span> <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --set <span class=nv>installMetricsServer</span><span class=o>=</span><span class=nb>true</span>
+</span></span></code></pre></td></tr></table></div></div><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># goldilocks-values.yaml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>installVPA</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>installMetricsServer</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>goldilocks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>flags</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>vpa-label-selector</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>on-by-default</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>include-namespaces</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;production,staging&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>exclude-namespaces</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;kube-system,monitoring&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>dashboard</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>ingress</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>enabled</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>className</span><span class=p>:</span><span class=w> </span><span class=l>nginx</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>hosts</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>host</span><span class=p>:</span><span class=w> </span><span class=l>goldilocks.example.com</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>paths</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>path</span><span class=p>:</span><span class=w> </span><span class=l>/</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>pathType</span><span class=p>:</span><span class=w> </span><span class=l>Prefix</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=accessing-the-dashboard>Accessing the Dashboard</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Port-forward to access locally</span>
+</span></span><span class=line><span class=cl>kubectl port-forward svc/goldilocks-dashboard -n goldilocks 8080:80
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Or access via ingress at goldilocks.example.com</span>
+</span></span></code></pre></td></tr></table></div></div><p>The dashboard shows:</p><ul><li>Current resource requests vs. VPA recommendations</li><li>Historical resource usage graphs</li><li>Namespace-level summaries</li><li>Cost impact of right-sizing</li></ul><h3 id=key-strengths-2>Key Strengths</h3><ul><li><strong>Visualization</strong>: See all recommendations in one place</li><li><strong>Safe by default</strong>: Recommendations only — no automatic changes</li><li><strong>Multi-namespace</strong>: View recommendations across the entire cluster</li><li><strong>Cost awareness</strong>: Understand the financial impact of over/under-provisioning</li></ul><h2 id=choosing-the-right-tool>Choosing the Right Tool</h2><table><thead><tr><th>Scenario</th><th>Best Choice</th><th>Why</th></tr></thead><tbody><tr><td>Rebalance workloads across nodes</td><td>Descheduler</td><td>Evicts and re-schedules pods</td></tr><tr><td>Automatically right-size resource requests</td><td>VPA (Auto mode)</td><td>Adjusts requests based on usage</td></tr><tr><td>See recommendations before applying</td><td>Goldilocks</td><td>Dashboard + safe recommendations</td></tr><tr><td>Reduce cluster node count</td><td>Descheduler</td><td>LowNodeUtilization consolidation</td></tr><tr><td>Prevent OOM kills</td><td>VPA</td><td>Learns actual memory usage</td></tr><tr><td>Team collaboration on sizing</td><td>Goldilocks</td><td>Visual recommendations for review</td></tr></tbody></table><h3 id=using-them-together>Using Them Together</h3><p>The most effective approach is to use all three:</p><ol><li><strong>Goldilocks</strong> identifies right-sizing recommendations across namespaces</li><li><strong>VPA</strong> applies the recommendations (in Auto mode or after review)</li><li><strong>Descheduler</strong> ensures pods are well-distributed after resource changes</li></ol><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># Combined deployment strategy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c># 1. Install metrics-server (required for VPA)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c># 2. Install VPA in Off mode + Goldilocks for visibility</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c># 3. Review recommendations in Goldilocks dashboard</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c># 4. Enable VPA Auto mode for non-critical workloads</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c># 5. Install Descheduler for node consolidation</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c># 6. Run Descheduler nightly to rebalance after VPA changes</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=why-resource-optimization-matters>Why Resource Optimization Matters</h2><p>In Kubernetes, every pod requests CPU and memory resources. These requests determine scheduling decisions, node capacity planning, and cluster autoscaling. But most teams set requests based on guesswork or copy-pasted values.</p><p>The consequences are significant:</p><ul><li><strong>Over-provisioning</strong>: Requesting 2 CPU when 200m is needed wastes 90% of allocated resources. Multiply this across hundreds of pods and you&rsquo;re paying for idle capacity.</li><li><strong>Under-provisioning</strong>: Requesting too little memory causes OOM kills. Requesting too little CPU causes throttling, increasing latency.</li><li><strong>Node waste</strong>: Poorly sized pods prevent efficient bin-packing, leading to underutilized nodes that still cost money.</li></ul><p>Resource optimization tools turn guesswork into data-driven decisions. VPA learns from actual usage, Descheduler corrects scheduling drift, and Goldilocks makes recommendations visible to the whole team.</p><p>For cluster-level autoscaling, see our <a href=../karpenter-vs-cluster-autoscaler-vs-keda-kubernetes-autoscaling-guide-2026/>Karpenter vs Cluster Autoscaler vs KEDA guide</a>. For node management and health monitoring, the <a href=../2026-05-01-node-problem-detector-vs-node-feature-discovery-vs-goldilocks-kubernetes-node-management/>Node Problem Detector vs NFD vs Goldilocks article</a> covers node-level optimization. For cluster management platforms, our <a href=../2026-04-22-rancher-vs-kubespray-vs-kind-self-hosted-kubernetes-management-guide/>Rancher vs KubeSpray vs Kind comparison</a> covers the infrastructure layer.</p><p>Resource optimization tools turn guesswork into data-driven decisions. VPA learns from actual usage, Descheduler corrects scheduling drift, and Goldilocks makes recommendations visible to the whole team.</p><p>For cluster-level autoscaling, see our <a href=../karpenter-vs-cluster-autoscaler-vs-keda-kubernetes-autoscaling-guide-2026/>Karpenter vs Cluster Autoscaler vs KEDA guide</a>. For node management and health monitoring, the <a href=../2026-05-01-node-problem-detector-vs-node-feature-discovery-vs-goldilocks-kubernetes-node-management/>Node Problem Detector vs NFD vs Goldilocks article</a> covers node-level optimization. For cluster management platforms, our <a href=../2026-04-22-rancher-vs-kubespray-vs-kind-self-hosted-kubernetes-management-guide/>Rancher vs KubeSpray vs Kind comparison</a> covers the infrastructure layer.
+Together, they form a continuous optimization loop that adapts to changing workload patterns.</p><p><a href=../karpenter-vs-cluster-autoscaler-vs-keda-kubernetes-autoscaling-guide-2026/>Karpenter vs Cluster Autoscaler vs KEDA guide</a>. For node management and health monitoring, the <a href=../2026-05-01-node-problem-detector-vs-node-feature-discovery-vs-goldilocks-kubernetes-node-management/>Node Problem Detector vs NFD vs Goldilocks article</a> covers node-level optimization.</p><h2 id=faq>FAQ</h2><h3 id=can-vpa-and-hpa-work-together>Can VPA and HPA work together?</h3><p>Yes, but with caveats. VPA should manage resource requests (cpu/memory) while HPA manages replica count. However, VPA and HPA should not both manage the same resource. The recommended pattern: VPA controls CPU/memory requests, HPA controls replicas based on custom metrics (RPS, queue depth, etc.).</p><h3 id=does-descheduler-disrupt-running-applications>Does Descheduler disrupt running applications?</h3><p>Descheduler respects PodDisruptionBudgets (PDBs) and only evicts pods when safe to do so. The <code>nodeFit</code> parameter ensures pods are only evicted if there is a suitable node to reschedule them on.</p><h3 id=how-long-does-vpa-need-to-generate-accurate-recommendations>How long does VPA need to generate accurate recommendations?</h3><p>VPA typically needs 8-24 hours of historical data to generate initial recommendations. Accuracy improves over time as more usage data is collected. For workloads with variable patterns (batch jobs, cron jobs), VPA may need several days.</p><h3 id=can-goldilocks-automatically-apply-recommendations>Can Goldilocks automatically apply recommendations?</h3><p>No. Goldilocks runs VPA in &ldquo;Off&rdquo; mode, which means it only generates recommendations. To auto-apply, you need to switch VPA to &ldquo;Auto&rdquo; mode or use the <code>kubectl patch</code> command to apply the recommended values manually.</p><h3 id=what-happens-if-descheduler-evicts-all-pods-on-a-node>What happens if Descheduler evicts all pods on a node?</h3><p>Descheduler&rsquo;s strategies are designed to avoid this. The <code>LowNodeUtilization</code> strategy only acts when nodes are below a threshold, and the <code>nodeFit</code> parameter ensures pods have a place to go. PDBs also prevent mass evictions.</p><h3 id=is-vpa-safe-for-production-workloads>Is VPA safe for production workloads?</h3><p>VPA&rsquo;s &ldquo;Initial&rdquo; mode is safe — it only sets requests on pod creation. &ldquo;Auto&rdquo; mode triggers pod restarts when changing requests, which may cause brief downtime. For critical workloads, use &ldquo;Initial&rdquo; mode or review Goldilocks recommendations before applying.</p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Kubernetes Pod Optimization: Descheduler vs VPA vs Goldilocks — Right-Sizing Resources (2026)","description":"Compare Descheduler, VPA, and Goldilocks for Kubernetes resource optimization. Covers pod eviction, auto-sizing, and recommendation dashboards.","datePublished":"2026-05-07","dateModified":"2026-05-07","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Kubernetes%20Pod%20Optimization%3a%20Descheduler%20vs%20VPA%20vs%20Goldilocks%20%e2%80%94%20Right-Sizing%20Resources%20%282026%29&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-07-descheduler-vs-vpa-vs-goldilocks-kubernetes-resource-optimization%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-07-descheduler-vs-vpa-vs-goldilocks-kubernetes-resource-optimization%2f&t=Kubernetes%20Pod%20Optimization%3a%20Descheduler%20vs%20VPA%20vs%20Goldilocks%20%e2%80%94%20Right-Sizing%20Resources%20%282026%29" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/kubernetes/ class=tag-link>Kubernetes</a>
+<a href=/tags/resource-management/ class=tag-link>Resource-Management</a>
+<a href=/tags/autoscaling/ class=tag-link>Autoscaling</a>
+<a href=/tags/self-hosted/ class=tag-link>Self-Hosted</a>
+<a href=/tags/optimization/ class=tag-link>Optimization</a>
+<a href=/tags/docker/ class=tag-link>Docker</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-05-01-node-problem-detector-vs-node-feature-discovery-vs-goldilocks-kubernetes-node-management/ class=post-card><div class=post-tags><span class="tag tag-purple">Kubernetes</span></div><h3 class=post-title>Node Problem Detector vs Node Feature Discovery vs Goldilocks — Kubernetes Node Management Tools Guide 2026</h3><div class=post-excerpt>Running a healthy Kubernetes cluster requires more than just deploying workloads — you need visibility into node health, …</div><div class=post-footer><span class=post-date>May 1, 2026</span></div></a><a href=/posts/2026-05-07-kubefed-vs-ocm-vs-cluster-api-multi-cluster-federation-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Kubernetes</span></div><h3 class=post-title>KubeFed vs Open Cluster Management vs Cluster API — Multi-Cluster Kubernetes Federation (2026)</h3><div class=post-excerpt>Managing Kubernetes across multiple clusters — whether for disaster recovery, geographic distribution, or hybrid cloud — …</div><div class=post-footer><span class=post-date>May 7, 2026</span></div></a><a href=/posts/2026-05-07-openfeature-feature-flags-flagd-go-feature-flag-flipt-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Comparison</span></div><h3 class=post-title>OpenFeature Feature Flags: flagd vs go-feature-flag vs Flipt (2026 Self-Hosted Guide)</h3><div class=post-excerpt>The OpenFeature project has emerged as the vendor-neutral standard for feature flag management, providing a unified SDK …</div><div class=post-footer><span class=post-date>May 7, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>
