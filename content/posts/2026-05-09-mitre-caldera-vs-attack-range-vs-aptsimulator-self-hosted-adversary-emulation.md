@@ -1,6 +1,6 @@
 ---
 title: "MITRE Caldera vs Splunk Attack Range vs APTSimulator: Self-Hosted Adversary Emulation Platforms (2026)"
-date: "' + today + r'"
+date: "2026-05-09"
 tags: ["security", "adversary-emulation", "penetration-testing", "red-team", "threat-detection"]
 draft: false
 ---
@@ -259,8 +259,8 @@ Caldera generates logs that can be forwarded to any SIEM via its logging plugin.
   "@type": "TechArticle",
   "headline": "MITRE Caldera vs Splunk Attack Range vs APTSimulator: Self-Hosted Adversary Emulation Platforms (2026)",
   "description": "Compare MITRE Caldera, Splunk Attack Range, and APTSimulator for self-hosted adversary emulation. Learn which platform best fits your security testing needs.",
-  "datePublished": "' + today + r'",
-  "dateModified": "' + today + r'",
+  "datePublished": "2026-05-09",
+  "dateModified": "2026-05-09",
   "author": {
     "@type": "Organization",
     "name": "OpenSwap Guide"

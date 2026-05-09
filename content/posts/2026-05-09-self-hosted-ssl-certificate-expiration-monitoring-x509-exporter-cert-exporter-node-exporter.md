@@ -1,6 +1,6 @@
 ---
 title: "Self-Hosted SSL Certificate Expiration Monitoring: enix x509-certificate-exporter vs cert-exporter vs node-cert-exporter (2026)"
-date: "' + today + r'"
+date: "2026-05-09"
 tags: ["monitoring", "ssl", "tls", "certificates", "prometheus", "security"]
 draft: false
 ---
@@ -329,8 +329,8 @@ For clusters with 100+ nodes, the enix x509-certificate-exporter is recommended 
   "@type": "TechArticle",
   "headline": "Self-Hosted SSL Certificate Expiration Monitoring: enix x509-certificate-exporter vs cert-exporter vs node-cert-exporter (2026)",
   "description": "Compare three self-hosted Prometheus exporters for SSL/TLS certificate expiration monitoring in Kubernetes and bare-metal environments.",
-  "datePublished": "' + today + r'",
-  "dateModified": "' + today + r'",
+  "datePublished": "2026-05-09",
+  "dateModified": "2026-05-09",
   "author": {
     "@type": "Organization",
     "name": "OpenSwap Guide"

@@ -1,6 +1,6 @@
 ---
 title: "Self-Hosted BGP Monitoring & Route Alerting: BGPalerter vs ExaBGP vs GoBGP (2026)"
-date: "' + today + r'"
+date: "2026-05-09"
 tags: ["networking", "bgp", "monitoring", "routing", "infrastructure", "security"]
 draft: false
 ---
@@ -302,8 +302,8 @@ BMP is an IETF standard (RFC 7854) that allows BGP speakers to send route update
   "@type": "TechArticle",
   "headline": "Self-Hosted BGP Monitoring & Route Alerting: BGPalerter vs ExaBGP vs GoBGP (2026)",
   "description": "Compare Cloudflare BGPalerter, ExaBGP, and GoBGP for self-hosted BGP route monitoring, hijack detection, and programmable routing.",
-  "datePublished": "' + today + r'",
-  "dateModified": "' + today + r'",
+  "datePublished": "2026-05-09",
+  "dateModified": "2026-05-09",
   "author": {
     "@type": "Organization",
     "name": "OpenSwap Guide"
