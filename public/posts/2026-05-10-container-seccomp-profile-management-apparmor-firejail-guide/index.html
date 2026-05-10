@@ -1,0 +1,478 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted Container Seccomp Profile Management: AppArmor vs Seccomp vs Firejail (2026) | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-05-10-container-seccomp-profile-management-apparmor-firejail-guide/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted Container Seccomp Profile Management: AppArmor vs Seccomp vs Firejail (2026)"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-05-10-container-seccomp-profile-management-apparmor-firejail-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-05-10T00:00:00Z"><meta property="article:modified_time" content="2026-05-10T00:00:00Z"><meta property="article:tag" content="security"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted Container Seccomp Profile Management: AppArmor vs Seccomp vs Firejail (2026)"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted Container Seccomp Profile Management: AppArmor vs Seccomp vs Firejail (2026)","description":"\u003cp\u003eContainer security extends far beyond image scanning and network isolation. At the kernel level, three complementary security mechanisms — \u003cstrong\u003eSeccomp\u003c\/strong\u003e, \u003cstrong\u003eAppArmor\u003c\/strong\u003e, and \u003cstrong\u003eFirejail\u003c\/strong\u003e — restrict what processes inside containers can actually do. These are not alternatives to each other but rather \u003cstrong\u003edefense-in-depth layers\u003c\/strong\u003e that work together to create a robust container sandbox. Understanding how each mechanism works and how to manage them effectively is critical for running containers securely in production.\u003c\/p\u003e","datePublished":"2026-05-10T00:00:00Z","dateModified":"2026-05-10T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-05-10-container-seccomp-profile-management-apparmor-firejail-guide\/"},"keywords":["security","containers","seccomp","apparmor","sandbox","linux"],"articleSection":"security","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted Container Seccomp Profile Management: AppArmor vs Seccomp vs Firejail (2026)","item":"https:\/\/www.pistack.xyz\/posts\/2026-05-10-container-seccomp-profile-management-apparmor-firejail-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Security</span>
+<span class="tag tag-purple">Containers</span>
+<span class="tag tag-purple">Seccomp</span></div><h1>Self-Hosted Container Seccomp Profile Management: AppArmor vs Seccomp vs Firejail (2026)</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>May 10, 2026</span>
+<span>12 min read</span>
+<span>Updated May 10, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#understanding-container-security-layers>Understanding Container Security Layers</a></li><li><a href=#seccomp-secure-computing-mode>Seccomp (Secure Computing Mode)</a><ul><li><a href=#key-features>Key Features</a></li><li><a href=#default-docker-seccomp-profile>Default Docker Seccomp Profile</a></li><li><a href=#custom-seccomp-profile>Custom Seccomp Profile</a></li><li><a href=#docker-compose-with-seccomp>Docker Compose with Seccomp</a></li></ul></li><li><a href=#apparmor-application-armor>AppArmor (Application Armor)</a><ul><li><a href=#key-features-1>Key Features</a></li><li><a href=#apparmor-profile-for-a-web-container>AppArmor Profile for a Web Container</a></li><li><a href=#docker-compose-with-apparmor>Docker Compose with AppArmor</a></li></ul></li><li><a href=#firejail>Firejail</a><ul><li><a href=#key-features-2>Key Features</a></li><li><a href=#firejail-profile-for-a-container-application>Firejail Profile for a Container Application</a></li></ul></li><li><a href=#comparison-table>Comparison Table</a></li><li><a href=#defense-in-depth-strategy>Defense-in-Depth Strategy</a></li><li><a href=#why-self-host-your-container-security-profiles>Why Self-Host Your Container Security Profiles?</a></li><li><a href=#why-self-host-your-database-security-and-routing-infrastructure>Why Self-Host Your Database Security and Routing Infrastructure?</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#what-happens-when-a-container-violates-a-seccomp-rule>What happens when a container violates a seccomp rule?</a></li><li><a href=#can-i-use-apparmor-and-seccomp-together-on-the-same-container>Can I use AppArmor and seccomp together on the same container?</a></li><li><a href=#how-do-i-test-an-apparmor-profile-before-enforcing-it>How do I test an AppArmor profile before enforcing it?</a></li><li><a href=#does-firejail-work-inside-docker-containers>Does Firejail work inside Docker containers?</a></li><li><a href=#how-do-i-find-which-syscalls-my-application-needs-for-a-custom-seccomp-profile>How do I find which syscalls my application needs for a custom seccomp profile?</a></li><li><a href=#what-is-the-performance-impact-of-seccomp-and-apparmor-on-containers>What is the performance impact of seccomp and AppArmor on containers?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><p>Container security extends far beyond image scanning and network isolation. At the kernel level, three complementary security mechanisms — <strong>Seccomp</strong>, <strong>AppArmor</strong>, and <strong>Firejail</strong> — restrict what processes inside containers can actually do. These are not alternatives to each other but rather <strong>defense-in-depth layers</strong> that work together to create a robust container sandbox. Understanding how each mechanism works and how to manage them effectively is critical for running containers securely in production.</p><p>This guide explains how to create, manage, and deploy security profiles for containers using the Linux kernel&rsquo;s built-in security frameworks. We compare Seccomp filters, AppArmor profiles, and Firejail sandboxes — three complementary approaches to restricting container process capabilities at the system call, file access, and user-space levels.</p><h2 id=understanding-container-security-layers>Understanding Container Security Layers</h2><p>Containers share the host kernel, which means a compromised container process has the same kernel attack surface as any other host process. Linux provides several mechanisms to limit this attack surface:</p><table><thead><tr><th>Layer</th><th>Mechanism</th><th>What It Restricts</th></tr></thead><tbody><tr><td><strong>System calls</strong></td><td>Seccomp</td><td>Which syscalls a process can invoke</td></tr><tr><td><strong>File/Network access</strong></td><td>AppArmor</td><td>What files, capabilities, and network operations are permitted</td></tr><tr><td><strong>Resource access</strong></td><td>Namespaces + cgroups</td><td>Visibility into host resources and resource limits</td></tr><tr><td><strong>User-space sandboxing</strong></td><td>Firejail</td><td>Application-level restrictions (X11, devices, network)</td></tr><tr><td><strong>Kernel isolation</strong></td><td>gVisor/Kata</td><td>Separate kernel or microVM for complete isolation</td></tr></tbody></table><p>Seccomp and AppArmor are <strong>kernel-level</strong> mechanisms enforced by Linux itself. Firejail is a <strong>user-space</strong> sandboxing tool that uses namespaces, seccomp, and other kernel features under the hood but provides a simpler, application-oriented interface.</p><h2 id=seccomp-secure-computing-mode>Seccomp (Secure Computing Mode)</h2><p><strong>Seccomp</strong> is a Linux kernel security feature that filters system calls made by a process. When a process enters seccomp mode, the kernel checks each system call against a Berkeley Packet Filter (BPF) program. If the syscall is not allowed, the kernel kills the process or returns an error.</p><h3 id=key-features>Key Features</h3><ul><li><strong>Syscall filtering</strong> — whitelist or blacklist specific system calls</li><li><strong>BPF-based rules</strong> — highly efficient, compiled filter programs</li><li><strong>Docker integration</strong> — built-in seccomp profiles for containers</li><li><strong>Fine-grained control</strong> — filter by syscall, arguments, and return values</li><li><strong>Default deny mode</strong> — only explicitly allowed syscalls pass through</li></ul><h3 id=default-docker-seccomp-profile>Default Docker Seccomp Profile</h3><p>Docker ships with a default seccomp profile that blocks approximately 44 dangerous system calls while allowing the ~300 syscalls that typical applications need. This profile blocks syscalls like <code>mount</code>, <code>umount</code>, <code>reboot</code>, <code>swapon</code>, <code>swapoff</code>, <code>ptrace</code>, and kernel module loading.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span><span class=lnt>62
+</span><span class=lnt>63
+</span><span class=lnt>64
+</span><span class=lnt>65
+</span><span class=lnt>66
+</span><span class=lnt>67
+</span><span class=lnt>68
+</span><span class=lnt>69
+</span><span class=lnt>70
+</span><span class=lnt>71
+</span><span class=lnt>72
+</span><span class=lnt>73
+</span><span class=lnt>74
+</span><span class=lnt>75
+</span><span class=lnt>76
+</span><span class=lnt>77
+</span><span class=lnt>78
+</span><span class=lnt>79
+</span><span class=lnt>80
+</span><span class=lnt>81
+</span><span class=lnt>82
+</span><span class=lnt>83
+</span><span class=lnt>84
+</span><span class=lnt>85
+</span><span class=lnt>86
+</span><span class=lnt>87
+</span><span class=lnt>88
+</span><span class=lnt>89
+</span><span class=lnt>90
+</span><span class=lnt>91
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;defaultAction&#34;</span><span class=p>:</span> <span class=s2>&#34;SCMP_ACT_ERRNO&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;architectures&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;SCMP_ARCH_X86_64&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;SCMP_ARCH_X86&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;SCMP_ARCH_X32&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=p>],</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;syscalls&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>    <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;names&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;accept&#34;</span><span class=p>,</span> <span class=s2>&#34;accept4&#34;</span><span class=p>,</span> <span class=s2>&#34;access&#34;</span><span class=p>,</span> <span class=s2>&#34;alarm&#34;</span><span class=p>,</span> <span class=s2>&#34;bind&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;brk&#34;</span><span class=p>,</span> <span class=s2>&#34;capget&#34;</span><span class=p>,</span> <span class=s2>&#34;capset&#34;</span><span class=p>,</span> <span class=s2>&#34;chdir&#34;</span><span class=p>,</span> <span class=s2>&#34;chmod&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;chown&#34;</span><span class=p>,</span> <span class=s2>&#34;chown32&#34;</span><span class=p>,</span> <span class=s2>&#34;clock_getres&#34;</span><span class=p>,</span> <span class=s2>&#34;clock_gettime&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;clock_nanosleep&#34;</span><span class=p>,</span> <span class=s2>&#34;close&#34;</span><span class=p>,</span> <span class=s2>&#34;connect&#34;</span><span class=p>,</span> <span class=s2>&#34;copy_file_range&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;creat&#34;</span><span class=p>,</span> <span class=s2>&#34;dup&#34;</span><span class=p>,</span> <span class=s2>&#34;dup2&#34;</span><span class=p>,</span> <span class=s2>&#34;dup3&#34;</span><span class=p>,</span> <span class=s2>&#34;epoll_create&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;epoll_create1&#34;</span><span class=p>,</span> <span class=s2>&#34;epoll_ctl&#34;</span><span class=p>,</span> <span class=s2>&#34;epoll_ctl_old&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;epoll_pwait&#34;</span><span class=p>,</span> <span class=s2>&#34;epoll_wait&#34;</span><span class=p>,</span> <span class=s2>&#34;epoll_wait_old&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;eventfd&#34;</span><span class=p>,</span> <span class=s2>&#34;eventfd2&#34;</span><span class=p>,</span> <span class=s2>&#34;execve&#34;</span><span class=p>,</span> <span class=s2>&#34;execveat&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;exit&#34;</span><span class=p>,</span> <span class=s2>&#34;exit_group&#34;</span><span class=p>,</span> <span class=s2>&#34;faccessat&#34;</span><span class=p>,</span> <span class=s2>&#34;fadvise64&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;fallocate&#34;</span><span class=p>,</span> <span class=s2>&#34;fanotify_mark&#34;</span><span class=p>,</span> <span class=s2>&#34;fchdir&#34;</span><span class=p>,</span> <span class=s2>&#34;fchmod&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;fchmodat&#34;</span><span class=p>,</span> <span class=s2>&#34;fchown&#34;</span><span class=p>,</span> <span class=s2>&#34;fchown32&#34;</span><span class=p>,</span> <span class=s2>&#34;fchownat&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;fcntl&#34;</span><span class=p>,</span> <span class=s2>&#34;fcntl64&#34;</span><span class=p>,</span> <span class=s2>&#34;fdatasync&#34;</span><span class=p>,</span> <span class=s2>&#34;fgetxattr&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;flistxattr&#34;</span><span class=p>,</span> <span class=s2>&#34;flock&#34;</span><span class=p>,</span> <span class=s2>&#34;fork&#34;</span><span class=p>,</span> <span class=s2>&#34;fremovexattr&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;fsetxattr&#34;</span><span class=p>,</span> <span class=s2>&#34;fstat&#34;</span><span class=p>,</span> <span class=s2>&#34;fstat64&#34;</span><span class=p>,</span> <span class=s2>&#34;fstatat64&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;fstatfs&#34;</span><span class=p>,</span> <span class=s2>&#34;fstatfs64&#34;</span><span class=p>,</span> <span class=s2>&#34;fsync&#34;</span><span class=p>,</span> <span class=s2>&#34;ftruncate&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;ftruncate64&#34;</span><span class=p>,</span> <span class=s2>&#34;futex&#34;</span><span class=p>,</span> <span class=s2>&#34;futimesat&#34;</span><span class=p>,</span> <span class=s2>&#34;getcpu&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;getcwd&#34;</span><span class=p>,</span> <span class=s2>&#34;getdents&#34;</span><span class=p>,</span> <span class=s2>&#34;getdents64&#34;</span><span class=p>,</span> <span class=s2>&#34;getegid&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;getegid32&#34;</span><span class=p>,</span> <span class=s2>&#34;geteuid&#34;</span><span class=p>,</span> <span class=s2>&#34;geteuid32&#34;</span><span class=p>,</span> <span class=s2>&#34;getgid&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;getgid32&#34;</span><span class=p>,</span> <span class=s2>&#34;getgroups&#34;</span><span class=p>,</span> <span class=s2>&#34;getgroups32&#34;</span><span class=p>,</span> <span class=s2>&#34;getitimer&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;getpeername&#34;</span><span class=p>,</span> <span class=s2>&#34;getpgrp&#34;</span><span class=p>,</span> <span class=s2>&#34;getpid&#34;</span><span class=p>,</span> <span class=s2>&#34;getppid&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;getpriority&#34;</span><span class=p>,</span> <span class=s2>&#34;getrandom&#34;</span><span class=p>,</span> <span class=s2>&#34;getresgid&#34;</span><span class=p>,</span> <span class=s2>&#34;getresgid32&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;getresuid&#34;</span><span class=p>,</span> <span class=s2>&#34;getresuid32&#34;</span><span class=p>,</span> <span class=s2>&#34;getrlimit&#34;</span><span class=p>,</span> <span class=s2>&#34;get_robust_list&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;getrusage&#34;</span><span class=p>,</span> <span class=s2>&#34;getsid&#34;</span><span class=p>,</span> <span class=s2>&#34;getsockname&#34;</span><span class=p>,</span> <span class=s2>&#34;getsockopt&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;get_thread_area&#34;</span><span class=p>,</span> <span class=s2>&#34;gettid&#34;</span><span class=p>,</span> <span class=s2>&#34;gettimeofday&#34;</span><span class=p>,</span> <span class=s2>&#34;get_tls&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;getuid&#34;</span><span class=p>,</span> <span class=s2>&#34;getuid32&#34;</span><span class=p>,</span> <span class=s2>&#34;getxattr&#34;</span><span class=p>,</span> <span class=s2>&#34;inotify_add_watch&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;inotify_init&#34;</span><span class=p>,</span> <span class=s2>&#34;inotify_init1&#34;</span><span class=p>,</span> <span class=s2>&#34;inotify_rm_watch&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;io_cancel&#34;</span><span class=p>,</span> <span class=s2>&#34;ioctl&#34;</span><span class=p>,</span> <span class=s2>&#34;io_destroy&#34;</span><span class=p>,</span> <span class=s2>&#34;io_getevents&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;io_pgetevents&#34;</span><span class=p>,</span> <span class=s2>&#34;ioprio_get&#34;</span><span class=p>,</span> <span class=s2>&#34;ioprio_set&#34;</span><span class=p>,</span> <span class=s2>&#34;io_setup&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;io_submit&#34;</span><span class=p>,</span> <span class=s2>&#34;io_uring_enter&#34;</span><span class=p>,</span> <span class=s2>&#34;io_uring_register&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;io_uring_setup&#34;</span><span class=p>,</span> <span class=s2>&#34;ipc&#34;</span><span class=p>,</span> <span class=s2>&#34;kill&#34;</span><span class=p>,</span> <span class=s2>&#34;lchown&#34;</span><span class=p>,</span> <span class=s2>&#34;lchown32&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;lgetxattr&#34;</span><span class=p>,</span> <span class=s2>&#34;link&#34;</span><span class=p>,</span> <span class=s2>&#34;linkat&#34;</span><span class=p>,</span> <span class=s2>&#34;listen&#34;</span><span class=p>,</span> <span class=s2>&#34;listxattr&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;llistxattr&#34;</span><span class=p>,</span> <span class=s2>&#34;_llseek&#34;</span><span class=p>,</span> <span class=s2>&#34;lremovexattr&#34;</span><span class=p>,</span> <span class=s2>&#34;lseek&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;lsetxattr&#34;</span><span class=p>,</span> <span class=s2>&#34;lstat&#34;</span><span class=p>,</span> <span class=s2>&#34;lstat64&#34;</span><span class=p>,</span> <span class=s2>&#34;madvise&#34;</span><span class=p>,</span> <span class=s2>&#34;memfd_create&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;mincore&#34;</span><span class=p>,</span> <span class=s2>&#34;mkdir&#34;</span><span class=p>,</span> <span class=s2>&#34;mkdirat&#34;</span><span class=p>,</span> <span class=s2>&#34;mknod&#34;</span><span class=p>,</span> <span class=s2>&#34;mknodat&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;mlock&#34;</span><span class=p>,</span> <span class=s2>&#34;mlock2&#34;</span><span class=p>,</span> <span class=s2>&#34;mlockall&#34;</span><span class=p>,</span> <span class=s2>&#34;mmap&#34;</span><span class=p>,</span> <span class=s2>&#34;mmap2&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;mprotect&#34;</span><span class=p>,</span> <span class=s2>&#34;mq_getsetattr&#34;</span><span class=p>,</span> <span class=s2>&#34;mq_notify&#34;</span><span class=p>,</span> <span class=s2>&#34;mq_open&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;mq_timedreceive&#34;</span><span class=p>,</span> <span class=s2>&#34;mq_timedsend&#34;</span><span class=p>,</span> <span class=s2>&#34;mq_unlink&#34;</span><span class=p>,</span> <span class=s2>&#34;mremap&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;msgctl&#34;</span><span class=p>,</span> <span class=s2>&#34;msgget&#34;</span><span class=p>,</span> <span class=s2>&#34;msgrcv&#34;</span><span class=p>,</span> <span class=s2>&#34;msgsnd&#34;</span><span class=p>,</span> <span class=s2>&#34;msync&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;munlock&#34;</span><span class=p>,</span> <span class=s2>&#34;munlockall&#34;</span><span class=p>,</span> <span class=s2>&#34;munmap&#34;</span><span class=p>,</span> <span class=s2>&#34;nanosleep&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;newfstatat&#34;</span><span class=p>,</span> <span class=s2>&#34;_newselect&#34;</span><span class=p>,</span> <span class=s2>&#34;open&#34;</span><span class=p>,</span> <span class=s2>&#34;openat&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;openat2&#34;</span><span class=p>,</span> <span class=s2>&#34;pause&#34;</span><span class=p>,</span> <span class=s2>&#34;pidfd_open&#34;</span><span class=p>,</span> <span class=s2>&#34;pidfd_send_signal&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;pipe&#34;</span><span class=p>,</span> <span class=s2>&#34;pipe2&#34;</span><span class=p>,</span> <span class=s2>&#34;poll&#34;</span><span class=p>,</span> <span class=s2>&#34;ppoll&#34;</span><span class=p>,</span> <span class=s2>&#34;prctl&#34;</span><span class=p>,</span> <span class=s2>&#34;pread64&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;preadv&#34;</span><span class=p>,</span> <span class=s2>&#34;preadv2&#34;</span><span class=p>,</span> <span class=s2>&#34;prlimit64&#34;</span><span class=p>,</span> <span class=s2>&#34;pselect6&#34;</span><span class=p>,</span> <span class=s2>&#34;pwrite64&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;pwritev&#34;</span><span class=p>,</span> <span class=s2>&#34;pwritev2&#34;</span><span class=p>,</span> <span class=s2>&#34;read&#34;</span><span class=p>,</span> <span class=s2>&#34;readahead&#34;</span><span class=p>,</span> <span class=s2>&#34;readlink&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;readlinkat&#34;</span><span class=p>,</span> <span class=s2>&#34;readv&#34;</span><span class=p>,</span> <span class=s2>&#34;recv&#34;</span><span class=p>,</span> <span class=s2>&#34;recvfrom&#34;</span><span class=p>,</span> <span class=s2>&#34;recvmmsg&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;recvmsg&#34;</span><span class=p>,</span> <span class=s2>&#34;remap_file_pages&#34;</span><span class=p>,</span> <span class=s2>&#34;removexattr&#34;</span><span class=p>,</span> <span class=s2>&#34;rename&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;renameat&#34;</span><span class=p>,</span> <span class=s2>&#34;renameat2&#34;</span><span class=p>,</span> <span class=s2>&#34;restart_syscall&#34;</span><span class=p>,</span> <span class=s2>&#34;rmdir&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;rseq&#34;</span><span class=p>,</span> <span class=s2>&#34;rt_sigaction&#34;</span><span class=p>,</span> <span class=s2>&#34;rt_sigpending&#34;</span><span class=p>,</span> <span class=s2>&#34;rt_sigprocmask&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;rt_sigqueueinfo&#34;</span><span class=p>,</span> <span class=s2>&#34;rt_sigreturn&#34;</span><span class=p>,</span> <span class=s2>&#34;rt_sigsuspend&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;rt_sigtimedwait&#34;</span><span class=p>,</span> <span class=s2>&#34;rt_tgsigqueueinfo&#34;</span><span class=p>,</span> <span class=s2>&#34;sched_getaffinity&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;sched_getattr&#34;</span><span class=p>,</span> <span class=s2>&#34;sched_getparam&#34;</span><span class=p>,</span> <span class=s2>&#34;sched_get_priority_max&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;sched_get_priority_min&#34;</span><span class=p>,</span> <span class=s2>&#34;sched_getscheduler&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;sched_rr_get_interval&#34;</span><span class=p>,</span> <span class=s2>&#34;sched_setaffinity&#34;</span><span class=p>,</span> <span class=s2>&#34;sched_setattr&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;sched_setparam&#34;</span><span class=p>,</span> <span class=s2>&#34;sched_setscheduler&#34;</span><span class=p>,</span> <span class=s2>&#34;sched_yield&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;select&#34;</span><span class=p>,</span> <span class=s2>&#34;semctl&#34;</span><span class=p>,</span> <span class=s2>&#34;semget&#34;</span><span class=p>,</span> <span class=s2>&#34;semop&#34;</span><span class=p>,</span> <span class=s2>&#34;semtimedop&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;send&#34;</span><span class=p>,</span> <span class=s2>&#34;sendfile&#34;</span><span class=p>,</span> <span class=s2>&#34;sendfile64&#34;</span><span class=p>,</span> <span class=s2>&#34;sendmmsg&#34;</span><span class=p>,</span> <span class=s2>&#34;sendmsg&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;sendto&#34;</span><span class=p>,</span> <span class=s2>&#34;setfsgid&#34;</span><span class=p>,</span> <span class=s2>&#34;setfsgid32&#34;</span><span class=p>,</span> <span class=s2>&#34;setfsuid&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;setfsuid32&#34;</span><span class=p>,</span> <span class=s2>&#34;setgid&#34;</span><span class=p>,</span> <span class=s2>&#34;setgid32&#34;</span><span class=p>,</span> <span class=s2>&#34;setgroups&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;setgroups32&#34;</span><span class=p>,</span> <span class=s2>&#34;setitimer&#34;</span><span class=p>,</span> <span class=s2>&#34;setpgid&#34;</span><span class=p>,</span> <span class=s2>&#34;setpriority&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;setregid&#34;</span><span class=p>,</span> <span class=s2>&#34;setregid32&#34;</span><span class=p>,</span> <span class=s2>&#34;setresgid&#34;</span><span class=p>,</span> <span class=s2>&#34;setresgid32&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;setresuid&#34;</span><span class=p>,</span> <span class=s2>&#34;setresuid32&#34;</span><span class=p>,</span> <span class=s2>&#34;setreuid&#34;</span><span class=p>,</span> <span class=s2>&#34;setreuid32&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;setrlimit&#34;</span><span class=p>,</span> <span class=s2>&#34;set_robust_list&#34;</span><span class=p>,</span> <span class=s2>&#34;setsid&#34;</span><span class=p>,</span> <span class=s2>&#34;setsockopt&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;set_thread_area&#34;</span><span class=p>,</span> <span class=s2>&#34;set_tid_address&#34;</span><span class=p>,</span> <span class=s2>&#34;setuid&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;setuid32&#34;</span><span class=p>,</span> <span class=s2>&#34;setxattr&#34;</span><span class=p>,</span> <span class=s2>&#34;shmat&#34;</span><span class=p>,</span> <span class=s2>&#34;shmctl&#34;</span><span class=p>,</span> <span class=s2>&#34;shmdt&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;shmget&#34;</span><span class=p>,</span> <span class=s2>&#34;shutdown&#34;</span><span class=p>,</span> <span class=s2>&#34;sigaltstack&#34;</span><span class=p>,</span> <span class=s2>&#34;signalfd&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;signalfd4&#34;</span><span class=p>,</span> <span class=s2>&#34;sigpending&#34;</span><span class=p>,</span> <span class=s2>&#34;sigprocmask&#34;</span><span class=p>,</span> <span class=s2>&#34;sigreturn&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;sigsuspend&#34;</span><span class=p>,</span> <span class=s2>&#34;socket&#34;</span><span class=p>,</span> <span class=s2>&#34;socketcall&#34;</span><span class=p>,</span> <span class=s2>&#34;socketpair&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;splice&#34;</span><span class=p>,</span> <span class=s2>&#34;stat&#34;</span><span class=p>,</span> <span class=s2>&#34;stat64&#34;</span><span class=p>,</span> <span class=s2>&#34;statfs&#34;</span><span class=p>,</span> <span class=s2>&#34;statfs64&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;statx&#34;</span><span class=p>,</span> <span class=s2>&#34;symlink&#34;</span><span class=p>,</span> <span class=s2>&#34;symlinkat&#34;</span><span class=p>,</span> <span class=s2>&#34;sync&#34;</span><span class=p>,</span> <span class=s2>&#34;sync_file_range&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;syncfs&#34;</span><span class=p>,</span> <span class=s2>&#34;sysinfo&#34;</span><span class=p>,</span> <span class=s2>&#34;tee&#34;</span><span class=p>,</span> <span class=s2>&#34;tgkill&#34;</span><span class=p>,</span> <span class=s2>&#34;time&#34;</span><span class=p>,</span> <span class=s2>&#34;timer_create&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;timer_delete&#34;</span><span class=p>,</span> <span class=s2>&#34;timer_getoverrun&#34;</span><span class=p>,</span> <span class=s2>&#34;timer_gettime&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;timerfd_create&#34;</span><span class=p>,</span> <span class=s2>&#34;timerfd_gettime&#34;</span><span class=p>,</span> <span class=s2>&#34;timerfd_settime&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;timer_settime&#34;</span><span class=p>,</span> <span class=s2>&#34;times&#34;</span><span class=p>,</span> <span class=s2>&#34;tkill&#34;</span><span class=p>,</span> <span class=s2>&#34;truncate&#34;</span><span class=p>,</span> <span class=s2>&#34;truncate64&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;ugetrlimit&#34;</span><span class=p>,</span> <span class=s2>&#34;umask&#34;</span><span class=p>,</span> <span class=s2>&#34;uname&#34;</span><span class=p>,</span> <span class=s2>&#34;unlink&#34;</span><span class=p>,</span> <span class=s2>&#34;unlinkat&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;utime&#34;</span><span class=p>,</span> <span class=s2>&#34;utimensat&#34;</span><span class=p>,</span> <span class=s2>&#34;utimes&#34;</span><span class=p>,</span> <span class=s2>&#34;vfork&#34;</span><span class=p>,</span> <span class=s2>&#34;vmsplice&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=s2>&#34;wait4&#34;</span><span class=p>,</span> <span class=s2>&#34;waitid&#34;</span><span class=p>,</span> <span class=s2>&#34;waitpid&#34;</span><span class=p>,</span> <span class=s2>&#34;write&#34;</span><span class=p>,</span> <span class=s2>&#34;writev&#34;</span>
+</span></span><span class=line><span class=cl>      <span class=p>],</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;action&#34;</span><span class=p>:</span> <span class=s2>&#34;SCMP_ACT_ALLOW&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=p>]</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=custom-seccomp-profile>Custom Seccomp Profile</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;defaultAction&#34;</span><span class=p>:</span> <span class=s2>&#34;SCMP_ACT_ERRNO&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;architectures&#34;</span><span class=p>:</span> <span class=p>[</span><span class=s2>&#34;SCMP_ARCH_X86_64&#34;</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;syscalls&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>    <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;names&#34;</span><span class=p>:</span> <span class=p>[</span><span class=s2>&#34;read&#34;</span><span class=p>,</span> <span class=s2>&#34;write&#34;</span><span class=p>,</span> <span class=s2>&#34;open&#34;</span><span class=p>,</span> <span class=s2>&#34;close&#34;</span><span class=p>,</span> <span class=s2>&#34;stat&#34;</span><span class=p>,</span> <span class=s2>&#34;fstat&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                <span class=s2>&#34;mmap&#34;</span><span class=p>,</span> <span class=s2>&#34;mprotect&#34;</span><span class=p>,</span> <span class=s2>&#34;brk&#34;</span><span class=p>,</span> <span class=s2>&#34;ioctl&#34;</span><span class=p>,</span> <span class=s2>&#34;access&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                <span class=s2>&#34;pipe&#34;</span><span class=p>,</span> <span class=s2>&#34;select&#34;</span><span class=p>,</span> <span class=s2>&#34;sched_yield&#34;</span><span class=p>,</span> <span class=s2>&#34;mremap&#34;</span><span class=p>,</span> <span class=s2>&#34;msync&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                <span class=s2>&#34;dup&#34;</span><span class=p>,</span> <span class=s2>&#34;dup2&#34;</span><span class=p>,</span> <span class=s2>&#34;nanosleep&#34;</span><span class=p>,</span> <span class=s2>&#34;getpid&#34;</span><span class=p>,</span> <span class=s2>&#34;socket&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                <span class=s2>&#34;connect&#34;</span><span class=p>,</span> <span class=s2>&#34;accept&#34;</span><span class=p>,</span> <span class=s2>&#34;sendto&#34;</span><span class=p>,</span> <span class=s2>&#34;recvfrom&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                <span class=s2>&#34;clone&#34;</span><span class=p>,</span> <span class=s2>&#34;execve&#34;</span><span class=p>,</span> <span class=s2>&#34;exit&#34;</span><span class=p>,</span> <span class=s2>&#34;exit_group&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                <span class=s2>&#34;openat&#34;</span><span class=p>,</span> <span class=s2>&#34;newfstatat&#34;</span><span class=p>,</span> <span class=s2>&#34;getrandom&#34;</span><span class=p>,</span> <span class=s2>&#34;epoll_create1&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                <span class=s2>&#34;epoll_ctl&#34;</span><span class=p>,</span> <span class=s2>&#34;epoll_pwait&#34;</span><span class=p>,</span> <span class=s2>&#34;futex&#34;</span><span class=p>,</span> <span class=s2>&#34;set_tid_address&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                <span class=s2>&#34;set_robust_list&#34;</span><span class=p>,</span> <span class=s2>&#34;prlimit64&#34;</span><span class=p>,</span> <span class=s2>&#34;rseq&#34;</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;action&#34;</span><span class=p>:</span> <span class=s2>&#34;SCMP_ACT_ALLOW&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>  <span class=p>]</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-compose-with-seccomp>Docker Compose with Seccomp</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>app</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>nginx:alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>seccomp-app</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>security_opt</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>seccomp:./seccomp-profile.json</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8080:80&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=apparmor-application-armor>AppArmor (Application Armor)</h2><p><strong>AppArmor</strong> is a Linux Security Module (LSM) that enforces Mandatory Access Control (MAC) policies on individual programs. Unlike seccomp, which filters system calls, AppArmor controls <strong>what files a process can access, what capabilities it can use, and what network operations it can perform</strong> — all defined through human-readable profile files.</p><h3 id=key-features-1>Key Features</h3><ul><li><strong>Path-based access control</strong> — restrict file read/write/execute by path</li><li><strong>Network filtering</strong> — allow/deny specific network protocols and addresses</li><li><strong>Capability control</strong> — restrict Linux capabilities (CAP_NET_RAW, CAP_SYS_ADMIN)</li><li><strong>Include profiles</strong> — modular profile composition with abstractions</li><li><strong>Complain mode</strong> — log violations without enforcing (for testing)</li><li><strong>Enforce mode</strong> — actively block disallowed operations</li><li><strong>Docker integration</strong> — load AppArmor profiles at container startup</li></ul><h3 id=apparmor-profile-for-a-web-container>AppArmor Profile for a Web Container</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-gdscript3 data-lang=gdscript3><span class=line><span class=cl><span class=c1>#include &lt;tunables/global&gt;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>profile</span> <span class=n>docker</span><span class=o>-</span><span class=n>nginx</span> <span class=n>flags</span><span class=o>=</span><span class=p>(</span><span class=n>attach_disconnected</span><span class=p>,</span><span class=n>mediate_deleted</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=c1>#include &lt;abstractions/base&gt;</span>
+</span></span><span class=line><span class=cl>  
+</span></span><span class=line><span class=cl>  <span class=n>network</span> <span class=n>inet</span> <span class=n>tcp</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>network</span> <span class=n>inet6</span> <span class=n>tcp</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  
+</span></span><span class=line><span class=cl>  <span class=c1># Allow reading nginx configuration</span>
+</span></span><span class=line><span class=cl>  <span class=o>/</span><span class=n>etc</span><span class=o>/</span><span class=n>nginx</span><span class=o>/**</span> <span class=n>r</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=o>/</span><span class=n>usr</span><span class=o>/</span><span class=n>sbin</span><span class=o>/</span><span class=n>nginx</span> <span class=n>mr</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  
+</span></span><span class=line><span class=cl>  <span class=c1># Allow serving web content</span>
+</span></span><span class=line><span class=cl>  <span class=o>/</span><span class=k>var</span><span class=o>/</span><span class=n>www</span><span class=o>/**</span> <span class=n>r</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=o>/</span><span class=k>var</span><span class=o>/</span><span class=n>cache</span><span class=o>/</span><span class=n>nginx</span><span class=o>/**</span> <span class=n>rw</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=o>/</span><span class=k>var</span><span class=o>/</span><span class=nb>log</span><span class=o>/</span><span class=n>nginx</span><span class=o>/**</span> <span class=n>rw</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  
+</span></span><span class=line><span class=cl>  <span class=c1># Allow pid file</span>
+</span></span><span class=line><span class=cl>  <span class=o>/</span><span class=n>run</span><span class=o>/</span><span class=n>nginx</span><span class=o>.</span><span class=n>pid</span> <span class=n>rw</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  
+</span></span><span class=line><span class=cl>  <span class=c1># Allow Unix sockets</span>
+</span></span><span class=line><span class=cl>  <span class=o>/</span><span class=n>run</span><span class=o>/*.</span><span class=n>sock</span> <span class=n>rw</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  
+</span></span><span class=line><span class=cl>  <span class=c1># Deny access to sensitive paths</span>
+</span></span><span class=line><span class=cl>  <span class=n>deny</span> <span class=o>/</span><span class=n>etc</span><span class=o>/</span><span class=n>shadow</span> <span class=n>rwx</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>deny</span> <span class=o>/</span><span class=n>etc</span><span class=o>/</span><span class=n>passwd</span> <span class=n>w</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=n>deny</span> <span class=o>/</span><span class=n>root</span><span class=o>/**</span> <span class=n>rwx</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  
+</span></span><span class=line><span class=cl>  <span class=c1># Allow DNS resolution</span>
+</span></span><span class=line><span class=cl>  <span class=o>/</span><span class=n>etc</span><span class=o>/</span><span class=n>resolv</span><span class=o>.</span><span class=n>conf</span> <span class=n>r</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=o>/</span><span class=n>etc</span><span class=o>/</span><span class=n>hosts</span> <span class=n>r</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=o>/</span><span class=n>etc</span><span class=o>/</span><span class=n>nsswitch</span><span class=o>.</span><span class=n>conf</span> <span class=n>r</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=o>/</span><span class=n>etc</span><span class=o>/</span><span class=n>host</span><span class=o>.</span><span class=n>conf</span> <span class=n>r</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=o>/</span><span class=n>etc</span><span class=o>/</span><span class=n>gai</span><span class=o>.</span><span class=n>conf</span> <span class=n>r</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  
+</span></span><span class=line><span class=cl>  <span class=c1># Deny raw network access</span>
+</span></span><span class=line><span class=cl>  <span class=n>deny</span> <span class=n>network</span> <span class=n>raw</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  
+</span></span><span class=line><span class=cl>  <span class=c1># Deny capability escalation</span>
+</span></span><span class=line><span class=cl>  <span class=n>deny</span> <span class=n>capability</span><span class=p>,</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-compose-with-apparmor>Docker Compose with AppArmor</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>app</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>nginx:alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>apparmor-app</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>security_opt</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>apparmor:docker-nginx</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8080:80&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Load the AppArmor profile</span>
+</span></span><span class=line><span class=cl>sudo apparmor_parser -r /etc/apparmor.d/docker-nginx
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Check profile status</span>
+</span></span><span class=line><span class=cl>sudo aa-status
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Put profile in complain mode for testing</span>
+</span></span><span class=line><span class=cl>sudo aa-complain /etc/apparmor.d/docker-nginx
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Switch to enforce mode</span>
+</span></span><span class=line><span class=cl>sudo aa-enforce /etc/apparmor.d/docker-nginx
+</span></span></code></pre></td></tr></table></div></div><h2 id=firejail>Firejail</h2><p><strong>Firejail</strong> is a user-space SUID sandbox program that uses Linux namespaces, seccomp filters, and other kernel features to create restricted execution environments for applications. While Docker provides container-level isolation, Firejail operates at the <strong>application level</strong>, creating a sandbox around individual programs running on the host or inside containers.</p><h3 id=key-features-2>Key Features</h3><ul><li><strong>2,000+ pre-built profiles</strong> — profiles for browsers, media players, development tools</li><li><strong>Network isolation</strong> — private network namespaces with custom IP/MAC</li><li><strong>X11 sandboxing</strong> — prevent keyloggers and screen scrapers</li><li><strong>Filesystem isolation</strong> — whitelist/blacklist filesystem access with tmpfs overlays</li><li><strong>Seccomp integration</strong> — applies its own seccomp filters on top of the kernel</li><li><strong>No configuration needed</strong> — <code>firejail firefox</code> just works</li><li><strong>AppArmor integration</strong> — can enforce AppArmor profiles within the sandbox</li></ul><h3 id=firejail-profile-for-a-container-application>Firejail Profile for a Container Application</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Run an application in a Firejail sandbox</span>
+</span></span><span class=line><span class=cl>firejail --net<span class=o>=</span>eth0 --ip<span class=o>=</span>192.168.1.100 nginx
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Restrict filesystem access</span>
+</span></span><span class=line><span class=cl>firejail --whitelist<span class=o>=</span>/var/www --whitelist<span class=o>=</span>/etc/nginx <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>         --blacklist<span class=o>=</span>/root --blacklist<span class=o>=</span>/home <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>         nginx
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Private network with custom DNS</span>
+</span></span><span class=line><span class=cl>firejail --net<span class=o>=</span>eth0 --dns<span class=o>=</span>8.8.8.8 --dns<span class=o>=</span>8.8.4.4 nginx
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Combine with AppArmor profile</span>
+</span></span><span class=line><span class=cl>firejail --apparmor<span class=o>=</span>docker-nginx nginx
+</span></span></code></pre></td></tr></table></div></div><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=c1># /etc/firejail/nginx.local</span>
+</span></span><span class=line><span class=cl><span class=c1># Custom Firejail profile for nginx</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=na>include /etc/firejail/defaults.profile</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Network isolation</span>
+</span></span><span class=line><span class=cl><span class=na>net eth0</span>
+</span></span><span class=line><span class=cl><span class=na>ip 192.168.1.100/24</span>
+</span></span><span class=line><span class=cl><span class=na>defaultgw 192.168.1.1</span>
+</span></span><span class=line><span class=cl><span class=na>dns 8.8.8.8</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Filesystem restrictions</span>
+</span></span><span class=line><span class=cl><span class=na>whitelist /var/www</span>
+</span></span><span class=line><span class=cl><span class=na>whitelist /etc/nginx</span>
+</span></span><span class=line><span class=cl><span class=na>whitelist /var/log/nginx</span>
+</span></span><span class=line><span class=cl><span class=na>whitelist /run/nginx.pid</span>
+</span></span><span class=line><span class=cl><span class=na>blacklist /root</span>
+</span></span><span class=line><span class=cl><span class=na>blacklist /home</span>
+</span></span><span class=line><span class=cl><span class=na>blacklist /etc/shadow</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Seccomp filter</span>
+</span></span><span class=line><span class=cl><span class=na>seccomp</span>
+</span></span><span class=line><span class=cl><span class=na>!socket AF_PACKET</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># No new privileges</span>
+</span></span><span class=line><span class=cl><span class=na>nonewprivs</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Drop capabilities</span>
+</span></span><span class=line><span class=cl><span class=na>caps.drop all</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=comparison-table>Comparison Table</h2><table><thead><tr><th>Feature</th><th>Seccomp</th><th>AppArmor</th><th>Firejail</th></tr></thead><tbody><tr><td><strong>Level</strong></td><td>Kernel syscall filter</td><td>Kernel MAC (LSM)</td><td>User-space sandbox</td></tr><tr><td><strong>Primary Scope</strong></td><td>System calls</td><td>File/network/capability access</td><td>Application execution</td></tr><tr><td><strong>Configuration</strong></td><td>JSON BPF profiles</td><td>Text profile files</td><td>CLI flags + profile files</td></tr><tr><td><strong>Ease of Use</strong></td><td>Complex (requires syscall knowledge)</td><td>Moderate (path-based rules)</td><td>Easy (pre-built profiles)</td></tr><tr><td><strong>Docker Integration</strong></td><td>Native (&ndash;security-opt seccomp)</td><td>Native (&ndash;security-opt apparmor)</td><td>Manual (run inside/outside)</td></tr><tr><td><strong>Granularity</strong></td><td>Syscall-level</td><td>Path + capability + network</td><td>Namespace + filesystem + network</td></tr><tr><td><strong>Default Profiles</strong></td><td>Docker default (44 blocked syscalls)</td><td>Docker default</td><td>2,000+ application profiles</td></tr><tr><td><strong>Audit Mode</strong></td><td>Audit via strace/bpftrace</td><td>Complain mode (log only)</td><td>&ndash;audit flag</td></tr><tr><td><strong>Performance Overhead</strong></td><td>Minimal (BPF filter)</td><td>Low (LSM hooks)</td><td>Low (namespace isolation)</td></tr><tr><td><strong>Cross-Distro</strong></td><td>Yes (all Linux kernels)</td><td>Yes (AppArmor enabled kernels)</td><td>Yes (userspace tool)</td></tr><tr><td><strong>Best For</strong></td><td>Blocking dangerous syscalls</td><td>Fine-grained access control</td><td>Quick application sandboxing</td></tr></tbody></table><h2 id=defense-in-depth-strategy>Defense-in-Depth Strategy</h2><p>The most secure container deployments combine all three mechanisms:</p><ol><li><strong>Seccomp</strong> — block dangerous system calls (mount, ptrace, kernel module loading)</li><li><strong>AppArmor</strong> — restrict file access to only what the application needs</li><li><strong>Firejail</strong> — add user-space isolation for applications running directly on the host</li></ol><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Example: Multi-layer container security</span>
+</span></span><span class=line><span class=cl>docker run <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --security-opt <span class=nv>seccomp</span><span class=o>=</span>./custom-seccomp.json <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --security-opt <span class=nv>apparmor</span><span class=o>=</span>docker-app-profile <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --cap-drop ALL <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --cap-add NET_BIND_SERVICE <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --read-only <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --tmpfs /tmp <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  nginx:alpine
+</span></span></code></pre></td></tr></table></div></div><h2 id=why-self-host-your-container-security-profiles>Why Self-Host Your Container Security Profiles?</h2><p>Managing seccomp and AppArmor profiles yourself gives you precise control over what each container can do. Cloud container platforms apply generic security profiles that may be either too permissive for your threat model or too restrictive for your application&rsquo;s needs. By maintaining your own profiles, you can tailor syscall filters and access controls to each specific workload.</p><p>Self-hosted security profiles also support compliance requirements. Financial services, healthcare, and government regulations often mandate specific access controls and audit capabilities. Custom AppArmor profiles provide file-level access logging, while seccomp profiles ensure that only approved system calls can execute — both critical for demonstrating compliance during security audits.</p><p>The operational benefits extend to incident response. When a container is compromised, well-configured seccomp and AppArmor profiles limit the attacker&rsquo;s ability to escalate privileges, access sensitive files, or establish reverse shells. An AppArmor profile that denies access to <code>/etc/shadow</code> and blocks raw network sockets significantly constrains what a compromised container process can achieve.</p><p>For teams managing dozens of containerized services, a centralized profile management system ensures consistency across environments. Store your seccomp profiles and AppArmor configurations in version control, audit changes through pull requests, and deploy updated profiles alongside application releases. This GitOps approach to container security means your security posture evolves with your application, rather than remaining a static configuration that quickly becomes outdated.</p><h2 id=why-self-host-your-database-security-and-routing-infrastructure>Why Self-Host Your Database Security and Routing Infrastructure?</h2><p>For deeper container isolation, see our <a href=../2026-04-20-gvisor-vs-kata-containers-vs-firecracker-container-sandboxing-guide-2026/>gVisor vs Kata Containers vs Firecracker sandboxing guide</a> for kernel-level separation beyond seccomp. Our <a href=../2026-04-27-docker-bench-vs-trivy-vs-checkov-self-hosted-container-security-hardening-guide-2026/>Docker Bench vs Trivy vs Checkov hardening guide</a> covers broader container security practices. For runtime threat detection, the <a href=../2026-04-29-neuvector-vs-falco-vs-tetragon-container-runtime-security-guide-2026/>NeuVector vs Falco vs Tetragon comparison</a> monitors for security violations after containers are deployed.</p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted Container Seccomp Profile Management: AppArmor vs Seccomp vs Firejail (2026)","description":"Manage container security profiles using Seccomp, AppArmor, and Firejail. Learn syscall filtering, MAC policies, and user-space sandboxing for hardened Docker deployments.","datePublished":"2026-05-10","dateModified":"2026-05-10","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script><h2 id=faq>FAQ</h2><h3 id=what-happens-when-a-container-violates-a-seccomp-rule>What happens when a container violates a seccomp rule?</h3><p>When a process in seccomp mode attempts a blocked system call, the kernel takes the action defined in the profile. The default action is typically <code>SCMP_ACT_ERRNO</code> (return an error code to the process) or <code>SCMP_ACT_KILL</code> (terminate the process immediately). Docker&rsquo;s default profile uses <code>SCMP_ACT_ERRNO</code>, which causes the syscall to fail with <code>EPERM</code> (Operation not permitted) rather than killing the container. For maximum security, you can use <code>SCMP_ACT_KILL</code> to terminate any process that violates the seccomp policy.</p><h3 id=can-i-use-apparmor-and-seccomp-together-on-the-same-container>Can I use AppArmor and seccomp together on the same container?</h3><p>Yes, and you should. AppArmor and seccomp operate at different levels and complement each other. Seccomp filters system calls before they reach the kernel, while AppArmor controls what the process can access once the syscall is allowed. Using both provides defense-in-depth: seccomp blocks entire categories of syscalls, while AppArmor fine-tunes access within the allowed syscalls. Docker supports both simultaneously via <code>--security-opt seccomp=...</code> and <code>--security-opt apparmor=...</code>.</p><h3 id=how-do-i-test-an-apparmor-profile-before-enforcing-it>How do I test an AppArmor profile before enforcing it?</h3><p>AppArmor has a &ldquo;complain mode&rdquo; that logs policy violations without blocking the operation. Load your profile with <code>sudo aa-complain /etc/apparmor.d/your-profile</code>, run your application normally, then check the audit log with <code>sudo journalctl -k | grep audit</code> or <code>sudo dmesg | grep DENIED</code>. Once you are confident the profile allows all necessary operations, switch to enforce mode with <code>sudo aa-enforce /etc/apparmor.d/your-profile</code>.</p><h3 id=does-firejail-work-inside-docker-containers>Does Firejail work inside Docker containers?</h3><p>Firejail can run inside containers, but it requires the container to have sufficient privileges (specifically, the ability to create new namespaces). Since most security-hardened containers drop capabilities and use restrictive seccomp profiles, Firejail may not function correctly. The more common pattern is to use Firejail for applications running directly on the host, while using Docker&rsquo;s built-in seccomp and AppArmor support for containerized applications.</p><h3 id=how-do-i-find-which-syscalls-my-application-needs-for-a-custom-seccomp-profile>How do I find which syscalls my application needs for a custom seccomp profile?</h3><p>Use <code>strace</code> to capture all system calls made by your application: <code>strace -f -o syscall-log.txt your-command</code>. Then extract unique syscall names from the log and add them to your seccomp profile&rsquo;s allowlist. Alternatively, use the <code>seccomp-tools</code> gem (<code>gem install seccomp-tools</code>) to analyze existing profiles or generate new ones from strace output. Start with Docker&rsquo;s default profile as a baseline and remove syscalls your application does not need.</p><h3 id=what-is-the-performance-impact-of-seccomp-and-apparmor-on-containers>What is the performance impact of seccomp and AppArmor on containers?</h3><p>The performance impact is negligible for most workloads. Seccomp uses BPF filters that are compiled to native code and run in the kernel — the overhead is typically less than 1% for normal application workloads. AppArmor&rsquo;s LSM hooks add minimal overhead, primarily on file access operations where path matching occurs. The only measurable impact is during application startup when profiles are loaded and initial path checks run. For high-throughput network services, neither seccomp nor AppArmor will be a bottleneck.</p></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20Container%20Seccomp%20Profile%20Management%3a%20AppArmor%20vs%20Seccomp%20vs%20Firejail%20%282026%29&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-10-container-seccomp-profile-management-apparmor-firejail-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-10-container-seccomp-profile-management-apparmor-firejail-guide%2f&t=Self-Hosted%20Container%20Seccomp%20Profile%20Management%3a%20AppArmor%20vs%20Seccomp%20vs%20Firejail%20%282026%29" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/security/ class=tag-link>Security</a>
+<a href=/tags/containers/ class=tag-link>Containers</a>
+<a href=/tags/seccomp/ class=tag-link>Seccomp</a>
+<a href=/tags/apparmor/ class=tag-link>Apparmor</a>
+<a href=/tags/sandbox/ class=tag-link>Sandbox</a>
+<a href=/tags/linux/ class=tag-link>Linux</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-05-10-rootless-container-infrastructure-rootlesskit-fuse-overlayfs-slirp4netns-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Containers</span></div><h3 class=post-title>Self-Hosted Rootless Container Infrastructure: RootlessKit vs fuse-overlayfs vs slirp4netns</h3><div class=post-excerpt>Running containers as the root user has long been a security concern in self-hosted infrastructure. When a container …</div><div class=post-footer><span class=post-date>May 10, 2026</span></div></a><a href=/posts/2026-05-09-oci-container-runtimes-crun-runc-youki-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Containers</span></div><h3 class=post-title>OCI Container Runtimes: crun vs runc vs youki (2026)</h3><div class=post-excerpt>Every container you run — whether through Docker, Podman, or Kubernetes — ultimately depends on an OCI (Open Container …</div><div class=post-footer><span class=post-date>May 9, 2026</span></div></a><a href=/posts/2026-05-09-rootless-container-runtimes-docker-podman-containerd-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Containers</span></div><h3 class=post-title>Rootless Container Runtimes: Docker vs Podman vs containerd (2026)</h3><div class=post-excerpt>Running containers as root has been the default for years, but it exposes your host to significant security risks. A …</div><div class=post-footer><span class=post-date>May 9, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>
