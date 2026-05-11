@@ -1,0 +1,373 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted NFS High Availability: DRBD vs GlusterFS Geo-Replication vs Pacemaker | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-05-11-self-hosted-nfs-high-availability-drbd-glusterfs-pacemaker-guide/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted NFS High Availability: DRBD vs GlusterFS Geo-Replication vs Pacemaker"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-05-11-self-hosted-nfs-high-availability-drbd-glusterfs-pacemaker-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-05-11T00:00:00Z"><meta property="article:modified_time" content="2026-05-11T00:00:00Z"><meta property="article:tag" content="nfs"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted NFS High Availability: DRBD vs GlusterFS Geo-Replication vs Pacemaker"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted NFS High Availability: DRBD vs GlusterFS Geo-Replication vs Pacemaker","description":"\u003cp\u003eNetwork File System (NFS) remains one of the most widely used protocols for shared storage in enterprise and self-hosted environments. But a single NFS server is a single point of failure — when it goes down, every client loses access to shared data simultaneously. This guide compares three approaches to NFS high availability: DRBD block-level replication, GlusterFS geo-replication, and Pacemaker cluster management with floating IPs.\u003c\/p\u003e","datePublished":"2026-05-11T00:00:00Z","dateModified":"2026-05-11T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-05-11-self-hosted-nfs-high-availability-drbd-glusterfs-pacemaker-guide\/"},"keywords":["nfs","storage","high-availability","networking","self-hosted"],"articleSection":"nfs","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted NFS High Availability: DRBD vs GlusterFS Geo-Replication vs Pacemaker","item":"https:\/\/www.pistack.xyz\/posts\/2026-05-11-self-hosted-nfs-high-availability-drbd-glusterfs-pacemaker-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Nfs</span>
+<span class="tag tag-purple">Storage</span>
+<span class="tag tag-purple">High-Availability</span></div><h1>Self-Hosted NFS High Availability: DRBD vs GlusterFS Geo-Replication vs Pacemaker</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>May 11, 2026</span>
+<span>10 min read</span>
+<span>Updated May 11, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#the-nfs-availability-challenge>The NFS Availability Challenge</a></li><li><a href=#drbd--nfs-block-level-synchronous-replication>DRBD + NFS: Block-Level Synchronous Replication</a><ul><li><a href=#architecture>Architecture</a></li><li><a href=#deployment-with-docker-compose>Deployment with Docker Compose</a></li><li><a href=#drbd-configuration>DRBD Configuration</a></li><li><a href=#nfs-export-configuration>NFS Export Configuration</a></li></ul></li><li><a href=#glusterfs-geo-replication-asynchronous-file-replication>GlusterFS Geo-Replication: Asynchronous File Replication</a><ul><li><a href=#docker-compose-deployment>Docker Compose Deployment</a></li><li><a href=#glusterfs-volume-and-geo-rep-setup>GlusterFS Volume and Geo-Rep Setup</a></li><li><a href=#nfs-mount-from-clients>NFS Mount from Clients</a></li></ul></li><li><a href=#pacemaker-ha-nfs-resource-level-failover>Pacemaker HA NFS: Resource-Level Failover</a><ul><li><a href=#cluster-architecture>Cluster Architecture</a></li><li><a href=#pacemaker-resource-configuration>Pacemaker Resource Configuration</a></li></ul></li><li><a href=#choosing-the-right-nfs-ha-solution>Choosing the Right NFS HA Solution</a></li><li><a href=#why-self-host-nfs-high-availability>Why Self-Host NFS High Availability?</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#what-is-the-difference-between-drbd-protocol-a-b-and-c>What is the difference between DRBD protocol A, B, and C?</a></li><li><a href=#can-drbd-work-over-a-wan-connection>Can DRBD work over a WAN connection?</a></li><li><a href=#does-glusterfs-geo-replication-support-bidirectional-sync>Does GlusterFS geo-replication support bidirectional sync?</a></li><li><a href=#how-does-pacemaker-handle-split-brain-scenarios>How does Pacemaker handle split-brain scenarios?</a></li><li><a href=#can-i-use-nfsv4-with-drbd-failover>Can I use NFSv4 with DRBD failover?</a></li><li><a href=#what-happens-to-nfs-clients-during-a-failover>What happens to NFS clients during a failover?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><p>Network File System (NFS) remains one of the most widely used protocols for shared storage in enterprise and self-hosted environments. But a single NFS server is a single point of failure — when it goes down, every client loses access to shared data simultaneously. This guide compares three approaches to NFS high availability: DRBD block-level replication, GlusterFS geo-replication, and Pacemaker cluster management with floating IPs.</p><h2 id=the-nfs-availability-challenge>The NFS Availability Challenge</h2><p>NFS clients mount remote filesystems using persistent connections. When the NFS server becomes unreachable, client applications hang (often indefinitely) waiting for I/O operations to complete. Unlike stateless protocols like HTTP, NFS sessions are stateful — reconnecting requires unmounting and remounting, which is not automatic on most systems. High availability for NFS means maintaining both data replication and a consistent network identity (IP address) that clients can reconnect to.</p><table><thead><tr><th>Feature</th><th>DRBD + NFS</th><th>GlusterFS Geo-Replication</th><th>Pacemaker HA NFS</th></tr></thead><tbody><tr><td><strong>Replication Level</strong></td><td>Block (synchronous)</td><td>File (asynchronous)</td><td>Shared storage or block</td></tr><tr><td><strong>Failover Time</strong></td><td>10-30 seconds</td><td>Minutes (async delay)</td><td>10-60 seconds</td></tr><tr><td><strong>Data Loss Risk</strong></td><td>Zero (sync mode)</td><td>Small (async lag)</td><td>Depends on backend</td></tr><tr><td><strong>Active-Active</strong></td><td>No (active-passive)</td><td>Yes (both writable)</td><td>No (active-passive)</td></tr><tr><td><strong>Cross-Site Support</strong></td><td>Yes (with async mode)</td><td>Yes (designed for it)</td><td>Yes (with shared storage)</td></tr><tr><td><strong>Bandwidth Usage</strong></td><td>All block changes</td><td>Changed files only</td><td>N/A (shared storage)</td></tr><tr><td><strong>Split-Brain Protection</strong></td><td>Built-in (fencing)</td><td>Manual resolution</td><td>STONITH fencing</td></tr><tr><td><strong>Complexity</strong></td><td>Moderate</td><td>High</td><td>High</td></tr><tr><td><strong>Docker Deployment</strong></td><td>Possible (privileged)</td><td>Possible (privileged)</td><td>Not recommended in containers</td></tr></tbody></table><h2 id=drbd--nfs-block-level-synchronous-replication>DRBD + NFS: Block-Level Synchronous Replication</h2><p>Distributed Replicated Block Device (DRBD) mirrors block devices between two servers at the kernel level. Combined with NFS, it provides synchronous replication with zero data loss in the event of a primary server failure.</p><h3 id=architecture>Architecture</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-gdscript3 data-lang=gdscript3><span class=line><span class=cl>  <span class=n>Client</span> <span class=err>→</span> <span class=n>Virtual</span> <span class=ne>IP</span> <span class=p>(</span><span class=mf>192.168</span><span class=o>.</span><span class=mf>1.100</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>                <span class=err>↓</span>
+</span></span><span class=line><span class=cl>        <span class=err>┌───────────────┐</span>
+</span></span><span class=line><span class=cl>        <span class=err>│</span>  <span class=n>DRBD</span> <span class=n>Primary</span>  <span class=err>│</span> <span class=err>←</span> <span class=n>NFS</span> <span class=n>Server</span> <span class=p>(</span><span class=n>exports</span> <span class=o>/</span><span class=n>data</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=err>│</span>  <span class=o>/</span><span class=n>dev</span><span class=o>/</span><span class=n>drbd0</span>    <span class=err>│</span>
+</span></span><span class=line><span class=cl>        <span class=err>└───────┬───────┘</span>
+</span></span><span class=line><span class=cl>                <span class=err>│</span> <span class=p>(</span><span class=n>synchronous</span> <span class=n>TCP</span> <span class=n>replication</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=err>┌───────┴───────┐</span>
+</span></span><span class=line><span class=cl>        <span class=err>│</span> <span class=n>DRBD</span> <span class=n>Secondary</span> <span class=err>│</span> <span class=err>←</span> <span class=n>Standby</span> <span class=n>NFS</span> <span class=p>(</span><span class=ow>not</span> <span class=n>running</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=err>│</span> <span class=o>/</span><span class=n>dev</span><span class=o>/</span><span class=n>drbd0</span>     <span class=err>│</span>
+</span></span><span class=line><span class=cl>        <span class=err>└───────────────┘</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=deployment-with-docker-compose>Deployment with Docker Compose</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>nfs-server</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>itsthenetwork/nfs-server-alpine:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>nfs-primary</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>privileged</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>cap_add</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>SYS_ADMIN</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>NET_ADMIN</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>SHARED_DIRECTORY</span><span class=p>:</span><span class=w> </span><span class=l>/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>drbd-data:/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/dev:/dev</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;2049:2049&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;111:111&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;111:111/udp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>drbd-data</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>local</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>driver_opts</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>type</span><span class=p>:</span><span class=w> </span><span class=l>none</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>device</span><span class=p>:</span><span class=w> </span><span class=l>/dev/drbd0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>o</span><span class=p>:</span><span class=w> </span><span class=l>bind</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=drbd-configuration>DRBD Configuration</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>global {
+</span></span><span class=line><span class=cl>    usage-count no;
+</span></span><span class=line><span class=cl>}
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>common {
+</span></span><span class=line><span class=cl>    protocol C;  # Synchronous replication
+</span></span><span class=line><span class=cl>    handlers {
+</span></span><span class=line><span class=cl>        fence-peer &#34;/usr/lib/drbd/crm-fence-peer.sh&#34;;
+</span></span><span class=line><span class=cl>        after-resync-target &#34;/usr/lib/drbd/crm-unfence-peer.sh&#34;;
+</span></span><span class=line><span class=cl>    }
+</span></span><span class=line><span class=cl>}
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>resource nfs-data {
+</span></span><span class=line><span class=cl>    on nfs-primary {
+</span></span><span class=line><span class=cl>        device    /dev/drbd0;
+</span></span><span class=line><span class=cl>        disk      /dev/sdb1;
+</span></span><span class=line><span class=cl>        address   192.168.1.10:7789;
+</span></span><span class=line><span class=cl>        meta-disk internal;
+</span></span><span class=line><span class=cl>    }
+</span></span><span class=line><span class=cl>    on nfs-secondary {
+</span></span><span class=line><span class=cl>        device    /dev/drbd0;
+</span></span><span class=line><span class=cl>        disk      /dev/sdb1;
+</span></span><span class=line><span class=cl>        address   192.168.1.11:7789;
+</span></span><span class=line><span class=cl>        meta-disk internal;
+</span></span><span class=line><span class=cl>    }
+</span></span><span class=line><span class=cl>}
+</span></span></code></pre></td></tr></table></div></div><p>Protocol C ensures that every write is acknowledged only after both nodes have confirmed it on disk. This provides zero data loss but adds latency proportional to the network round-trip time between nodes.</p><h3 id=nfs-export-configuration>NFS Export Configuration</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>/data 192.168.1.0/24(rw,sync,no_root_squash,no_subtree_check)
+</span></span></code></pre></td></tr></table></div></div><p>For failover, use Corosync and Pacemaker to manage the floating IP and NFS service:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Create the Pacemaker cluster</span>
+</span></span><span class=line><span class=cl>pcs cluster setup --name nfs-cluster nfs-primary nfs-secondary
+</span></span><span class=line><span class=cl>pcs cluster start --all
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Configure resources</span>
+</span></span><span class=line><span class=cl>pcs resource create drbd_nfs ocf:linbit:drbd   <span class=nv>drbd_resource</span><span class=o>=</span>nfs-data op monitor <span class=nv>interval</span><span class=o>=</span>30s
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>pcs resource master drbd_nfs-clone drbd_nfs   master-max<span class=o>=</span><span class=m>1</span> master-node-max<span class=o>=</span><span class=m>1</span> clone-max<span class=o>=</span><span class=m>2</span> clone-node-max<span class=o>=</span><span class=m>1</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>pcs resource create nfs-server systemd:nfs-server   op monitor <span class=nv>interval</span><span class=o>=</span>30s
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>pcs resource create nfs-ip IPaddr2   <span class=nv>ip</span><span class=o>=</span>192.168.1.100 <span class=nv>cidr_netmask</span><span class=o>=</span><span class=m>24</span> op monitor <span class=nv>interval</span><span class=o>=</span>30s
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Colocation constraints</span>
+</span></span><span class=line><span class=cl>pcs constraint order promote drbd_nfs-clone <span class=k>then</span> start nfs-server
+</span></span><span class=line><span class=cl>pcs constraint colocation add nfs-server with drbd_nfs-clone INFINITY
+</span></span><span class=line><span class=cl>pcs constraint colocation add nfs-ip with nfs-server INFINITY
+</span></span></code></pre></td></tr></table></div></div><h2 id=glusterfs-geo-replication-asynchronous-file-replication>GlusterFS Geo-Replication: Asynchronous File Replication</h2><p>GlusterFS is a distributed filesystem that natively supports NFS exports through its NFS-Ganesha gateway. Geo-replication provides asynchronous file-level replication between GlusterFS volumes, making it suitable for cross-site disaster recovery.</p><h3 id=docker-compose-deployment>Docker Compose Deployment</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>gluster-node1</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>gluster/gluster-centos:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>gluster-node1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>hostname</span><span class=p>:</span><span class=w> </span><span class=l>gluster-node1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>privileged</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>cap_add</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>SYS_ADMIN</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>NET_ADMIN</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/sys/fs/cgroup:/sys/fs/cgroup:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>gluster-data1:/var/lib/glusterd</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>gluster-brick1:/data/brick1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;24007:24007&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;49152:49152&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>gluster-node2</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>gluster/gluster-centos:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>gluster-node2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>hostname</span><span class=p>:</span><span class=w> </span><span class=l>gluster-node2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>privileged</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>cap_add</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>SYS_ADMIN</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>NET_ADMIN</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/sys/fs/cgroup:/sys/fs/cgroup:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>gluster-data2:/var/lib/glusterd</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>gluster-brick2:/data/brick2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;24008:24007&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;49153:49152&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>gluster-data1</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>gluster-data2</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>gluster-brick1</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>gluster-brick2</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=glusterfs-volume-and-geo-rep-setup>GlusterFS Volume and Geo-Rep Setup</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Probe the peer</span>
+</span></span><span class=line><span class=cl>gluster peer probe gluster-node2
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Create a replicated volume</span>
+</span></span><span class=line><span class=cl>gluster volume create nfs-volume replica <span class=m>2</span>   gluster-node1:/data/brick1/nfs-volume   gluster-node2:/data/brick2/nfs-volume force
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>gluster volume start nfs-volume
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Enable NFS access</span>
+</span></span><span class=line><span class=cl>gluster volume <span class=nb>set</span> nfs-volume nfs.disable off
+</span></span><span class=line><span class=cl>gluster volume <span class=nb>set</span> nfs-volume nfs.addr-namelookup off
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Set up geo-replication to a remote site</span>
+</span></span><span class=line><span class=cl>gluster volume geo-replication nfs-volume   georep-user@remote-site::remote-volume create push-pem force
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>gluster volume geo-replication nfs-volume   georep-user@remote-site::remote-volume start
+</span></span></code></pre></td></tr></table></div></div><p>GlusterFS geo-replication uses a changelog-based mechanism to track file modifications and replicate them asynchronously to the remote site. The replication interval depends on the <code>georep-checkpoint-time</code> setting (default: 60 seconds).</p><h3 id=nfs-mount-from-clients>NFS Mount from Clients</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Mount the GlusterFS volume via NFS</span>
+</span></span><span class=line><span class=cl>mount -t nfs gluster-node1:/nfs-volume /mnt/shared
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Or mount directly via GlusterFS native protocol (better performance)</span>
+</span></span><span class=line><span class=cl>mount -t glusterfs gluster-node1:/nfs-volume /mnt/shared
+</span></span></code></pre></td></tr></table></div></div><h2 id=pacemaker-ha-nfs-resource-level-failover>Pacemaker HA NFS: Resource-Level Failover</h2><p>Pacemaker is a high-availability cluster resource manager that can orchestrate NFS failover across two or more nodes. Unlike DRBD, Pacemaker does not handle data replication — it manages the floating IP, NFS service, and the underlying storage (which could be DRBD, shared iSCSI, or a SAN).</p><h3 id=cluster-architecture>Cluster Architecture</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>                    ┌──────────────────┐
+</span></span><span class=line><span class=cl>  Clients ─────────→│ Virtual IP        │
+</span></span><span class=line><span class=cl>                    │ 192.168.1.100     │
+</span></span><span class=line><span class=cl>                    └────────┬─────────┘
+</span></span><span class=line><span class=cl>                             │
+</span></span><span class=line><span class=cl>              ┌──────────────┴──────────────┐
+</span></span><span class=line><span class=cl>              │                              │
+</span></span><span class=line><span class=cl>     ┌────────▼────────┐          ┌──────────▼────────┐
+</span></span><span class=line><span class=cl>     │ Node A (Active)  │          │ Node B (Passive)   │
+</span></span><span class=line><span class=cl>     │ - NFS Server     │          │ - NFS Server       │
+</span></span><span class=line><span class=cl>     │ - Filesystem     │          │ - Filesystem       │
+</span></span><span class=line><span class=cl>     │ - Corosync/Pacemaker         │ - Corosync/Pacemaker
+</span></span><span class=line><span class=cl>     └─────────────────┘          └──────────────────┘
+</span></span></code></pre></td></tr></table></div></div><h3 id=pacemaker-resource-configuration>Pacemaker Resource Configuration</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Enable STONITH (Shoot The Other Node In The Head) fencing</span>
+</span></span><span class=line><span class=cl>pcs property <span class=nb>set</span> stonith-enabled<span class=o>=</span><span class=nb>true</span>
+</span></span><span class=line><span class=cl>pcs property <span class=nb>set</span> no-quorum-policy<span class=o>=</span>freeze
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Create a filesystem resource (shared storage via iSCSI)</span>
+</span></span><span class=line><span class=cl>pcs resource create nfs-fs Filesystem   <span class=nv>device</span><span class=o>=</span><span class=s2>&#34;/dev/mapper/mpatha&#34;</span>   <span class=nv>directory</span><span class=o>=</span><span class=s2>&#34;/srv/nfs&#34;</span>   <span class=nv>fstype</span><span class=o>=</span><span class=s2>&#34;ext4&#34;</span>   op monitor <span class=nv>interval</span><span class=o>=</span>30s
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Create NFS server resource</span>
+</span></span><span class=line><span class=cl>pcs resource create nfs-daemon nfsserver   <span class=nv>nfs_shared_infodir</span><span class=o>=</span><span class=s2>&#34;/var/lib/nfs&#34;</span>   op monitor <span class=nv>interval</span><span class=o>=</span>30s
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Create NFS export resource</span>
+</span></span><span class=line><span class=cl>pcs resource create nfs-export exportfs   <span class=nv>clientspec</span><span class=o>=</span><span class=s2>&#34;192.168.1.0/24&#34;</span>   <span class=nv>options</span><span class=o>=</span><span class=s2>&#34;rw,sync,no_root_squash,no_subtree_check&#34;</span>   <span class=nv>directory</span><span class=o>=</span><span class=s2>&#34;/srv/nfs&#34;</span>   <span class=nv>fsid</span><span class=o>=</span><span class=m>0</span>   op monitor <span class=nv>interval</span><span class=o>=</span>30s
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Create floating IP resource</span>
+</span></span><span class=line><span class=cl>pcs resource create nfs-vip IPaddr2   <span class=nv>ip</span><span class=o>=</span>192.168.1.100 <span class=nv>cidr_netmask</span><span class=o>=</span><span class=m>24</span>   op monitor <span class=nv>interval</span><span class=o>=</span>30s
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Define ordering and colocation</span>
+</span></span><span class=line><span class=cl>pcs constraint order start nfs-fs <span class=k>then</span> nfs-daemon
+</span></span><span class=line><span class=cl>pcs constraint order start nfs-daemon <span class=k>then</span> nfs-export
+</span></span><span class=line><span class=cl>pcs constraint order start nfs-export <span class=k>then</span> nfs-vip
+</span></span><span class=line><span class=cl>pcs constraint colocation add nfs-vip with nfs-export INFINITY
+</span></span></code></pre></td></tr></table></div></div><p>The key difference between Pacemaker-only and DRBD+Pacemaker is the storage layer. With DRBD, each node has its own local disk that gets replicated. With Pacemaker on shared storage (iSCSI, SAN, multipath), only one node can access the disk at a time, and fencing ensures that the passive node releases the disk before the active node mounts it.</p><h2 id=choosing-the-right-nfs-ha-solution>Choosing the Right NFS HA Solution</h2><p><strong>Use DRBD + NFS when:</strong></p><ul><li>You need synchronous replication with zero data loss</li><li>You have two servers with direct network connectivity (low latency)</li><li>You want commodity hardware (no shared SAN required)</li><li>Your workload is write-intensive and needs consistent replication</li></ul><p><strong>Use GlusterFS Geo-Replication when:</strong></p><ul><li>You need cross-site disaster recovery over WAN links</li><li>Asynchronous replication is acceptable (minutes of data loss)</li><li>You want active-active access (both sites can serve reads)</li><li>You&rsquo;re already running GlusterFS for distributed storage</li></ul><p><strong>Use Pacemaker HA NFS when:</strong></p><ul><li>You have shared storage (SAN, iSCSI, multipath) already available</li><li>You need a proven enterprise HA stack with STONITH fencing</li><li>You want integration with existing cluster infrastructure</li><li>You need to manage additional services alongside NFS (database, web server)</li></ul><h2 id=why-self-host-nfs-high-availability>Why Self-Host NFS High Availability?</h2><p>Self-hosting your NFS infrastructure with built-in redundancy eliminates vendor lock-in, reduces costs, and gives you complete control over storage performance and data placement.</p><p><strong>Eliminate single points of failure</strong>: A single NFS server failure can disrupt dozens or hundreds of client systems simultaneously — build servers, CI/CD runners, container orchestration platforms, and developer workstations all depend on shared storage. HA configurations ensure automatic failover with minimal disruption.</p><p><strong>Cost efficiency</strong>: Enterprise NFS HA appliances from NetApp or Dell EMC cost tens of thousands of dollars. Open-source alternatives using DRBD, GlusterFS, and Pacemaker provide equivalent functionality on commodity hardware at a fraction of the cost. Two standard servers with DRBD replication can handle terabytes of NFS storage for under $5,000 in hardware.</p><p><strong>Data sovereignty</strong>: Self-hosted NFS keeps your data on infrastructure you control. For organizations handling sensitive data subject to regulatory compliance (GDPR, HIPAA, SOC 2), storing data on-premises with open-source tools eliminates the risk of cloud provider data access or geographic jurisdiction issues.</p><p><strong>Performance tuning</strong>: Self-hosted NFS lets you tune every parameter — NFS protocol version (v3 vs v4.2), read/write sizes, commit behavior, and RAID layout — for your specific workload patterns. Cloud NFS services offer limited tuning options and may throttle performance based on shared infrastructure.</p><p>For shared storage alternatives, see our <a href=../2026-04-24-samba-vs-nfs-vs-webdav-self-hosted-file-sharing-guide-2026/>Samba vs NFS vs WebDAV comparison</a>. For distributed filesystems, our <a href=../2026-04-28-juicefs-vs-alluxio-vs-cephfs-self-hosted-distributed-file-systems-2026/>JuiceFS vs Alluxio vs CephFS guide</a> covers cluster-wide storage solutions.</p><h2 id=faq>FAQ</h2><h3 id=what-is-the-difference-between-drbd-protocol-a-b-and-c>What is the difference between DRBD protocol A, B, and C?</h3><p>Protocol A (asynchronous) acknowledges writes after the primary node writes to its local disk — fastest but risks data loss if the primary fails before replication completes. Protocol B (semi-synchronous) acknowledges after data reaches the primary&rsquo;s memory buffer and is in flight to the secondary. Protocol C (synchronous) acknowledges only after both nodes have written to disk — zero data loss but highest latency.</p><h3 id=can-drbd-work-over-a-wan-connection>Can DRBD work over a WAN connection?</h3><p>Yes, but you should use protocol A (asynchronous) or DRBD&rsquo;s proxy mode to avoid latency penalties. Protocol C over a WAN with 50ms round-trip time would add 50ms to every write operation, which is unacceptable for most workloads. For cross-site DRBD, consider the async mode with a secondary synchronous pair at each site.</p><h3 id=does-glusterfs-geo-replication-support-bidirectional-sync>Does GlusterFS geo-replication support bidirectional sync?</h3><p>No, GlusterFS geo-replication is unidirectional — changes flow from the master volume to the slave volume only. For bidirectional (active-active) replication, you would need to set up two separate geo-replication sessions in opposite directions, but this risks conflicts if the same file is modified on both sides simultaneously.</p><h3 id=how-does-pacemaker-handle-split-brain-scenarios>How does Pacemaker handle split-brain scenarios?</h3><p>Pacemaker uses STONITH (Shoot The Other Node In The Head) fencing to prevent split-brain. When a node is suspected of being down, the cluster uses a fencing agent (IPMI, power switch, or storage-level fencing) to forcibly power off or isolate the suspect node before starting resources on the surviving node. This ensures that only one node can access shared storage at any time.</p><h3 id=can-i-use-nfsv4-with-drbd-failover>Can I use NFSv4 with DRBD failover?</h3><p>Yes, but NFSv4 maintains stateful connections that must be gracefully handled during failover. Configure <code>GracePeriod</code> in your NFS server configuration (typically 90 seconds) to allow clients to reclaim locks after failover. NFSv4.1 and later support session trunking, which can improve failover behavior.</p><h3 id=what-happens-to-nfs-clients-during-a-failover>What happens to NFS clients during a failover?</h3><p>Clients experience a brief I/O hang (typically 10-30 seconds with hard mount) while the floating IP transfers to the new active node. Once the IP is reachable, NFS clients automatically resume I/O operations. With <code>soft</code> mount options, clients may time out and return errors — <code>hard</code> mount is recommended for HA configurations. Applications should be designed to handle brief I/O pauses gracefully.</p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted NFS High Availability: DRBD vs GlusterFS Geo-Replication vs Pacemaker","description":"Compare NFS high availability approaches: DRBD block replication, GlusterFS geo-replication, and Pacemaker cluster management for resilient shared storage.","datePublished":"2026-05-11","dateModified":"2026-05-11","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20NFS%20High%20Availability%3a%20DRBD%20vs%20GlusterFS%20Geo-Replication%20vs%20Pacemaker&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-11-self-hosted-nfs-high-availability-drbd-glusterfs-pacemaker-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-11-self-hosted-nfs-high-availability-drbd-glusterfs-pacemaker-guide%2f&t=Self-Hosted%20NFS%20High%20Availability%3a%20DRBD%20vs%20GlusterFS%20Geo-Replication%20vs%20Pacemaker" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/nfs/ class=tag-link>Nfs</a>
+<a href=/tags/storage/ class=tag-link>Storage</a>
+<a href=/tags/high-availability/ class=tag-link>High-Availability</a>
+<a href=/tags/networking/ class=tag-link>Networking</a>
+<a href=/tags/self-hosted/ class=tag-link>Self-Hosted</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-05-11-self-hosted-dhcp-high-availability-kea-isc-dnsmasq-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Dhcp</span></div><h3 class=post-title>Self-Hosted DHCP High Availability: ISC Kea vs ISC DHCP Failover vs Dnsmasq</h3><div class=post-excerpt>Dynamic Host Configuration Protocol (DHCP) is foundational network infrastructure — without it, devices cannot obtain IP …</div><div class=post-footer><span class=post-date>May 11, 2026</span></div></a><a href=/posts/2026-05-08-self-hosted-storage-replication-drbd-zfs-glusterfs-georep-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Storage</span></div><h3 class=post-title>Self-Hosted Storage Replication: DRBD vs ZFS Replication vs GlusterFS Geo-Rep</h3><div class=post-excerpt>Storage replication is essential for disaster recovery, high availability, and data protection across geographically …</div><div class=post-footer><span class=post-date>May 8, 2026</span></div></a><a href=/posts/2026-04-30-nfs-ganesha-vs-unfs3-vs-kernel-nfs-self-hosted-nfs-server-guide-2026/ class=post-card><div class=post-tags><span class="tag tag-purple">Comparison</span></div><h3 class=post-title>NFS-Ganesha vs UNFS3 vs Kernel NFS: Self-Hosted NFS Server Guide 2026</h3><div class=post-excerpt>Network File System (NFS) remains one of the most widely used protocols for network file sharing on Linux and UNIX …</div><div class=post-footer><span class=post-date>Apr 30, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>
