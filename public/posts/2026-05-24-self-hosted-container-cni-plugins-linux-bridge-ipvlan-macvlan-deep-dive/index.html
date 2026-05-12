@@ -1,0 +1,237 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted Container CNI Plugins: Linux Bridge vs IPvLAN vs Macvlan Deep Dive | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-05-24-self-hosted-container-cni-plugins-linux-bridge-ipvlan-macvlan-deep-dive/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted Container CNI Plugins: Linux Bridge vs IPvLAN vs Macvlan Deep Dive"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-05-24-self-hosted-container-cni-plugins-linux-bridge-ipvlan-macvlan-deep-dive/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-05-12T00:00:00Z"><meta property="article:modified_time" content="2026-05-12T00:00:00Z"><meta property="article:tag" content="cni"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted Container CNI Plugins: Linux Bridge vs IPvLAN vs Macvlan Deep Dive"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted Container CNI Plugins: Linux Bridge vs IPvLAN vs Macvlan Deep Dive","description":"\u003cp\u003eContainer networking is the foundation of any self-hosted infrastructure. The Container Network Interface (CNI) defines a standard for connecting containers to networks, and the choice of CNI plugin determines how your containers communicate with each other, the host, and external networks.\u003c\/p\u003e","datePublished":"2026-05-12T00:00:00Z","dateModified":"2026-05-12T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-05-24-self-hosted-container-cni-plugins-linux-bridge-ipvlan-macvlan-deep-dive\/"},"keywords":["cni","container-networking","kubernetes","docker","ipvlan","macvlan","bridge"],"articleSection":"cni","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted Container CNI Plugins: Linux Bridge vs IPvLAN vs Macvlan Deep Dive","item":"https:\/\/www.pistack.xyz\/posts\/2026-05-24-self-hosted-container-cni-plugins-linux-bridge-ipvlan-macvlan-deep-dive\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Cni</span>
+<span class="tag tag-purple">Container-Networking</span>
+<span class="tag tag-purple">Kubernetes</span></div><h1>Self-Hosted Container CNI Plugins: Linux Bridge vs IPvLAN vs Macvlan Deep Dive</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>May 12, 2026</span>
+<span>9 min read</span>
+<span>Updated May 12, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#understanding-cni-plugin-types>Understanding CNI Plugin Types</a><ul><li><a href=#linux-bridge-cni>Linux Bridge CNI</a></li><li><a href=#ipvlan-cni>IPvLAN CNI</a></li><li><a href=#macvlan-cni>Macvlan CNI</a></li></ul></li><li><a href=#deploying-linux-bridge-cni>Deploying Linux Bridge CNI</a></li><li><a href=#deploying-ipvlan-cni>Deploying IPvLAN CNI</a></li><li><a href=#deploying-macvlan-cni>Deploying Macvlan CNI</a></li><li><a href=#performance-comparison>Performance Comparison</a><ul><li><a href=#throughput-and-latency>Throughput and Latency</a></li><li><a href=#network-isolation>Network Isolation</a></li></ul></li><li><a href=#troubleshooting-common-issues>Troubleshooting Common Issues</a><ul><li><a href=#bridge-hairpin-mode>Bridge: Hairpin Mode</a></li><li><a href=#ipvlan-host-communication>IPvLAN: Host Communication</a></li><li><a href=#macvlan-host-communication>Macvlan: Host Communication</a></li></ul></li><li><a href=#choosing-the-right-cni-plugin>Choosing the Right CNI Plugin</a><ul><li><a href=#choose-linux-bridge-if>Choose Linux Bridge if:</a></li><li><a href=#choose-ipvlan-if>Choose IPvLAN if:</a></li><li><a href=#choose-macvlan-if>Choose Macvlan if:</a></li></ul></li><li><a href=#why-care-about-cni-plugin-choice>Why Care About CNI Plugin Choice?</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#can-i-use-multiple-cni-plugins-on-the-same-host>Can I use multiple CNI plugins on the same host?</a></li><li><a href=#what-is-the-difference-between-ipvlan-l2-and-l3-modes>What is the difference between IPvLAN L2 and L3 modes?</a></li><li><a href=#does-macvlan-work-with-wifi-interfaces>Does Macvlan work with WiFi interfaces?</a></li><li><a href=#how-do-i-monitor-cni-plugin-performance>How do I monitor CNI plugin performance?</a></li><li><a href=#can-containers-on-different-cni-networks-communicate>Can containers on different CNI networks communicate?</a></li><li><a href=#what-happens-to-existing-connections-when-i-change-cni-plugins>What happens to existing connections when I change CNI plugins?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><p>Container networking is the foundation of any self-hosted infrastructure. The Container Network Interface (CNI) defines a standard for connecting containers to networks, and the choice of CNI plugin determines how your containers communicate with each other, the host, and external networks.</p><p>This guide dives deep into three fundamental CNI plugin types — <strong>Linux Bridge</strong>, <strong>IPvLAN</strong>, and <strong>Macvlan</strong> — comparing their architecture, performance, isolation properties, and ideal use cases for self-hosted container deployments.</p><h2 id=understanding-cni-plugin-types>Understanding CNI Plugin Types</h2><table><thead><tr><th>Feature</th><th>Linux Bridge</th><th>IPvLAN</th><th>Macvlan</th></tr></thead><tbody><tr><td><strong>Kernel Module</strong></td><td>bridge</td><td>ipvlan</td><td>macvlan</td></tr><tr><td><strong>Layer</strong></td><td>L2 (Ethernet)</td><td>L3 (IP) / L2</td><td>L2 (Ethernet)</td></tr><tr><td><strong>MAC Addresses</strong></td><td>1 per container (veth pair)</td><td>Shared (host MAC)</td><td>1 per container</td></tr><tr><td><strong>Performance</strong></td><td>Good (software bridge)</td><td>Excellent (no bridge)</td><td>Excellent (no bridge)</td></tr><tr><td><strong>IPAM Support</strong></td><td>✅ host-local, DHCP</td><td>✅ host-local, DHCP</td><td>✅ host-local, DHCP</td></tr><tr><td><strong>Network Policy</strong></td><td>✅ Full support</td><td>✅ L3 mode only</td><td>❌ Limited</td></tr><tr><td><strong>Hairpin Mode</strong></td><td>Required for host access</td><td>Not needed</td><td>Required for host access</td></tr><tr><td><strong>VLAN Support</strong></td><td>Via vlan plugin</td><td>Native (mode l2/l3)</td><td>Native (mode bridge)</td></tr><tr><td><strong>Best For</strong></td><td>General container networking</td><td>High-performance, L3 isolation</td><td>Legacy app compatibility, direct L2</td></tr></tbody></table><h3 id=linux-bridge-cni>Linux Bridge CNI</h3><p>The Linux Bridge plugin creates a virtual Ethernet bridge on the host and connects each container via a veth (virtual Ethernet) pair. One end of the veth pair lives inside the container&rsquo;s network namespace, and the other end attaches to the bridge. This is the most common and widely supported CNI plugin, forming the foundation for more complex networking setups.</p><h3 id=ipvlan-cni>IPvLAN CNI</h3><p>IPvLAN creates virtual network interfaces that share the host&rsquo;s MAC address but have unique IP addresses. Unlike Bridge mode, IPvLAN operates at Layer 3 (IP level), meaning the kernel routes packets directly without a software bridge. This eliminates bridge overhead and provides near-native network performance. IPvLAN has three modes: L2 (same subnet), L3 (routed), and L3S (L3 with source NAT).</p><h3 id=macvlan-cni>Macvlan CNI</h3><p>Macvlan creates virtual interfaces that each have their own unique MAC address, making containers appear as separate physical devices on the network. This is useful for legacy applications that expect direct network access or for environments where containers need to be individually addressable by external firewalls, load balancers, or monitoring systems.</p><h2 id=deploying-linux-bridge-cni>Deploying Linux Bridge CNI</h2><p>The Linux Bridge plugin is part of the standard CNI plugins package:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install CNI plugins</span>
+</span></span><span class=line><span class=cl>curl -LO https://github.com/containernetworking/plugins/releases/download/v1.5.0/cni-plugins-linux-amd64-v1.5.0.tgz
+</span></span><span class=line><span class=cl>sudo mkdir -p /opt/cni/bin
+</span></span><span class=line><span class=cl>sudo tar -C /opt/cni/bin -xzf cni-plugins-linux-amd64-v1.5.0.tgz bridge host-local loopback
+</span></span></code></pre></td></tr></table></div></div><p>Bridge CNI configuration (<code>/etc/cni/net.d/10-bridge.conf</code>):</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;cniVersion&#34;</span><span class=p>:</span> <span class=s2>&#34;1.0.0&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;name&#34;</span><span class=p>:</span> <span class=s2>&#34;bridge-network&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;type&#34;</span><span class=p>:</span> <span class=s2>&#34;bridge&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;bridge&#34;</span><span class=p>:</span> <span class=s2>&#34;cni0&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;isGateway&#34;</span><span class=p>:</span> <span class=kc>true</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;ipMasq&#34;</span><span class=p>:</span> <span class=kc>true</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;ipam&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;type&#34;</span><span class=p>:</span> <span class=s2>&#34;host-local&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;subnet&#34;</span><span class=p>:</span> <span class=s2>&#34;10.244.0.0/24&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;routes&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>      <span class=p>{</span><span class=nt>&#34;dst&#34;</span><span class=p>:</span> <span class=s2>&#34;0.0.0.0/0&#34;</span><span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=p>]</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>Docker Compose with custom bridge network:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s1>&#39;3.8&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>app</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>nginx:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>bridge-net</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>db</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>postgres:16</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>bridge-net</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>bridge-net</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>bridge</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ipam</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>config</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>subnet</span><span class=p>:</span><span class=w> </span><span class=m>10.244.0.0</span><span class=l>/24</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>gateway</span><span class=p>:</span><span class=w> </span><span class=m>10.244.0.1</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=deploying-ipvlan-cni>Deploying IPvLAN CNI</h2><p>IPvLAN configuration (<code>/etc/cni/net.d/10-ipvlan.conf</code>):</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;cniVersion&#34;</span><span class=p>:</span> <span class=s2>&#34;1.0.0&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;name&#34;</span><span class=p>:</span> <span class=s2>&#34;ipvlan-network&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;type&#34;</span><span class=p>:</span> <span class=s2>&#34;ipvlan&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;master&#34;</span><span class=p>:</span> <span class=s2>&#34;eth0&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;mode&#34;</span><span class=p>:</span> <span class=s2>&#34;l2&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;ipam&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;type&#34;</span><span class=p>:</span> <span class=s2>&#34;host-local&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;subnet&#34;</span><span class=p>:</span> <span class=s2>&#34;192.168.1.0/24&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;rangeStart&#34;</span><span class=p>:</span> <span class=s2>&#34;192.168.1.100&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;rangeEnd&#34;</span><span class=p>:</span> <span class=s2>&#34;192.168.1.200&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;gateway&#34;</span><span class=p>:</span> <span class=s2>&#34;192.168.1.1&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>Test IPvLAN with a temporary container:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Create a container with IPvLAN networking</span>
+</span></span><span class=line><span class=cl>docker run -d --name ipvlan-test   --net<span class=o>=</span>none   nginx:latest
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Attach IPvLAN interface manually</span>
+</span></span><span class=line><span class=cl><span class=nv>CONTAINER_PID</span><span class=o>=</span><span class=k>$(</span>docker inspect -f <span class=s1>&#39;{{.State.Pid}}&#39;</span> ipvlan-test<span class=k>)</span>
+</span></span><span class=line><span class=cl>sudo ln -sf /proc/<span class=nv>$CONTAINER_PID</span>/ns/net /var/run/netns/<span class=nv>$CONTAINER_PID</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Create IPvLAN interface</span>
+</span></span><span class=line><span class=cl>sudo ip link add link eth0 name ipvl0 <span class=nb>type</span> ipvlan mode l2
+</span></span><span class=line><span class=cl>sudo ip link <span class=nb>set</span> ipvl0 netns <span class=nv>$CONTAINER_PID</span>
+</span></span><span class=line><span class=cl>sudo ip netns <span class=nb>exec</span> <span class=nv>$CONTAINER_PID</span> ip addr add 192.168.1.100/24 dev ipvl0
+</span></span><span class=line><span class=cl>sudo ip netns <span class=nb>exec</span> <span class=nv>$CONTAINER_PID</span> ip link <span class=nb>set</span> ipvl0 up
+</span></span><span class=line><span class=cl>sudo ip netns <span class=nb>exec</span> <span class=nv>$CONTAINER_PID</span> ip route add default via 192.168.1.1
+</span></span></code></pre></td></tr></table></div></div><p>Docker native IPvLAN network:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Create an IPvLAN network in Docker</span>
+</span></span><span class=line><span class=cl>docker network create -d ipvlan   --subnet<span class=o>=</span>192.168.1.0/24   --gateway<span class=o>=</span>192.168.1.1   -o <span class=nv>parent</span><span class=o>=</span>eth0   --ip-range<span class=o>=</span>192.168.1.100/28   ipvlan-net
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Run a container on the IPvLAN network</span>
+</span></span><span class=line><span class=cl>docker run -d --name app --net<span class=o>=</span>ipvlan-net nginx:latest
+</span></span></code></pre></td></tr></table></div></div><h2 id=deploying-macvlan-cni>Deploying Macvlan CNI</h2><p>Macvlan configuration (<code>/etc/cni/net.d/10-macvlan.conf</code>):</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;cniVersion&#34;</span><span class=p>:</span> <span class=s2>&#34;1.0.0&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;name&#34;</span><span class=p>:</span> <span class=s2>&#34;macvlan-network&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;type&#34;</span><span class=p>:</span> <span class=s2>&#34;macvlan&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;master&#34;</span><span class=p>:</span> <span class=s2>&#34;eth0&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;mode&#34;</span><span class=p>:</span> <span class=s2>&#34;bridge&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;ipam&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;type&#34;</span><span class=p>:</span> <span class=s2>&#34;host-local&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;subnet&#34;</span><span class=p>:</span> <span class=s2>&#34;192.168.1.0/24&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;rangeStart&#34;</span><span class=p>:</span> <span class=s2>&#34;192.168.1.50&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;rangeEnd&#34;</span><span class=p>:</span> <span class=s2>&#34;192.168.1.150&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;gateway&#34;</span><span class=p>:</span> <span class=s2>&#34;192.168.1.1&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>Docker native Macvlan network:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Create a Macvlan network</span>
+</span></span><span class=line><span class=cl>docker network create -d macvlan   --subnet<span class=o>=</span>192.168.1.0/24   --gateway<span class=o>=</span>192.168.1.1   -o <span class=nv>parent</span><span class=o>=</span>eth0   --ip-range<span class=o>=</span>192.168.1.50/28   macvlan-net
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Run containers on the Macvlan network</span>
+</span></span><span class=line><span class=cl>docker run -d --name web1 --net<span class=o>=</span>macvlan-net nginx:latest
+</span></span><span class=line><span class=cl>docker run -d --name web2 --net<span class=o>=</span>macvlan-net nginx:latest
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Each container gets a unique MAC address visible on the network</span>
+</span></span><span class=line><span class=cl>docker <span class=nb>exec</span> web1 ip link show
+</span></span><span class=line><span class=cl>docker <span class=nb>exec</span> web2 ip link show
+</span></span></code></pre></td></tr></table></div></div><p>Macvlan with VLAN tagging:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Create a Macvlan network on a VLAN sub-interface</span>
+</span></span><span class=line><span class=cl>docker network create -d macvlan   --subnet<span class=o>=</span>10.10.0.0/24   --gateway<span class=o>=</span>10.10.0.1   -o <span class=nv>parent</span><span class=o>=</span>eth0.100   macvlan-vlan100
+</span></span></code></pre></td></tr></table></div></div><h2 id=performance-comparison>Performance Comparison</h2><h3 id=throughput-and-latency>Throughput and Latency</h3><table><thead><tr><th>Metric</th><th>Linux Bridge</th><th>IPvLAN (L2)</th><th>IPvLAN (L3)</th><th>Macvlan</th></tr></thead><tbody><tr><td><strong>TCP Throughput</strong></td><td>~90% native</td><td>~98% native</td><td>~97% native</td><td>~98% native</td></tr><tr><td><strong>UDP Latency</strong></td><td>~50μs overhead</td><td>~5μs overhead</td><td>~8μs overhead</td><td>~5μs overhead</td></tr><tr><td><strong>CPU Overhead</strong></td><td>Moderate (bridge processing)</td><td>Minimal</td><td>Minimal</td><td>Minimal</td></tr><tr><td><strong>Context Switches</strong></td><td>Higher (bridge traversal)</td><td>Lower (direct route)</td><td>Lower (direct route)</td><td>Lower (direct route)</td></tr><tr><td><strong>Scalability</strong></td><td>Good (1000s of containers)</td><td>Excellent</td><td>Excellent</td><td>Limited (MAC table)</td></tr></tbody></table><h3 id=network-isolation>Network Isolation</h3><p><strong>Linux Bridge</strong> provides L2 isolation — containers on the same bridge can communicate directly. Network policies are enforced via iptables/nftables rules on the bridge interface.</p><p><strong>IPvLAN L3 mode</strong> provides the strongest isolation — containers can only communicate through the host&rsquo;s routing stack. This is ideal for multi-tenant environments where containers must not reach each other directly.</p><p><strong>Macvlan</strong> provides minimal isolation — all containers appear as regular network devices. External firewalls and switches see each container&rsquo;s MAC address independently, which can be both a feature and a security concern.</p><h2 id=troubleshooting-common-issues>Troubleshooting Common Issues</h2><h3 id=bridge-hairpin-mode>Bridge: Hairpin Mode</h3><p>When containers need to reach themselves through the host IP, enable hairpin mode:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Enable hairpin mode on the bridge port</span>
+</span></span><span class=line><span class=cl>sudo brctl hairpin cni0 veth12345 on
+</span></span><span class=line><span class=cl><span class=c1># Or with iproute2</span>
+</span></span><span class=line><span class=cl>sudo ip link <span class=nb>set</span> dev veth12345 hairpin on
+</span></span></code></pre></td></tr></table></div></div><h3 id=ipvlan-host-communication>IPvLAN: Host Communication</h3><p>Containers on an IPvLAN network cannot reach the host by default. Fix this by creating a macvlan interface on the host:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Create a macvlan interface on the host for host-to-container communication</span>
+</span></span><span class=line><span class=cl>sudo ip link add ipvlan-host link eth0 <span class=nb>type</span> macvlan mode bridge
+</span></span><span class=line><span class=cl>sudo ip addr add 192.168.1.1/32 dev ipvlan-host
+</span></span><span class=line><span class=cl>sudo ip link <span class=nb>set</span> ipvlan-host up
+</span></span><span class=line><span class=cl>sudo ip route add 192.168.1.100/32 dev ipvlan-host
+</span></span></code></pre></td></tr></table></div></div><h3 id=macvlan-host-communication>Macvlan: Host Communication</h3><p>Same issue as IPvLAN — Macvlan containers cannot reach the host directly:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Create a macvlan interface on the host</span>
+</span></span><span class=line><span class=cl>sudo ip link add macvlan-host link eth0 <span class=nb>type</span> macvlan mode bridge
+</span></span><span class=line><span class=cl>sudo ip addr add 192.168.1.1/32 dev macvlan-host
+</span></span><span class=line><span class=cl>sudo ip link <span class=nb>set</span> macvlan-host up
+</span></span></code></pre></td></tr></table></div></div><h2 id=choosing-the-right-cni-plugin>Choosing the Right CNI Plugin</h2><h3 id=choose-linux-bridge-if>Choose Linux Bridge if:</h3><ul><li>You need general-purpose container networking with broad compatibility</li><li>You want Kubernetes NetworkPolicy support</li><li>You&rsquo;re running Docker or Kubernetes without specialized networking requirements</li><li>You need NAT for containers to reach external networks</li></ul><h3 id=choose-ipvlan-if>Choose IPvLAN if:</h3><ul><li>You need maximum network performance (minimal overhead)</li><li>You want L3 isolation between container groups (multi-tenant)</li><li>You don&rsquo;t want MAC address proliferation on your network switches</li><li>Your network infrastructure limits the number of MAC addresses per port</li></ul><h3 id=choose-macvlan-if>Choose Macvlan if:</h3><ul><li>Your containers need to appear as individual devices on the physical network</li><li>You have legacy applications that require direct network access</li><li>External firewalls or monitoring systems need to see individual container MAC addresses</li><li>You&rsquo;re migrating VMs to containers and need the same network behavior</li></ul><h2 id=why-care-about-cni-plugin-choice>Why Care About CNI Plugin Choice?</h2><p><strong>Performance matters at scale</strong>: For small deployments with a few containers, any CNI plugin works fine. But at hundreds or thousands of containers, the difference between Bridge and IPvLAN becomes measurable — IPvLAN&rsquo;s near-native throughput can reduce network latency by 90% compared to bridge-based networking.</p><p><strong>Security and isolation</strong>: Different plugins offer different isolation guarantees. IPvLAN L3 mode provides strong tenant isolation by default, while Macvlan exposes all containers directly to the physical network. Understanding these differences is critical for compliance and security.</p><p><strong>Network infrastructure compatibility</strong>: Some network switches limit the number of MAC addresses per port (port security). Macvlan creates one MAC per container, which can exhaust switch MAC tables. IPvLAN shares the host MAC, avoiding this limitation entirely.</p><p><strong>Operational complexity</strong>: Linux Bridge is the simplest to understand and troubleshoot — it behaves like a physical Ethernet switch. IPvLAN and Macvlan operate at a lower level and require understanding of kernel networking internals for advanced troubleshooting.</p><p>For teams managing container networks at scale, see our <a href=../2026-04-21-flannel-vs-calico-vs-cilium-self-hosted-kubernetes-cni-guide-2026/>Kubernetes CNI comparison</a> and <a href=../2026-05-12-self-hosted-sidecar-proxy-envoy-linkerd-cilium-guide/>sidecar proxy guide</a>. If you need advanced network policies, our <a href=../2026-04-26-calico-vs-cilium-vs-kube-router-kubernetes-network-policies-guide-2026/>Kubernetes network policies deep dive</a> covers policy enforcement patterns.</p><h2 id=faq>FAQ</h2><h3 id=can-i-use-multiple-cni-plugins-on-the-same-host>Can I use multiple CNI plugins on the same host?</h3><p>Yes. CNI supports chaining multiple plugins together. For example, you can use the Bridge plugin for basic connectivity and chain it with the Portmap plugin for port forwarding, or with the Bandwidth plugin for rate limiting. The CNI specification defines how plugins are chained in a single network configuration file.</p><h3 id=what-is-the-difference-between-ipvlan-l2-and-l3-modes>What is the difference between IPvLAN L2 and L3 modes?</h3><p><strong>IPvLAN L2 mode</strong> allows containers to communicate at Layer 2 — they can see each other&rsquo;s ARP traffic and communicate directly within the same subnet. <strong>IPvLAN L3 mode</strong> routes all traffic through the host&rsquo;s IP stack, providing stronger isolation — containers cannot see each other&rsquo;s Layer 2 traffic and must go through routing for all communication.</p><h3 id=does-macvlan-work-with-wifi-interfaces>Does Macvlan work with WiFi interfaces?</h3><p>Generally no. Most WiFi drivers and access points do not support multiple MAC addresses on a single interface (802.11 standard limitation). Macvlan requires the underlying interface to support multiple MAC addresses, which is true for Ethernet but not for most WiFi adapters.</p><h3 id=how-do-i-monitor-cni-plugin-performance>How do I monitor CNI plugin performance?</h3><p>Use standard Linux networking tools: <code>ip -s link</code> shows byte/packet counts per interface, <code>tc -s qdisc</code> shows queueing discipline statistics, and <code>ethtool -S</code> shows driver-level statistics. For Kubernetes deployments, Cilium Hubble and Weave Scope provide network observability on top of CNI plugins.</p><h3 id=can-containers-on-different-cni-networks-communicate>Can containers on different CNI networks communicate?</h3><p>Not by default. Containers on separate CNI networks are isolated from each other. To enable cross-network communication, you need a router or gateway between the networks. In Kubernetes, this is handled by the kube-proxy and Service abstraction.</p><h3 id=what-happens-to-existing-connections-when-i-change-cni-plugins>What happens to existing connections when I change CNI plugins?</h3><p>Changing CNI plugins requires restarting containers — the network namespace is recreated with the new plugin. Existing TCP connections will be dropped. Plan CNI changes during maintenance windows and use rolling updates to minimize disruption.</p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted Container CNI Plugins: Linux Bridge vs IPvLAN vs Macvlan Deep Dive","description":"Deep dive comparison of Linux Bridge, IPvLAN, and Macvlan CNI plugins for container networking — architecture, performance, and deployment guides.","datePublished":"2026-05-12","dateModified":"2026-05-12","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20Container%20CNI%20Plugins%3a%20Linux%20Bridge%20vs%20IPvLAN%20vs%20Macvlan%20Deep%20Dive&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-24-self-hosted-container-cni-plugins-linux-bridge-ipvlan-macvlan-deep-dive%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-24-self-hosted-container-cni-plugins-linux-bridge-ipvlan-macvlan-deep-dive%2f&t=Self-Hosted%20Container%20CNI%20Plugins%3a%20Linux%20Bridge%20vs%20IPvLAN%20vs%20Macvlan%20Deep%20Dive" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/cni/ class=tag-link>Cni</a>
+<a href=/tags/container-networking/ class=tag-link>Container-Networking</a>
+<a href=/tags/kubernetes/ class=tag-link>Kubernetes</a>
+<a href=/tags/docker/ class=tag-link>Docker</a>
+<a href=/tags/ipvlan/ class=tag-link>Ipvlan</a>
+<a href=/tags/macvlan/ class=tag-link>Macvlan</a>
+<a href=/tags/bridge/ class=tag-link>Bridge</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-05-09-kubernetes-multi-network-cni-multus-whereabouts-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Kubernetes</span></div><h3 class=post-title>Kubernetes Multi-Network CNI: Multus vs Whereabouts vs CNI Plugins (2026)</h3><div class=post-excerpt>Running Kubernetes workloads that need more than one network interface — such as DPDK packet processing, SR-IOV virtual …</div><div class=post-footer><span class=post-date>May 9, 2026</span></div></a><a href=/posts/2026-05-11-self-hosted-open-vswitch-management-ovn-ovs-network-virtualization-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Openvswitch</span></div><h3 class=post-title>Self-Hosted Open vSwitch Management: OVN, OVS, and Network Virtualization (2026)</h3><div class=post-excerpt>Modern cloud infrastructure depends on virtual networks — overlay networks that connect containers, virtual machines, …</div><div class=post-footer><span class=post-date>May 11, 2026</span></div></a><a href=/posts/2026-05-10-self-hosted-kubernetes-cni-antrea-kube-ovn-spiderpool-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Kubernetes</span></div><h3 class=post-title>Self-Hosted Kubernetes CNI: Antrea vs Kube-OVN vs Spiderpool (2026)</h3><div class=post-excerpt>The Container Network Interface (CNI) is the networking backbone of every Kubernetes cluster. While default plugins like …</div><div class=post-footer><span class=post-date>May 10, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>

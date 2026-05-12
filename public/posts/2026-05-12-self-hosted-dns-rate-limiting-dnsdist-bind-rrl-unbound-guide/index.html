@@ -1,0 +1,339 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted DNS Rate Limiting: dnsdist vs BIND RRL vs Unbound Rate-Limit | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-05-12-self-hosted-dns-rate-limiting-dnsdist-bind-rrl-unbound-guide/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted DNS Rate Limiting: dnsdist vs BIND RRL vs Unbound Rate-Limit"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-05-12-self-hosted-dns-rate-limiting-dnsdist-bind-rrl-unbound-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-05-12T00:00:00Z"><meta property="article:modified_time" content="2026-05-12T00:00:00Z"><meta property="article:tag" content="dns"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted DNS Rate Limiting: dnsdist vs BIND RRL vs Unbound Rate-Limit"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted DNS Rate Limiting: dnsdist vs BIND RRL vs Unbound Rate-Limit","description":"\u003cp\u003eDNS rate limiting is a critical defense layer for any self-hosted DNS infrastructure. Without it, your recursive or authoritative servers become amplification targets in distributed denial-of-service (DDoS) attacks. This guide compares three leading approaches to DNS rate limiting: \u003cstrong\u003ednsdist\u003c\/strong\u003e from PowerDNS, \u003cstrong\u003eBIND Response Rate Limiting (RRL)\u003c\/strong\u003e, and \u003cstrong\u003eUnbound\u0026rsquo;s built-in rate-limit\u003c\/strong\u003e feature.\u003c\/p\u003e","datePublished":"2026-05-12T00:00:00Z","dateModified":"2026-05-12T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-05-12-self-hosted-dns-rate-limiting-dnsdist-bind-rrl-unbound-guide\/"},"keywords":["dns","rate-limiting","ddos-protection","security","networking"],"articleSection":"dns","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted DNS Rate Limiting: dnsdist vs BIND RRL vs Unbound Rate-Limit","item":"https:\/\/www.pistack.xyz\/posts\/2026-05-12-self-hosted-dns-rate-limiting-dnsdist-bind-rrl-unbound-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Dns</span>
+<span class="tag tag-purple">Rate-Limiting</span>
+<span class="tag tag-purple">Ddos-Protection</span></div><h1>Self-Hosted DNS Rate Limiting: dnsdist vs BIND RRL vs Unbound Rate-Limit</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>May 12, 2026</span>
+<span>8 min read</span>
+<span>Updated May 12, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#why-dns-rate-limiting-matters>Why DNS Rate Limiting Matters</a></li><li><a href=#comparison-overview>Comparison Overview</a></li><li><a href=#dnsdist-powerdns>dnsdist (PowerDNS)</a><ul><li><a href=#key-features>Key Features</a></li><li><a href=#docker-compose-configuration>Docker Compose Configuration</a></li><li><a href=#rate-limiting-configuration>Rate Limiting Configuration</a></li><li><a href=#advanced-per-domain-rate-limiting>Advanced: Per-Domain Rate Limiting</a></li></ul></li><li><a href=#bind-response-rate-limiting-rrl>BIND Response Rate Limiting (RRL)</a><ul><li><a href=#key-features-1>Key Features</a></li><li><a href=#bind-configuration>BIND Configuration</a></li><li><a href=#docker-compose-for-bind-with-rrl>Docker Compose for BIND with RRL</a></li></ul></li><li><a href=#unbound-rate-limiting>Unbound Rate Limiting</a><ul><li><a href=#key-features-2>Key Features</a></li><li><a href=#unbound-configuration>Unbound Configuration</a></li><li><a href=#docker-compose-for-unbound>Docker Compose for Unbound</a></li></ul></li><li><a href=#choosing-the-right-dns-rate-limiting-solution>Choosing the Right DNS Rate Limiting Solution</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#what-is-dns-rate-limiting-and-why-is-it-necessary>What is DNS rate limiting and why is it necessary?</a></li><li><a href=#what-is-the-slip-mechanism-in-dns-rate-limiting>What is the &ldquo;slip&rdquo; mechanism in DNS rate limiting?</a></li><li><a href=#should-i-use-rate-limiting-on-both-authoritative-and-recursive-dns-servers>Should I use rate limiting on both authoritative and recursive DNS servers?</a></li><li><a href=#how-do-i-whitelist-trusted-resolvers-from-rate-limiting>How do I whitelist trusted resolvers from rate limiting?</a></li><li><a href=#what-rate-limit-values-should-i-start-with>What rate limit values should I start with?</a></li><li><a href=#can-rate-limiting-cause-false-positives-for-legitimate-users>Can rate limiting cause false positives for legitimate users?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><p>DNS rate limiting is a critical defense layer for any self-hosted DNS infrastructure. Without it, your recursive or authoritative servers become amplification targets in distributed denial-of-service (DDoS) attacks. This guide compares three leading approaches to DNS rate limiting: <strong>dnsdist</strong> from PowerDNS, <strong>BIND Response Rate Limiting (RRL)</strong>, and <strong>Unbound&rsquo;s built-in rate-limit</strong> feature.</p><h2 id=why-dns-rate-limiting-matters>Why DNS Rate Limiting Matters</h2><p>DNS is inherently stateless — a small query can trigger a large response, making it one of the most effective amplification vectors for DDoS attacks. In 2023 and 2024, DNS amplification attacks consistently ranked among the top five attack vectors, with peak traffic exceeding 3 Tbps. A self-hosted DNS server without rate limiting is both a victim and an unwitting accomplice in these attacks.</p><p>Rate limiting works by tracking query patterns per source IP and dropping or truncating responses that exceed configured thresholds. This protects your server&rsquo;s resources and prevents it from being used as an amplification reflector. For organizations running their own authoritative or recursive DNS, implementing rate limiting is not optional — it&rsquo;s a fundamental security requirement.</p><p>For broader DNS infrastructure planning, see our <a href=../2026-04-18-powerdns-vs-bind9-vs-nsd-vs-knot-self-hosted-authoritative-dns-2026/>comprehensive DNS server comparison</a> and <a href=../2026-04-21-self-hosted-dns-firewall-rpz-unbound-powerdns-bind9-knot-guide-2026/>DNS firewall with RPZ guide</a>.</p><h2 id=comparison-overview>Comparison Overview</h2><table><thead><tr><th>Feature</th><th>dnsdist</th><th>BIND RRL</th><th>Unbound rate-limit</th></tr></thead><tbody><tr><td><strong>Developer</strong></td><td>PowerDNS</td><td>ISC</td><td>NLnet Labs</td></tr><tr><td><strong>License</strong></td><td>GPL-2.0</td><td>MPL-2.0</td><td>BSD-3-Clause</td></tr><tr><td><strong>GitHub Stars</strong></td><td>Part of PowerDNS (4,361+)</td><td>Part of BIND (ISC)</td><td>Part of Unbound (NLnetLabs)</td></tr><tr><td><strong>Rate Limit Type</strong></td><td>Global + per-client rules</td><td>Per-zone, per-source IP</td><td>Per-source IP</td></tr><tr><td><strong>QPS Threshold</strong></td><td>Configurable per rule</td><td>qps-limit, slip</td><td>default 50 qps</td></tr><tr><td><strong>Slip Response</strong></td><td>Yes (TC=1)</td><td>Yes (slip parameter)</td><td>Yes (TC=1)</td></tr><tr><td><strong>IPv6 Support</strong></td><td>Yes</td><td>Yes</td><td>Yes</td></tr><tr><td><strong>Dynamic Rules</strong></td><td>Yes (Lua, API)</td><td>No (static config)</td><td>No (static config)</td></tr><tr><td><strong>Logging</strong></td><td>Extensible (Lua, stats)</td><td>Query log</td><td>Verbosity levels</td></tr><tr><td><strong>Docker Image</strong></td><td>Official (powerdns/dnsdist)</td><td>Official (isc/bind)</td><td>Official (nlnetlabs/unbound)</td></tr><tr><td><strong>Best For</strong></td><td>Advanced traffic shaping</td><td>BIND deployments</td><td>Recursive resolver protection</td></tr></tbody></table><h2 id=dnsdist-powerdns>dnsdist (PowerDNS)</h2><p>dnsdist is a highly configurable DNS load balancer and rate limiter. Unlike the other two options, it operates as a front-end proxy, sitting in front of your backend DNS servers and applying rate limiting rules before queries reach them.</p><h3 id=key-features>Key Features</h3><ul><li><strong>Rule-based rate limiting</strong>: Define granular rules based on source IP, query type, domain name, or any combination</li><li><strong>Lua scripting</strong>: Dynamic rule creation and real-time adjustments via embedded Lua</li><li><strong>Multiple backends</strong>: Distribute traffic across multiple DNS servers with health checking</li><li><strong>DoH/DoT termination</strong>: Handle encrypted DNS traffic and apply rate limits per-client</li><li><strong>Real-time statistics</strong>: Web-based dashboard and console for monitoring</li></ul><h3 id=docker-compose-configuration>Docker Compose Configuration</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>dnsdist</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>powerdns/dnsdist:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>dnsdist</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;53:53/tcp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;53:53/udp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8081:8081/tcp&#34;</span><span class=w>  </span><span class=c># Web dashboard</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;5199:5199/tcp&#34;</span><span class=w>  </span><span class=c># Console</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./dnsdist.conf:/etc/dnsdist/dnsdist.conf:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>dns-net</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>ipv4_address</span><span class=p>:</span><span class=w> </span><span class=m>172.20.0.10</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>dns-net</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>bridge</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ipam</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>config</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>subnet</span><span class=p>:</span><span class=w> </span><span class=m>172.20.0.0</span><span class=l>/24</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=rate-limiting-configuration>Rate Limiting Configuration</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-lua data-lang=lua><span class=line><span class=cl><span class=c1>-- dnsdist.conf</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>-- Basic rate limiting: 100 queries/second per source IP</span>
+</span></span><span class=line><span class=cl><span class=c1>-- &#34;Slip&#34; mode sends TC=1 (truncated) instead of dropping</span>
+</span></span><span class=line><span class=cl><span class=n>addAction</span><span class=p>(</span><span class=n>AllRule</span><span class=p>(),</span>
+</span></span><span class=line><span class=cl>  <span class=n>QPSAction</span><span class=p>(</span><span class=mi>100</span><span class=p>,</span> <span class=p>{</span><span class=n>pool</span><span class=o>=</span><span class=s2>&#34;default&#34;</span><span class=p>},</span> <span class=p>{</span><span class=n>slip</span><span class=o>=</span><span class=mi>100</span><span class=p>})</span>
+</span></span><span class=line><span class=cl><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>-- Stricter limit for ANY queries (common amplification vector)</span>
+</span></span><span class=line><span class=cl><span class=n>addAction</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>  <span class=n>QTypeRule</span><span class=p>(</span><span class=n>DNSQType.ANY</span><span class=p>),</span>
+</span></span><span class=line><span class=cl>  <span class=n>QPSAction</span><span class=p>(</span><span class=mi>10</span><span class=p>,</span> <span class=p>{</span><span class=n>pool</span><span class=o>=</span><span class=s2>&#34;default&#34;</span><span class=p>},</span> <span class=p>{</span><span class=n>slip</span><span class=o>=</span><span class=mi>10</span><span class=p>})</span>
+</span></span><span class=line><span class=cl><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>-- Whitelist trusted resolvers (no rate limit)</span>
+</span></span><span class=line><span class=cl><span class=n>addAction</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>  <span class=n>NetGroup</span><span class=p>(</span><span class=s2>&#34;/etc/dnsdist/whitelist.txt&#34;</span><span class=p>),</span>
+</span></span><span class=line><span class=cl>  <span class=n>AllowAction</span><span class=p>()</span>
+</span></span><span class=line><span class=cl><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>-- Log dropped queries</span>
+</span></span><span class=line><span class=cl><span class=n>setQPSLogRate</span><span class=p>(</span><span class=mi>10</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>-- Web dashboard</span>
+</span></span><span class=line><span class=cl><span class=n>webserver</span><span class=p>(</span><span class=s2>&#34;0.0.0.0:8081&#34;</span><span class=p>,</span> <span class=s2>&#34;your-dashboard-password&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=n>controlSocket</span><span class=p>(</span><span class=s2>&#34;127.0.0.1:5199&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=n>setKey</span><span class=p>(</span><span class=s2>&#34;your-console-key&#34;</span><span class=p>)</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=advanced-per-domain-rate-limiting>Advanced: Per-Domain Rate Limiting</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-lua data-lang=lua><span class=line><span class=cl><span class=c1>-- Rate limit specific domains more aggressively</span>
+</span></span><span class=line><span class=cl><span class=n>addAction</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>  <span class=n>AndRule</span><span class=p>({</span>
+</span></span><span class=line><span class=cl>    <span class=n>QTypeRule</span><span class=p>(</span><span class=n>DNSQType.ANY</span><span class=p>),</span>
+</span></span><span class=line><span class=cl>    <span class=n>orRule</span><span class=p>({</span>
+</span></span><span class=line><span class=cl>      <span class=n>QNameRule</span><span class=p>(</span><span class=s2>&#34;example.com&#34;</span><span class=p>),</span>
+</span></span><span class=line><span class=cl>      <span class=n>QNameRule</span><span class=p>(</span><span class=s2>&#34;example.org&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=p>})</span>
+</span></span><span class=line><span class=cl>  <span class=p>}),</span>
+</span></span><span class=line><span class=cl>  <span class=n>QPSAction</span><span class=p>(</span><span class=mi>5</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=p>)</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=bind-response-rate-limiting-rrl>BIND Response Rate Limiting (RRL)</h2><p>BIND&rsquo;s Response Rate Limiting is a built-in feature that limits the rate at which the server sends responses to the same client for the same type of question. It has been part of BIND since version 9.9 and is considered the gold standard for authoritative server protection.</p><h3 id=key-features-1>Key Features</h3><ul><li><strong>Slip mechanism</strong>: Sends truncated responses (TC=1) at a configurable rate, allowing legitimate clients to retry over TCP</li><li><strong>Per-source, per-zone tracking</strong>: Tracks query rates independently for each source IP and zone combination</li><li><strong>IPv6 prefix aggregation</strong>: Uses /56 prefixes for IPv6 to prevent per-address evasion</li><li><strong>Exempt lists</strong>: Whitelist trusted resolvers that should not be rate-limited</li><li><strong>Automatic tuning</strong>: Adjusts behavior based on server load</li></ul><h3 id=bind-configuration>BIND Configuration</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bind data-lang=bind><span class=line><span class=cl><span class=err>//</span><span class=w> </span><span class=nc>named.conf</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nc>options</span><span class=w> </span><span class=err>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=err>//</span><span class=w> </span><span class=err>Enable</span><span class=w> </span><span class=err>Response</span><span class=w> </span><span class=err>Rate</span><span class=w> </span><span class=err>Limiting</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=err>rate-limit</span><span class=w> </span><span class=err>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=err>//</span><span class=w> </span><span class=err>Maximum</span><span class=w> </span><span class=err>responses</span><span class=w> </span><span class=err>per</span><span class=w> </span><span class=err>second</span><span class=w> </span><span class=err>per</span><span class=w> </span><span class=err>source</span><span class=w> </span><span class=err>IP</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=err>responses-per-second</span><span class=w> </span><span class=sc>50</span><span class=c>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=err>//</span><span class=w> </span><span class=err>Send</span><span class=w> </span><span class=sc>1</span><span class=w> </span><span class=err>in</span><span class=w> </span><span class=err>N</span><span class=w> </span><span class=err>responses</span><span class=w> </span><span class=err>as</span><span class=w> </span><span class=err>TC=</span><span class=sc>1</span><span class=w> </span><span class=p>(</span><span class=err>truncated</span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=err>//</span><span class=w> </span><span class=err>instead</span><span class=w> </span><span class=err>of</span><span class=w> </span><span class=py>REFUSED. </span><span class=sc>2</span><span class=w> </span><span class=err>means</span><span class=w> </span><span class=err>send</span><span class=w> </span><span class=sc>1</span><span class=w> </span><span class=err>out</span><span class=w> </span><span class=err>of</span><span class=w> </span><span class=sc>2</span><span class=err>.</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=err>slip</span><span class=w> </span><span class=sc>2</span><span class=c>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=err>//</span><span class=w> </span><span class=err>Window</span><span class=w> </span><span class=err>size</span><span class=w> </span><span class=err>for</span><span class=w> </span><span class=err>tracking</span><span class=w> </span><span class=p>(</span><span class=err>seconds</span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=err>window</span><span class=w> </span><span class=sc>15</span><span class=c>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=err>//</span><span class=w> </span><span class=err>Minimum</span><span class=w> </span><span class=err>number</span><span class=w> </span><span class=err>of</span><span class=w> </span><span class=err>responses</span><span class=w> </span><span class=err>before</span><span class=w> </span><span class=err>limiting</span><span class=w> </span><span class=err>kicks</span><span class=w> </span><span class=err>in</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=err>min-table-size</span><span class=w> </span><span class=sc>10</span><span class=c>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=err>//</span><span class=w> </span><span class=err>Maximum</span><span class=w> </span><span class=err>entries</span><span class=w> </span><span class=err>in</span><span class=w> </span><span class=err>the</span><span class=w> </span><span class=err>rate-limit</span><span class=w> </span><span class=err>table</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=err>max-table-size</span><span class=w> </span><span class=sc>100000</span><span class=c>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=err>//</span><span class=w> </span><span class=err>Limit</span><span class=w> </span><span class=err>for</span><span class=w> </span><span class=err>wildcard</span><span class=w> </span><span class=err>responses</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=err>responses-per-second</span><span class=w> </span><span class=sc>20</span><span class=c>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=err>//</span><span class=w> </span><span class=err>Limit</span><span class=w> </span><span class=err>for</span><span class=w> </span><span class=err>NXDOMAIN</span><span class=w> </span><span class=err>responses</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=err>nxdomains-per-second</span><span class=w> </span><span class=sc>10</span><span class=c>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=err>}</span><span class=c>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=err>//</span><span class=w> </span><span class=err>Trusted</span><span class=w> </span><span class=err>resolvers</span><span class=w> </span><span class=err>exempt</span><span class=w> </span><span class=err>from</span><span class=w> </span><span class=err>rate</span><span class=w> </span><span class=err>limiting</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=err>rate-limit</span><span class=w> </span><span class=err>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=err>responses-per-second</span><span class=w> </span><span class=sc>0</span><span class=c>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=err>}</span><span class=c>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=err>allow-recursion</span><span class=w> </span><span class=err>{</span><span class=w> </span><span class=err>trusted-resolvers</span><span class=c>; };</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=err>}</span><span class=c>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=err>//</span><span class=w> </span><span class=err>Define</span><span class=w> </span><span class=err>trusted</span><span class=w> </span><span class=err>resolvers</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nc>acl</span><span class=w> </span><span class=err>trusted-resolvers</span><span class=w> </span><span class=err>{</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=mi>10.0.0.0</span><span class=err>/</span><span class=sc>8</span><span class=c>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=mi>172.16.0.0</span><span class=err>/</span><span class=sc>12</span><span class=c>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=mi>192.168.0.0</span><span class=err>/</span><span class=sc>16</span><span class=c>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=err>//</span><span class=w> </span><span class=err>Add</span><span class=w> </span><span class=err>your</span><span class=w> </span><span class=err>upstream</span><span class=w> </span><span class=err>resolver</span><span class=w> </span><span class=err>IPs</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=err>}</span><span class=c>;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=docker-compose-for-bind-with-rrl>Docker Compose for BIND with RRL</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>bind9</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>isc/bind:9.18</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>bind9-rrl</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;53:53/tcp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;53:53/udp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./named.conf:/etc/bind/named.conf:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./zones/:/etc/bind/zones/:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>bind-data:/var/cache/bind</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>bind-data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=unbound-rate-limiting>Unbound Rate Limiting</h2><p>Unbound is a recursive DNS resolver with a built-in rate-limit feature designed to protect against cache poisoning and query floods. It operates at the recursive resolver level, limiting how many queries a single source can make.</p><h3 id=key-features-2>Key Features</h3><ul><li><strong>Recursive-specific protection</strong>: Designed for resolver protection, not authoritative</li><li><strong>Simple configuration</strong>: Single parameter controls the rate limit</li><li><strong>IPv6 support</strong>: Full IPv6 rate limiting with prefix aggregation</li><li><strong>Low memory overhead</strong>: Efficient tracking with minimal resource impact</li><li><strong>TC=1 slip</strong>: Sends truncated responses for legitimate clients to retry over TCP</li></ul><h3 id=unbound-configuration>Unbound Configuration</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># unbound.conf</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>server</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># Rate limit: maximum queries per second per source IP</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># Default is 50. Set to 0 to disable.</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>ratelimit</span><span class=p>:</span><span class=w> </span><span class=m>50</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># Rate limit below domain (per-domain tracking)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># Limits responses for a specific domain name</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>ratelimit-below-domain</span><span class=p>:</span><span class=w> </span><span class=m>20</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># Number of milliseconds to keep rate limit entries</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>ratelimit-factor</span><span class=p>:</span><span class=w> </span><span class=m>10</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># Whitelist for trusted networks (no rate limiting)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>access-control</span><span class=p>:</span><span class=w> </span><span class=m>10.0.0.0</span><span class=l>/8 allow</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>access-control</span><span class=p>:</span><span class=w> </span><span class=m>172.16.0.0</span><span class=l>/12 allow</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>access-control</span><span class=p>:</span><span class=w> </span><span class=m>192.168.0.0</span><span class=l>/16 allow</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>access-control</span><span class=p>:</span><span class=w> </span><span class=m>0.0.0.0</span><span class=l>/0 allow</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># Harden against various attacks</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>harden-glue</span><span class=p>:</span><span class=w> </span><span class=kc>yes</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>harden-dnssec-stripped</span><span class=p>:</span><span class=w> </span><span class=kc>yes</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>harden-referral-path</span><span class=p>:</span><span class=w> </span><span class=kc>yes</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=docker-compose-for-unbound>Docker Compose for Unbound</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>unbound</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>nlnetlabs/unbound:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>unbound-ratelimit</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;53:53/tcp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;53:53/udp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./unbound.conf:/opt/unbound/etc/unbound/unbound.conf:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>unbound-data:/opt/unbound/etc/unbound</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>unbound-data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=choosing-the-right-dns-rate-limiting-solution>Choosing the Right DNS Rate Limiting Solution</h2><p>The choice depends on your architecture:</p><ul><li><strong>Use dnsdist</strong> when you need advanced traffic shaping, DoH/DoT termination, or want to rate-limit across multiple backend servers. Its Lua-based rules and API make it the most flexible option.</li><li><strong>Use BIND RRL</strong> when running BIND as an authoritative server. It&rsquo;s the most battle-tested rate limiting for authoritative DNS, with decades of production use.</li><li><strong>Use Unbound rate-limit</strong> when protecting a recursive resolver. It&rsquo;s simple, effective, and requires minimal configuration.</li></ul><p>For comprehensive DNS management, check our <a href=../2026-05-04-self-hosted-dns-management-web-ui-powerdns-admin-dnscontrol-technitium-guide/>DNS management web UI guide</a> and <a href=../2026-05-02-knot-dns-vs-dnsdist-vs-unbound-self-hosted-dns-over-quic-guide/>DNS-over-QUIC setup guide</a>.</p><h2 id=faq>FAQ</h2><h3 id=what-is-dns-rate-limiting-and-why-is-it-necessary>What is DNS rate limiting and why is it necessary?</h3><p>DNS rate limiting controls how many queries a DNS server will respond to from a single source IP within a time window. It prevents DNS amplification attacks, where attackers send small spoofed queries that generate large responses directed at a victim. Without rate limiting, any open DNS resolver can be weaponized as a DDoS amplifier.</p><h3 id=what-is-the-slip-mechanism-in-dns-rate-limiting>What is the &ldquo;slip&rdquo; mechanism in DNS rate limiting?</h3><p>The slip mechanism sends truncated responses (TC=1 flag) to rate-limited clients instead of dropping queries entirely. This tells legitimate clients to retry their query over TCP, which is harder to spoof. The slip ratio controls how often TC=1 responses are sent — a slip of 2 means every second limited query gets a truncated response instead of a refusal.</p><h3 id=should-i-use-rate-limiting-on-both-authoritative-and-recursive-dns-servers>Should I use rate limiting on both authoritative and recursive DNS servers?</h3><p>Yes, but with different configurations. Authoritative servers should use response rate limiting (like BIND RRL) to prevent amplification. Recursive resolvers should use query rate limiting (like Unbound&rsquo;s ratelimit) to prevent cache flooding and query storms. dnsdist can protect both by sitting in front as a proxy.</p><h3 id=how-do-i-whitelist-trusted-resolvers-from-rate-limiting>How do I whitelist trusted resolvers from rate limiting?</h3><p>All three solutions support whitelisting. In dnsdist, use <code>NetGroup()</code> with an allowlist file. In BIND, define an ACL and set <code>responses-per-second 0</code> for that ACL. In Unbound, use <code>access-control</code> entries with <code>allow_snoop</code> or exempt specific subnets. Always whitelist your internal resolvers, monitoring systems, and any legitimate high-volume clients.</p><h3 id=what-rate-limit-values-should-i-start-with>What rate limit values should I start with?</h3><p>For authoritative servers (BIND RRL): start with <code>responses-per-second 50</code> and <code>slip 2</code>. For recursive resolvers (Unbound): start with <code>ratelimit: 50</code>. For dnsdist: start with <code>QPSAction(100)</code> per source IP and adjust based on your traffic patterns. Monitor your logs and adjust thresholds — legitimate recursive resolvers may send hundreds of queries per second.</p><h3 id=can-rate-limiting-cause-false-positives-for-legitimate-users>Can rate limiting cause false positives for legitimate users?</h3><p>Yes, if configured too aggressively. Large organizations with NAT may have many users sharing a single public IP. The slip mechanism mitigates this by allowing TCP retries. For dnsdist, you can use Lua scripting to implement adaptive rate limiting based on historical patterns. Always monitor dropped queries and adjust thresholds accordingly.</p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted DNS Rate Limiting: dnsdist vs BIND RRL vs Unbound Rate-Limit","description":"Compare DNS rate limiting solutions for self-hosted infrastructure: dnsdist (PowerDNS), BIND Response Rate Limiting (RRL), and Unbound rate-limit feature.","datePublished":"2026-05-12","dateModified":"2026-05-12","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20DNS%20Rate%20Limiting%3a%20dnsdist%20vs%20BIND%20RRL%20vs%20Unbound%20Rate-Limit&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-12-self-hosted-dns-rate-limiting-dnsdist-bind-rrl-unbound-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-12-self-hosted-dns-rate-limiting-dnsdist-bind-rrl-unbound-guide%2f&t=Self-Hosted%20DNS%20Rate%20Limiting%3a%20dnsdist%20vs%20BIND%20RRL%20vs%20Unbound%20Rate-Limit" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/dns/ class=tag-link>Dns</a>
+<a href=/tags/rate-limiting/ class=tag-link>Rate-Limiting</a>
+<a href=/tags/ddos-protection/ class=tag-link>Ddos-Protection</a>
+<a href=/tags/security/ class=tag-link>Security</a>
+<a href=/tags/networking/ class=tag-link>Networking</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-04-27-dnsdiag-vs-dnsrecon-vs-dnsenum-self-hosted-dns-testing-troubleshooting-guide-2026/ class=post-card><div class=post-tags><span class="tag tag-purple">Comparison</span></div><h3 class=post-title>DNSdiag vs DNSRecon vs DNSenum: Self-Hosted DNS Testing Tools 2026</h3><div class=post-excerpt>When managing self-hosted DNS infrastructure, knowing how to test, diagnose, and troubleshoot your nameservers is …</div><div class=post-footer><span class=post-date>Apr 27, 2026</span></div></a><a href=/posts/2026-04-24-self-hosted-split-horizon-dns-pihole-dnsmasq-coredns-bind9-guide-2026/ class=post-card><div class=post-tags><span class="tag tag-purple">Comparison</span></div><h3 class=post-title>Self-Hosted Split-Horizon DNS: Pi-hole vs dnsmasq vs CoreDNS vs BIND 9 Guide 2026</h3><div class=post-excerpt>Split-horizon DNS — also known as split-brain DNS or split-view DNS — is a configuration where a DNS server returns …</div><div class=post-footer><span class=post-date>Apr 24, 2026</span></div></a><a href=/posts/2026-04-24-iodine-vs-dnscat2-self-hosted-dns-tunnel-guide-2026/ class=post-card><div class=post-tags><span class="tag tag-purple">Comparison</span></div><h3 class=post-title>iodine vs dnscat2: Self-Hosted DNS Tunnel Comparison 2026</h3><div class=post-excerpt>When standard network ports are blocked by restrictive firewalls or corporate proxy policies, DNS queries often remain …</div><div class=post-footer><span class=post-date>Apr 24, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>
