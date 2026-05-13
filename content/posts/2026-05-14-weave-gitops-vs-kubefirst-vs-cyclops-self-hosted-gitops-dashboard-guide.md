@@ -219,6 +219,11 @@ Self-hosting means your deployment history, rollback capabilities, and access co
 
 For Kubernetes security hardening, see our [Kubernetes hardening guide](../2026-04-20-kube-bench-vs-trivy-vs-kubescape-container-kubernetes-hardening-guide-2026/). If you're managing secrets across your GitOps pipeline, check our [Kubernetes secrets management comparison](../2026-04-20-external-secrets-operator-vs-sealed-secrets-vs-vault-secrets-operator-kubernetes-secrets-management-2026/). For Flux-specific workflows, our [Helm management guide](../2026-05-06-self-hosted-helm-management-helmfile-flux-argocd-guide/) covers Helmfile vs Flux vs Argo CD Helm patterns.
 
+
+## Deployment Best Practices
+
+When deploying GitOps dashboards in production, consider implementing role-based access control (RBAC) to separate viewer and operator permissions. Most organizations benefit from giving developers read-only access to deployment status while restricting configuration changes to platform teams. Additionally, configure webhook notifications to Slack or Microsoft Teams so your team receives real-time alerts when deployments succeed or fail. For multi-cluster environments, ensure each cluster runs its own dashboard instance or use a centralized dashboard with proper network policies to access remote clusters securely.
+
 ## FAQ
 
 ### What is the difference between Weave GitOps and Argo CD?
