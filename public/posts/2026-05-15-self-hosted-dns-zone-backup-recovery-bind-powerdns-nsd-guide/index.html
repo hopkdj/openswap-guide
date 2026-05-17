@@ -1,0 +1,424 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted DNS Zone Backup and Recovery: BIND vs PowerDNS vs NSD | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-05-15-self-hosted-dns-zone-backup-recovery-bind-powerdns-nsd-guide/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted DNS Zone Backup and Recovery: BIND vs PowerDNS vs NSD"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-05-15-self-hosted-dns-zone-backup-recovery-bind-powerdns-nsd-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-05-15T00:00:00Z"><meta property="article:modified_time" content="2026-05-15T00:00:00Z"><meta property="article:tag" content="dns"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted DNS Zone Backup and Recovery: BIND vs PowerDNS vs NSD"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted DNS Zone Backup and Recovery: BIND vs PowerDNS vs NSD","description":"\u003cp\u003eDNS zones contain the authoritative mapping between domain names and IP addresses for your infrastructure. Losing zone data means your domains become unreachable — email bounces, websites go offline, and API endpoints fail. While DNS zone transfers (AXFR\/IXFR) provide replication between servers, they do not constitute a backup strategy. This guide covers DNS zone backup and recovery approaches for three authoritative DNS servers: \u003cstrong\u003eBIND 9\u003c\/strong\u003e, \u003cstrong\u003ePowerDNS Authoritative\u003c\/strong\u003e, and \u003cstrong\u003eNSD\u003c\/strong\u003e.\u003c\/p\u003e","datePublished":"2026-05-15T00:00:00Z","dateModified":"2026-05-15T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-05-15-self-hosted-dns-zone-backup-recovery-bind-powerdns-nsd-guide\/"},"keywords":["dns","backup","disaster-recovery","infrastructure"],"articleSection":"dns","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted DNS Zone Backup and Recovery: BIND vs PowerDNS vs NSD","item":"https:\/\/www.pistack.xyz\/posts\/2026-05-15-self-hosted-dns-zone-backup-recovery-bind-powerdns-nsd-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Dns</span>
+<span class="tag tag-purple">Backup</span>
+<span class="tag tag-purple">Disaster-Recovery</span></div><h1>Self-Hosted DNS Zone Backup and Recovery: BIND vs PowerDNS vs NSD</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>May 15, 2026</span>
+<span>9 min read</span>
+<span>Updated May 15, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#bind-9-native-zone-file-backup>BIND 9: Native Zone File Backup</a><ul><li><a href=#zone-file-storage>Zone File Storage</a></li><li><a href=#docker-compose-deployment>Docker Compose Deployment</a></li><li><a href=#manual-backup-commands>Manual Backup Commands</a></li><li><a href=#automated-backup-script>Automated Backup Script</a></li></ul></li><li><a href=#powerdns-authoritative-database-backed-backup>PowerDNS Authoritative: Database-Backed Backup</a><ul><li><a href=#docker-compose-deployment-1>Docker Compose Deployment</a></li><li><a href=#api-based-zone-export>API-Based Zone Export</a></li><li><a href=#database-backup-with-mysqldump>Database Backup with mysqldump</a></li></ul></li><li><a href=#nsd-minimalist-zone-backup>NSD: Minimalist Zone Backup</a><ul><li><a href=#docker-compose-deployment-2>Docker Compose Deployment</a></li><li><a href=#zone-file-backup>Zone File Backup</a></li><li><a href=#nsd-zone-signing-backup>NSD Zone Signing Backup</a></li></ul></li><li><a href=#comparison-bind-vs-powerdns-vs-nsd-backup>Comparison: BIND vs PowerDNS vs NSD Backup</a></li><li><a href=#why-self-host-your-dns-zone-backups>Why Self-Host Your DNS Zone Backups?</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#how-often-should-i-back-up-dns-zones>How often should I back up DNS zones?</a></li><li><a href=#can-i-restore-a-bind-zone-backup-to-powerdns>Can I restore a BIND zone backup to PowerDNS?</a></li><li><a href=#does-nsd-support-zone-transfers-as-a-backup-method>Does NSD support zone transfers as a backup method?</a></li><li><a href=#what-is-the-difference-between-a-zone-file-backup-and-an-axfr-export>What is the difference between a zone file backup and an AXFR export?</a></li><li><a href=#how-do-i-verify-a-dns-zone-backup-before-deploying-it>How do I verify a DNS zone backup before deploying it?</a></li><li><a href=#can-i-use-rsync-for-bind-zone-file-backups>Can I use rsync for BIND zone file backups?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><p>DNS zones contain the authoritative mapping between domain names and IP addresses for your infrastructure. Losing zone data means your domains become unreachable — email bounces, websites go offline, and API endpoints fail. While DNS zone transfers (AXFR/IXFR) provide replication between servers, they do not constitute a backup strategy. This guide covers DNS zone backup and recovery approaches for three authoritative DNS servers: <strong>BIND 9</strong>, <strong>PowerDNS Authoritative</strong>, and <strong>NSD</strong>.</p><p>We will explore native backup mechanisms, automated export tools, disaster recovery procedures, and Docker Compose deployments for each platform.</p><h2 id=bind-9-native-zone-file-backup>BIND 9: Native Zone File Backup</h2><p>BIND 9 stores zone data in plain-text zone files on disk. This makes backup straightforward — you can copy the files directly or use standard backup tools.</p><h3 id=zone-file-storage>Zone File Storage</h3><p>BIND 9 zone files are typically stored in <code>/etc/bind/zones/</code> or <code>/var/named/</code>. Each zone has its own file in standard RFC 1035 format. BIND automatically updates these files when you make changes via <code>nsupdate</code> (dynamic DNS) if the <code>update-policy</code> and <code>masterfile-format</code> are configured correctly.</p><h3 id=docker-compose-deployment>Docker Compose Deployment</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>bind9</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>ubuntu/bind9:9.18</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>BIND9_USER</span><span class=p>:</span><span class=w> </span><span class=l>root</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;53:53/tcp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;53:53/udp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;953:953/tcp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./named.conf:/etc/bind/named.conf:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./zones:/etc/bind/zones</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>bind9-backup:/backup</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      -4 -u root -c /etc/bind/named.conf
+</span></span></span><span class=line><span class=cl><span class=sd>      -f /etc/bind/zones</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>zone-backup</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>ubuntu/bind9:9.18</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>entrypoint</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;bash&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;-c&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      &#34;cp -r /etc/bind/zones /backup/zones-$(date +%Y%m%d) &amp;&amp;
+</span></span></span><span class=line><span class=cl><span class=sd>      echo &#39;Zone backup completed&#39; &amp;&amp;
+</span></span></span><span class=line><span class=cl><span class=sd>      ls -la /backup/&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./zones:/etc/bind/zones:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>bind9-backup:/backup</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>bind9</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>bind9-backup</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=manual-backup-commands>Manual Backup Commands</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Use rndc to freeze zones before copying</span>
+</span></span><span class=line><span class=cl>docker compose <span class=nb>exec</span> bind9 rndc freeze example.com
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Copy zone files</span>
+</span></span><span class=line><span class=cl>docker compose <span class=nb>exec</span> bind9 cp -r /etc/bind/zones /backup/zones-backup
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Thaw zones after backup</span>
+</span></span><span class=line><span class=cl>docker compose <span class=nb>exec</span> bind9 rndc thaw example.com
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Export zone via AXFR (alternative approach)</span>
+</span></span><span class=line><span class=cl>dig @localhost example.com AXFR &gt; /backup/example.com.zone
+</span></span></code></pre></td></tr></table></div></div><h3 id=automated-backup-script>Automated Backup Script</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=cp>#!/bin/bash
+</span></span></span><span class=line><span class=cl><span class=cp></span><span class=c1># bind-zone-backup.sh - Automated BIND zone backup</span>
+</span></span><span class=line><span class=cl><span class=nv>BACKUP_DIR</span><span class=o>=</span><span class=s2>&#34;/backup/bind-zones&#34;</span>
+</span></span><span class=line><span class=cl><span class=nv>DATE</span><span class=o>=</span><span class=k>$(</span>date +%Y%m%d_%H%M%S<span class=k>)</span>
+</span></span><span class=line><span class=cl>mkdir -p <span class=s2>&#34;</span><span class=nv>$BACKUP_DIR</span><span class=s2>/</span><span class=nv>$DATE</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Freeze all zones, copy, then thaw</span>
+</span></span><span class=line><span class=cl>rndc freeze -all
+</span></span><span class=line><span class=cl>cp -r /etc/bind/zones/* <span class=s2>&#34;</span><span class=nv>$BACKUP_DIR</span><span class=s2>/</span><span class=nv>$DATE</span><span class=s2>/&#34;</span>
+</span></span><span class=line><span class=cl>rndc thaw -all
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Create compressed archive</span>
+</span></span><span class=line><span class=cl>tar -czf <span class=s2>&#34;</span><span class=nv>$BACKUP_DIR</span><span class=s2>/zones-</span><span class=nv>$DATE</span><span class=s2>.tar.gz&#34;</span> -C <span class=s2>&#34;</span><span class=nv>$BACKUP_DIR</span><span class=s2>&#34;</span> <span class=s2>&#34;</span><span class=nv>$DATE</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl>rm -rf <span class=s2>&#34;</span><span class=nv>$BACKUP_DIR</span><span class=s2>/</span><span class=nv>$DATE</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Retention: keep last 30 days</span>
+</span></span><span class=line><span class=cl>find <span class=s2>&#34;</span><span class=nv>$BACKUP_DIR</span><span class=s2>&#34;</span> -name <span class=s2>&#34;zones-*.tar.gz&#34;</span> -mtime +30 -delete
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;BIND zone backup completed: zones-</span><span class=nv>$DATE</span><span class=s2>.tar.gz&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=powerdns-authoritative-database-backed-backup>PowerDNS Authoritative: Database-Backed Backup</h2><p>PowerDNS Authoritative stores zone data in a database backend (MySQL, PostgreSQL, SQLite). Backing up zones means backing up the database, which provides consistent snapshots without freezing zones.</p><h3 id=docker-compose-deployment-1>Docker Compose Deployment</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>pdns-auth</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>powerdns/pdns-auth-49:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PDNS_gmysql_host=pdns-db</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PDNS_gmysql_port=3306</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PDNS_gmysql_user=pdns</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PDNS_gmysql_password=pdns-secret-pass</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PDNS_gmysql_dbname=pdns</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PDNS_master=yes</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PDNS_api=yes</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PDNS_api-key=pdns-api-key-12345</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PDNS_webserver=yes</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PDNS_webserver-address=0.0.0.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PDNS_webserver-password=webpass</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;53:53/tcp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;53:53/udp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8081:8081&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>pdns-db</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>pdns-db</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>mariadb:11</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>MARIADB_ROOT_PASSWORD</span><span class=p>:</span><span class=w> </span><span class=l>root-secret</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>MARIADB_DATABASE</span><span class=p>:</span><span class=w> </span><span class=l>pdns</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>MARIADB_USER</span><span class=p>:</span><span class=w> </span><span class=l>pdns</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>MARIADB_PASSWORD</span><span class=p>:</span><span class=w> </span><span class=l>pdns-secret-pass</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>pdns-db-data:/var/lib/mysql</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./init-pdns.sql:/docker-entrypoint-initdb.d/init.sql:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>pdns-backup</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>mariadb:11</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>entrypoint</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;bash&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;-c&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      &#34;mysqldump -h pdns-db -u pdns -ppdns-secret-pass pdns
+</span></span></span><span class=line><span class=cl><span class=sd>      | gzip &gt; /backup/pdns-backup-$(date +%Y%m%d_%H%M%S).sql.gz &amp;&amp;
+</span></span></span><span class=line><span class=cl><span class=sd>      echo &#39;PowerDNS database backup completed&#39;&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>pdns-backup-data:/backup</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>pdns-db</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>pdns-db-data</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>pdns-backup-data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Database initialization script (<code>init-pdns.sql</code>):</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-sql data-lang=sql><span class=line><span class=cl><span class=k>CREATE</span><span class=w> </span><span class=k>DATABASE</span><span class=w> </span><span class=k>IF</span><span class=w> </span><span class=k>NOT</span><span class=w> </span><span class=k>EXISTS</span><span class=w> </span><span class=n>pdns</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=n>USE</span><span class=w> </span><span class=n>pdns</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>CREATE</span><span class=w> </span><span class=k>TABLE</span><span class=w> </span><span class=n>domains</span><span class=w> </span><span class=p>(</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=n>id</span><span class=w> </span><span class=nb>INT</span><span class=w> </span><span class=n>AUTO_INCREMENT</span><span class=w> </span><span class=k>PRIMARY</span><span class=w> </span><span class=k>KEY</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=n>name</span><span class=w> </span><span class=nb>VARCHAR</span><span class=p>(</span><span class=mi>255</span><span class=p>)</span><span class=w> </span><span class=k>NOT</span><span class=w> </span><span class=k>NULL</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=n>master</span><span class=w> </span><span class=nb>VARCHAR</span><span class=p>(</span><span class=mi>128</span><span class=p>)</span><span class=w> </span><span class=k>DEFAULT</span><span class=w> </span><span class=k>NULL</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=n>last_check</span><span class=w> </span><span class=nb>INT</span><span class=w> </span><span class=k>DEFAULT</span><span class=w> </span><span class=k>NULL</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=k>type</span><span class=w> </span><span class=nb>VARCHAR</span><span class=p>(</span><span class=mi>6</span><span class=p>)</span><span class=w> </span><span class=k>NOT</span><span class=w> </span><span class=k>NULL</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=n>notified_serial</span><span class=w> </span><span class=nb>INT</span><span class=w> </span><span class=n>UNSIGNED</span><span class=w> </span><span class=k>DEFAULT</span><span class=w> </span><span class=k>NULL</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=n>account</span><span class=w> </span><span class=nb>VARCHAR</span><span class=p>(</span><span class=mi>40</span><span class=p>)</span><span class=w> </span><span class=k>DEFAULT</span><span class=w> </span><span class=k>NULL</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=k>options</span><span class=w> </span><span class=nb>VARCHAR</span><span class=p>(</span><span class=mi>64000</span><span class=p>)</span><span class=w> </span><span class=k>DEFAULT</span><span class=w> </span><span class=k>NULL</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=k>catalog</span><span class=w> </span><span class=nb>VARCHAR</span><span class=p>(</span><span class=mi>255</span><span class=p>)</span><span class=w> </span><span class=k>DEFAULT</span><span class=w> </span><span class=k>NULL</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>);</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>CREATE</span><span class=w> </span><span class=k>TABLE</span><span class=w> </span><span class=n>records</span><span class=w> </span><span class=p>(</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=n>id</span><span class=w> </span><span class=nb>BIGINT</span><span class=w> </span><span class=n>AUTO_INCREMENT</span><span class=w> </span><span class=k>PRIMARY</span><span class=w> </span><span class=k>KEY</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=n>domain_id</span><span class=w> </span><span class=nb>INT</span><span class=w> </span><span class=k>DEFAULT</span><span class=w> </span><span class=k>NULL</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=n>name</span><span class=w> </span><span class=nb>VARCHAR</span><span class=p>(</span><span class=mi>255</span><span class=p>)</span><span class=w> </span><span class=k>DEFAULT</span><span class=w> </span><span class=k>NULL</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=k>type</span><span class=w> </span><span class=nb>VARCHAR</span><span class=p>(</span><span class=mi>10</span><span class=p>)</span><span class=w> </span><span class=k>DEFAULT</span><span class=w> </span><span class=k>NULL</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=n>content</span><span class=w> </span><span class=nb>VARCHAR</span><span class=p>(</span><span class=mi>64000</span><span class=p>)</span><span class=w> </span><span class=k>DEFAULT</span><span class=w> </span><span class=k>NULL</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=n>ttl</span><span class=w> </span><span class=nb>INT</span><span class=w> </span><span class=k>DEFAULT</span><span class=w> </span><span class=k>NULL</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=n>prio</span><span class=w> </span><span class=nb>INT</span><span class=w> </span><span class=k>DEFAULT</span><span class=w> </span><span class=k>NULL</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=n>disabled</span><span class=w> </span><span class=n>TINYINT</span><span class=p>(</span><span class=mi>1</span><span class=p>)</span><span class=w> </span><span class=k>DEFAULT</span><span class=w> </span><span class=mi>0</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=n>ordername</span><span class=w> </span><span class=nb>VARCHAR</span><span class=p>(</span><span class=mi>255</span><span class=p>)</span><span class=w> </span><span class=nb>BINARY</span><span class=w> </span><span class=k>DEFAULT</span><span class=w> </span><span class=k>NULL</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=n>auth</span><span class=w> </span><span class=n>TINYINT</span><span class=p>(</span><span class=mi>1</span><span class=p>)</span><span class=w> </span><span class=k>DEFAULT</span><span class=w> </span><span class=mi>1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>);</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=api-based-zone-export>API-Based Zone Export</h3><p>PowerDNS provides a REST API for zone export, which is useful for backup without database access:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Export a zone via API</span>
+</span></span><span class=line><span class=cl>curl -s -H <span class=s2>&#34;X-API-Key: pdns-api-key-12345&#34;</span>   http://localhost:8081/api/v1/servers/localhost/zones/example.com   <span class=p>|</span> jq <span class=s1>&#39;.resourceRecords[] | &#34;\(.name) \(.type) \(.content)&#34;&#39;</span>   &gt; /backup/example.com-export.txt
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># List all zones</span>
+</span></span><span class=line><span class=cl>curl -s -H <span class=s2>&#34;X-API-Key: pdns-api-key-12345&#34;</span>   http://localhost:8081/api/v1/servers/localhost/zones   <span class=p>|</span> jq <span class=s1>&#39;.[].name&#39;</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=database-backup-with-mysqldump>Database Backup with mysqldump</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Full database backup</span>
+</span></span><span class=line><span class=cl>mysqldump -u pdns -p pdns <span class=p>|</span> gzip &gt; pdns-full-backup.sql.gz
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Restore from backup</span>
+</span></span><span class=line><span class=cl>gunzip &lt; pdns-full-backup.sql.gz <span class=p>|</span> mysql -u pdns -p pdns
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Incremental backup via binary logs (if enabled)</span>
+</span></span><span class=line><span class=cl>mysqlbinlog --start-datetime<span class=o>=</span><span class=s2>&#34;2026-05-15 00:00:00&#34;</span>   /var/lib/mysql/mariadb-bin.000001 &gt; incremental-backup.sql
+</span></span></code></pre></td></tr></table></div></div><h2 id=nsd-minimalist-zone-backup>NSD: Minimalist Zone Backup</h2><p>NSD (Name Server Daemon) is a lightweight authoritative-only DNS server. Like BIND, it stores zones in plain-text files, making backup simple. NSD focuses on being a fast, secure, and easy-to-manage authoritative server without recursive resolution capabilities.</p><h3 id=docker-compose-deployment-2>Docker Compose Deployment</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>nsd</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>nlnetlabs/nsd:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;53:53/tcp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;53:53/udp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8952:8952/tcp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./nsd.conf:/etc/nsd/nsd.conf:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./zones:/etc/nsd/zones</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>nsd-backup:/backup</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;-d&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;-v&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>nsd-backup</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>alpine:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>entrypoint</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;sh&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;-c&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      &#34;cp /etc/nsd/zones/* /backup/ &amp;&amp;
+</span></span></span><span class=line><span class=cl><span class=sd>      echo &#39;NSD zone backup completed&#39; &amp;&amp;
+</span></span></span><span class=line><span class=cl><span class=sd>      ls -la /backup/&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./zones:/etc/nsd/zones:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>nsd-backup:/backup</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>nsd</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>nsd-backup</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>NSD configuration (<code>nsd.conf</code>):</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>server:
+</span></span><span class=line><span class=cl>  port: 53
+</span></span><span class=line><span class=cl>  ip-address: 0.0.0.0
+</span></span><span class=line><span class=cl>  hide-version: yes
+</span></span><span class=line><span class=cl>  database: &#34;&#34;
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>zone:
+</span></span><span class=line><span class=cl>  name: &#34;example.com&#34;
+</span></span><span class=line><span class=cl>  zonefile: &#34;/etc/nsd/zones/example.com.zone&#34;
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>zone:
+</span></span><span class=line><span class=cl>  name: &#34;example.org&#34;
+</span></span><span class=line><span class=cl>  zonefile: &#34;/etc/nsd/zones/example.org.zone&#34;
+</span></span></code></pre></td></tr></table></div></div><h3 id=zone-file-backup>Zone File Backup</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># NSD stores zones in plain text files - direct copy works</span>
+</span></span><span class=line><span class=cl>cp /etc/nsd/zones/*.zone /backup/zones-<span class=k>$(</span>date +%Y%m%d<span class=k>)</span>/
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Use nsd-checkzone to validate before backup</span>
+</span></span><span class=line><span class=cl>nsd-checkzone example.com /etc/nsd/zones/example.com.zone
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># AXFR export from running NSD instance</span>
+</span></span><span class=line><span class=cl>dig @localhost example.com AXFR &gt; /backup/example.com-axfr.zone
+</span></span></code></pre></td></tr></table></div></div><h3 id=nsd-zone-signing-backup>NSD Zone Signing Backup</h3><p>If you use DNSSEC with NSD, you also need to back up the signed zone files and key material:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Backup zones + DNSSEC keys</span>
+</span></span><span class=line><span class=cl>tar -czf /backup/nsd-dnssec-backup-<span class=k>$(</span>date +%Y%m%d<span class=k>)</span>.tar.gz   /etc/nsd/zones/   /etc/nsd/keys/
+</span></span></code></pre></td></tr></table></div></div><h2 id=comparison-bind-vs-powerdns-vs-nsd-backup>Comparison: BIND vs PowerDNS vs NSD Backup</h2><table><thead><tr><th>Feature</th><th>BIND 9</th><th>PowerDNS Authoritative</th><th>NSD</th></tr></thead><tbody><tr><td><strong>Storage backend</strong></td><td>Plain-text zone files</td><td>Database (MySQL, PG, SQLite)</td><td>Plain-text zone files</td></tr><tr><td><strong>Backup method</strong></td><td>File copy, AXFR export</td><td>Database dump, API export</td><td>File copy, AXFR export</td></tr><tr><td><strong>Consistency during backup</strong></td><td>Requires <code>rndc freeze</code></td><td>Database transaction consistency</td><td>File copy (live)</td></tr><tr><td><strong>Incremental backup</strong></td><td>No (full zone files)</td><td>Database binary logs</td><td>No (full zone files)</td></tr><tr><td><strong>Zone export format</strong></td><td>RFC 1035 zone file</td><td>JSON via API, SQL dump</td><td>RFC 1035 zone file</td></tr><tr><td><strong>API access</strong></td><td>No (control via rndc)</td><td>Full REST API</td><td>No (control via nsd-control)</td></tr><tr><td><strong>DNSSEC key backup</strong></td><td>Manual (key files)</td><td>In database (if stored)</td><td>Manual (key files)</td></tr><tr><td><strong>Catalog zones</strong></td><td>Yes (RFC 7494)</td><td>Yes</td><td>No</td></tr><tr><td><strong>Docker image</strong></td><td>ubuntu/bind9:9.18</td><td>powerdns/pdns-auth-49</td><td>nlnetlabs/nsd:latest</td></tr><tr><td><strong>GitHub / project</strong></td><td>ISC (isc.org)</td><td>PowerDNS (pdns.nl)</td><td>NLnet Labs (nlnetlabs.nl)</td></tr><tr><td><strong>License</strong></td><td>MPL 2.0</td><td>GPL 2.0</td><td>BSD 2-Clause</td></tr><tr><td><strong>Best for</strong></td><td>Traditional zone file workflows</td><td>Database-backed, API-driven deployments</td><td>Minimalist authoritative-only setups</td></tr></tbody></table><h2 id=why-self-host-your-dns-zone-backups>Why Self-Host Your DNS Zone Backups?</h2><p>DNS zone data is the foundation of your network infrastructure. Losing it means every domain you manage stops resolving — websites, email, APIs, and internal services all become unreachable. Self-hosted zone backups ensure:</p><ul><li><strong>Immediate recovery capability</strong> — restore zones on your own servers without waiting for a managed DNS provider</li><li><strong>Historical versioning</strong> — keep historical zone snapshots for auditing and rollback after accidental changes</li><li><strong>Regulatory compliance</strong> — maintain backup copies in specific geographic locations to meet data residency requirements</li><li><strong>Cost control</strong> — avoid per-zone backup fees charged by managed DNS providers</li><li><strong>Disaster recovery independence</strong> — if your primary DNS provider experiences an outage, you can quickly deploy a backup instance</li></ul><p>For comprehensive DNS health validation to ensure your backed-up zones are syntactically correct before deploying them, see our <a href=../2026-04-25-dnsviz-vs-zonemaster-self-hosted-dns-health-validation-guide-2026/>DNSViz vs Zonemaster guide</a>. If you manage zone provisioning across multiple DNS providers, our <a href=../2026-05-13-self-hosted-dns-zone-provisioning-dnscontrol-octodns-lexicon-guide/>DNSControl vs OctoDNS vs Lexicon comparison</a> covers infrastructure-as-code approaches. For DNSSEC validation of your restored zones, our <a href=../2026-05-14-self-hosted-dnssec-validation-unbound-knot-resolver-powerdns-guide/>Unbound vs Knot Resolver vs PowerDNS DNSSEC guide</a> covers validation strategies.</p><h2 id=faq>FAQ</h2><h3 id=how-often-should-i-back-up-dns-zones>How often should I back up DNS zones?</h3><p>Back up zones after every change and at least daily for static zones. Use <code>rndc notify</code> (BIND) or PowerDNS API webhooks to trigger backups immediately after zone modifications. For high-churn environments (dynamic DNS), consider hourly backups or continuous database replication.</p><h3 id=can-i-restore-a-bind-zone-backup-to-powerdns>Can I restore a BIND zone backup to PowerDNS?</h3><p>Yes. BIND zone files are in standard RFC 1035 format, which PowerDNS can import using <code>pdnsutil load-zone</code> or the PowerDNS API. The reverse (PowerDNS database to BIND) requires exporting zones via the API or a database query and formatting as zone files.</p><h3 id=does-nsd-support-zone-transfers-as-a-backup-method>Does NSD support zone transfers as a backup method?</h3><p>NSD supports outgoing AXFR (zone transfers) to secondary servers. You can configure a secondary NSD or BIND instance to pull zones via AXFR, effectively creating a live backup. However, this is replication, not a point-in-time backup — if a zone is corrupted on the primary, the corruption propagates to the secondary.</p><h3 id=what-is-the-difference-between-a-zone-file-backup-and-an-axfr-export>What is the difference between a zone file backup and an AXFR export?</h3><p>A zone file backup copies the raw file from disk, including comments, formatting, and any non-standard directives. An AXFR export queries the running DNS server and receives only the standardized resource records. For restoration purposes, both are functionally equivalent, but zone files may contain additional metadata (SOA serial comments, TTL overrides) that AXFR does not preserve.</p><h3 id=how-do-i-verify-a-dns-zone-backup-before-deploying-it>How do I verify a DNS zone backup before deploying it?</h3><p>Use <code>named-checkzone</code> (BIND), <code>nsd-checkzone</code> (NSD), or the PowerDNS API to validate the zone syntax before deployment. Check that the SOA serial is correct, all required record types are present (A, AAAA, MX, NS), and DNSSEC signatures (if applicable) are valid. Tools like DNSViz and Zonemaster provide comprehensive validation.</p><h3 id=can-i-use-rsync-for-bind-zone-file-backups>Can I use rsync for BIND zone file backups?</h3><p>Yes. rsync is an excellent tool for BIND zone file backups because it only transfers changed files. For large zone directories with hundreds of zones, rsync is significantly faster than full copies. Combine with <code>--backup</code> and <code>--backup-dir</code> to maintain versioned copies of changed files.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>rsync -avz --backup --backup-dir<span class=o>=</span>/backup/bind-incremental/<span class=k>$(</span>date +%Y%m%d<span class=k>)</span>   /etc/bind/zones/ backup-server:/backup/bind-zones/
+</span></span></code></pre></td></tr></table></div></div><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted DNS Zone Backup and Recovery: BIND vs PowerDNS vs NSD","description":"Compare DNS zone backup and recovery strategies for BIND 9, PowerDNS Authoritative, and NSD. Includes Docker Compose configs, automated backup scripts, and disaster recovery procedures.","datePublished":"2026-05-15","dateModified":"2026-05-15","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20DNS%20Zone%20Backup%20and%20Recovery%3a%20BIND%20vs%20PowerDNS%20vs%20NSD&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-15-self-hosted-dns-zone-backup-recovery-bind-powerdns-nsd-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-15-self-hosted-dns-zone-backup-recovery-bind-powerdns-nsd-guide%2f&t=Self-Hosted%20DNS%20Zone%20Backup%20and%20Recovery%3a%20BIND%20vs%20PowerDNS%20vs%20NSD" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/dns/ class=tag-link>Dns</a>
+<a href=/tags/backup/ class=tag-link>Backup</a>
+<a href=/tags/disaster-recovery/ class=tag-link>Disaster-Recovery</a>
+<a href=/tags/infrastructure/ class=tag-link>Infrastructure</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-05-15-self-hosted-mongodb-backup-mongodump-percona-mongosh-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Mongodb</span></div><h3 class=post-title>Self-Hosted MongoDB Backup Solutions: mongodump vs Percona Backup vs Mongosh</h3><div class=post-excerpt>MongoDB stores critical application data — user profiles, transaction records, content catalogs, and operational logs. …</div><div class=post-footer><span class=post-date>May 15, 2026</span></div></a><a href=/posts/2026-05-05-self-hosted-anycast-network-management-bird-frr-exabgp-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Anycast</span></div><h3 class=post-title>Self-Hosted Anycast Network Management — BIRD, FRRouting, ExaBGP Monitoring Guide</h3><div class=post-excerpt>Anycast networking — advertising the same IP address from multiple locations — is the backbone of resilient DNS, CDN, …</div><div class=post-footer><span class=post-date>May 5, 2026</span></div></a><a href=/posts/2026-05-04-self-hosted-dns-management-web-ui-powerdns-admin-dnscontrol-technitium-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Dns</span></div><h3 class=post-title>Self-Hosted DNS Management Web UIs — PowerDNS-Admin vs dnscontrol vs Technitium DNS Server</h3><div class=post-excerpt>Managing DNS zones, records, and configurations through command-line tools is error-prone and time-consuming — …</div><div class=post-footer><span class=post-date>May 4, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>

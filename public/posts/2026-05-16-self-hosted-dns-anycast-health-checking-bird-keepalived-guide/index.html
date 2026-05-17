@@ -1,0 +1,293 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted DNS Anycast Health Checking: anycast-healthchecker vs BIRD vs Keepalived | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-05-16-self-hosted-dns-anycast-health-checking-bird-keepalived-guide/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted DNS Anycast Health Checking: anycast-healthchecker vs BIRD vs Keepalived"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-05-16-self-hosted-dns-anycast-health-checking-bird-keepalived-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-05-16T00:00:00Z"><meta property="article:modified_time" content="2026-05-16T00:00:00Z"><meta property="article:tag" content="dns"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted DNS Anycast Health Checking: anycast-healthchecker vs BIRD vs Keepalived"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted DNS Anycast Health Checking: anycast-healthchecker vs BIRD vs Keepalived","description":"\u003cp\u003eDNS Anycast is the standard approach for running highly available, geographically distributed DNS services. By advertising the same IP address from multiple locations via BGP, clients are automatically routed to the nearest available DNS server. But what happens when one of those servers goes down? Without health checking, BGP continues advertising the anycast IP from a failed node, sending queries into a black hole.\u003c\/p\u003e","datePublished":"2026-05-16T00:00:00Z","dateModified":"2026-05-16T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-05-16-self-hosted-dns-anycast-health-checking-bird-keepalived-guide\/"},"keywords":["dns","anycast","networking","bird","keepalived","health-check","high-availability"],"articleSection":"dns","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted DNS Anycast Health Checking: anycast-healthchecker vs BIRD vs Keepalived","item":"https:\/\/www.pistack.xyz\/posts\/2026-05-16-self-hosted-dns-anycast-health-checking-bird-keepalived-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Dns</span>
+<span class="tag tag-purple">Anycast</span>
+<span class="tag tag-purple">Networking</span></div><h1>Self-Hosted DNS Anycast Health Checking: anycast-healthchecker vs BIRD vs Keepalived</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>May 16, 2026</span>
+<span>9 min read</span>
+<span>Updated May 16, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#how-dns-anycast-health-checking-works>How DNS Anycast Health Checking Works</a></li><li><a href=#comparison-table>Comparison Table</a></li><li><a href=#anycast-healthchecker--dedicated-anycast-health-monitor>anycast-healthchecker — Dedicated Anycast Health Monitor</a><ul><li><a href=#key-features>Key Features</a></li><li><a href=#docker-compose-configuration>Docker Compose Configuration</a></li><li><a href=#configuration-snippet>Configuration Snippet</a></li></ul></li><li><a href=#bird--bgp-routing-daemon-with-integrated-health-checks>BIRD — BGP Routing Daemon with Integrated Health Checks</a><ul><li><a href=#key-features-1>Key Features</a></li><li><a href=#bird-configuration-with-health-check>BIRD Configuration with Health Check</a></li><li><a href=#docker-compose-configuration-1>Docker Compose Configuration</a></li></ul></li><li><a href=#keepalived--vrrp-based-ha-with-anycast-support>Keepalived — VRRP-Based HA with Anycast Support</a><ul><li><a href=#key-features-2>Key Features</a></li><li><a href=#keepalived-configuration-snippet>Keepalived Configuration Snippet</a></li><li><a href=#health-check-script>Health Check Script</a></li><li><a href=#docker-compose-configuration-2>Docker Compose Configuration</a></li></ul></li><li><a href=#why-self-host-your-dns-anycast-health-checking>Why Self-Host Your DNS Anycast Health Checking?</a></li><li><a href=#choosing-the-right-anycast-health-checker>Choosing the Right Anycast Health Checker</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#what-is-dns-anycast-and-how-does-it-work>What is DNS Anycast and how does it work?</a></li><li><a href=#why-do-i-need-health-checking-for-anycast>Why do I need health checking for anycast?</a></li><li><a href=#how-fast-should-anycast-failover-be>How fast should anycast failover be?</a></li><li><a href=#can-i-run-dns-anycast-on-cloud-vms>Can I run DNS anycast on cloud VMs?</a></li><li><a href=#does-anycast-healthchecker-work-with-frrouting>Does anycast-healthchecker work with FRRouting?</a></li><li><a href=#should-i-use-anycast-for-internal-dns>Should I use anycast for internal DNS?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><p>DNS Anycast is the standard approach for running highly available, geographically distributed DNS services. By advertising the same IP address from multiple locations via BGP, clients are automatically routed to the nearest available DNS server. But what happens when one of those servers goes down? Without health checking, BGP continues advertising the anycast IP from a failed node, sending queries into a black hole.</p><p>In this guide, we compare three open-source approaches to anycast health checking: <strong>anycast-healthchecker</strong> (a dedicated Python-based health checker), <strong>BIRD</strong> (the BGP routing daemon with integrated health checks), and <strong>Keepalived</strong> (the VRRP-based high-availability tool with anycast support). Each takes a fundamentally different approach to detecting service failures and withdrawing BGP advertisements.</p><h2 id=how-dns-anycast-health-checking-works>How DNS Anycast Health Checking Works</h2><p>DNS anycast works by advertising the same service IP from multiple locations. When a DNS server fails, the anycast health checker must:</p><ol><li><strong>Detect the failure</strong>: Monitor the DNS service (port 53, query response, process health)</li><li><strong>Withdraw the route</strong>: Remove the BGP advertisement for the anycast IP from the failed node</li><li><strong>Re-advertise on recovery</strong>: Add the BGP advertisement back when the service recovers</li></ol><p>The key difference between the three tools is <strong>how</strong> they integrate health checking with BGP route management.</p><h2 id=comparison-table>Comparison Table</h2><table><thead><tr><th>Feature</th><th>anycast-healthchecker</th><th>BIRD</th><th>Keepalived</th></tr></thead><tbody><tr><td><strong>Stars / Activity</strong></td><td>189 (unixsurfer)</td><td>Major (Linux routing)</td><td>Major (HA tool)</td></tr><tr><td><strong>Language</strong></td><td>Python</td><td>C</td><td>C</td></tr><tr><td><strong>Health Check Types</strong></td><td>TCP, UDP, DNS query, HTTP, custom</td><td>Custom scripts, BFD</td><td>TCP, HTTP, SMTP, custom scripts</td></tr><tr><td><strong>BGP Integration</strong></td><td>External (adds/removes routes via CLI)</td><td>Native (BGP daemon)</td><td>VRRP + optional BGP</td></tr><tr><td><strong>Failover Speed</strong></td><td>2-5 seconds</td><td>1-3 seconds (BFD)</td><td>1-2 seconds</td></tr><tr><td><strong>Configuration</strong></td><td>INI file</td><td>BIRD config language</td><td>VRRP config</td></tr><tr><td><strong>IPv6 Support</strong></td><td>Yes</td><td>Yes</td><td>Yes</td></tr><tr><td><strong>Multi-IP Support</strong></td><td>Yes (multiple anycast IPs)</td><td>Yes (multiple prefixes)</td><td>Yes (multiple VIPs)</td></tr><tr><td><strong>Docker Support</strong></td><td>Community</td><td>Not recommended (kernel access)</td><td>Community</td></tr><tr><td><strong>Best For</strong></td><td>Dedicated health checking</td><td>Full BGP routing + health</td><td>VRRP-based HA with anycast</td></tr></tbody></table><h2 id=anycast-healthchecker--dedicated-anycast-health-monitor>anycast-healthchecker — Dedicated Anycast Health Monitor</h2><p>anycast-healthchecker is a purpose-built Python tool that monitors service health and manages BGP route advertisements accordingly. It runs as a daemon, periodically checking configured services and adding or withdrawing static BGP routes based on health status.</p><h3 id=key-features>Key Features</h3><ul><li><strong>Service-agnostic</strong>: Checks any TCP/UDP service — DNS (port 53), HTTP, custom endpoints</li><li><strong>DNS-aware</strong>: Can send actual DNS queries and validate responses, not just port checks</li><li><strong>Multiple VIPs</strong>: Manages multiple anycast IP addresses with independent health checks per IP</li><li><strong>Clean integration</strong>: Works with any BGP daemon (BIRD, FRRouting, Quagga) by manipulating static routes that BGP redistributes</li><li><strong>Configurable thresholds</strong>: Adjustable check intervals, failure thresholds, and recovery delays to prevent flapping</li></ul><h3 id=docker-compose-configuration>Docker Compose Configuration</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>anycast-healthchecker</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>unixsurfer/anycast_healthchecker:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>anycast-healthchecker</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>network_mode</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;host&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./anycast-healthchecker.ini:/etc/anycast-healthchecker/anycast-healthchecker.ini:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>cap_add</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>NET_ADMIN</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>NET_RAW</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>privileged</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=configuration-snippet>Configuration Snippet</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=k>[DEFAULT]</span>
+</span></span><span class=line><span class=cl><span class=na>check_interval</span> <span class=o>=</span> <span class=s>2</span>
+</span></span><span class=line><span class=cl><span class=na>fail_threshold</span> <span class=o>=</span> <span class=s>3</span>
+</span></span><span class=line><span class=cl><span class=na>success_threshold</span> <span class=o>=</span> <span class=s>2</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>[anycast-vip1]</span>
+</span></span><span class=line><span class=cl><span class=na>vip</span> <span class=o>=</span> <span class=s>192.0.2.53</span>
+</span></span><span class=line><span class=cl><span class=na>check_command</span> <span class=o>=</span> <span class=s>dig @127.0.0.1 example.com +short</span>
+</span></span><span class=line><span class=cl><span class=na>check_type</span> <span class=o>=</span> <span class=s>dns</span>
+</span></span><span class=line><span class=cl><span class=na>check_interval</span> <span class=o>=</span> <span class=s>2</span>
+</span></span><span class=line><span class=cl><span class=na>fail_threshold</span> <span class=o>=</span> <span class=s>3</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>[anycast-vip2]</span>
+</span></span><span class=line><span class=cl><span class=na>vip</span> <span class=o>=</span> <span class=s>2001:db8::53</span>
+</span></span><span class=line><span class=cl><span class=na>check_command</span> <span class=o>=</span> <span class=s>dig @::1 example.com +short</span>
+</span></span><span class=line><span class=cl><span class=na>check_type</span> <span class=o>=</span> <span class=s>dns</span>
+</span></span><span class=line><span class=cl><span class=na>check_interval</span> <span class=o>=</span> <span class=s>2</span>
+</span></span><span class=line><span class=cl><span class=na>fail_threshold</span> <span class=o>=</span> <span class=s>3</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=bird--bgp-routing-daemon-with-integrated-health-checks>BIRD — BGP Routing Daemon with Integrated Health Checks</h2><p>BIRD is a full-featured BGP routing daemon for Linux that can manage anycast route advertisements directly. Combined with BFD (Bidirectional Forwarding Detection) or custom health check scripts, BIRD provides integrated BGP route management without requiring a separate health checker daemon.</p><h3 id=key-features-1>Key Features</h3><ul><li><strong>Native BGP</strong>: Full BGP implementation — no external daemon needed for route management</li><li><strong>BFD support</strong>: Sub-second failure detection using BFD protocol for rapid anycast failover</li><li><strong>Script integration</strong>: Can execute health check scripts and conditionally advertise routes based on results</li><li><strong>Multi-protocol</strong>: Handles IPv4 and IPv6 BGP simultaneously</li><li><strong>Filter language</strong>: Powerful route filtering and manipulation via BIRD&rsquo;s configuration language</li></ul><h3 id=bird-configuration-with-health-check>BIRD Configuration with Health Check</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-gdscript3 data-lang=gdscript3><span class=line><span class=cl><span class=c1># /etc/bird/bird.conf</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>protocol</span> <span class=n>device</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>scan</span> <span class=n>time</span> <span class=mi>2</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>protocol</span> <span class=k>static</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>route</span> <span class=mf>192.0</span><span class=o>.</span><span class=mf>2.53</span><span class=o>/</span><span class=mi>32</span> <span class=n>via</span> <span class=s2>&#34;lo&#34;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>protocol</span> <span class=n>bgp</span> <span class=n>anycast_peer</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>local</span> <span class=n>as</span> <span class=mi>65001</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=n>neighbor</span> <span class=mf>192.168</span><span class=o>.</span><span class=mf>1.1</span> <span class=n>as</span> <span class=mi>65002</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=n>ipv4</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=k>export</span> <span class=n>filter</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>            <span class=k>if</span> <span class=n>net</span> <span class=o>=</span> <span class=mf>192.0</span><span class=o>.</span><span class=mf>2.53</span><span class=o>/</span><span class=mi>32</span> <span class=n>then</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>                <span class=c1># Only advertise if health check passes</span>
+</span></span><span class=line><span class=cl>                <span class=n>accept</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>            <span class=p>}</span>
+</span></span><span class=line><span class=cl>            <span class=n>reject</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=p>};</span>
+</span></span><span class=line><span class=cl>    <span class=p>};</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Health check via external script</span>
+</span></span><span class=line><span class=cl><span class=n>protocol</span> <span class=k>static</span> <span class=n>health_check</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>route</span> <span class=mf>192.0</span><span class=o>.</span><span class=mf>2.53</span><span class=o>/</span><span class=mi>32</span> <span class=n>via</span> <span class=s2>&#34;lo&#34;</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>check</span> <span class=n>link</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=p>};</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-compose-configuration-1>Docker Compose Configuration</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>bird</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>osrg/bird:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>bird-anycast</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>network_mode</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;host&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./bird.conf:/etc/bird/bird.conf:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./bird-scripts:/etc/bird/scripts:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>cap_add</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>NET_ADMIN</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>NET_RAW</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>privileged</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=keepalived--vrrp-based-ha-with-anycast-support>Keepalived — VRRP-Based HA with Anycast Support</h2><p>Keepalived is primarily a VRRP (Virtual Router Redundancy Protocol) implementation, but it can also manage anycast IP addresses through its virtual IP configuration. Combined with health check scripts, Keepalived can add or remove anycast addresses based on service availability.</p><h3 id=key-features-2>Key Features</h3><ul><li><strong>VRRP integration</strong>: Combines anycast management with VRRP failover for comprehensive HA</li><li><strong>Script-based health checks</strong>: Flexible custom scripts for any type of service monitoring</li><li><strong>Notification system</strong>: Sends email/syslog notifications on state changes</li><li><strong>Wide deployment</strong>: Battle-tested in production environments for decades</li><li><strong>Simple configuration</strong>: Declarative VRRP instance configuration with health check hooks</li></ul><h3 id=keepalived-configuration-snippet>Keepalived Configuration Snippet</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl># /etc/keepalived/keepalived.conf
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>global_defs {
+</span></span><span class=line><span class=cl>    notification_email {
+</span></span><span class=line><span class=cl>        admin@yourdomain.com
+</span></span><span class=line><span class=cl>    }
+</span></span><span class=line><span class=cl>    notification_email_from keepalived@yourdomain.com
+</span></span><span class=line><span class=cl>    smtp_server 127.0.0.1
+</span></span><span class=line><span class=cl>    router_id DNS_ANYCAST
+</span></span><span class=line><span class=cl>}
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>vrrp_script chk_dns {
+</span></span><span class=line><span class=cl>    script &#34;/etc/keepalived/check_dns.sh&#34;
+</span></span><span class=line><span class=cl>    interval 2
+</span></span><span class=line><span class=cl>    weight -50
+</span></span><span class=line><span class=cl>    fall 3
+</span></span><span class=line><span class=cl>    rise 2
+</span></span><span class=line><span class=cl>}
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>vrrp_instance anycast_dns {
+</span></span><span class=line><span class=cl>    state MASTER
+</span></span><span class=line><span class=cl>    interface eth0
+</span></span><span class=line><span class=cl>    virtual_router_id 53
+</span></span><span class=line><span class=cl>    priority 100
+</span></span><span class=line><span class=cl>    advert_int 1
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    virtual_ipaddress {
+</span></span><span class=line><span class=cl>        192.0.2.53/32 dev lo
+</span></span><span class=line><span class=cl>        2001:db8::53/128 dev lo
+</span></span><span class=line><span class=cl>    }
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    track_script {
+</span></span><span class=line><span class=cl>        chk_dns
+</span></span><span class=line><span class=cl>    }
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    notify_backup &#34;/etc/keepalived/withdraw_route.sh&#34;
+</span></span><span class=line><span class=cl>    notify_master &#34;/etc/keepalived/advertise_route.sh&#34;
+</span></span><span class=line><span class=cl>}
+</span></span></code></pre></td></tr></table></div></div><h3 id=health-check-script>Health Check Script</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=cp>#!/bin/bash
+</span></span></span><span class=line><span class=cl><span class=cp></span><span class=c1># /etc/keepalived/check_dns.sh</span>
+</span></span><span class=line><span class=cl><span class=c1># Returns 0 if DNS is healthy, 1 if not</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>dig @127.0.0.1 example.com +short +timeout<span class=o>=</span><span class=m>1</span> +tries<span class=o>=</span><span class=m>1</span> &gt; /dev/null 2&gt;<span class=p>&amp;</span><span class=m>1</span>
+</span></span><span class=line><span class=cl><span class=nb>exit</span> <span class=nv>$?</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-compose-configuration-2>Docker Compose Configuration</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>keepalived</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>osixia/keepalived:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>keepalived-anycast</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>network_mode</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;host&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./keepalived.conf:/container/service/keepalived/assets/keepalived.conf:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./check_dns.sh:/etc/keepalived/check_dns.sh:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./withdraw_route.sh:/etc/keepalived/withdraw_route.sh:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./advertise_route.sh:/etc/keepalived/advertise_route.sh:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>cap_add</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>NET_ADMIN</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>NET_RAW</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>NET_BROADCAST</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>privileged</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=why-self-host-your-dns-anycast-health-checking>Why Self-Host Your DNS Anycast Health Checking?</h2><p>Running your own DNS anycast infrastructure with proper health checking gives you control over DNS availability, geographic routing, and failure recovery — critical for organizations that cannot tolerate DNS downtime.</p><p><strong>Complete control over failover behavior</strong>: Commercial anycast DNS providers (Cloudflare, AWS Route 53, Google Cloud DNS) handle health checking internally with opaque algorithms. Self-hosted anycast with open-source health checkers lets you define exactly what &ldquo;healthy&rdquo; means — whether that&rsquo;s a simple port check, a full DNS query with response validation, or a complex application-level health endpoint.</p><p><strong>No vendor pricing surprises</strong>: Commercial anycast DNS pricing scales with query volume. Self-hosted anycast on commodity hardware or cloud VMs costs a flat infrastructure fee regardless of query volume. For high-traffic DNS deployments, this can represent significant cost savings.</p><p><strong>Geographic flexibility</strong>: With self-hosted anycast, you can deploy DNS servers in any location — your own data centers, colocation facilities, cloud regions, or edge locations — and control the geographic routing via BGP community strings and local preference settings. Commercial providers limit you to their PoP locations.</p><p><strong>Regulatory compliance</strong>: Some organizations have data sovereignty requirements that mandate DNS resolution within specific jurisdictions. Self-hosted anycast lets you deploy DNS servers in precisely the right locations while maintaining full control over query logging and data handling.</p><p>For DNS server selection, see our <a href=../2026-04-18-powerdns-vs-bind9-vs-nsd-vs-knot-self-hosted-authoritative-dns-2026/>authoritative DNS comparison</a>. For DNS security hardening, check our <a href=../2026-04-26-dns-cache-hardening-unbound-vs-bind9-vs-knot-resolver-self-hosted-security-guide-2026/>DNS cache hardening guide</a>. For DNS-over-QUIC setup, our <a href=../2026-05-02-knot-dns-vs-dnsdist-vs-unbound-self-hosted-dns-over-quic-guide/>DoQ server comparison</a> covers modern encrypted DNS protocols.</p><h2 id=choosing-the-right-anycast-health-checker>Choosing the Right Anycast Health Checker</h2><p><strong>Choose anycast-healthchecker if</strong>: You want a dedicated, purpose-built health monitoring tool that works with any BGP daemon. Its service-agnostic design, DNS-aware checking, and clean separation of health monitoring from route management make it the most flexible option for complex anycast deployments.</p><p><strong>Choose BIRD if</strong>: You need a full BGP routing daemon with integrated health checking. BIRD is the right choice when you&rsquo;re already running BGP for other purposes (peering, transit, route servers) and want to consolidate anycast route management into the same daemon. BFD support provides the fastest failover times.</p><p><strong>Choose Keepalived if</strong>: You need both VRRP-based failover and anycast route management from a single tool. Keepalived is ideal for deployments where you have active/passive server pairs within a site (managed by VRRP) and anycast across sites (managed by BGP advertisements triggered by Keepalived state changes).</p><h2 id=faq>FAQ</h2><h3 id=what-is-dns-anycast-and-how-does-it-work>What is DNS Anycast and how does it work?</h3><p>DNS Anycast works by advertising the same IP address from multiple geographic locations via BGP. Internet routers automatically direct DNS queries to the topologically nearest location. This provides both load distribution (queries spread across all locations) and high availability (if one location fails, traffic routes to the next nearest).</p><h3 id=why-do-i-need-health-checking-for-anycast>Why do I need health checking for anycast?</h3><p>Without health checking, BGP continues advertising the anycast IP from a failed node. Queries sent to that location are dropped, causing DNS resolution failures for clients routed there. Health checking detects service failures and withdraws the BGP advertisement, ensuring queries only reach healthy nodes.</p><h3 id=how-fast-should-anycast-failover-be>How fast should anycast failover be?</h3><p>With proper health checking, failover should complete in 1-5 seconds. BFD (Bidirectional Forwarding Detection) with BIRD achieves the fastest times (1-3 seconds). Script-based checks with anycast-healthchecker or Keepalived typically take 2-5 seconds depending on check interval and failure threshold settings.</p><h3 id=can-i-run-dns-anycast-on-cloud-vms>Can I run DNS anycast on cloud VMs?</h3><p>Yes, but with caveats. Most cloud providers don&rsquo;t support BGP advertisement from individual VMs. You need either: (a) dedicated servers with BGP peering capability, (b) cloud providers that support BGP (e.g., AWS Direct Connect, Google Cloud Interconnect), or (c) a hosting provider that offers BGP anycast as a service.</p><h3 id=does-anycast-healthchecker-work-with-frrouting>Does anycast-healthchecker work with FRRouting?</h3><p>Yes. anycast-healthchecker manages static routes on the local system, and FRRouting (like BIRD) can redistribute static routes into BGP. This means anycast-healthchecker is compatible with any BGP daemon that supports static route redistribution.</p><h3 id=should-i-use-anycast-for-internal-dns>Should I use anycast for internal DNS?</h3><p>Anycast is most valuable for public-facing DNS services. For internal DNS, simpler approaches like DNS forwarding with multiple upstream servers or VRRP-based failover are usually sufficient. Anycast makes sense for internal DNS only when you have geographically distributed sites and want clients to automatically connect to the nearest DNS server.</p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted DNS Anycast Health Checking: anycast-healthchecker vs BIRD vs Keepalived","description":"Compare three open-source approaches to DNS anycast health checking. Covers anycast-healthchecker, BIRD, and Keepalived with Docker configs and BGP integration.","datePublished":"2026-05-16","dateModified":"2026-05-16","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20DNS%20Anycast%20Health%20Checking%3a%20anycast-healthchecker%20vs%20BIRD%20vs%20Keepalived&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-16-self-hosted-dns-anycast-health-checking-bird-keepalived-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-16-self-hosted-dns-anycast-health-checking-bird-keepalived-guide%2f&t=Self-Hosted%20DNS%20Anycast%20Health%20Checking%3a%20anycast-healthchecker%20vs%20BIRD%20vs%20Keepalived" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/dns/ class=tag-link>Dns</a>
+<a href=/tags/anycast/ class=tag-link>Anycast</a>
+<a href=/tags/networking/ class=tag-link>Networking</a>
+<a href=/tags/bird/ class=tag-link>Bird</a>
+<a href=/tags/keepalived/ class=tag-link>Keepalived</a>
+<a href=/tags/health-check/ class=tag-link>Health-Check</a>
+<a href=/tags/high-availability/ class=tag-link>High-Availability</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-04-22-bird-vs-frrouting-vs-keepalived-self-hosted-dns-anycast-guide-2026/ class=post-card><div class=post-tags><span class="tag tag-purple">Comparison</span></div><h3 class=post-title>BIRD vs FRRouting vs Keepalived: Self-Hosted DNS Anycast Routing Guide 2026</h3><div class=post-excerpt>DNS anycast is one of the most powerful yet underutilized techniques for building resilient, low-latency infrastructure. …</div><div class=post-footer><span class=post-date>Apr 22, 2026</span></div></a><a href=/posts/2026-05-11-self-hosted-lvs-load-balancing-ipvs-keepalived-linux-virtual-server-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Load-Balancing</span></div><h3 class=post-title>Self-Hosted LVS Load Balancing: IPVS, Keepalived, and Linux Virtual Server (2026)</h3><div class=post-excerpt>When your application outgrows a single server, load balancing becomes the critical infrastructure layer that …</div><div class=post-footer><span class=post-date>May 11, 2026</span></div></a><a href=/posts/2026-05-09-self-hosted-dhcp-high-availability-kea-ha-vs-isc-dhcp-vs-keepalived-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Dhcp</span></div><h3 class=post-title>Self-Hosted DHCP High Availability: Kea HA vs ISC DHCP Failover vs Keepalived+dnsmasq</h3><div class=post-excerpt>Running DHCP without redundancy is a single point of failure. When your DHCP server goes down, new devices cannot join …</div><div class=post-footer><span class=post-date>May 9, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>

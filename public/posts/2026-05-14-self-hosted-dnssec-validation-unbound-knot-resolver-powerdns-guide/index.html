@@ -1,0 +1,433 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted DNSSEC Validation: Unbound vs Knot Resolver vs PowerDNS Recursor | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-05-14-self-hosted-dnssec-validation-unbound-knot-resolver-powerdns-guide/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted DNSSEC Validation: Unbound vs Knot Resolver vs PowerDNS Recursor"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-05-14-self-hosted-dnssec-validation-unbound-knot-resolver-powerdns-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-05-14T00:00:00Z"><meta property="article:modified_time" content="2026-05-14T00:00:00Z"><meta property="article:tag" content="dns"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted DNSSEC Validation: Unbound vs Knot Resolver vs PowerDNS Recursor"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted DNSSEC Validation: Unbound vs Knot Resolver vs PowerDNS Recursor","description":"\u003cp\u003eDNS Security Extensions (DNSSEC) add cryptographic authentication to the DNS hierarchy, ensuring that responses from DNS servers have not been tampered with in transit. While many ISPs and public resolvers offer DNSSEC validation, running your own validating resolver gives you full control over the validation chain, trust anchors, and logging — critical for security-conscious organizations and compliance requirements.\u003c\/p\u003e","datePublished":"2026-05-14T00:00:00Z","dateModified":"2026-05-14T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-05-14-self-hosted-dnssec-validation-unbound-knot-resolver-powerdns-guide\/"},"keywords":["dns","dnssec","security","networking","self-hosted"],"articleSection":"dns","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted DNSSEC Validation: Unbound vs Knot Resolver vs PowerDNS Recursor","item":"https:\/\/www.pistack.xyz\/posts\/2026-05-14-self-hosted-dnssec-validation-unbound-knot-resolver-powerdns-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Dns</span>
+<span class="tag tag-purple">Dnssec</span>
+<span class="tag tag-purple">Security</span></div><h1>Self-Hosted DNSSEC Validation: Unbound vs Knot Resolver vs PowerDNS Recursor</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>May 14, 2026</span>
+<span>11 min read</span>
+<span>Updated May 14, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#what-is-dnssec-and-why-validate-it-yourself>What Is DNSSEC and Why Validate It Yourself?</a></li><li><a href=#unbound-the-validating-resolver>Unbound: The Validating Resolver</a><ul><li><a href=#architecture>Architecture</a></li><li><a href=#docker-compose-deployment>Docker Compose Deployment</a></li><li><a href=#dnssec-configuration-unboundconf>DNSSEC Configuration (unbound.conf)</a></li></ul></li><li><a href=#knot-resolver-high-performance-dnssec-validation>Knot Resolver: High-Performance DNSSEC Validation</a><ul><li><a href=#architecture-1>Architecture</a></li><li><a href=#docker-compose-deployment-1>Docker Compose Deployment</a></li><li><a href=#configuration-kresdconf>Configuration (kresd.conf)</a></li></ul></li><li><a href=#powerdns-recursor-enterprise-grade-dnssec>PowerDNS Recursor: Enterprise-Grade DNSSEC</a><ul><li><a href=#architecture-2>Architecture</a></li><li><a href=#docker-compose-deployment-2>Docker Compose Deployment</a></li><li><a href=#configuration-recursorconf>Configuration (recursor.conf)</a></li></ul></li><li><a href=#comparison-table>Comparison Table</a></li><li><a href=#performance-and-scalability>Performance and Scalability</a></li><li><a href=#deploying-a-dnssec-validation-stack>Deploying a DNSSEC Validation Stack</a></li><li><a href=#security-hardening-for-dnssec-resolvers>Security Hardening for DNSSEC Resolvers</a></li><li><a href=#why-self-host-dnssec-validation>Why Self-Host DNSSEC Validation?</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#what-is-the-difference-between-dnssec-validation-and-dnssec-signing>What is the difference between DNSSEC validation and DNSSEC signing?</a></li><li><a href=#does-enabling-dnssec-validation-slow-down-dns-resolution>Does enabling DNSSEC validation slow down DNS resolution?</a></li><li><a href=#what-happens-when-dnssec-validation-fails-for-a-domain>What happens when DNSSEC validation fails for a domain?</a></li><li><a href=#can-i-use-dnssec-validation-with-pi-hole-or-adguard-home>Can I use DNSSEC validation with Pi-hole or AdGuard Home?</a></li><li><a href=#how-do-i-handle-dnssec-validation-for-internal-domains>How do I handle DNSSEC validation for internal domains?</a></li><li><a href=#how-do-i-monitor-dnssec-validation-health>How do I monitor DNSSEC validation health?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><p>DNS Security Extensions (DNSSEC) add cryptographic authentication to the DNS hierarchy, ensuring that responses from DNS servers have not been tampered with in transit. While many ISPs and public resolvers offer DNSSEC validation, running your own validating resolver gives you full control over the validation chain, trust anchors, and logging — critical for security-conscious organizations and compliance requirements.</p><p>This guide compares three leading open-source DNSSEC-validating resolvers: <strong>Unbound</strong>, <strong>Knot Resolver</strong>, and <strong>PowerDNS Recursor</strong> — examining their architecture, deployment, performance, and operational characteristics.</p><h2 id=what-is-dnssec-and-why-validate-it-yourself>What Is DNSSEC and Why Validate It Yourself?</h2><p>DNSSEC protects against DNS cache poisoning and man-in-the-middle attacks by digitally signing DNS records at each zone level. When a resolver validates a response, it checks the cryptographic chain of trust from the root zone down to the queried domain. If any signature is invalid or missing, the resolver returns SERVFAIL instead of the potentially compromised data.</p><p>Running your own DNSSEC-validating resolver offers several advantages over relying on third-party services:</p><ul><li><strong>Complete trust chain control</strong> — you manage trust anchors and can pin specific zones</li><li><strong>Full audit logging</strong> — every validation decision is recorded, useful for incident response</li><li><strong>No external dependency</strong> — your DNS resolution does not depend on an upstream provider&rsquo;s DNSSEC configuration</li><li><strong>Compliance</strong> — many security frameworks (PCI-DSS, SOC 2, NIST 800-53) recommend or require DNSSEC validation</li><li><strong>Custom policy enforcement</strong> — you can define per-domain DNSSEC policies, such as requiring validation for financial zones while allowing insecure responses for internal domains</li></ul><h2 id=unbound-the-validating-resolver>Unbound: The Validating Resolver</h2><p>Unbound, developed by NLnet Labs, is the most widely deployed open-source validating recursive resolver. It has been the reference implementation for DNSSEC validation since 2008 and is used as the default resolver in FreeBSD, OpenWRT, and many enterprise Linux distributions.</p><h3 id=architecture>Architecture</h3><p>Unbound is a modular, event-driven resolver with a clean separation between its recursive resolution engine, validator module, and cache. Its architecture is designed for security first — it runs as an unprivileged user, supports chroot jail isolation, and has a minimal attack surface.</p><p>Key DNSSEC features:</p><ul><li><strong>RFC 4035-compliant validation</strong> — full DNSSEC validator with support for NSEC and NSEC3</li><li><strong>Trust anchor management</strong> — automatic root key roll (KSK-2017) and manual anchor configuration</li><li><strong>DNSSEC Lookaside Validation (DLV)</strong> — legacy support for alternative trust anchors</li><li><strong>Aggressive use of NSEC</strong> — reduces query count by using negative cache entries</li><li><strong>QNAME minimization</strong> — reduces information leakage to upstream authoritative servers</li></ul><h3 id=docker-compose-deployment>Docker Compose Deployment</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>unbound</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>mvance/unbound:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>unbound</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;53:53/tcp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;53:53/udp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8953:8953/tcp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./unbound.conf:/opt/unbound/etc/unbound/unbound.conf:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./unbound-configs:/opt/unbound/etc/unbound/unbound.conf.d:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>unbound-cache:/opt/unbound/etc/unbound</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>healthcheck</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>test</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;CMD&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;unbound-control&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;-c&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;/opt/unbound/etc/unbound/unbound.conf&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;status&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>interval</span><span class=p>:</span><span class=w> </span><span class=l>30s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>timeout</span><span class=p>:</span><span class=w> </span><span class=l>5s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>retries</span><span class=p>:</span><span class=w> </span><span class=m>3</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>unbound-cache</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=dnssec-configuration-unboundconf>DNSSEC Configuration (unbound.conf)</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-gdscript3 data-lang=gdscript3><span class=line><span class=cl><span class=n>server</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>    <span class=c1># Listen on all interfaces</span>
+</span></span><span class=line><span class=cl>    <span class=n>interface</span><span class=p>:</span> <span class=mf>0.0</span><span class=o>.</span><span class=mf>0.0</span>
+</span></span><span class=line><span class=cl>    <span class=n>interface</span><span class=p>:</span> <span class=p>::</span><span class=mi>0</span>
+</span></span><span class=line><span class=cl>    <span class=n>port</span><span class=p>:</span> <span class=mi>53</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1># Access control — restrict to local networks</span>
+</span></span><span class=line><span class=cl>    <span class=n>access</span><span class=o>-</span><span class=n>control</span><span class=p>:</span> <span class=mf>127.0</span><span class=o>.</span><span class=mf>0.0</span><span class=o>/</span><span class=mi>8</span> <span class=n>allow</span>
+</span></span><span class=line><span class=cl>    <span class=n>access</span><span class=o>-</span><span class=n>control</span><span class=p>:</span> <span class=mf>192.168</span><span class=o>.</span><span class=mf>0.0</span><span class=o>/</span><span class=mi>16</span> <span class=n>allow</span>
+</span></span><span class=line><span class=cl>    <span class=n>access</span><span class=o>-</span><span class=n>control</span><span class=p>:</span> <span class=mf>10.0</span><span class=o>.</span><span class=mf>0.0</span><span class=o>/</span><span class=mi>8</span> <span class=n>allow</span>
+</span></span><span class=line><span class=cl>    <span class=n>access</span><span class=o>-</span><span class=n>control</span><span class=p>:</span> <span class=p>::</span><span class=mi>1</span> <span class=n>allow</span>
+</span></span><span class=line><span class=cl>    <span class=n>access</span><span class=o>-</span><span class=n>control</span><span class=p>:</span> <span class=n>fc00</span><span class=p>::</span><span class=o>/</span><span class=mi>7</span> <span class=n>allow</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1># DNSSEC validation — enabled by default in modern Unbound</span>
+</span></span><span class=line><span class=cl>    <span class=n>dnssec</span><span class=p>:</span> <span class=n>yes</span>
+</span></span><span class=line><span class=cl>    <span class=n>dnssec</span><span class=o>-</span><span class=k>return</span><span class=o>-</span><span class=n>bogus</span><span class=p>:</span> <span class=n>yes</span>
+</span></span><span class=line><span class=cl>    <span class=n>trust</span><span class=o>-</span><span class=n>anchor</span><span class=o>-</span><span class=n>signaling</span><span class=p>:</span> <span class=n>yes</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1># Root trust anchor (automatically managed)</span>
+</span></span><span class=line><span class=cl>    <span class=n>auto</span><span class=o>-</span><span class=n>trust</span><span class=o>-</span><span class=n>anchor</span><span class=o>-</span><span class=n>file</span><span class=p>:</span> <span class=s2>&#34;/opt/unbound/etc/unbound/root.key&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1># Hardening options</span>
+</span></span><span class=line><span class=cl>    <span class=n>harden</span><span class=o>-</span><span class=n>glue</span><span class=p>:</span> <span class=n>yes</span>
+</span></span><span class=line><span class=cl>    <span class=n>harden</span><span class=o>-</span><span class=n>dnssec</span><span class=o>-</span><span class=n>stripped</span><span class=p>:</span> <span class=n>yes</span>
+</span></span><span class=line><span class=cl>    <span class=n>harden</span><span class=o>-</span><span class=n>below</span><span class=o>-</span><span class=n>nxdomain</span><span class=p>:</span> <span class=n>yes</span>
+</span></span><span class=line><span class=cl>    <span class=n>harden</span><span class=o>-</span><span class=n>referral</span><span class=o>-</span><span class=n>path</span><span class=p>:</span> <span class=n>yes</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1># Privacy</span>
+</span></span><span class=line><span class=cl>    <span class=n>qname</span><span class=o>-</span><span class=n>minimisation</span><span class=p>:</span> <span class=n>yes</span>
+</span></span><span class=line><span class=cl>    <span class=n>minimal</span><span class=o>-</span><span class=n>responses</span><span class=p>:</span> <span class=n>yes</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1># Cache settings</span>
+</span></span><span class=line><span class=cl>    <span class=n>cache</span><span class=o>-</span><span class=nb>min</span><span class=o>-</span><span class=n>ttl</span><span class=p>:</span> <span class=mi>300</span>
+</span></span><span class=line><span class=cl>    <span class=n>cache</span><span class=o>-</span><span class=nb>max</span><span class=o>-</span><span class=n>ttl</span><span class=p>:</span> <span class=mi>86400</span>
+</span></span><span class=line><span class=cl>    <span class=n>msg</span><span class=o>-</span><span class=n>cache</span><span class=o>-</span><span class=n>size</span><span class=p>:</span> <span class=mi>128</span><span class=n>m</span>
+</span></span><span class=line><span class=cl>    <span class=n>rrset</span><span class=o>-</span><span class=n>cache</span><span class=o>-</span><span class=n>size</span><span class=p>:</span> <span class=mi>256</span><span class=n>m</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1># Logging</span>
+</span></span><span class=line><span class=cl>    <span class=n>verbosity</span><span class=p>:</span> <span class=mi>1</span>
+</span></span><span class=line><span class=cl>    <span class=nb>log</span><span class=o>-</span><span class=n>queries</span><span class=p>:</span> <span class=n>no</span>
+</span></span><span class=line><span class=cl>    <span class=nb>log</span><span class=o>-</span><span class=n>replies</span><span class=p>:</span> <span class=n>no</span>
+</span></span><span class=line><span class=cl>    <span class=nb>log</span><span class=o>-</span><span class=n>tag</span><span class=o>-</span><span class=n>queryreply</span><span class=p>:</span> <span class=n>yes</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1># Remote control (unbound-control)</span>
+</span></span><span class=line><span class=cl>    <span class=n>remote</span><span class=o>-</span><span class=n>control</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>        <span class=n>control</span><span class=o>-</span><span class=n>enable</span><span class=p>:</span> <span class=n>yes</span>
+</span></span><span class=line><span class=cl>        <span class=n>control</span><span class=o>-</span><span class=n>interface</span><span class=p>:</span> <span class=mf>127.0</span><span class=o>.</span><span class=mf>0.1</span>
+</span></span><span class=line><span class=cl>        <span class=n>control</span><span class=o>-</span><span class=n>port</span><span class=p>:</span> <span class=mi>8953</span>
+</span></span><span class=line><span class=cl>        <span class=n>control</span><span class=o>-</span><span class=n>use</span><span class=o>-</span><span class=n>cert</span><span class=p>:</span> <span class=n>no</span>
+</span></span></code></pre></td></tr></table></div></div><p>Unbound&rsquo;s DNSSEC validation is enabled by default in modern versions. The <code>auto-trust-anchor-file</code> directive manages the root zone trust anchor, automatically handling key rollovers. The <code>harden-dnssec-stripped</code> option ensures that responses claiming to be from a DNSSEC-signed zone but lacking signatures are rejected.</p><h2 id=knot-resolver-high-performance-dnssec-validation>Knot Resolver: High-Performance DNSSEC Validation</h2><p>Knot Resolver, developed by CZ.NIC (the operator of the .cz top-level domain), is a high-performance, modular DNS resolver designed for demanding environments. It uses a Lua-based module system that allows deep customization of the resolution pipeline.</p><h3 id=architecture-1>Architecture</h3><p>Knot Resolver is built on the Knot DNS library, providing a fast, memory-efficient resolution engine. Its modular architecture allows you to enable, disable, or reorder processing modules at runtime. The DNSSEC validator is one of several modules in the resolution chain.</p><p>Key features:</p><ul><li><strong>Lua scripting</strong> — customize resolution behavior with Lua policies</li><li><strong>HTTP/REST API</strong> — monitoring, statistics, and runtime configuration</li><li><strong>DNSSEC validation</strong> — full validator with support for NSEC3 and CDS/CDNSKEY</li><li><strong>Predictive prefetching</strong> — proactively refreshes soon-to-expire cache entries</li><li><strong>Query federation</strong> — route queries to different upstream resolvers based on policy</li></ul><h3 id=docker-compose-deployment-1>Docker Compose Deployment</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>knot-resolver</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>cznic/knot-resolver:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>knot-resolver</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;53:53/tcp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;53:53/udp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8053:8053/tcp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./kresd.conf:/etc/knot-resolver/kresd.conf:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>kresd-cache:/var/cache/knot-resolver</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>kresd-configs:/etc/knot-resolver/config.d:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>kresd-cache</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>kresd-configs</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=configuration-kresdconf>Configuration (kresd.conf)</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-lua data-lang=lua><span class=line><span class=cl><span class=c1>-- Network configuration</span>
+</span></span><span class=line><span class=cl><span class=n>net.listen</span><span class=p>(</span><span class=s1>&#39;0.0.0.0&#39;</span><span class=p>,</span> <span class=mi>53</span><span class=p>,</span> <span class=p>{</span> <span class=n>kind</span> <span class=o>=</span> <span class=s1>&#39;dns&#39;</span><span class=p>,</span> <span class=n>freebind</span> <span class=o>=</span> <span class=kc>true</span> <span class=p>})</span>
+</span></span><span class=line><span class=cl><span class=n>net.listen</span><span class=p>(</span><span class=s1>&#39;::0&#39;</span><span class=p>,</span> <span class=mi>53</span><span class=p>,</span> <span class=p>{</span> <span class=n>kind</span> <span class=o>=</span> <span class=s1>&#39;dns&#39;</span><span class=p>,</span> <span class=n>freebind</span> <span class=o>=</span> <span class=kc>true</span> <span class=p>})</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>-- Access control</span>
+</span></span><span class=line><span class=cl><span class=n>policy.add</span><span class=p>(</span><span class=n>policy.todns</span><span class=p>({</span><span class=s1>&#39;127.0.0.0/8&#39;</span><span class=p>,</span> <span class=s1>&#39;192.168.0.0/16&#39;</span><span class=p>,</span> <span class=s1>&#39;10.0.0.0/8&#39;</span><span class=p>}))</span>
+</span></span><span class=line><span class=cl><span class=n>policy.add</span><span class=p>(</span><span class=n>policy.deny</span><span class=p>(</span><span class=kc>nil</span><span class=p>))</span>  <span class=c1>-- deny all other clients</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>-- DNSSEC validation</span>
+</span></span><span class=line><span class=cl><span class=n>trust_anchors.add_file</span><span class=p>(</span><span class=s1>&#39;/etc/knot-resolver/root.keys&#39;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>-- Cache configuration</span>
+</span></span><span class=line><span class=cl><span class=n>cache.size</span> <span class=o>=</span> <span class=mi>256</span> <span class=o>*</span> <span class=n>MB</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>-- Statistics module (HTTP API on port 8053)</span>
+</span></span><span class=line><span class=cl><span class=n>modules</span> <span class=o>=</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=s1>&#39;http&#39;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s1>&#39;statistics&#39;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=s1>&#39;policy&#39;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>-- Predictive prefetching</span>
+</span></span><span class=line><span class=cl><span class=n>prefetch.enable</span><span class=p>(</span><span class=kc>true</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>-- Query minimization</span>
+</span></span><span class=line><span class=cl><span class=n>option</span><span class=p>(</span><span class=s1>&#39;QNAME_MINIMIZATION&#39;</span><span class=p>,</span> <span class=kc>true</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1>-- Logging</span>
+</span></span><span class=line><span class=cl><span class=n>verbose</span><span class=p>(</span><span class=kc>false</span><span class=p>)</span>
+</span></span></code></pre></td></tr></table></div></div><p>Knot Resolver&rsquo;s Lua-based configuration makes it highly customizable. You can write Lua scripts to implement per-domain DNSSEC policies, log specific query patterns, or route queries through specific upstream servers. The <code>policy</code> module supports complex access rules, including rate limiting and domain-based routing.</p><h2 id=powerdns-recursor-enterprise-grade-dnssec>PowerDNS Recursor: Enterprise-Grade DNSSEC</h2><p>PowerDNS Recursor is the recursive resolver from the PowerDNS project. While PowerDNS Authoritative Server handles zone serving, the Recursor handles recursive resolution with full DNSSEC validation. It is used by many large ISPs and enterprises for its performance and Lua scripting capabilities.</p><h3 id=architecture-2>Architecture</h3><p>The PowerDNS Recursor is a multi-threaded, event-driven resolver designed for high query volumes. It processes each query in its own thread, providing excellent parallelism on multi-core systems. The Lua scripting engine allows packet-level customization of both incoming queries and outgoing responses.</p><p>Key features:</p><ul><li><strong>Multi-threaded architecture</strong> — scales to hundreds of thousands of queries per second</li><li><strong>DNSSEC validation</strong> — full validator with NSEC/NSEC3 support</li><li><strong>Lua scripting</strong> — programmable response manipulation, policy enforcement, and logging</li><li><strong>RPZ support</strong> — Response Policy Zones for DNS-based threat intelligence blocking</li><li><strong>Protobuf logging</strong> — structured logging for integration with monitoring systems</li></ul><h3 id=docker-compose-deployment-2>Docker Compose Deployment</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>pdns-recursor</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>powerdns/pdns-recursor-49:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>pdns-recursor</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;53:53/tcp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;53:53/udp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./recursor.conf:/etc/pdns/recursor.conf:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./lua-scripts:/etc/pdns/lua-scripts:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PDNS_reactor=epoll</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=configuration-recursorconf>Configuration (recursor.conf)</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-gdscript3 data-lang=gdscript3><span class=line><span class=cl><span class=c1># Network</span>
+</span></span><span class=line><span class=cl><span class=n>local</span><span class=o>-</span><span class=n>address</span><span class=o>=</span><span class=mf>0.0</span><span class=o>.</span><span class=mf>0.0</span><span class=p>,</span> <span class=p>::</span>
+</span></span><span class=line><span class=cl><span class=n>local</span><span class=o>-</span><span class=n>port</span><span class=o>=</span><span class=mi>53</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Access control</span>
+</span></span><span class=line><span class=cl><span class=n>allow</span><span class=o>-</span><span class=n>from</span><span class=o>=</span><span class=mf>127.0</span><span class=o>.</span><span class=mf>0.0</span><span class=o>/</span><span class=mi>8</span><span class=p>,</span> <span class=mf>192.168</span><span class=o>.</span><span class=mf>0.0</span><span class=o>/</span><span class=mi>16</span><span class=p>,</span> <span class=mf>10.0</span><span class=o>.</span><span class=mf>0.0</span><span class=o>/</span><span class=mi>8</span><span class=p>,</span> <span class=p>::</span><span class=mi>1</span><span class=p>,</span> <span class=n>fc00</span><span class=p>::</span><span class=o>/</span><span class=mi>7</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># DNSSEC</span>
+</span></span><span class=line><span class=cl><span class=n>dnssec</span><span class=o>=</span><span class=n>validate</span>
+</span></span><span class=line><span class=cl><span class=n>dnssec</span><span class=o>-</span><span class=nb>log</span><span class=o>-</span><span class=n>bogus</span><span class=o>=</span><span class=n>yes</span>
+</span></span><span class=line><span class=cl><span class=nb>max</span><span class=o>-</span><span class=n>cache</span><span class=o>-</span><span class=n>ttl</span><span class=o>=</span><span class=mi>86400</span>
+</span></span><span class=line><span class=cl><span class=nb>max</span><span class=o>-</span><span class=n>negative</span><span class=o>-</span><span class=n>ttl</span><span class=o>=</span><span class=mi>3600</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Security</span>
+</span></span><span class=line><span class=cl><span class=n>delegation</span><span class=o>-</span><span class=n>only</span><span class=o>=</span>
+</span></span><span class=line><span class=cl><span class=k>export</span><span class=o>-</span><span class=n>etc</span><span class=o>-</span><span class=n>hosts</span><span class=o>=</span><span class=n>no</span>
+</span></span><span class=line><span class=cl><span class=n>spoof</span><span class=o>-</span><span class=n>nearmiss</span><span class=o>-</span><span class=nb>max</span><span class=o>=</span><span class=mi>20</span>
+</span></span><span class=line><span class=cl><span class=n>lowercase</span><span class=o>-</span><span class=n>outgoing</span><span class=o>=</span><span class=n>yes</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Performance</span>
+</span></span><span class=line><span class=cl><span class=n>threads</span><span class=o>=</span><span class=mi>4</span>
+</span></span><span class=line><span class=cl><span class=n>distributed</span><span class=o>=</span><span class=n>no</span>
+</span></span><span class=line><span class=cl><span class=n>query</span><span class=o>-</span><span class=n>local</span><span class=o>-</span><span class=n>address</span><span class=o>=</span><span class=mf>0.0</span><span class=o>.</span><span class=mf>0.0</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Logging</span>
+</span></span><span class=line><span class=cl><span class=n>loglevel</span><span class=o>=</span><span class=mi>5</span>
+</span></span><span class=line><span class=cl><span class=nb>log</span><span class=o>-</span><span class=n>common</span><span class=o>-</span><span class=n>errors</span><span class=o>=</span><span class=n>yes</span>
+</span></span><span class=line><span class=cl><span class=nb>log</span><span class=o>-</span><span class=n>rcode</span><span class=o>-</span><span class=n>drop</span><span class=o>-</span><span class=n>stats</span><span class=o>=</span><span class=n>no</span>
+</span></span><span class=line><span class=cl><span class=nb>log</span><span class=o>-</span><span class=n>timestamp</span><span class=o>=</span><span class=n>yes</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Lua scripting</span>
+</span></span><span class=line><span class=cl><span class=n>lua</span><span class=o>-</span><span class=n>config</span><span class=o>-</span><span class=n>file</span><span class=o>=/</span><span class=n>etc</span><span class=o>/</span><span class=n>pdns</span><span class=o>/</span><span class=n>lua</span><span class=o>-</span><span class=n>scripts</span><span class=o>/</span><span class=n>policies</span><span class=o>.</span><span class=n>lua</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Statistics and monitoring</span>
+</span></span><span class=line><span class=cl><span class=n>webserver</span><span class=o>=</span><span class=n>yes</span>
+</span></span><span class=line><span class=cl><span class=n>webserver</span><span class=o>-</span><span class=n>address</span><span class=o>=</span><span class=mf>127.0</span><span class=o>.</span><span class=mf>0.1</span>
+</span></span><span class=line><span class=cl><span class=n>webserver</span><span class=o>-</span><span class=n>port</span><span class=o>=</span><span class=mi>8082</span>
+</span></span><span class=line><span class=cl><span class=n>webserver</span><span class=o>-</span><span class=n>password</span><span class=o>=</span><span class=n>recursor</span><span class=o>-</span><span class=n>stats</span><span class=o>-</span><span class=mi>2026</span>
+</span></span><span class=line><span class=cl><span class=n>api</span><span class=o>=</span><span class=n>yes</span>
+</span></span><span class=line><span class=cl><span class=n>api</span><span class=o>-</span><span class=n>key</span><span class=o>=</span><span class=n>recursor</span><span class=o>-</span><span class=n>api</span><span class=o>-</span><span class=mi>2026</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=comparison-table>Comparison Table</h2><table><thead><tr><th>Feature</th><th>Unbound</th><th>Knot Resolver</th><th>PowerDNS Recursor</th></tr></thead><tbody><tr><td><strong>Developer</strong></td><td>NLnet Labs</td><td>CZ.NIC</td><td>PowerDNS / Open-Xchange</td></tr><tr><td><strong>Stars on GitHub</strong></td><td>4,532</td><td>436 (knot mirror)</td><td>4,363 (pdns org)</td></tr><tr><td><strong>Language</strong></td><td>C</td><td>C + Lua</td><td>C++ + Lua</td></tr><tr><td><strong>Architecture</strong></td><td>Single-process, modular</td><td>Multi-process with Lua</td><td>Multi-threaded</td></tr><tr><td><strong>DNSSEC validation</strong></td><td>Yes (reference impl)</td><td>Yes (full)</td><td>Yes (full)</td></tr><tr><td><strong>Root key auto-roll</strong></td><td>Yes</td><td>Yes</td><td>Yes</td></tr><tr><td><strong>Scripting</strong></td><td>Python (limited)</td><td>Lua (full)</td><td>Lua (full)</td></tr><tr><td><strong>HTTP API</strong></td><td>No (control CLI only)</td><td>Yes (built-in)</td><td>Yes (webserver)</td></tr><tr><td><strong>RPZ support</strong></td><td>No</td><td>Yes (via policy)</td><td>Yes (native)</td></tr><tr><td><strong>Protobuf logging</strong></td><td>No</td><td>No</td><td>Yes</td></tr><tr><td><strong>Cache sharing</strong></td><td>Single instance</td><td>Multi-worker shared</td><td>Per-thread</td></tr><tr><td><strong>Default on</strong></td><td>FreeBSD, OpenWRT</td><td>.cz infrastructure</td><td>Many ISPs</td></tr><tr><td><strong>Best for</strong></td><td>General-purpose validation</td><td>Customizable policies</td><td>High-throughput environments</td></tr></tbody></table><h2 id=performance-and-scalability>Performance and Scalability</h2><p>For <strong>small to medium deployments</strong> (under 10,000 queries per day), all three resolvers perform virtually identically. The choice comes down to feature requirements and operational familiarity.</p><p>For <strong>high-throughput environments</strong> (ISPs, large enterprises), PowerDNS Recursor&rsquo;s multi-threaded architecture provides the best raw performance. It can handle hundreds of thousands of queries per second on modern hardware, with DNSSEC validation adding minimal overhead thanks to efficient cryptographic implementations.</p><p>For <strong>policy-heavy deployments</strong> where you need per-domain DNS rules, Knot Resolver&rsquo;s Lua-based policy engine is the most flexible. You can implement complex routing logic, rate limiting, and DNSSEC policy exceptions with just a few lines of Lua.</p><p>For <strong>security-first deployments</strong> where you want a minimal, well-audited codebase, Unbound is the clear winner. Its single-process design, long history of security audits, and status as the reference DNSSEC validator implementation make it the go-to choice for security teams.</p><h2 id=deploying-a-dnssec-validation-stack>Deploying a DNSSEC Validation Stack</h2><p>A production DNSSEC validation deployment typically combines the validating resolver with additional services:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># Primary validating resolver</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>resolver</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>mvance/unbound:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;53:53/tcp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;53:53/udp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./unbound.conf:/opt/unbound/etc/unbound/unbound.conf:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># Secondary resolver for redundancy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>resolver-backup</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>mvance/unbound:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;54:53/tcp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;54:53/udp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./unbound-backup.conf:/opt/unbound/etc/unbound/unbound.conf:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># DNS monitoring dashboard</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>prometheus</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>prom/prometheus:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;9090:9090&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./prometheus.yml:/etc/prometheus/prometheus.yml:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>grafana</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>grafana/grafana:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;3000:3000&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>GF_SECURITY_ADMIN_PASSWORD=grafana-pass</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>prometheus</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=security-hardening-for-dnssec-resolvers>Security Hardening for DNSSEC Resolvers</h2><ul><li><strong>Run as unprivileged user</strong> — all three resolvers support dropping privileges after binding to port 53</li><li><strong>Chroot isolation</strong> — Unbound supports chroot by default; configure it to limit filesystem access</li><li><strong>Rate limiting</strong> — protect against DNS amplification attacks with per-client query limits</li><li><strong>DNSSEC validation logging</strong> — log validation failures for incident detection</li><li><strong>Regular trust anchor updates</strong> — automate root key rollover monitoring; all three resolvers handle this automatically but monitor for anomalies</li><li><strong>Split-horizon DNS</strong> — separate internal and external resolution views to prevent information leakage</li></ul><h2 id=why-self-host-dnssec-validation>Why Self-Host DNSSEC Validation?</h2><p>DNS is the phonebook of the internet — every network connection depends on it. Yet the standard DNS protocol provides no authentication, leaving it vulnerable to cache poisoning attacks that can silently redirect your users to malicious websites. DNSSEC solves this by adding cryptographic signatures to DNS records, but the protection only works if your resolver validates those signatures.</p><p>Running your own DNSSEC-validating resolver means you control the entire trust chain. You decide which trust anchors to accept, you can audit every validation decision, and you are not dependent on an upstream provider&rsquo;s DNSSEC configuration. In security-sensitive environments — financial services, healthcare, government — this level of control is not optional; it is a compliance requirement.</p><p>The three resolvers compared in this guide — Unbound, Knot Resolver, and PowerDNS Recursor — each bring different strengths to DNSSEC validation. Unbound provides the reference implementation with maximum security assurance. Knot Resolver offers unmatched customization through its Lua module system. PowerDNS Recursor delivers the highest throughput for query-heavy environments.</p><p>For authoritative DNS serving, see our <a href=../2026-04-18-powerdns-vs-bind9-vs-nsd-vs-knot-self-hosted-authoritative-dns-2026/>PowerDNS vs BIND vs Knot authoritative guide</a> and <a href=../2026-04-21-knot-resolver-vs-blocky-vs-dnscrypt-proxy-self-hosted-dns-over-quic-guide-2026/>DNS-over-QUIC setup</a>. For DNS-based threat blocking, our <a href=../2026-04-21-self-hosted-dns-firewall-rpz-unbound-powerdns-bind9-knot-guide-2026/>DNS firewall with RPZ guide</a> complements DNSSEC validation.</p><h2 id=faq>FAQ</h2><h3 id=what-is-the-difference-between-dnssec-validation-and-dnssec-signing>What is the difference between DNSSEC validation and DNSSEC signing?</h3><p>DNSSEC <strong>signing</strong> is performed by authoritative name servers — they add cryptographic signatures to their zone records. DNSSEC <strong>validation</strong> is performed by recursive resolvers — they verify those signatures when responding to client queries. You can validate DNSSEC responses without signing your own zones. This guide focuses on validation, which is what most self-hosters need.</p><h3 id=does-enabling-dnssec-validation-slow-down-dns-resolution>Does enabling DNSSEC validation slow down DNS resolution?</h3><p>DNSSEC validation adds minimal latency — typically 1-5 milliseconds per query — because the validator must fetch and verify DNSKEY and RRSIG records. However, these records are cached just like regular DNS records, so the overhead is only present on the first query to each domain. Subsequent queries to the same domain use cached validation results with zero additional latency.</p><h3 id=what-happens-when-dnssec-validation-fails-for-a-domain>What happens when DNSSEC validation fails for a domain?</h3><p>When a validating resolver detects a broken DNSSEC chain (expired signature, missing key, or algorithm mismatch), it returns SERVFAIL to the client. The <code>dnssec-return-bogus</code> option (Unbound) or <code>dnssec-log-bogus</code> (PowerDNS) can be configured to log these failures for debugging. Some resolvers offer a &ldquo;insecure&rdquo; mode that falls back to non-validating responses, but this defeats the security purpose and is not recommended.</p><h3 id=can-i-use-dnssec-validation-with-pi-hole-or-adguard-home>Can I use DNSSEC validation with Pi-hole or AdGuard Home?</h3><p>Yes. Both Pi-hole and AdGuard Home can use a DNSSEC-validating resolver as their upstream server. Configure Pi-hole to point to Unbound (typically on <code>127.0.0.1#5335</code>), and Pi-hole will forward queries through the validating resolver. AdGuard Home supports the same configuration. This gives you ad-blocking with DNSSEC validation in a single pipeline.</p><h3 id=how-do-i-handle-dnssec-validation-for-internal-domains>How do I handle DNSSEC validation for internal domains?</h3><p>Internal domains typically do not have DNSSEC signatures. You can configure all three resolvers with &ldquo;insecure&rdquo; zones for your internal domains — the resolver will skip DNSSEC validation for those zones while continuing to validate external domains. In Unbound, use <code>domain-insecure: "internal.example.com"</code>. In Knot Resolver, use <code>policy.add(policy.insecure(todname('internal.example.com.')))</code>. In PowerDNS Recursor, use <code>dnssec=off</code> for specific zones via Lua scripting.</p><h3 id=how-do-i-monitor-dnssec-validation-health>How do I monitor DNSSEC validation health?</h3><p>Unbound provides <code>unbound-control stats</code> which includes <code>num.val.good</code>, <code>num.val.bogus</code>, and <code>num.val.perdomain</code> counters. Knot Resolver exposes validation statistics via its HTTP API at <code>/stats</code>. PowerDNS Recursor provides detailed metrics via its webserver API at <code>/api/v1/servers/localhost/statistics</code>. All three can export metrics to Prometheus using their respective exporters for dashboarding in Grafana.</p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted DNSSEC Validation: Unbound vs Knot Resolver vs PowerDNS Recursor","description":"Self-hosted guide comparing open-source tools for infrastructure management and deployment.","datePublished":"2026-05-14","dateModified":"2026-05-14","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20DNSSEC%20Validation%3a%20Unbound%20vs%20Knot%20Resolver%20vs%20PowerDNS%20Recursor&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-14-self-hosted-dnssec-validation-unbound-knot-resolver-powerdns-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-14-self-hosted-dnssec-validation-unbound-knot-resolver-powerdns-guide%2f&t=Self-Hosted%20DNSSEC%20Validation%3a%20Unbound%20vs%20Knot%20Resolver%20vs%20PowerDNS%20Recursor" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/dns/ class=tag-link>Dns</a>
+<a href=/tags/dnssec/ class=tag-link>Dnssec</a>
+<a href=/tags/security/ class=tag-link>Security</a>
+<a href=/tags/networking/ class=tag-link>Networking</a>
+<a href=/tags/self-hosted/ class=tag-link>Self-Hosted</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-04-27-dnsdiag-vs-dnsrecon-vs-dnsenum-self-hosted-dns-testing-troubleshooting-guide-2026/ class=post-card><div class=post-tags><span class="tag tag-purple">Comparison</span></div><h3 class=post-title>DNSdiag vs DNSRecon vs DNSenum: Self-Hosted DNS Testing Tools 2026</h3><div class=post-excerpt>When managing self-hosted DNS infrastructure, knowing how to test, diagnose, and troubleshoot your nameservers is …</div><div class=post-footer><span class=post-date>Apr 27, 2026</span></div></a><a href=/posts/2026-04-24-self-hosted-split-horizon-dns-pihole-dnsmasq-coredns-bind9-guide-2026/ class=post-card><div class=post-tags><span class="tag tag-purple">Comparison</span></div><h3 class=post-title>Self-Hosted Split-Horizon DNS: Pi-hole vs dnsmasq vs CoreDNS vs BIND 9 Guide 2026</h3><div class=post-excerpt>Split-horizon DNS — also known as split-brain DNS or split-view DNS — is a configuration where a DNS server returns …</div><div class=post-footer><span class=post-date>Apr 24, 2026</span></div></a><a href=/posts/2026-04-24-iodine-vs-dnscat2-self-hosted-dns-tunnel-guide-2026/ class=post-card><div class=post-tags><span class="tag tag-purple">Comparison</span></div><h3 class=post-title>iodine vs dnscat2: Self-Hosted DNS Tunnel Comparison 2026</h3><div class=post-excerpt>When standard network ports are blocked by restrictive firewalls or corporate proxy policies, DNS queries often remain …</div><div class=post-footer><span class=post-date>Apr 24, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>

@@ -1,0 +1,530 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted DHCP Lease Analysis: Kea Lease Database vs ISC DHCP Logs vs Dnsmasq Lease Tools (2026) | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-05-15-self-hosted-dhcp-lease-analysis-kea-isc-dnsmasq-guide/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted DHCP Lease Analysis: Kea Lease Database vs ISC DHCP Logs vs Dnsmasq Lease Tools (2026)"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-05-15-self-hosted-dhcp-lease-analysis-kea-isc-dnsmasq-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-05-15T00:00:00Z"><meta property="article:modified_time" content="2026-05-15T00:00:00Z"><meta property="article:tag" content="dhcp"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted DHCP Lease Analysis: Kea Lease Database vs ISC DHCP Logs vs Dnsmasq Lease Tools (2026)"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted DHCP Lease Analysis: Kea Lease Database vs ISC DHCP Logs vs Dnsmasq Lease Tools (2026)","description":"\u003cp\u003eDynamic Host Configuration Protocol (DHCP) is the backbone of IP address management in every network from home labs to enterprise data centers. But when devices cannot connect, IP conflicts arise, or you need to audit address assignments, understanding what your DHCP server has handed out — and when — becomes critical.\u003c\/p\u003e","datePublished":"2026-05-15T00:00:00Z","dateModified":"2026-05-15T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-05-15-self-hosted-dhcp-lease-analysis-kea-isc-dnsmasq-guide\/"},"keywords":["dhcp","networking","lease-analysis","kea","dnsmasq","self-hosted"],"articleSection":"dhcp","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted DHCP Lease Analysis: Kea Lease Database vs ISC DHCP Logs vs Dnsmasq Lease Tools (2026)","item":"https:\/\/www.pistack.xyz\/posts\/2026-05-15-self-hosted-dhcp-lease-analysis-kea-isc-dnsmasq-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Dhcp</span>
+<span class="tag tag-purple">Networking</span>
+<span class="tag tag-purple">Lease-Analysis</span></div><h1>Self-Hosted DHCP Lease Analysis: Kea Lease Database vs ISC DHCP Logs vs Dnsmasq Lease Tools (2026)</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>May 15, 2026</span>
+<span>11 min read</span>
+<span>Updated May 15, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#what-is-dhcp-lease-analysis>What Is DHCP Lease Analysis?</a></li><li><a href=#isc-kea-modern-dhcp-with-queryable-lease-database>ISC Kea: Modern DHCP with Queryable Lease Database</a><ul><li><a href=#lease-database-backends>Lease Database Backends</a></li><li><a href=#docker-compose-configuration>Docker Compose Configuration</a></li><li><a href=#kea-lease-database-schema>Kea Lease Database Schema</a></li><li><a href=#querying-kea-leases>Querying Kea Leases</a></li><li><a href=#kea-rest-api-for-lease-queries>Kea REST API for Lease Queries</a></li></ul></li><li><a href=#isc-dhcp-server-log-based-lease-analysis>ISC DHCP Server: Log-Based Lease Analysis</a><ul><li><a href=#lease-file-format>Lease File Format</a></li><li><a href=#parsing-isc-dhcp-leases-with-python>Parsing ISC DHCP Leases with Python</a></li><li><a href=#log-based-lease-history>Log-Based Lease History</a></li></ul></li><li><a href=#dnsmasq-lightweight-dhcp-with-simple-lease-file>Dnsmasq: Lightweight DHCP with Simple Lease File</a><ul><li><a href=#lease-file-format-1>Lease File Format</a></li><li><a href=#docker-compose-configuration-1>Docker Compose Configuration</a></li><li><a href=#dnsmasq-dhcp-configuration>Dnsmasq DHCP Configuration</a></li><li><a href=#analyzing-dnsmasq-leases>Analyzing Dnsmasq Leases</a></li></ul></li><li><a href=#comparison-table>Comparison Table</a></li><li><a href=#choosing-the-right-dhcp-lease-analysis-approach>Choosing the Right DHCP Lease Analysis Approach</a></li><li><a href=#building-a-dhcp-lease-dashboard>Building a DHCP Lease Dashboard</a></li><li><a href=#why-self-host-your-dhcp-lease-analysis>Why Self-Host Your DHCP Lease Analysis?</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#how-do-i-find-which-device-has-a-specific-ip-address>How do I find which device has a specific IP address?</a></li><li><a href=#why-are-there-more-dhcp-leases-than-active-devices>Why are there more DHCP leases than active devices?</a></li><li><a href=#how-do-i-detect-ip-address-conflicts-in-dhcp>How do I detect IP address conflicts in DHCP?</a></li><li><a href=#can-i-export-dhcp-lease-data-to-csv-for-reporting>Can I export DHCP lease data to CSV for reporting?</a></li><li><a href=#what-is-the-maximum-number-of-dhcp-leases-kea-can-handle>What is the maximum number of DHCP leases Kea can handle?</a></li><li><a href=#should-i-migrate-from-isc-dhcp-to-kea>Should I migrate from ISC DHCP to Kea?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><p>Dynamic Host Configuration Protocol (DHCP) is the backbone of IP address management in every network from home labs to enterprise data centers. But when devices cannot connect, IP conflicts arise, or you need to audit address assignments, understanding what your DHCP server has handed out — and when — becomes critical.</p><p>This guide compares three open-source approaches to DHCP lease analysis: the <strong>ISC Kea lease database</strong>, <strong>ISC DHCP server log parsing</strong>, and <strong>Dnsmasq lease file analysis</strong>. Each method offers different visibility into DHCP lease state, from real-time database queries to historical log-based forensics.</p><h2 id=what-is-dhcp-lease-analysis>What Is DHCP Lease Analysis?</h2><p>DHCP lease analysis involves examining the records of IP address assignments made by your DHCP server. A lease record typically contains:</p><ul><li><strong>Client MAC address</strong> — The hardware identifier of the requesting device</li><li><strong>Assigned IP address</strong> — The IPv4 or IPv6 address leased to the client</li><li><strong>Lease start time</strong> — When the address was assigned</li><li><strong>Lease expiry time</strong> — When the lease expires and the address becomes available again</li><li><strong>Client hostname</strong> — The device&rsquo;s reported hostname (if provided)</li><li><strong>Lease state</strong> — Active, expired, released, or abandoned</li></ul><p>Understanding these records helps network administrators troubleshoot connectivity issues, plan IP address pool sizing, detect rogue DHCP clients, and maintain accurate network inventory.</p><h2 id=isc-kea-modern-dhcp-with-queryable-lease-database>ISC Kea: Modern DHCP with Queryable Lease Database</h2><p><a href=https://github.com/isc-projects/kea>ISC Kea</a> is ISC&rsquo;s next-generation DHCP server, designed to replace the legacy ISC DHCP server. Kea stores lease information in a queryable database (Memfile, MySQL, PostgreSQL, or Cassandra), enabling real-time lease analysis through SQL queries and a REST API.</p><p><strong>GitHub:</strong> <a href=https://github.com/isc-projects/kea>isc-projects/kea</a> — 714+ stars, actively developed</p><h3 id=lease-database-backends>Lease Database Backends</h3><p>Kea supports multiple storage backends for lease data:</p><ul><li><strong>Memfile</strong> — CSV files on disk, suitable for small deployments</li><li><strong>MySQL/MariaDB</strong> — Full relational database with indexing</li><li><strong>PostgreSQL</strong> — Production-grade with advanced query capabilities</li><li><strong>Cassandra</strong> — Distributed database for large-scale deployments</li></ul><h3 id=docker-compose-configuration>Docker Compose Configuration</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>kea-dhcp</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>kea:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>kea-dhcp</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>network_mode</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;host&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>cap_add</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>NET_ADMIN</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>NET_RAW</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./kea/etc:/etc/kea</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./kea/log:/var/log/kea</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>kea-db</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>kea-db</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>postgres:16</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>kea-db</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_DB</span><span class=p>:</span><span class=w> </span><span class=l>kea</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_USER</span><span class=p>:</span><span class=w> </span><span class=l>kea</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_PASSWORD</span><span class=p>:</span><span class=w> </span><span class=l>kea-secret-password</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>kea-db-data:/var/lib/postgresql/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./kea/init-db.sql:/docker-entrypoint-initdb.d/init.sql</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>kea-db-data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=kea-lease-database-schema>Kea Lease Database Schema</h3><p>When using PostgreSQL, Kea creates the following lease tables:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-sql data-lang=sql><span class=line><span class=cl><span class=c1>-- IPv4 leases table
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>CREATE</span><span class=w> </span><span class=k>TABLE</span><span class=w> </span><span class=n>lease4</span><span class=w> </span><span class=p>(</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>address</span><span class=w> </span><span class=nb>NUMERIC</span><span class=p>(</span><span class=mi>39</span><span class=p>,</span><span class=mi>0</span><span class=p>)</span><span class=w> </span><span class=k>NOT</span><span class=w> </span><span class=k>NULL</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>hwaddr</span><span class=w> </span><span class=n>BYTEA</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>client_id</span><span class=w> </span><span class=n>BYTEA</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>valid_lifetime</span><span class=w> </span><span class=nb>INTEGER</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>expire</span><span class=w> </span><span class=k>TIMESTAMP</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>subnet_id</span><span class=w> </span><span class=nb>INTEGER</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>fqdn_fwd</span><span class=w> </span><span class=nb>BOOLEAN</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>fqdn_rev</span><span class=w> </span><span class=nb>BOOLEAN</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>hostname</span><span class=w> </span><span class=nb>TEXT</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=k>state</span><span class=w> </span><span class=nb>INTEGER</span><span class=w> </span><span class=k>DEFAULT</span><span class=w> </span><span class=mi>0</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>user_context</span><span class=w> </span><span class=nb>TEXT</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>cltt</span><span class=w> </span><span class=k>TIMESTAMP</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=k>PRIMARY</span><span class=w> </span><span class=k>KEY</span><span class=w> </span><span class=p>(</span><span class=n>address</span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>);</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c1>-- IPv6 leases table
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>CREATE</span><span class=w> </span><span class=k>TABLE</span><span class=w> </span><span class=n>lease6</span><span class=w> </span><span class=p>(</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>address</span><span class=w> </span><span class=nb>NUMERIC</span><span class=p>(</span><span class=mi>39</span><span class=p>,</span><span class=mi>0</span><span class=p>)</span><span class=w> </span><span class=k>NOT</span><span class=w> </span><span class=k>NULL</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>duid</span><span class=w> </span><span class=n>BYTEA</span><span class=w> </span><span class=k>NOT</span><span class=w> </span><span class=k>NULL</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>valid_lifetime</span><span class=w> </span><span class=nb>INTEGER</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>expire</span><span class=w> </span><span class=k>TIMESTAMP</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>subnet_id</span><span class=w> </span><span class=nb>INTEGER</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>pref_lifetime</span><span class=w> </span><span class=nb>INTEGER</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>lease_type</span><span class=w> </span><span class=nb>INTEGER</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>iaid</span><span class=w> </span><span class=n>BYTEA</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>fqdn_fwd</span><span class=w> </span><span class=nb>BOOLEAN</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>fqdn_rev</span><span class=w> </span><span class=nb>BOOLEAN</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>hostname</span><span class=w> </span><span class=nb>TEXT</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=k>state</span><span class=w> </span><span class=nb>INTEGER</span><span class=w> </span><span class=k>DEFAULT</span><span class=w> </span><span class=mi>0</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>user_context</span><span class=w> </span><span class=nb>TEXT</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>cltt</span><span class=w> </span><span class=k>TIMESTAMP</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=k>PRIMARY</span><span class=w> </span><span class=k>KEY</span><span class=w> </span><span class=p>(</span><span class=n>address</span><span class=p>,</span><span class=w> </span><span class=n>duid</span><span class=p>,</span><span class=w> </span><span class=n>iaid</span><span class=p>,</span><span class=w> </span><span class=n>lease_type</span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>);</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=querying-kea-leases>Querying Kea Leases</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-sql data-lang=sql><span class=line><span class=cl><span class=c1>-- Find all active leases in a subnet
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>SELECT</span><span class=w> </span><span class=n>address</span><span class=p>,</span><span class=w> </span><span class=n>hostname</span><span class=p>,</span><span class=w> </span><span class=n>hwaddr</span><span class=p>,</span><span class=w> </span><span class=n>expire</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>FROM</span><span class=w> </span><span class=n>lease4</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>WHERE</span><span class=w> </span><span class=n>subnet_id</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=mi>1</span><span class=w> </span><span class=k>AND</span><span class=w> </span><span class=k>state</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=mi>0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>ORDER</span><span class=w> </span><span class=k>BY</span><span class=w> </span><span class=n>expire</span><span class=w> </span><span class=k>ASC</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c1>-- Find expired leases (candidates for cleanup)
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>SELECT</span><span class=w> </span><span class=n>address</span><span class=p>,</span><span class=w> </span><span class=n>hostname</span><span class=p>,</span><span class=w> </span><span class=n>expire</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>FROM</span><span class=w> </span><span class=n>lease4</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>WHERE</span><span class=w> </span><span class=n>expire</span><span class=w> </span><span class=o>&lt;</span><span class=w> </span><span class=n>NOW</span><span class=p>()</span><span class=w> </span><span class=k>AND</span><span class=w> </span><span class=k>state</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=mi>0</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c1>-- Count leases by subnet
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>SELECT</span><span class=w> </span><span class=n>subnet_id</span><span class=p>,</span><span class=w> </span><span class=k>COUNT</span><span class=p>(</span><span class=o>*</span><span class=p>)</span><span class=w> </span><span class=k>as</span><span class=w> </span><span class=n>lease_count</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>FROM</span><span class=w> </span><span class=n>lease4</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>WHERE</span><span class=w> </span><span class=k>state</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=mi>0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>GROUP</span><span class=w> </span><span class=k>BY</span><span class=w> </span><span class=n>subnet_id</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c1>-- Find a specific device by MAC address
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>SELECT</span><span class=w> </span><span class=n>address</span><span class=p>,</span><span class=w> </span><span class=n>hostname</span><span class=p>,</span><span class=w> </span><span class=n>expire</span><span class=p>,</span><span class=w> </span><span class=n>cltt</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>FROM</span><span class=w> </span><span class=n>lease4</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>WHERE</span><span class=w> </span><span class=n>hwaddr</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>decode</span><span class=p>(</span><span class=s1>&#39;001122334455&#39;</span><span class=p>,</span><span class=w> </span><span class=s1>&#39;hex&#39;</span><span class=p>);</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c1>-- Lease utilization percentage
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>SELECT</span><span class=w> 
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>subnet_id</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=k>COUNT</span><span class=p>(</span><span class=o>*</span><span class=p>)</span><span class=w> </span><span class=k>as</span><span class=w> </span><span class=n>used_leases</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=p>(</span><span class=k>SELECT</span><span class=w> </span><span class=k>COUNT</span><span class=p>(</span><span class=o>*</span><span class=p>)</span><span class=w> </span><span class=k>FROM</span><span class=w> </span><span class=n>lease4</span><span class=p>)</span><span class=w> </span><span class=o>*</span><span class=w> </span><span class=mi>100</span><span class=p>.</span><span class=mi>0</span><span class=w> </span><span class=o>/</span><span class=w> 
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=p>(</span><span class=k>SELECT</span><span class=w> </span><span class=k>COUNT</span><span class=p>(</span><span class=o>*</span><span class=p>)</span><span class=w> </span><span class=k>FROM</span><span class=w> </span><span class=n>lease4</span><span class=w> </span><span class=k>WHERE</span><span class=w> </span><span class=k>state</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=mi>0</span><span class=w> </span><span class=k>OR</span><span class=w> </span><span class=k>state</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=mi>1</span><span class=p>)</span><span class=w> </span><span class=k>as</span><span class=w> </span><span class=n>utilization_pct</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>FROM</span><span class=w> </span><span class=n>lease4</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>GROUP</span><span class=w> </span><span class=k>BY</span><span class=w> </span><span class=n>subnet_id</span><span class=p>;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=kea-rest-api-for-lease-queries>Kea REST API for Lease Queries</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Get lease4 collection</span>
+</span></span><span class=line><span class=cl>curl -X POST -d <span class=s1>&#39;{
+</span></span></span><span class=line><span class=cl><span class=s1>  &#34;command&#34;: &#34;lease4-get-all&#34;,
+</span></span></span><span class=line><span class=cl><span class=s1>  &#34;service&#34;: [&#34;dhcp4&#34;]
+</span></span></span><span class=line><span class=cl><span class=s1>}&#39;</span> http://localhost:8000/ <span class=p>|</span> python3 -m json.tool
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Get specific lease by IP</span>
+</span></span><span class=line><span class=cl>curl -X POST -d <span class=s1>&#39;{
+</span></span></span><span class=line><span class=cl><span class=s1>  &#34;command&#34;: &#34;lease4-get&#34;,
+</span></span></span><span class=line><span class=cl><span class=s1>  &#34;arguments&#34;: {
+</span></span></span><span class=line><span class=cl><span class=s1>    &#34;ip-address&#34;: &#34;192.168.1.100&#34;
+</span></span></span><span class=line><span class=cl><span class=s1>  },
+</span></span></span><span class=line><span class=cl><span class=s1>  &#34;service&#34;: [&#34;dhcp4&#34;]
+</span></span></span><span class=line><span class=cl><span class=s1>}&#39;</span> http://localhost:8000/
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Get lease count by subnet</span>
+</span></span><span class=line><span class=cl>curl -X POST -d <span class=s1>&#39;{
+</span></span></span><span class=line><span class=cl><span class=s1>  &#34;command&#34;: &#34;statistic-get&#34;,
+</span></span></span><span class=line><span class=cl><span class=s1>  &#34;arguments&#34;: {
+</span></span></span><span class=line><span class=cl><span class=s1>    &#34;name&#34;: [&#34;total-clients&#34;]
+</span></span></span><span class=line><span class=cl><span class=s1>  }
+</span></span></span><span class=line><span class=cl><span class=s1>}&#39;</span> http://localhost:8000/
+</span></span></code></pre></td></tr></table></div></div><h2 id=isc-dhcp-server-log-based-lease-analysis>ISC DHCP Server: Log-Based Lease Analysis</h2><p>The legacy <strong>ISC DHCP server</strong> (dhcpd) stores lease information in a flat text file (<code>/var/lib/dhcp/dhcpd.leases</code>) and writes assignment events to syslog. While the server is no longer actively developed (superseded by Kea), it remains widely deployed in production networks.</p><h3 id=lease-file-format>Lease File Format</h3><p>The ISC DHCP lease file uses a simple text format:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>lease 192.168.1.100 {
+</span></span><span class=line><span class=cl>  starts 4 2026/05/15 10:30:00;
+</span></span><span class=line><span class=cl>  ends 5 2026/05/16 10:30:00;
+</span></span><span class=line><span class=cl>  tstp 5 2026/05/16 10:30:00;
+</span></span><span class=line><span class=cl>  cltt 4 2026/05/15 10:30:00;
+</span></span><span class=line><span class=cl>  binding state active;
+</span></span><span class=line><span class=cl>  next binding state free;
+</span></span><span class=line><span class=cl>  rewind binding state free;
+</span></span><span class=line><span class=cl>  hardware ethernet 00:11:22:33:44:55;
+</span></span><span class=line><span class=cl>  uid &#34;&#34;3DU&#34;;
+</span></span><span class=line><span class=cl>  client-hostname &#34;workstation-01&#34;;
+</span></span><span class=line><span class=cl>}
+</span></span></code></pre></td></tr></table></div></div><h3 id=parsing-isc-dhcp-leases-with-python>Parsing ISC DHCP Leases with Python</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=ch>#!/usr/bin/env python3</span>
+</span></span><span class=line><span class=cl><span class=s2>&#34;&#34;&#34;Parse ISC DHCP lease file and generate report.&#34;&#34;&#34;</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>re</span>
+</span></span><span class=line><span class=cl><span class=kn>from</span> <span class=nn>datetime</span> <span class=kn>import</span> <span class=n>datetime</span>
+</span></span><span class=line><span class=cl><span class=kn>from</span> <span class=nn>collections</span> <span class=kn>import</span> <span class=n>defaultdict</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>LEASE_FILE</span> <span class=o>=</span> <span class=s2>&#34;/var/lib/dhcp/dhcpd.leases&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>parse_leases</span><span class=p>(</span><span class=n>filepath</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>    <span class=n>leases</span> <span class=o>=</span> <span class=p>[]</span>
+</span></span><span class=line><span class=cl>    <span class=k>with</span> <span class=nb>open</span><span class=p>(</span><span class=n>filepath</span><span class=p>)</span> <span class=k>as</span> <span class=n>f</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>        <span class=n>content</span> <span class=o>=</span> <span class=n>f</span><span class=o>.</span><span class=n>read</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    <span class=n>blocks</span> <span class=o>=</span> <span class=n>content</span><span class=o>.</span><span class=n>split</span><span class=p>(</span><span class=s2>&#34;lease &#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=n>block</span> <span class=ow>in</span> <span class=n>blocks</span><span class=p>[</span><span class=mi>1</span><span class=p>:]:</span>  <span class=c1># Skip header</span>
+</span></span><span class=line><span class=cl>        <span class=n>ip_match</span> <span class=o>=</span> <span class=n>re</span><span class=o>.</span><span class=k>match</span><span class=p>(</span><span class=sa>r</span><span class=s2>&#34;([\d.]+)&#34;</span><span class=p>,</span> <span class=n>block</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=k>if</span> <span class=ow>not</span> <span class=n>ip_match</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>            <span class=k>continue</span>
+</span></span><span class=line><span class=cl>        <span class=n>ip</span> <span class=o>=</span> <span class=n>ip_match</span><span class=o>.</span><span class=n>group</span><span class=p>(</span><span class=mi>1</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        
+</span></span><span class=line><span class=cl>        <span class=n>hw_match</span> <span class=o>=</span> <span class=n>re</span><span class=o>.</span><span class=n>search</span><span class=p>(</span><span class=sa>r</span><span class=s2>&#34;hardware ethernet ([\da-f:]+)&#34;</span><span class=p>,</span> <span class=n>block</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=n>host_match</span> <span class=o>=</span> <span class=n>re</span><span class=o>.</span><span class=n>search</span><span class=p>(</span><span class=sa>r</span><span class=s1>&#39;client-hostname &#34;([^&#34;]+)&#34;&#39;</span><span class=p>,</span> <span class=n>block</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=n>state_match</span> <span class=o>=</span> <span class=n>re</span><span class=o>.</span><span class=n>search</span><span class=p>(</span><span class=sa>r</span><span class=s2>&#34;binding state (\w+)&#34;</span><span class=p>,</span> <span class=n>block</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=n>ends_match</span> <span class=o>=</span> <span class=n>re</span><span class=o>.</span><span class=n>search</span><span class=p>(</span><span class=sa>r</span><span class=s2>&#34;ends (\d.+?);&#34;</span><span class=p>,</span> <span class=n>block</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        
+</span></span><span class=line><span class=cl>        <span class=n>leases</span><span class=o>.</span><span class=n>append</span><span class=p>({</span>
+</span></span><span class=line><span class=cl>            <span class=s2>&#34;ip&#34;</span><span class=p>:</span> <span class=n>ip</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>            <span class=s2>&#34;mac&#34;</span><span class=p>:</span> <span class=n>hw_match</span><span class=o>.</span><span class=n>group</span><span class=p>(</span><span class=mi>1</span><span class=p>)</span> <span class=k>if</span> <span class=n>hw_match</span> <span class=k>else</span> <span class=s2>&#34;unknown&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>            <span class=s2>&#34;hostname&#34;</span><span class=p>:</span> <span class=n>host_match</span><span class=o>.</span><span class=n>group</span><span class=p>(</span><span class=mi>1</span><span class=p>)</span> <span class=k>if</span> <span class=n>host_match</span> <span class=k>else</span> <span class=s2>&#34;unknown&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>            <span class=s2>&#34;state&#34;</span><span class=p>:</span> <span class=n>state_match</span><span class=o>.</span><span class=n>group</span><span class=p>(</span><span class=mi>1</span><span class=p>)</span> <span class=k>if</span> <span class=n>state_match</span> <span class=k>else</span> <span class=s2>&#34;unknown&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>            <span class=s2>&#34;ends&#34;</span><span class=p>:</span> <span class=n>ends_match</span><span class=o>.</span><span class=n>group</span><span class=p>(</span><span class=mi>1</span><span class=p>)</span> <span class=k>if</span> <span class=n>ends_match</span> <span class=k>else</span> <span class=s2>&#34;unknown&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=p>})</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=n>leases</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Generate summary</span>
+</span></span><span class=line><span class=cl><span class=n>leases</span> <span class=o>=</span> <span class=n>parse_leases</span><span class=p>(</span><span class=n>LEASE_FILE</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=n>active</span> <span class=o>=</span> <span class=p>[</span><span class=n>l</span> <span class=k>for</span> <span class=n>l</span> <span class=ow>in</span> <span class=n>leases</span> <span class=k>if</span> <span class=n>l</span><span class=p>[</span><span class=s2>&#34;state&#34;</span><span class=p>]</span> <span class=o>==</span> <span class=s2>&#34;active&#34;</span><span class=p>]</span>
+</span></span><span class=line><span class=cl><span class=n>hosts</span> <span class=o>=</span> <span class=n>defaultdict</span><span class=p>(</span><span class=nb>list</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=k>for</span> <span class=n>l</span> <span class=ow>in</span> <span class=n>active</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>    <span class=n>hosts</span><span class=p>[</span><span class=n>l</span><span class=p>[</span><span class=s2>&#34;hostname&#34;</span><span class=p>]]</span><span class=o>.</span><span class=n>append</span><span class=p>(</span><span class=n>l</span><span class=p>[</span><span class=s2>&#34;ip&#34;</span><span class=p>])</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nb>print</span><span class=p>(</span><span class=sa>f</span><span class=s2>&#34;Total leases: </span><span class=si>{</span><span class=nb>len</span><span class=p>(</span><span class=n>leases</span><span class=p>)</span><span class=si>}</span><span class=s2>&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=nb>print</span><span class=p>(</span><span class=sa>f</span><span class=s2>&#34;Active leases: </span><span class=si>{</span><span class=nb>len</span><span class=p>(</span><span class=n>active</span><span class=p>)</span><span class=si>}</span><span class=s2>&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=nb>print</span><span class=p>(</span><span class=sa>f</span><span class=s2>&#34;Unique hostnames: </span><span class=si>{</span><span class=nb>len</span><span class=p>(</span><span class=n>hosts</span><span class=p>)</span><span class=si>}</span><span class=s2>&#34;</span><span class=p>)</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=log-based-lease-history>Log-Based Lease History</h3><p>ISC DHCP writes lease events to syslog:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Find all DHCP assignments in the last 24 hours</span>
+</span></span><span class=line><span class=cl>grep <span class=s2>&#34;DHCPACK&#34;</span> /var/log/syslog <span class=p>|</span> tail -50
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Find DHCPDECLINE events (clients rejecting offers)</span>
+</span></span><span class=line><span class=cl>grep <span class=s2>&#34;DHCPDECLINE&#34;</span> /var/log/syslog
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Track lease renewal patterns</span>
+</span></span><span class=line><span class=cl>grep <span class=s2>&#34;DHCPREQUEST&#34;</span> /var/log/syslog <span class=p>|</span> awk <span class=s1>&#39;{print $1, $2, $3, $NF}&#39;</span> <span class=p>|</span> sort <span class=p>|</span> uniq -c <span class=p>|</span> sort -rn
+</span></span></code></pre></td></tr></table></div></div><h2 id=dnsmasq-lightweight-dhcp-with-simple-lease-file>Dnsmasq: Lightweight DHCP with Simple Lease File</h2><p><a href=https://thekelleys.org.uk/dnsmasq/>Dnsmasq</a> is a lightweight DNS/DHCP/TFTP server commonly used in home networks, small offices, and as a DHCP server in container environments. Its lease file is simpler than ISC DHCP&rsquo;s but contains all essential information.</p><h3 id=lease-file-format-1>Lease File Format</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>1715857200 00:11:22:33:44:55 192.168.1.100 workstation-01 01:00:11:22:33:44:55
+</span></span><span class=line><span class=cl>1715860800 00:aa:bb:cc:dd:ee 192.168.1.101 laptop-02 01:00:aa:bb:cc:dd:ee
+</span></span></code></pre></td></tr></table></div></div><p>Format: <code>timestamp mac_address ip_address hostname client_id</code></p><h3 id=docker-compose-configuration-1>Docker Compose Configuration</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>dnsmasq</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>jpillora/dnsmasq:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>dnsmasq</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>cap_add</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>NET_ADMIN</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>network_mode</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;host&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./dnsmasq/dnsmasq.conf:/etc/dnsmasq.conf</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./dnsmasq/hosts:/etc/ethers</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./dnsmasq/leases:/var/lib/misc</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=dnsmasq-dhcp-configuration>Dnsmasq DHCP Configuration</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=c1># /etc/dnsmasq.conf</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># DHCP range</span>
+</span></span><span class=line><span class=cl><span class=na>dhcp-range</span><span class=o>=</span><span class=s>192.168.1.100,192.168.1.200,255.255.255.0,24h</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Lease file location</span>
+</span></span><span class=line><span class=cl><span class=na>dhcp-leasefile</span><span class=o>=</span><span class=s>/var/lib/misc/dnsmasq.leases</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Set lease time</span>
+</span></span><span class=line><span class=cl><span class=na>dhcp-lease-max</span><span class=o>=</span><span class=s>256</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># DHCP options</span>
+</span></span><span class=line><span class=cl><span class=na>dhcp-option</span><span class=o>=</span><span class=s>3,192.168.1.1</span>
+</span></span><span class=line><span class=cl><span class=na>dhcp-option</span><span class=o>=</span><span class=s>6,8.8.8.8,8.8.4.4</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Static leases</span>
+</span></span><span class=line><span class=cl><span class=na>dhcp-host</span><span class=o>=</span><span class=s>00:11:22:33:44:55,192.168.1.50,server-01</span>
+</span></span><span class=line><span class=cl><span class=na>dhcp-host</span><span class=o>=</span><span class=s>00:aa:bb:cc:dd:ee,192.168.1.51,server-02</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=analyzing-dnsmasq-leases>Analyzing Dnsmasq Leases</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># View current leases</span>
+</span></span><span class=line><span class=cl>cat /var/lib/misc/dnsmasq.leases
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Count active leases</span>
+</span></span><span class=line><span class=cl>wc -l /var/lib/misc/dnsmasq.leases
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Find devices by hostname</span>
+</span></span><span class=line><span class=cl>grep <span class=s2>&#34;workstation&#34;</span> /var/lib/misc/dnsmasq.leases
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Convert timestamps to readable dates</span>
+</span></span><span class=line><span class=cl>awk <span class=s1>&#39;{cmd=&#34;date -d @&#34;$1; cmd | getline dt; close(cmd); print dt, $2, $3, $4}&#39;</span>     /var/lib/misc/dnsmasq.leases
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Find lease utilization</span>
+</span></span><span class=line><span class=cl><span class=nv>TOTAL_POOL</span><span class=o>=</span><span class=m>101</span>
+</span></span><span class=line><span class=cl><span class=nv>CURRENT</span><span class=o>=</span><span class=k>$(</span>wc -l &lt; /var/lib/misc/dnsmasq.leases<span class=k>)</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;Utilization: </span><span class=nv>$CURRENT</span><span class=s2> / </span><span class=nv>$TOTAL_POOL</span><span class=s2> (</span><span class=k>$((</span> CURRENT <span class=o>*</span> <span class=m>100</span> <span class=o>/</span> TOTAL_POOL <span class=k>))</span><span class=s2>%)&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=comparison-table>Comparison Table</h2><table><thead><tr><th>Feature</th><th>ISC Kea</th><th>ISC DHCP Server</th><th>Dnsmasq</th></tr></thead><tbody><tr><td><strong>GitHub Stars</strong></td><td>714+</td><td>Legacy (EOL)</td><td>N/A (project site)</td></tr><tr><td><strong>Lease Storage</strong></td><td>Database (SQL/Memfile)</td><td>Flat text file</td><td>Flat text file</td></tr><tr><td><strong>Query Interface</strong></td><td>SQL + REST API</td><td>File parsing + logs</td><td>File parsing</td></tr><tr><td><strong>Real-Time Queries</strong></td><td>Yes</td><td>No</td><td>No</td></tr><tr><td><strong>Historical Analysis</strong></td><td>Via database queries</td><td>Via syslog parsing</td><td>Limited</td></tr><tr><td><strong>DHCPv4</strong></td><td>Yes</td><td>Yes</td><td>Yes</td></tr><tr><td><strong>DHCPv6</strong></td><td>Yes</td><td>Yes</td><td>Yes</td></tr><tr><td><strong>Lease Hooks</strong></td><td>Yes (hook libraries)</td><td>Limited</td><td>No</td></tr><tr><td><strong>HA Support</strong></td><td>Yes (native)</td><td>Via failover protocol</td><td>No</td></tr><tr><td><strong>Pool Sizing Reports</strong></td><td>Via SQL queries</td><td>Manual calculation</td><td>Manual calculation</td></tr><tr><td><strong>Conflict Detection</strong></td><td>Yes</td><td>Partial</td><td>No</td></tr><tr><td><strong>Active Development</strong></td><td>Yes</td><td>No (EOL since 2023)</td><td>Yes</td></tr><tr><td><strong>Best For</strong></td><td>Enterprise networks</td><td>Legacy infrastructure</td><td>Home/small networks</td></tr></tbody></table><h2 id=choosing-the-right-dhcp-lease-analysis-approach>Choosing the Right DHCP Lease Analysis Approach</h2><p><strong>Use ISC Kea when:</strong> You need production-grade DHCP with queryable lease data. The database backend enables real-time lease analysis, automated reporting, and integration with IPAM systems. Kea&rsquo;s REST API allows programmatic lease management from monitoring dashboards.</p><p><strong>Use ISC DHCP log analysis when:</strong> You are working with a legacy deployment that has not yet migrated to Kea. Log-based analysis can reconstruct historical lease activity but requires custom parsing scripts and cannot provide real-time queries.</p><p><strong>Use Dnsmasq lease file analysis when:</strong> You run a small network with fewer than 256 DHCP clients. The simple lease file format is easy to parse manually or with basic scripts, but lacks the analytical capabilities of a database backend.</p><h2 id=building-a-dhcp-lease-dashboard>Building a DHCP Lease Dashboard</h2><p>For Kea deployments, you can build a real-time dashboard by querying the lease database and feeding results to Grafana:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=ch>#!/usr/bin/env python3</span>
+</span></span><span class=line><span class=cl><span class=s2>&#34;&#34;&#34;Export Kea lease metrics for Prometheus.&#34;&#34;&#34;</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>psycopg2</span>
+</span></span><span class=line><span class=cl><span class=kn>from</span> <span class=nn>prometheus_client</span> <span class=kn>import</span> <span class=n>Gauge</span><span class=p>,</span> <span class=n>generate_latest</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>ACTIVE_LEASES</span> <span class=o>=</span> <span class=n>Gauge</span><span class=p>(</span><span class=s2>&#34;kea_dhcp_active_leases&#34;</span><span class=p>,</span> <span class=s2>&#34;Active DHCP leases&#34;</span><span class=p>,</span> <span class=p>[</span><span class=s2>&#34;subnet_id&#34;</span><span class=p>])</span>
+</span></span><span class=line><span class=cl><span class=n>POOL_UTILIZATION</span> <span class=o>=</span> <span class=n>Gauge</span><span class=p>(</span><span class=s2>&#34;kea_dhcp_pool_utilization&#34;</span><span class=p>,</span> <span class=s2>&#34;DHCP pool utilization %&#34;</span><span class=p>,</span> <span class=p>[</span><span class=s2>&#34;subnet_id&#34;</span><span class=p>])</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>export_metrics</span><span class=p>():</span>
+</span></span><span class=line><span class=cl>    <span class=n>conn</span> <span class=o>=</span> <span class=n>psycopg2</span><span class=o>.</span><span class=n>connect</span><span class=p>(</span><span class=s2>&#34;dbname=kea user=kea password=kea-secret&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>cur</span> <span class=o>=</span> <span class=n>conn</span><span class=o>.</span><span class=n>cursor</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    <span class=n>cur</span><span class=o>.</span><span class=n>execute</span><span class=p>(</span><span class=s2>&#34;&#34;&#34;
+</span></span></span><span class=line><span class=cl><span class=s2>        SELECT subnet_id, COUNT(*) 
+</span></span></span><span class=line><span class=cl><span class=s2>        FROM lease4 
+</span></span></span><span class=line><span class=cl><span class=s2>        WHERE state = 0 
+</span></span></span><span class=line><span class=cl><span class=s2>        GROUP BY subnet_id
+</span></span></span><span class=line><span class=cl><span class=s2>    &#34;&#34;&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=n>subnet_id</span><span class=p>,</span> <span class=n>count</span> <span class=ow>in</span> <span class=n>cur</span><span class=o>.</span><span class=n>fetchall</span><span class=p>():</span>
+</span></span><span class=line><span class=cl>        <span class=n>ACTIVE_LEASES</span><span class=o>.</span><span class=n>labels</span><span class=p>(</span><span class=n>subnet_id</span><span class=o>=</span><span class=nb>str</span><span class=p>(</span><span class=n>subnet_id</span><span class=p>))</span><span class=o>.</span><span class=n>set</span><span class=p>(</span><span class=n>count</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    <span class=n>conn</span><span class=o>.</span><span class=n>close</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=n>generate_latest</span><span class=p>()</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=why-self-host-your-dhcp-lease-analysis>Why Self-Host Your DHCP Lease Analysis?</h2><p>Understanding your DHCP lease data is fundamental to network operations. When devices fail to obtain IP addresses, the first question is always: is the pool exhausted? Without lease analysis, you are guessing. With it, you can immediately see pool utilization, identify expired leases that should be reclaimed, and detect patterns like devices requesting addresses faster than expected.</p><p>Self-hosted DHCP analysis keeps your network intelligence in-house. Instead of sending lease data to a cloud monitoring service, you query your own database and build custom reports tailored to your environment. This is especially important for organizations with compliance requirements around network access logging.</p><p>The migration path from ISC DHCP to Kea is well-documented, and Kea&rsquo;s database backend makes lease analysis dramatically easier than parsing flat text files. For organizations still running the legacy ISC DHCP server, this is a timely opportunity to modernize — ISC officially ended support in September 2023.</p><p>If you manage DHCP infrastructure, our <a href=../2026-05-14-self-hosted-dhcp-high-availability-isc-kea-keepalived-dnsmasq-guide/>DHCP high availability guide</a> covers failover configurations, and the <a href=../2026-05-14-self-hosted-dhcp-failover-ha-kea-dhcp-dnsmasq-guide/>DHCP failover deep dive</a> provides detailed HA setup instructions. For broader DHCP management, the <a href=../2026-05-14-self-hosted-dhcp-lease-management-kea-isc-dnsmasq-guide/>DHCP lease management comparison</a> covers the server selection process.</p><p>For DHCP infrastructure planning, see our <a href=../2026-05-14-self-hosted-dhcp-high-availability-isc-kea-keepalived-dnsmasq-guide/>DHCP high availability guide</a>, the <a href=../2026-05-14-self-hosted-dhcp-failover-ha-kea-dhcp-dnsmasq-guide/>DHCP failover deep dive</a>, and the <a href=../2026-05-14-self-hosted-dhcp-lease-management-kea-isc-dnsmasq-guide/>DHCP lease management comparison</a>.</p><p>For DHCP infrastructure planning, see our <a href=../2026-05-14-self-hosted-dhcp-high-availability-isc-kea-keepalived-dnsmasq-guide/>DHCP high availability guide</a>, the <a href=../2026-05-14-self-hosted-dhcp-failover-ha-kea-dhcp-dnsmasq-guide/>DHCP failover deep dive</a>, and the <a href=../2026-05-14-self-hosted-dhcp-lease-management-kea-isc-dnsmasq-guide/>DHCP lease management comparison</a>.</p><h2 id=faq>FAQ</h2><h3 id=how-do-i-find-which-device-has-a-specific-ip-address>How do I find which device has a specific IP address?</h3><p>In Kea, query the lease database: <code>SELECT hostname, hwaddr, cltt FROM lease4 WHERE address = inet '192.168.1.100';</code>. In ISC DHCP, search the lease file: <code>grep -A 10 "lease 192.168.1.100" /var/lib/dhcp/dhcpd.leases</code>. In Dnsmasq, grep the lease file for the IP address.</p><h3 id=why-are-there-more-dhcp-leases-than-active-devices>Why are there more DHCP leases than active devices?</h3><p>DHCP leases remain in the database until they expire. A device that was once connected but has since left the network will retain its lease until the lease time expires. Use <code>state = 0</code> (active) filters in Kea to see only currently active leases.</p><h3 id=how-do-i-detect-ip-address-conflicts-in-dhcp>How do I detect IP address conflicts in DHCP?</h3><p>Kea tracks lease state and can detect when a client reports an address conflict via DHCPDECLINE. In ISC DHCP, look for DHCPDECLINE entries in syslog. Dnsmasq does not have built-in conflict detection.</p><h3 id=can-i-export-dhcp-lease-data-to-csv-for-reporting>Can I export DHCP lease data to CSV for reporting?</h3><p>Yes. For Kea with PostgreSQL: <code>COPY (SELECT address, hostname, hwaddr, expire FROM lease4 WHERE state = 0) TO '/tmp/dhcp-leases.csv' WITH CSV HEADER;</code>. For ISC DHCP and Dnsmasq, use the Python parsing scripts shown above.</p><h3 id=what-is-the-maximum-number-of-dhcp-leases-kea-can-handle>What is the maximum number of DHCP leases Kea can handle?</h3><p>Kea with PostgreSQL backend can handle millions of leases. The Memfile backend is suitable for deployments with up to ~100,000 leases. For larger deployments, use the database backend with proper indexing.</p><h3 id=should-i-migrate-from-isc-dhcp-to-kea>Should I migrate from ISC DHCP to Kea?</h3><p>Yes. ISC officially ended support for the legacy DHCP server in September 2023. Kea offers active development, database-backed leases, REST API, HA support, and hook libraries for custom functionality.</p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted DHCP Lease Analysis: Kea Lease Database vs ISC DHCP Logs vs Dnsmasq Lease Tools (2026)","description":"Compare ISC Kea, ISC DHCP Server, and Dnsmasq for self-hosted DHCP lease analysis. Database queries, log parsing, and Docker Compose deployment configs.","datePublished":"2026-05-15","dateModified":"2026-05-15","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20DHCP%20Lease%20Analysis%3a%20Kea%20Lease%20Database%20vs%20ISC%20DHCP%20Logs%20vs%20Dnsmasq%20Lease%20Tools%20%282026%29&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-15-self-hosted-dhcp-lease-analysis-kea-isc-dnsmasq-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-15-self-hosted-dhcp-lease-analysis-kea-isc-dnsmasq-guide%2f&t=Self-Hosted%20DHCP%20Lease%20Analysis%3a%20Kea%20Lease%20Database%20vs%20ISC%20DHCP%20Logs%20vs%20Dnsmasq%20Lease%20Tools%20%282026%29" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/dhcp/ class=tag-link>Dhcp</a>
+<a href=/tags/networking/ class=tag-link>Networking</a>
+<a href=/tags/lease-analysis/ class=tag-link>Lease-Analysis</a>
+<a href=/tags/kea/ class=tag-link>Kea</a>
+<a href=/tags/dnsmasq/ class=tag-link>Dnsmasq</a>
+<a href=/tags/self-hosted/ class=tag-link>Self-Hosted</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-05-09-self-hosted-dhcp-high-availability-kea-ha-vs-isc-dhcp-vs-keepalived-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Dhcp</span></div><h3 class=post-title>Self-Hosted DHCP High Availability: Kea HA vs ISC DHCP Failover vs Keepalived+dnsmasq</h3><div class=post-excerpt>Running DHCP without redundancy is a single point of failure. When your DHCP server goes down, new devices cannot join …</div><div class=post-footer><span class=post-date>May 9, 2026</span></div></a><a href=/posts/2026-05-14-self-hosted-dhcp-failover-ha-kea-dhcp-dnsmasq-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Dhcp</span></div><h3 class=post-title>Self-Hosted DHCP Failover and High Availability: ISC Kea vs ISC DHCP vs dnsmasq</h3><div class=post-excerpt>Running DHCP without redundancy is a single point of failure for your entire network. When the DHCP server goes down, …</div><div class=post-footer><span class=post-date>May 14, 2026</span></div></a><a href=/posts/2026-05-14-self-hosted-dhcp-lease-management-kea-isc-dnsmasq-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Dhcp</span></div><h3 class=post-title>Self-Hosted DHCP Lease Management: Kea vs ISC DHCP vs Dnsmasq</h3><div class=post-excerpt>DHCP lease management is a critical but often overlooked aspect of network administration. The DHCP lease database …</div><div class=post-footer><span class=post-date>May 14, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>

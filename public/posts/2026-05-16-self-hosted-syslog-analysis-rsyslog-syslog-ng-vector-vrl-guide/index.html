@@ -1,0 +1,679 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted Syslog Analysis: rsyslog mmjsonparse vs syslog-ng PatternDB vs Vector VRL | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-05-16-self-hosted-syslog-analysis-rsyslog-syslog-ng-vector-vrl-guide/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted Syslog Analysis: rsyslog mmjsonparse vs syslog-ng PatternDB vs Vector VRL"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-05-16-self-hosted-syslog-analysis-rsyslog-syslog-ng-vector-vrl-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-05-16T00:00:00Z"><meta property="article:modified_time" content="2026-05-16T00:00:00Z"><meta property="article:tag" content="syslog"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted Syslog Analysis: rsyslog mmjsonparse vs syslog-ng PatternDB vs Vector VRL"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted Syslog Analysis: rsyslog mmjsonparse vs syslog-ng PatternDB vs Vector VRL","description":"\u003cp\u003eRaw syslog messages are unstructured text streams that are difficult to search, alert on, and analyze at scale. Syslog analysis engines transform unstructured log data into structured, queryable formats by parsing fields, extracting patterns, and enriching messages with contextual metadata. This guide compares three powerful approaches to syslog analysis: rsyslog with mmjsonparse, syslog-ng with PatternDB, and Vector with Vector Remap Language (VRL).\u003c\/p\u003e","datePublished":"2026-05-16T00:00:00Z","dateModified":"2026-05-16T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-05-16-self-hosted-syslog-analysis-rsyslog-syslog-ng-vector-vrl-guide\/"},"keywords":["syslog","logging","log-analysis","rsyslog","syslog-ng","vector","observability"],"articleSection":"syslog","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted Syslog Analysis: rsyslog mmjsonparse vs syslog-ng PatternDB vs Vector VRL","item":"https:\/\/www.pistack.xyz\/posts\/2026-05-16-self-hosted-syslog-analysis-rsyslog-syslog-ng-vector-vrl-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Syslog</span>
+<span class="tag tag-purple">Logging</span>
+<span class="tag tag-purple">Log-Analysis</span></div><h1>Self-Hosted Syslog Analysis: rsyslog mmjsonparse vs syslog-ng PatternDB vs Vector VRL</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>May 16, 2026</span>
+<span>11 min read</span>
+<span>Updated May 16, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#why-structured-syslog-analysis-matters>Why Structured Syslog Analysis Matters</a></li><li><a href=#rsyslog-mmjsonparse-json-aware-syslog-processing>rsyslog mmjsonparse: JSON-Aware Syslog Processing</a><ul><li><a href=#how-mmjsonparse-works>How mmjsonparse Works</a></li><li><a href=#installation-and-configuration>Installation and Configuration</a></li><li><a href=#advanced-mmnormalize-for-pattern-based-parsing>Advanced: mmnormalize for Pattern-Based Parsing</a></li><li><a href=#docker-compose-for-rsyslog-processing-stack>Docker Compose for rsyslog Processing Stack</a></li><li><a href=#pros-and-cons>Pros and Cons</a></li></ul></li><li><a href=#syslog-ng-patterndb-database-driven-log-classification>syslog-ng PatternDB: Database-Driven Log Classification</a><ul><li><a href=#how-patterndb-works>How PatternDB Works</a></li><li><a href=#patterndb-configuration>PatternDB Configuration</a></li><li><a href=#patterndb-xml-definition>PatternDB XML Definition</a></li><li><a href=#docker-compose-for-syslog-ng-stack>Docker Compose for syslog-ng Stack</a></li><li><a href=#pros-and-cons-1>Pros and Cons</a></li></ul></li><li><a href=#vector-vrl-programmable-log-transformation>Vector VRL: Programmable Log Transformation</a><ul><li><a href=#how-vrl-works>How VRL Works</a></li><li><a href=#vector-configuration-with-vrl>Vector Configuration with VRL</a></li><li><a href=#advanced-vrl-custom-parsing-functions>Advanced VRL: Custom Parsing Functions</a></li><li><a href=#docker-compose-for-vector-pipeline>Docker Compose for Vector Pipeline</a></li><li><a href=#pros-and-cons-2>Pros and Cons</a></li></ul></li><li><a href=#comparison-summary>Comparison Summary</a></li><li><a href=#choosing-the-right-syslog-analysis-engine>Choosing the Right Syslog Analysis Engine</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#can-rsyslog-parse-non-json-log-formats>Can rsyslog parse non-JSON log formats?</a></li><li><a href=#does-syslog-ng-patterndb-support-dynamic-pattern-updates>Does syslog-ng PatternDB support dynamic pattern updates?</a></li><li><a href=#is-vrl-a-general-purpose-programming-language>Is VRL a general-purpose programming language?</a></li><li><a href=#can-i-combine-multiple-syslog-analysis-engines>Can I combine multiple syslog analysis engines?</a></li><li><a href=#how-do-i-test-syslog-parsing-rules-before-deploying>How do I test syslog parsing rules before deploying?</a></li><li><a href=#which-engine-handles-the-highest-log-volume>Which engine handles the highest log volume?</a></li><li><a href=#can-these-engines-parse-windows-event-logs-forwarded-via-syslog>Can these engines parse Windows Event Logs forwarded via syslog?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><p>Raw syslog messages are unstructured text streams that are difficult to search, alert on, and analyze at scale. Syslog analysis engines transform unstructured log data into structured, queryable formats by parsing fields, extracting patterns, and enriching messages with contextual metadata. This guide compares three powerful approaches to syslog analysis: rsyslog with mmjsonparse, syslog-ng with PatternDB, and Vector with Vector Remap Language (VRL).</p><h2 id=why-structured-syslog-analysis-matters>Why Structured Syslog Analysis Matters</h2><p>Traditional syslog servers collect raw text messages in flat files. While this approach preserves the original data, it makes operational analysis extremely difficult:</p><ul><li><strong>Searching requires regex</strong>: Finding specific events across millions of log lines demands complex regular expressions</li><li><strong>Alerting is fragile</strong>: Threshold-based alerts on unstructured text produce false positives and miss critical events</li><li><strong>Correlation is impossible</strong>: Without parsed fields, correlating events across services, hosts, and time windows is manual and error-prone</li><li><strong>Compliance reporting is tedious</strong>: Audit reports require extracting specific fields (user, action, timestamp, source IP) from variable-format text</li></ul><p>Structured syslog analysis solves these problems by parsing raw log messages into named fields at ingestion time. Instead of searching raw text, you query structured data: <code>source_ip=10.0.1.5 AND severity=error AND facility=auth</code>.</p><p>For foundational syslog server setup, see our <a href=../2026-04-18-rsyslog-vs-syslog-ng-vs-vector-self-hosted-syslog-log-aggregation-guide-2026/>rsyslog vs syslog-ng vs Vector comparison</a>. If you need log forwarding to centralized systems, check our <a href=../2026-05-09-self-hosted-log-forwarding-fluent-bit-vector-otel-collector-guide/>Fluent Bit vs Vector vs OTEL Collector guide</a>. For log sampling strategies, our <a href=../2026-05-07-self-hosted-log-sampling-vector-fluentbit-loki-guide/>log sampling guide</a> covers volume reduction techniques.</p><h2 id=rsyslog-mmjsonparse-json-aware-syslog-processing>rsyslog mmjsonparse: JSON-Aware Syslog Processing</h2><p><a href=https://www.rsyslog.com/>rsyslog</a> is the default syslog daemon on most Linux distributions. Its <code>mmjsonparse</code> module provides JSON parsing capabilities, enabling rsyslog to extract structured data from JSON-formatted syslog messages and CEE/Lumberjack format logs.</p><h3 id=how-mmjsonparse-works>How mmjsonparse Works</h3><p>The mmjsonparse module intercepts syslog messages as they arrive, attempts to parse the message payload as JSON, and if successful, makes the parsed fields available to rsyslog templates and output actions. It supports the CEE cookie prefix (<code>@cee:</code>) that indicates JSON-formatted content within syslog messages.</p><h3 id=installation-and-configuration>Installation and Configuration</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install rsyslog (usually pre-installed)</span>
+</span></span><span class=line><span class=cl><span class=c1># On Ubuntu/Debian:</span>
+</span></span><span class=line><span class=cl>sudo apt install rsyslog
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># On RHEL/CentOS/Rocky:</span>
+</span></span><span class=line><span class=cl>sudo dnf install rsyslog
+</span></span></code></pre></td></tr></table></div></div><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-gdscript3 data-lang=gdscript3><span class=line><span class=cl><span class=c1># /etc/rsyslog.d/10-json-parse.conf</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Load required modules</span>
+</span></span><span class=line><span class=cl><span class=n>module</span><span class=p>(</span><span class=nb>load</span><span class=o>=</span><span class=s2>&#34;mmjsonparse&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=n>module</span><span class=p>(</span><span class=nb>load</span><span class=o>=</span><span class=s2>&#34;mmnormalize&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Parse JSON from messages with @cee: prefix</span>
+</span></span><span class=line><span class=cl><span class=n>action</span><span class=p>(</span><span class=n>type</span><span class=o>=</span><span class=s2>&#34;mmjsonparse&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Alternative: parse all messages (without @cee: prefix requirement)</span>
+</span></span><span class=line><span class=cl><span class=c1># action(type=&#34;mmjsonparse&#34; name=&#34;parse-all&#34;)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Extract fields and write to structured output</span>
+</span></span><span class=line><span class=cl><span class=n>template</span><span class=p>(</span><span class=n>name</span><span class=o>=</span><span class=s2>&#34;structured-json&#34;</span> <span class=n>type</span><span class=o>=</span><span class=s2>&#34;string&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=n>string</span><span class=o>=</span><span class=s2>&#34;{&#34;</span><span class=n>timestamp</span><span class=s2>&#34;:&#34;</span><span class=o>%</span><span class=n>timegenerated</span><span class=p>:::</span><span class=n>date</span><span class=o>-</span><span class=n>rfc3339</span><span class=o>%</span><span class=s2>&#34;,&#34;</span><span class=n>host</span><span class=s2>&#34;:&#34;</span><span class=o>%</span><span class=n>hostname</span><span class=o>%</span><span class=s2>&#34;,&#34;</span><span class=n>severity</span><span class=s2>&#34;:&#34;</span><span class=o>%</span><span class=n>syslogseverity</span><span class=o>-</span><span class=n>text</span><span class=o>%</span><span class=s2>&#34;,&#34;</span><span class=n>facility</span><span class=s2>&#34;:&#34;</span><span class=o>%</span><span class=n>syslogfacility</span><span class=o>-</span><span class=n>text</span><span class=o>%</span><span class=s2>&#34;,&#34;</span><span class=n>tag</span><span class=s2>&#34;:&#34;</span><span class=o>%</span><span class=n>syslogtag</span><span class=o>%</span><span class=s2>&#34;,&#34;</span><span class=n>message</span><span class=s2>&#34;:&#34;</span><span class=o>%</span><span class=n>msg</span><span class=p>:::</span><span class=n>json</span><span class=o>%</span><span class=s2>&#34;}</span>
+</span></span><span class=line><span class=cl><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Route parsed messages to Elasticsearch</span>
+</span></span><span class=line><span class=cl><span class=n>action</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>  <span class=n>type</span><span class=o>=</span><span class=s2>&#34;omelasticsearch&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=n>server</span><span class=o>=</span><span class=s2>&#34;http://elasticsearch:9200&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=n>template</span><span class=o>=</span><span class=s2>&#34;structured-json&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=n>searchIndex</span><span class=o>=</span><span class=s2>&#34;syslog-%$YEAR%.%$MONTH%.%$DAY%&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=n>searchType</span><span class=o>=</span><span class=s2>&#34;syslog&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=n>errorfile</span><span class=o>=</span><span class=s2>&#34;/var/log/rsyslog/es-errors.log&#34;</span>
+</span></span><span class=line><span class=cl><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Also write parsed messages to local structured log</span>
+</span></span><span class=line><span class=cl><span class=n>action</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>  <span class=n>type</span><span class=o>=</span><span class=s2>&#34;omfile&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=n>file</span><span class=o>=</span><span class=s2>&#34;/var/log/syslog-structured.log&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=n>template</span><span class=o>=</span><span class=s2>&#34;structured-json&#34;</span>
+</span></span><span class=line><span class=cl><span class=p>)</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=advanced-mmnormalize-for-pattern-based-parsing>Advanced: mmnormalize for Pattern-Based Parsing</h3><p>When log messages are not JSON-formatted, the <code>mmnormalize</code> module uses liblognorm rulebases to parse arbitrary text formats:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-gdscript3 data-lang=gdscript3><span class=line><span class=cl><span class=c1># /etc/rsyslog.d/20-normalize.conf</span>
+</span></span><span class=line><span class=cl><span class=n>module</span><span class=p>(</span><span class=nb>load</span><span class=o>=</span><span class=s2>&#34;mmnormalize&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Load rulebase file</span>
+</span></span><span class=line><span class=cl><span class=n>action</span><span class=p>(</span><span class=n>type</span><span class=o>=</span><span class=s2>&#34;mmnormalize&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=n>ruleBase</span><span class=o>=</span><span class=s2>&#34;/etc/rsyslog.d/rules.rb&#34;</span>
+</span></span><span class=line><span class=cl><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Example rulebase (rules.rb):</span>
+</span></span><span class=line><span class=cl><span class=c1># version=2</span>
+</span></span><span class=line><span class=cl><span class=c1># rule=:%app_name:word%[%pid:number%]: %severity:word%: %message:rest%</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-compose-for-rsyslog-processing-stack>Docker Compose for rsyslog Processing Stack</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>rsyslog</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>rsyslog/syslog_appliance_alpine:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>rsyslog</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;514:514/udp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;514:514/tcp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./rsyslog.conf:/etc/rsyslog.conf</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./rules.rb:/etc/rsyslog.d/rules.rb</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>syslog-data:/var/spool/rsyslog</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>elasticsearch</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>docker.elastic.co/elasticsearch/elasticsearch:8.11.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>elasticsearch</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>discovery.type=single-node</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>xpack.security.enabled=false</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>es-data:/usr/share/elasticsearch/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;9200:9200&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>kibana</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>docker.elastic.co/kibana/kibana:8.11.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>kibana</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>ELASTICSEARCH_HOSTS=http://elasticsearch:9200</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;5601:5601&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>elasticsearch</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>syslog-data</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>es-data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=pros-and-cons>Pros and Cons</h3><table><thead><tr><th>Feature</th><th>rsyslog mmjsonparse</th></tr></thead><tbody><tr><td>JSON parsing</td><td>Native (@cee: format)</td></tr><tr><td>Pattern parsing</td><td>Via mmnormalize + liblognorm</td></tr><tr><td>Performance</td><td>Very high (C-based)</td></tr><tr><td>Installation</td><td>Pre-installed on most distros</td></tr><tr><td>Learning curve</td><td>Medium (rsyslog config syntax)</td></tr><tr><td>Output destinations</td><td>80+ modules (file, ES, Kafka, etc.)</td></tr><tr><td>Field extraction</td><td>Template-based</td></tr><tr><td>Enrichment</td><td>Limited (property replacer)</td></tr></tbody></table><h2 id=syslog-ng-patterndb-database-driven-log-classification>syslog-ng PatternDB: Database-Driven Log Classification</h2><p><a href=https://www.syslog-ng.com/>syslog-ng</a> offers PatternDB, a powerful log classification and parsing engine that uses XML-defined pattern databases to parse, classify, and enrich syslog messages in real time.</p><h3 id=how-patterndb-works>How PatternDB Works</h3><p>PatternDB matches incoming log messages against a database of predefined patterns. When a match is found, it extracts named fields, assigns classification tags (security, system, application), and can generate alerts based on message context. Unlike simple regex matching, PatternDB uses a decision-tree algorithm for efficient pattern matching at scale.</p><h3 id=patterndb-configuration>PatternDB Configuration</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-gdscript3 data-lang=gdscript3><span class=line><span class=cl><span class=c1># /etc/syslog-ng/syslog-ng.conf</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=err>@</span><span class=n>version</span><span class=p>:</span> <span class=mf>4.3</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>source</span> <span class=n>s_network</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=n>syslog</span><span class=p>(</span><span class=n>transport</span><span class=p>(</span><span class=n>tcp</span><span class=p>)</span> <span class=n>port</span><span class=p>(</span><span class=mi>514</span><span class=p>));</span>
+</span></span><span class=line><span class=cl>  <span class=n>syslog</span><span class=p>(</span><span class=n>transport</span><span class=p>(</span><span class=n>udp</span><span class=p>)</span> <span class=n>port</span><span class=p>(</span><span class=mi>514</span><span class=p>));</span>
+</span></span><span class=line><span class=cl><span class=p>};</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Load PatternDB parser</span>
+</span></span><span class=line><span class=cl><span class=n>parser</span> <span class=n>p_classify</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=n>db</span><span class=o>-</span><span class=n>parser</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>    <span class=n>file</span><span class=p>(</span><span class=s2>&#34;/etc/syslog-ng/patterndb.xml&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>drop</span><span class=o>-</span><span class=n>unmatched</span><span class=p>(</span><span class=n>no</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=p>);</span>
+</span></span><span class=line><span class=cl><span class=p>};</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Enrich matched messages</span>
+</span></span><span class=line><span class=cl><span class=n>filter</span> <span class=n>f_security</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=n>match</span><span class=p>(</span><span class=s2>&#34;security&#34;</span> <span class=n>value</span><span class=p>(</span><span class=s2>&#34;.classifier.class&#34;</span><span class=p>))</span>
+</span></span><span class=line><span class=cl>  <span class=ow>or</span> <span class=n>match</span><span class=p>(</span><span class=s2>&#34;violation&#34;</span> <span class=n>value</span><span class=p>(</span><span class=s2>&#34;.classifier.class&#34;</span><span class=p>));</span>
+</span></span><span class=line><span class=cl><span class=p>};</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Route classified messages</span>
+</span></span><span class=line><span class=cl><span class=n>destination</span> <span class=n>d_security</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=n>file</span><span class=p>(</span><span class=s2>&#34;/var/log/security-classified.log&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=n>template</span><span class=p>(</span><span class=s2>&#34;${ISODATE} ${HOST} ${CLASSIFIER.CLASS} ${CLASSIFIER.RULE_ID} ${MESSAGE}</span>
+</span></span><span class=line><span class=cl><span class=s2>&#34;)</span>
+</span></span><span class=line><span class=cl>  <span class=p>);</span>
+</span></span><span class=line><span class=cl><span class=p>};</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>destination</span> <span class=n>d_elasticsearch</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=n>elasticsearch2</span><span class=p>(</span>
+</span></span><span class=line><span class=cl>    <span class=n>index</span><span class=p>(</span><span class=s2>&#34;syslog-${YEAR}.${MONTH}.${DAY}&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>type</span><span class=p>(</span><span class=s2>&#34;&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>url</span><span class=p>(</span><span class=s2>&#34;http://elasticsearch:9200&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>template</span><span class=p>(</span><span class=s2>&#34;$(format-json --scope rfc5424 --scope nv-pairs --exclude DATE --key ISODATE)&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>  <span class=p>);</span>
+</span></span><span class=line><span class=cl><span class=p>};</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nb>log</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=n>source</span><span class=p>(</span><span class=n>s_network</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>  <span class=n>parser</span><span class=p>(</span><span class=n>p_classify</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>  <span class=n>filter</span><span class=p>(</span><span class=n>f_security</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>  <span class=n>destination</span><span class=p>(</span><span class=n>d_security</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>  <span class=n>flags</span><span class=p>(</span><span class=n>final</span><span class=p>);</span>
+</span></span><span class=line><span class=cl><span class=p>};</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nb>log</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=n>source</span><span class=p>(</span><span class=n>s_network</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>  <span class=n>parser</span><span class=p>(</span><span class=n>p_classify</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>  <span class=n>destination</span><span class=p>(</span><span class=n>d_elasticsearch</span><span class=p>);</span>
+</span></span><span class=line><span class=cl><span class=p>};</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=patterndb-xml-definition>PatternDB XML Definition</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-xml data-lang=xml><span class=line><span class=cl><span class=c>&lt;!-- /etc/syslog-ng/patterndb.xml --&gt;</span>
+</span></span><span class=line><span class=cl><span class=nt>&lt;patterndb</span> <span class=na>version=</span><span class=s>&#34;4&#34;</span> <span class=na>pub_date=</span><span class=s>&#34;2026-05-16&#34;</span><span class=nt>&gt;</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&lt;ruleset</span> <span class=na>name=</span><span class=s>&#34;sshd&#34;</span> <span class=na>id=</span><span class=s>&#34;ssh-ruleset&#34;</span><span class=nt>&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&lt;pattern&gt;</span>sshd<span class=nt>&lt;/pattern&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&lt;rules&gt;</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&lt;rule</span> <span class=na>provider=</span><span class=s>&#34;openswap&#34;</span> <span class=na>id=</span><span class=s>&#34;sshd-accepted&#34;</span> <span class=na>class=</span><span class=s>&#34;system&#34;</span><span class=nt>&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&lt;patterns&gt;</span>
+</span></span><span class=line><span class=cl>          <span class=nt>&lt;pattern&gt;</span>Accepted @ESTRING:AUTH_METHOD: @for @ESTRING:USERNAME: @from @ESTRING:SOURCE_IP: @port @ESTRING:PORT_NUMBER: @ssh2<span class=nt>&lt;/pattern&gt;</span>
+</span></span><span class=line><span class=cl>          <span class=nt>&lt;pattern&gt;</span>Accepted publickey for @ESTRING:USERNAME: @from @ESTRING:SOURCE_IP: @port @ESTRING:PORT_NUMBER: @ssh2<span class=nt>&lt;/pattern&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&lt;/patterns&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&lt;examples&gt;</span>
+</span></span><span class=line><span class=cl>          <span class=nt>&lt;example&gt;</span>
+</span></span><span class=line><span class=cl>            <span class=nt>&lt;test_message</span> <span class=na>program=</span><span class=s>&#34;sshd&#34;</span><span class=nt>&gt;</span>Accepted publickey for admin from 192.168.1.50 port 52314 ssh2<span class=nt>&lt;/test_message&gt;</span>
+</span></span><span class=line><span class=cl>            <span class=nt>&lt;test_values&gt;</span>
+</span></span><span class=line><span class=cl>              <span class=nt>&lt;test_value</span> <span class=na>name=</span><span class=s>&#34;USERNAME&#34;</span><span class=nt>&gt;</span>admin<span class=nt>&lt;/test_value&gt;</span>
+</span></span><span class=line><span class=cl>              <span class=nt>&lt;test_value</span> <span class=na>name=</span><span class=s>&#34;SOURCE_IP&#34;</span><span class=nt>&gt;</span>192.168.1.50<span class=nt>&lt;/test_value&gt;</span>
+</span></span><span class=line><span class=cl>              <span class=nt>&lt;test_value</span> <span class=na>name=</span><span class=s>&#34;PORT_NUMBER&#34;</span><span class=nt>&gt;</span>52314<span class=nt>&lt;/test_value&gt;</span>
+</span></span><span class=line><span class=cl>              <span class=nt>&lt;test_value</span> <span class=na>name=</span><span class=s>&#34;AUTH_METHOD&#34;</span><span class=nt>&gt;</span>publickey<span class=nt>&lt;/test_value&gt;</span>
+</span></span><span class=line><span class=cl>            <span class=nt>&lt;/test_values&gt;</span>
+</span></span><span class=line><span class=cl>          <span class=nt>&lt;/example&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&lt;/examples&gt;</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&lt;/rule&gt;</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&lt;rule</span> <span class=na>provider=</span><span class=s>&#34;openswap&#34;</span> <span class=na>id=</span><span class=s>&#34;sshd-failed&#34;</span> <span class=na>class=</span><span class=s>&#34;security&#34;</span><span class=nt>&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&lt;patterns&gt;</span>
+</span></span><span class=line><span class=cl>          <span class=nt>&lt;pattern&gt;</span>Failed @ESTRING:AUTH_METHOD: @for @ESTRING:USERNAME: @from @ESTRING:SOURCE_IP: @port @ESTRING:PORT_NUMBER: @ssh2<span class=nt>&lt;/pattern&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&lt;/patterns&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&lt;values&gt;</span>
+</span></span><span class=line><span class=cl>          <span class=nt>&lt;value</span> <span class=na>name=</span><span class=s>&#34;ALERT_LEVEL&#34;</span><span class=nt>&gt;</span>high<span class=nt>&lt;/value&gt;</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&lt;/values&gt;</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&lt;/rule&gt;</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&lt;/rules&gt;</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&lt;/ruleset&gt;</span>
+</span></span><span class=line><span class=cl><span class=nt>&lt;/patterndb&gt;</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-compose-for-syslog-ng-stack>Docker Compose for syslog-ng Stack</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>syslog-ng</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>balabit/syslog-ng:4.3</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>syslog-ng</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;514:514/udp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;514:514/tcp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;601:601/tcp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./syslog-ng.conf:/etc/syslog-ng/syslog-ng.conf</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./patterndb.xml:/etc/syslog-ng/patterndb.xml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>elasticsearch</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>docker.elastic.co/elasticsearch/elasticsearch:8.11.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>discovery.type=single-node</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>xpack.security.enabled=false</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>es-data:/usr/share/elasticsearch/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;9200:9200&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>es-data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=pros-and-cons-1>Pros and Cons</h3><table><thead><tr><th>Feature</th><th>syslog-ng PatternDB</th></tr></thead><tbody><tr><td>Pattern matching</td><td>Decision-tree based (fast)</td></tr><tr><td>Classification</td><td>Built-in class system</td></tr><tr><td>Field extraction</td><td>Named field extraction from patterns</td></tr><tr><td>Alerting</td><td>Value-based alert generation</td></tr><tr><td>Pattern authoring</td><td>XML format with examples/testing</td></tr><tr><td>Performance</td><td>High (optimized C implementation)</td></tr><tr><td>Community patterns</td><td>Limited (custom authoring required)</td></tr><tr><td>Learning curve</td><td>Medium to high (XML pattern syntax)</td></tr></tbody></table><h2 id=vector-vrl-programmable-log-transformation>Vector VRL: Programmable Log Transformation</h2><p><a href=https://vector.dev/>Vector</a> by Datadog is a high-performance observability data pipeline that uses Vector Remap Language (VRL) for log parsing, transformation, and enrichment. VRL is a purpose-built language for data processing that combines the expressiveness of programming languages with the safety of static type checking.</p><h3 id=how-vrl-works>How VRL Works</h3><p>VRL scripts are applied to each event as it flows through the Vector pipeline. The language provides built-in functions for parsing (regex, JSON, key-value, CSV), type conversion, conditional logic, and enrichment. Unlike regex-based parsers, VRL programs are statically analyzed before execution, ensuring type safety and catching errors at configuration time.</p><h3 id=vector-configuration-with-vrl>Vector Configuration with VRL</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span><span class=lnt>62
+</span><span class=lnt>63
+</span><span class=lnt>64
+</span><span class=lnt>65
+</span><span class=lnt>66
+</span><span class=lnt>67
+</span><span class=lnt>68
+</span><span class=lnt>69
+</span><span class=lnt>70
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># vector.yaml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>sources</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>syslog</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>type</span><span class=p>:</span><span class=w> </span><span class=l>syslog</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>address</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;0.0.0.0:514&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>mode</span><span class=p>:</span><span class=w> </span><span class=l>tcp</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>max_length</span><span class=p>:</span><span class=w> </span><span class=m>102400</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>transforms</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>parse_syslog</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>type</span><span class=p>:</span><span class=w> </span><span class=l>remap</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>inputs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>syslog</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>source</span><span class=p>:</span><span class=w> </span><span class=p>|</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      # Parse standard syslog header
+</span></span></span><span class=line><span class=cl><span class=sd>      . = parse_syslog!(.message)
+</span></span></span><span class=line><span class=cl><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      # Parse application-specific JSON payload
+</span></span></span><span class=line><span class=cl><span class=sd>      if starts_with!(.message, &#34;@cee:&#34;) {
+</span></span></span><span class=line><span class=cl><span class=sd>        payload = parse_json!(strip!(.message, [&#34;@cee:&#34;, &#34; &#34;]))
+</span></span></span><span class=line><span class=cl><span class=sd>        ., err = merge(., payload)
+</span></span></span><span class=line><span class=cl><span class=sd>      }
+</span></span></span><span class=line><span class=cl><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      # Enrich with geo data for source IPs
+</span></span></span><span class=line><span class=cl><span class=sd>      if exists(.source_ip) {
+</span></span></span><span class=line><span class=cl><span class=sd>        geo = get_enrichment_table_record(&#34;geoip&#34;, { &#34;ip&#34;: .source_ip })
+</span></span></span><span class=line><span class=cl><span class=sd>        if !is_null(geo) {
+</span></span></span><span class=line><span class=cl><span class=sd>          .geo_country = geo.country_iso_code
+</span></span></span><span class=line><span class=cl><span class=sd>          .geo_city = geo.city_name
+</span></span></span><span class=line><span class=cl><span class=sd>        }
+</span></span></span><span class=line><span class=cl><span class=sd>      }
+</span></span></span><span class=line><span class=cl><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      # Classify security events
+</span></span></span><span class=line><span class=cl><span class=sd>      .event_class = if contains!(.message, &#34;Failed password&#34;) {
+</span></span></span><span class=line><span class=cl><span class=sd>        &#34;auth_failure&#34;
+</span></span></span><span class=line><span class=cl><span class=sd>      } else if contains!(.message, &#34;Accepted&#34;) {
+</span></span></span><span class=line><span class=cl><span class=sd>        &#34;auth_success&#34;
+</span></span></span><span class=line><span class=cl><span class=sd>      } else if contains!(.message, &#34;sudo&#34;) {
+</span></span></span><span class=line><span class=cl><span class=sd>        &#34;privilege_escalation&#34;
+</span></span></span><span class=line><span class=cl><span class=sd>      } else {
+</span></span></span><span class=line><span class=cl><span class=sd>        &#34;other&#34;
+</span></span></span><span class=line><span class=cl><span class=sd>      }
+</span></span></span><span class=line><span class=cl><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      # Set severity level
+</span></span></span><span class=line><span class=cl><span class=sd>      .severity_label = if .severity &gt;= 4 {
+</span></span></span><span class=line><span class=cl><span class=sd>        &#34;error&#34;
+</span></span></span><span class=line><span class=cl><span class=sd>      } else if .severity &gt;= 3 {
+</span></span></span><span class=line><span class=cl><span class=sd>        &#34;warning&#34;
+</span></span></span><span class=line><span class=cl><span class=sd>      } else {
+</span></span></span><span class=line><span class=cl><span class=sd>        &#34;info&#34;
+</span></span></span><span class=line><span class=cl><span class=sd>      }</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>sinks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>elasticsearch</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>type</span><span class=p>:</span><span class=w> </span><span class=l>elasticsearch</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>inputs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>parse_syslog</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>endpoints</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;http://elasticsearch:9200&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>index</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;syslog-%Y.%m.%d&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>encoding</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>codec</span><span class=p>:</span><span class=w> </span><span class=l>json</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>local_file</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>type</span><span class=p>:</span><span class=w> </span><span class=l>file</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>inputs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>parse_syslog</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>path</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;/var/log/vector/syslog-structured.log&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>encoding</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>codec</span><span class=p>:</span><span class=w> </span><span class=l>json</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=advanced-vrl-custom-parsing-functions>Advanced VRL: Custom Parsing Functions</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>transforms</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>parse_apache</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>type</span><span class=p>:</span><span class=w> </span><span class=l>remap</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>inputs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>syslog</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>source</span><span class=p>:</span><span class=w> </span><span class=p>|</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      # Parse Apache/Nginx combined log format
+</span></span></span><span class=line><span class=cl><span class=sd>      parsed, err = parse_regex(.message, r&#39;^(?P&lt;remote_addr&gt;\S+) \S+ (?P&lt;remote_user&gt;\S+) \[(?P&lt;time_local&gt;[^\]]+)\] &#34;(?P&lt;request&gt;[^&#34;]*)&#34; (?P&lt;status&gt;\d+) (?P&lt;body_bytes_sent&gt;\d+) &#34;(?P&lt;http_referer&gt;[^&#34;]*)&#34; &#34;(?P&lt;http_user_agent&gt;[^&#34;]*)&#34;&#39;)
+</span></span></span><span class=line><span class=cl><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      if err == null {
+</span></span></span><span class=line><span class=cl><span class=sd>        .http = parsed
+</span></span></span><span class=line><span class=cl><span class=sd>        .http.status = to_int!(parsed.status)
+</span></span></span><span class=line><span class=cl><span class=sd>        .http.body_bytes_sent = to_int!(parsed.body_bytes_sent)
+</span></span></span><span class=line><span class=cl><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>        # Classify response status
+</span></span></span><span class=line><span class=cl><span class=sd>        .http.status_class = if .http.status &gt;= 500 {
+</span></span></span><span class=line><span class=cl><span class=sd>          &#34;5xx&#34;
+</span></span></span><span class=line><span class=cl><span class=sd>        } else if .http.status &gt;= 400 {
+</span></span></span><span class=line><span class=cl><span class=sd>          &#34;4xx&#34;
+</span></span></span><span class=line><span class=cl><span class=sd>        } else if .http.status &gt;= 300 {
+</span></span></span><span class=line><span class=cl><span class=sd>          &#34;3xx&#34;
+</span></span></span><span class=line><span class=cl><span class=sd>        } else {
+</span></span></span><span class=line><span class=cl><span class=sd>          &#34;2xx&#34;
+</span></span></span><span class=line><span class=cl><span class=sd>        }
+</span></span></span><span class=line><span class=cl><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>        # Extract request method and path
+</span></span></span><span class=line><span class=cl><span class=sd>        req_parts, _ = parse_regex(.http.request, r&#39;^(?P&lt;method&gt;\S+) (?P&lt;path&gt;\S+)&#39;)
+</span></span></span><span class=line><span class=cl><span class=sd>        if req_parts != null {
+</span></span></span><span class=line><span class=cl><span class=sd>          .http.method = req_parts.method
+</span></span></span><span class=line><span class=cl><span class=sd>          .http.path = req_parts.path
+</span></span></span><span class=line><span class=cl><span class=sd>        }
+</span></span></span><span class=line><span class=cl><span class=sd>      }</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=docker-compose-for-vector-pipeline>Docker Compose for Vector Pipeline</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>vector</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>timberio/vector:0.38.0-alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>vector</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;514:514/tcp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;514:514/udp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8686:8686&#34;</span><span class=w>  </span><span class=c># Vector API</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./vector.yaml:/etc/vector/vector.yaml:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>vector-data:/var/lib/vector</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>elasticsearch</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>docker.elastic.co/elasticsearch/elasticsearch:8.11.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>discovery.type=single-node</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>xpack.security.enabled=false</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>es-data:/usr/share/elasticsearch/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;9200:9200&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>vector-data</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>es-data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=pros-and-cons-2>Pros and Cons</h3><table><thead><tr><th>Feature</th><th>Vector VRL</th></tr></thead><tbody><tr><td>Language</td><td>Purpose-built remap language</td></tr><tr><td>Type safety</td><td>Static type checking at config time</td></tr><tr><td>Parsing functions</td><td>JSON, regex, key-value, CSV, syslog, grok</td></tr><tr><td>Performance</td><td>Very high (Rust-based)</td></tr><tr><td>Enrichment</td><td>Built-in lookup tables (geoip, etc.)</td></tr><tr><td>Error handling</td><td>Graceful error handling in scripts</td></tr><tr><td>Learning curve</td><td>Low to medium (VRL is designed for simplicity)</td></tr><tr><td>Community</td><td>Growing (Datadobacked)</td></tr></tbody></table><h2 id=comparison-summary>Comparison Summary</h2><table><thead><tr><th>Feature</th><th>rsyslog mmjsonparse</th><th>syslog-ng PatternDB</th><th>Vector VRL</th></tr></thead><tbody><tr><td>Parsing approach</td><td>JSON module + liblognorm</td><td>XML pattern database</td><td>VRL scripts</td></tr><tr><td>Performance</td><td>Very high</td><td>High</td><td>Very high</td></tr><tr><td>Pattern authoring</td><td>Rule files (.rb)</td><td>XML with test cases</td><td>VRL code</td></tr><tr><td>Type safety</td><td>None</td><td>Schema validation</td><td>Static type checking</td></tr><tr><td>Enrichment</td><td>Limited</td><td>Classifier values</td><td>Lookup tables</td></tr><tr><td>Installation</td><td>Pre-installed (Linux)</td><td>Package manager</td><td>Binary/Docker</td></tr><tr><td>Learning curve</td><td>Medium</td><td>High</td><td>Low-medium</td></tr><tr><td>Best for</td><td>Traditional Linux sysadmins</td><td>Enterprise log classification</td><td>Modern observability pipelines</td></tr></tbody></table><h2 id=choosing-the-right-syslog-analysis-engine>Choosing the Right Syslog Analysis Engine</h2><ul><li><p><strong>rsyslog mmjsonparse</strong> is ideal when you need maximum compatibility with existing Linux infrastructure. It is pre-installed on most distributions and provides solid JSON and pattern-based parsing with minimal additional setup.</p></li><li><p><strong>syslog-ng PatternDB</strong> excels in environments that require structured log classification with formal pattern definitions. The XML-based pattern authoring with embedded test cases makes it suitable for compliance-heavy environments where parsing rules must be documented and validated.</p></li><li><p><strong>Vector VRL</strong> is the best choice for modern observability pipelines that need flexible, programmable log transformation. Its static type checking catches configuration errors before deployment, and its performance makes it suitable for high-volume log processing.</p></li></ul><h2 id=faq>FAQ</h2><h3 id=can-rsyslog-parse-non-json-log-formats>Can rsyslog parse non-JSON log formats?</h3><p>Yes. The <code>mmnormalize</code> module uses liblognorm rulebases to parse arbitrary text formats. You define patterns in <code>.rb</code> rule files that extract named fields from structured log messages (e.g., Apache access logs, sudo logs, SSH logs). This is more manual than VRL or PatternDB but works well for consistent log formats.</p><h3 id=does-syslog-ng-patterndb-support-dynamic-pattern-updates>Does syslog-ng PatternDB support dynamic pattern updates?</h3><p>PatternDB patterns are loaded from XML files at startup. To update patterns, you must modify the XML file and reload syslog-ng (<code>systemctl reload syslog-ng</code>). Some deployments use a configuration management tool (Ansible, Puppet) to manage PatternDB files and trigger reloads automatically.</p><h3 id=is-vrl-a-general-purpose-programming-language>Is VRL a general-purpose programming language?</h3><p>No. VRL is a domain-specific language designed specifically for log transformation. It does not support loops, recursion, or arbitrary computation. This intentional limitation ensures that VRL programs always terminate and cannot introduce performance issues or security vulnerabilities into the data pipeline.</p><h3 id=can-i-combine-multiple-syslog-analysis-engines>Can I combine multiple syslog analysis engines?</h3><p>Yes. A common pattern is to use rsyslog or syslog-ng as the syslog receiver (collecting from network devices and servers), then forward structured output to Vector for additional transformation and routing to multiple destinations (Elasticsearch, Loki, cloud storage).</p><h3 id=how-do-i-test-syslog-parsing-rules-before-deploying>How do I test syslog parsing rules before deploying?</h3><p>For rsyslog, use <code>rsyslogd -N1</code> to validate configuration syntax. For syslog-ng, use <code>syslog-ng --syntax-only</code>. For Vector, use <code>vector validate --config-yaml vector.yaml</code> to check VRL syntax and type safety. Vector also provides an online VRL playground at play.vrl.dev for testing scripts interactively.</p><h3 id=which-engine-handles-the-highest-log-volume>Which engine handles the highest log volume?</h3><p>All three engines are high-performance. rsyslog and syslog-ng can process hundreds of thousands of messages per second on modern hardware. Vector, being written in Rust, achieves similar throughput with lower memory usage. For most deployments, the bottleneck is the output destination (Elasticsearch, disk I/O) rather than the parsing engine.</p><h3 id=can-these-engines-parse-windows-event-logs-forwarded-via-syslog>Can these engines parse Windows Event Logs forwarded via syslog?</h3><p>Windows Event Logs forwarded through NXLog or Winlogbeat as syslog can be parsed by all three engines. Vector has built-in <code>parse_windows_eventlog</code> function. rsyslog and syslog-ng require custom patterns or JSON parsing (if the forwarder sends JSON-formatted events).</p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted Syslog Analysis: rsyslog mmjsonparse vs syslog-ng PatternDB vs Vector VRL","description":"Compare rsyslog mmjsonparse, syslog-ng PatternDB, and Vector VRL for parsing, classifying, and enriching syslog messages into structured, queryable data.","datePublished":"2026-05-16","dateModified":"2026-05-16","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20Syslog%20Analysis%3a%20rsyslog%20mmjsonparse%20vs%20syslog-ng%20PatternDB%20vs%20Vector%20VRL&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-16-self-hosted-syslog-analysis-rsyslog-syslog-ng-vector-vrl-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-16-self-hosted-syslog-analysis-rsyslog-syslog-ng-vector-vrl-guide%2f&t=Self-Hosted%20Syslog%20Analysis%3a%20rsyslog%20mmjsonparse%20vs%20syslog-ng%20PatternDB%20vs%20Vector%20VRL" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/syslog/ class=tag-link>Syslog</a>
+<a href=/tags/logging/ class=tag-link>Logging</a>
+<a href=/tags/log-analysis/ class=tag-link>Log-Analysis</a>
+<a href=/tags/rsyslog/ class=tag-link>Rsyslog</a>
+<a href=/tags/syslog-ng/ class=tag-link>Syslog-Ng</a>
+<a href=/tags/vector/ class=tag-link>Vector</a>
+<a href=/tags/observability/ class=tag-link>Observability</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-05-12-self-hosted-syslog-forwarders-vector-syslog-ng-rsyslog-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Logging</span></div><h3 class=post-title>Self-Hosted Syslog Forwarders: Vector vs syslog-ng vs Rsyslog</h3><div class=post-excerpt>When you run multiple servers, containers, or network devices, getting all their logs into a centralized location is a …</div><div class=post-footer><span class=post-date>May 12, 2026</span></div></a><a href=/posts/2026-04-18-rsyslog-vs-syslog-ng-vs-vector-self-hosted-syslog-log-aggregation-guide-2026/ class=post-card><div class=post-tags><span class="tag tag-purple">Comparison</span></div><h3 class=post-title>rsyslog vs syslog-ng vs Vector: Best Self-Hosted Log Aggregation 2026</h3><div class=post-excerpt>Every server, container, and network device generates logs. Without a centralized collection strategy, troubleshooting …</div><div class=post-footer><span class=post-date>Apr 18, 2026</span></div></a><a href=/posts/2026-05-09-self-hosted-log-forwarding-fluent-bit-vector-otel-collector-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Logging</span></div><h3 class=post-title>Self-Hosted Log Forwarding: Fluent Bit vs Vector vs OpenTelemetry Collector (2026)</h3><div class=post-excerpt>In any self-hosted infrastructure, logs are generated everywhere — web servers, databases, container runtimes, …</div><div class=post-footer><span class=post-date>May 9, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>

@@ -1,0 +1,371 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted Kubernetes Event Monitoring: kwatch vs kube-eventer vs kubernetes-event-exporter | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-05-16-self-hosted-kubernetes-event-monitoring-kwatch-kube-eventer-exporter-guide/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted Kubernetes Event Monitoring: kwatch vs kube-eventer vs kubernetes-event-exporter"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-05-16-self-hosted-kubernetes-event-monitoring-kwatch-kube-eventer-exporter-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-05-16T00:00:00Z"><meta property="article:modified_time" content="2026-05-16T00:00:00Z"><meta property="article:tag" content="kubernetes"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted Kubernetes Event Monitoring: kwatch vs kube-eventer vs kubernetes-event-exporter"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted Kubernetes Event Monitoring: kwatch vs kube-eventer vs kubernetes-event-exporter","description":"\u003cp\u003eKubernetes events capture important cluster state changes — pod scheduling failures, node conditions, deployment rollouts, and resource quota violations. By default, events are stored in etcd with a short TTL and are only visible through \u003ccode\u003ekubectl get events\u003c\/code\u003e. For production clusters, dedicated event monitoring tools provide persistent storage, alerting, and integration with notification channels.\u003c\/p\u003e","datePublished":"2026-05-16T00:00:00Z","dateModified":"2026-05-16T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-05-16-self-hosted-kubernetes-event-monitoring-kwatch-kube-eventer-exporter-guide\/"},"keywords":["kubernetes","monitoring","event-management","alerting","observability"],"articleSection":"kubernetes","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted Kubernetes Event Monitoring: kwatch vs kube-eventer vs kubernetes-event-exporter","item":"https:\/\/www.pistack.xyz\/posts\/2026-05-16-self-hosted-kubernetes-event-monitoring-kwatch-kube-eventer-exporter-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Kubernetes</span>
+<span class="tag tag-purple">Monitoring</span>
+<span class="tag tag-purple">Event-Management</span></div><h1>Self-Hosted Kubernetes Event Monitoring: kwatch vs kube-eventer vs kubernetes-event-exporter</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>May 16, 2026</span>
+<span>8 min read</span>
+<span>Updated May 16, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#why-monitor-kubernetes-events>Why Monitor Kubernetes Events?</a></li><li><a href=#kwatch--instant-crash-detection-for-kubernetes>kwatch — Instant Crash Detection for Kubernetes</a><ul><li><a href=#key-features>Key Features</a></li><li><a href=#deployment>Deployment</a></li><li><a href=#configuration>Configuration</a></li></ul></li><li><a href=#kube-eventer--event-forwarding-to-multiple-sinks>kube-eventer — Event Forwarding to Multiple Sinks</a><ul><li><a href=#key-features-1>Key Features</a></li><li><a href=#deployment-1>Deployment</a></li><li><a href=#sink-configuration>Sink Configuration</a></li></ul></li><li><a href=#kubernetes-event-exporter--events-as-prometheus-metrics>kubernetes-event-exporter — Events as Prometheus Metrics</a><ul><li><a href=#key-features-2>Key Features</a></li><li><a href=#deployment-2>Deployment</a></li><li><a href=#prometheus-integration>Prometheus Integration</a></li></ul></li><li><a href=#comparison-crash-alerts-vs-event-forwarding-vs-metrics>Comparison: Crash Alerts vs Event Forwarding vs Metrics</a></li><li><a href=#when-to-use-each-tool>When to Use Each Tool</a></li><li><a href=#building-a-complete-event-monitoring-pipeline>Building a Complete Event Monitoring Pipeline</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#how-long-are-kubernetes-events-stored-by-default>How long are Kubernetes events stored by default?</a></li><li><a href=#can-these-tools-detect-node-level-issues>Can these tools detect node-level issues?</a></li><li><a href=#do-these-tools-work-with-managed-kubernetes-eks-gke-aks>Do these tools work with managed Kubernetes (EKS, GKE, AKS)?</a></li><li><a href=#how-do-i-reduce-alert-noise-from-kwatch>How do I reduce alert noise from kwatch?</a></li><li><a href=#can-i-forward-events-to-both-slack-and-elasticsearch>Can I forward events to both Slack and Elasticsearch?</a></li><li><a href=#what-rbac-permissions-do-these-tools-need>What RBAC permissions do these tools need?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><p>Kubernetes events capture important cluster state changes — pod scheduling failures, node conditions, deployment rollouts, and resource quota violations. By default, events are stored in etcd with a short TTL and are only visible through <code>kubectl get events</code>. For production clusters, dedicated event monitoring tools provide persistent storage, alerting, and integration with notification channels.</p><p>This guide compares three open-source Kubernetes event monitoring tools — <strong>kwatch</strong>, <strong>kube-eventer</strong>, and <strong>kubernetes-event-exporter</strong> — each with different approaches to capturing, forwarding, and alerting on cluster events.</p><h2 id=why-monitor-kubernetes-events>Why Monitor Kubernetes Events?</h2><p>Kubernetes events are ephemeral by design — they are stored in etcd and garbage-collected after one hour by default. This means critical operational signals like pod crash loops, node not-ready conditions, and image pull failures can disappear before you notice them.</p><p>Event monitoring tools solve this by:</p><ul><li><strong>Persisting events</strong> beyond etcd&rsquo;s TTL</li><li><strong>Forwarding events</strong> to external sinks (Slack, PagerDuty, Elasticsearch, webhooks)</li><li><strong>Detecting patterns</strong> like repeated container crashes or node failures</li><li><strong>Correlating events</strong> with metrics and logs for root cause analysis</li></ul><table><thead><tr><th>Feature</th><th>kwatch</th><th>kube-eventer</th><th>kubernetes-event-exporter</th></tr></thead><tbody><tr><td><strong>GitHub Stars</strong></td><td>1,004</td><td>1,079</td><td>1,048</td></tr><tr><td><strong>Last Updated</strong></td><td>May 2026</td><td>Apr 2026</td><td>Aug 2022</td></tr><tr><td><strong>Primary Goal</strong></td><td>Crash detection & alerting</td><td>Event forwarding to sinks</td><td>Event export as metrics/logs</td></tr><tr><td><strong>Language</strong></td><td>Go</td><td>Go</td><td>Go</td></tr><tr><td><strong>Alerting</strong></td><td>Built-in (Slack, Discord, Teams, webhook)</td><td>Via sinks (webhook, Kafka, Elasticsearch)</td><td>Via Prometheus metrics or log output</td></tr><tr><td><strong>Installation</strong></td><td>Helm chart / YAML manifest</td><td>Helm chart / YAML manifest</td><td>Helm chart / YAML manifest</td></tr><tr><td><strong>Best For</strong></td><td>SRE teams needing instant crash alerts</td><td>Event-driven architectures</td><td>Metrics-driven monitoring</td></tr></tbody></table><h2 id=kwatch--instant-crash-detection-for-kubernetes>kwatch — Instant Crash Detection for Kubernetes</h2><p><a href=https://github.com/abahmed/kwatch>kwatch</a> is a lightweight Kubernetes event monitor focused on detecting pod crashes and sending instant notifications. It watches for CrashLoopBackOff, OOMKilled, and other failure events and alerts through Slack, Discord, Microsoft Teams, or custom webhooks.</p><h3 id=key-features>Key Features</h3><ul><li><strong>Crash detection</strong>: Automatically detects CrashLoopBackOff, OOMKilled, and ImagePullBackOff events</li><li><strong>Multi-channel alerts</strong>: Slack, Discord, Microsoft Teams, Telegram, and webhooks</li><li><strong>Pod logs inclusion</strong>: Attaches recent pod logs to alert messages for faster debugging</li><li><strong>Namespace filtering</strong>: Monitor specific namespaces or exclude system namespaces</li><li><strong>Lightweight footprint</strong>: Minimal resource usage — runs as a single Deployment</li></ul><h3 id=deployment>Deployment</h3><p>kwatch is deployed as a Kubernetes Deployment with ClusterRole and ServiceAccount:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>apps/v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Deployment</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>kwatch</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>monitoring</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>replicas</span><span class=p>:</span><span class=w> </span><span class=m>1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>selector</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>matchLabels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>app</span><span class=p>:</span><span class=w> </span><span class=l>kwatch</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>template</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>labels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>app</span><span class=p>:</span><span class=w> </span><span class=l>kwatch</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>serviceAccountName</span><span class=p>:</span><span class=w> </span><span class=l>kwatch</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>containers</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>kwatch</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>ghcr.io/abahmed/kwatch:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>env</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>ALERT_SLACK_WEBHOOK</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>value</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;https://hooks.slack.com/services/REPLACE/WITH/YOUR-WEBHOOK&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>ALERT_SLACK_CHANNEL</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>value</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;#k8s-alerts&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>resources</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>requests</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>cpu</span><span class=p>:</span><span class=w> </span><span class=l>50m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>memory</span><span class=p>:</span><span class=w> </span><span class=l>64Mi</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>limits</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>cpu</span><span class=p>:</span><span class=w> </span><span class=l>100m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>memory</span><span class=p>:</span><span class=w> </span><span class=l>128Mi</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nn>---</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>rbac.authorization.k8s.io/v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>ClusterRole</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>kwatch</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>rules</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span>- <span class=nt>apiGroups</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>resources</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;events&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;pods&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;pods/log&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>verbs</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;get&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;watch&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;list&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nn>---</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>rbac.authorization.k8s.io/v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>ClusterRoleBinding</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>kwatch</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>roleRef</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>apiGroup</span><span class=p>:</span><span class=w> </span><span class=l>rbac.authorization.k8s.io</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>ClusterRole</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>kwatch</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>subjects</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span>- <span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>ServiceAccount</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>kwatch</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>monitoring</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=configuration>Configuration</h3><p>kwatch uses environment variables for configuration. Key settings include:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>env</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>ALERT_SLACK_WEBHOOK</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>value</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;https://hooks.slack.com/services/REPLACE/WITH/YOUR-WEBHOOK&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>ALERT_SLACK_CHANNEL</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>value</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;#kubernetes-alerts&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>NAMESPACES</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>value</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;default,production,staging&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>EXCLUDE_NAMESPACES</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>value</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;kube-system,monitoring&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>MAX_RESTART_COUNT</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>value</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3&#34;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>The <code>MAX_RESTART_COUNT</code> setting controls how many restarts trigger an alert, reducing noise from transient failures.</p><h2 id=kube-eventer--event-forwarding-to-multiple-sinks>kube-eventer — Event Forwarding to Multiple Sinks</h2><p><a href=https://github.com/AliyunContainerService/kube-eventer>kube-eventer</a> is a Kubernetes event forwarder that captures cluster events and sends them to various sinks including webhooks, Kafka, Elasticsearch, and logging services. Originally developed by Alibaba Cloud, it is designed for event-driven architectures where Kubernetes events need to trigger downstream processing.</p><h3 id=key-features-1>Key Features</h3><ul><li><strong>Multiple sink types</strong>: Webhook, Kafka, Elasticsearch, DingTalk, Slack</li><li><strong>Event filtering</strong>: Filter events by type, reason, or namespace</li><li><strong>High throughput</strong>: Designed for large clusters with high event volumes</li><li><strong>Batch processing</strong>: Groups events before forwarding to reduce API calls</li><li><strong>Sink fallback</strong>: Configurable retry and fallback behavior for failed deliveries</li></ul><h3 id=deployment-1>Deployment</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>apps/v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Deployment</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>kube-eventer</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>monitoring</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>replicas</span><span class=p>:</span><span class=w> </span><span class=m>1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>selector</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>matchLabels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>app</span><span class=p>:</span><span class=w> </span><span class=l>kube-eventer</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>template</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>labels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>app</span><span class=p>:</span><span class=w> </span><span class=l>kube-eventer</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>serviceAccountName</span><span class=p>:</span><span class=w> </span><span class=l>kube-eventer</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>containers</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>kube-eventer</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>registry.cn-hangzhou.aliyuncs.com/acs/kube-eventer-amd64:v1.2.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>command</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=l>/kube-eventer</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- --<span class=l>source=kubernetes:https://kubernetes.default</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- --<span class=l>sink=webhook:https://your-webhook.example.com/events</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- --<span class=l>sink=elasticsearch:http://elasticsearch:9200?sniff=false</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>resources</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>requests</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>cpu</span><span class=p>:</span><span class=w> </span><span class=l>100m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>memory</span><span class=p>:</span><span class=w> </span><span class=l>128Mi</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>limits</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>cpu</span><span class=p>:</span><span class=w> </span><span class=l>200m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>memory</span><span class=p>:</span><span class=w> </span><span class=l>256Mi</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nn>---</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>rbac.authorization.k8s.io/v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>ClusterRole</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>kube-eventer</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>rules</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span>- <span class=nt>apiGroups</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>resources</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;events&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>verbs</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;get&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;watch&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;list&#34;</span><span class=p>]</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=sink-configuration>Sink Configuration</h3><p>kube-eventer supports multiple sinks simultaneously using the <code>--sink</code> flag:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Webhook sink with custom headers</span>
+</span></span><span class=line><span class=cl>--sink<span class=o>=</span>webhook:https://hooks.example.com/k8s?level<span class=o>=</span>Info<span class=p>&amp;</span><span class=nv>custom_header</span><span class=o>=</span>Authorization:Bearer+token
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Kafka sink for event streaming</span>
+</span></span><span class=line><span class=cl>--sink<span class=o>=</span>kafka:broker1:9092,broker2:9092?topic<span class=o>=</span>k8s-events<span class=p>&amp;</span><span class=nv>level</span><span class=o>=</span>Warning
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Elasticsearch sink for persistent storage</span>
+</span></span><span class=line><span class=cl>--sink<span class=o>=</span>elasticsearch:http://es-cluster:9200?sniff<span class=o>=</span>false<span class=p>&amp;</span><span class=nv>index</span><span class=o>=</span>k8s-events
+</span></span></code></pre></td></tr></table></div></div><p>Multiple <code>--sink</code> flags can be specified to forward events to multiple destinations simultaneously.</p><h2 id=kubernetes-event-exporter--events-as-prometheus-metrics>kubernetes-event-exporter — Events as Prometheus Metrics</h2><p><a href=https://github.com/opsgenie/kubernetes-event-exporter>kubernetes-event-exporter</a> by Opsgenie exports Kubernetes events as Prometheus metrics and/or structured logs. This approach enables event-driven alerting through existing Prometheus/Alertmanager pipelines, integrating events with your existing monitoring workflow.</p><h3 id=key-features-2>Key Features</h3><ul><li><strong>Prometheus metrics</strong>: Exports events as metrics for Prometheus scraping</li><li><strong>Structured logging</strong>: Outputs events as JSON logs for log aggregation pipelines</li><li><strong>Webhook forwarding</strong>: Sends events to external webhooks</li><li><strong>Event deduplication</strong>: Avoids duplicate metric emissions for recurring events</li><li><strong>Namespace filtering</strong>: Selective event export by namespace</li></ul><h3 id=deployment-2>Deployment</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>apps/v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Deployment</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>k8s-event-exporter</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>monitoring</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>replicas</span><span class=p>:</span><span class=w> </span><span class=m>1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>selector</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>matchLabels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>app</span><span class=p>:</span><span class=w> </span><span class=l>k8s-event-exporter</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>template</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>labels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>app</span><span class=p>:</span><span class=w> </span><span class=l>k8s-event-exporter</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>serviceAccountName</span><span class=p>:</span><span class=w> </span><span class=l>k8s-event-exporter</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>containers</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>exporter</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>opsgenie/kubernetes-event-exporter:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>args</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- -<span class=l>conf=/etc/config/config.yaml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>containerPort</span><span class=p>:</span><span class=w> </span><span class=m>8080</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>metrics</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>volumeMounts</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>config</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>mountPath</span><span class=p>:</span><span class=w> </span><span class=l>/etc/config</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>config</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>configMap</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>k8s-event-exporter-config</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nn>---</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>ConfigMap</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>k8s-event-exporter-config</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>data</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>config.yaml</span><span class=p>:</span><span class=w> </span><span class=p>|</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>    logLevel: info
+</span></span></span><span class=line><span class=cl><span class=sd>    logFormat: json
+</span></span></span><span class=line><span class=cl><span class=sd>    namespace: &#34;&#34;
+</span></span></span><span class=line><span class=cl><span class=sd>    host: &#34;0.0.0.0&#34;
+</span></span></span><span class=line><span class=cl><span class=sd>    port: 8080
+</span></span></span><span class=line><span class=cl><span class=sd>    rules:
+</span></span></span><span class=line><span class=cl><span class=sd>      - match:
+</span></span></span><span class=line><span class=cl><span class=sd>          type: &#34;Warning&#34;
+</span></span></span><span class=line><span class=cl><span class=sd>          reason: &#34;.*&#34;
+</span></span></span><span class=line><span class=cl><span class=sd>        emit: true
+</span></span></span><span class=line><span class=cl><span class=sd>    receivers:
+</span></span></span><span class=line><span class=cl><span class=sd>      - name: &#34;webhook&#34;
+</span></span></span><span class=line><span class=cl><span class=sd>        webhook:
+</span></span></span><span class=line><span class=cl><span class=sd>          endpoint: &#34;https://your-webhook.example.com/events&#34;
+</span></span></span><span class=line><span class=cl><span class=sd>          headers:
+</span></span></span><span class=line><span class=cl><span class=sd>            Content-Type: &#34;application/json&#34;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=prometheus-integration>Prometheus Integration</h3><p>To scrape metrics from the event exporter, add a ServiceMonitor or scrape config:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># Prometheus scrape config addition</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span>- <span class=nt>job_name</span><span class=p>:</span><span class=w> </span><span class=l>k8s-event-exporter</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>kubernetes_sd_configs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=nt>role</span><span class=p>:</span><span class=w> </span><span class=l>endpoints</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>namespaces</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>names</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>monitoring</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>relabel_configs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=nt>source_labels</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=l>__meta_kubernetes_pod_label_app]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>regex</span><span class=p>:</span><span class=w> </span><span class=l>k8s-event-exporter</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>action</span><span class=p>:</span><span class=w> </span><span class=l>keep</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>The exporter emits metrics like <code>kubernetes_event_count</code> and <code>kubernetes_event_last_seen</code> that can be queried in Prometheus and Alertmanager.</p><h2 id=comparison-crash-alerts-vs-event-forwarding-vs-metrics>Comparison: Crash Alerts vs Event Forwarding vs Metrics</h2><table><thead><tr><th>Aspect</th><th>kwatch</th><th>kube-eventer</th><th>kubernetes-event-exporter</th></tr></thead><tbody><tr><td><strong>Primary Use Case</strong></td><td>Instant crash alerts</td><td>Event streaming to sinks</td><td>Metrics-driven alerting</td></tr><tr><td><strong>Notification Channels</strong></td><td>Slack, Discord, Teams, Telegram</td><td>Webhook, Kafka, ES, DingTalk</td><td>Prometheus/Alertmanager, Webhook</td></tr><tr><td><strong>Event Persistence</strong></td><td>No (alert-and-forget)</td><td>Yes (ES, Kafka)</td><td>Yes (Prometheus, logs)</td></tr><tr><td><strong>Pod Log Attachment</strong></td><td>Yes</td><td>No</td><td>No</td></tr><tr><td><strong>Event Filtering</strong></td><td>Namespace-based</td><td>Type, reason, namespace</td><td>Rule-based matching</td></tr><tr><td><strong>Resource Usage</strong></td><td>Very low (~64 MB)</td><td>Low (~128 MB)</td><td>Low (~128 MB)</td></tr><tr><td><strong>Setup Complexity</strong></td><td>Low (env vars)</td><td>Medium (sink config)</td><td>Medium (YAML config + Prometheus)</td></tr></tbody></table><h2 id=when-to-use-each-tool>When to Use Each Tool</h2><p><strong>kwatch</strong> is ideal when:</p><ul><li>You need instant notifications for pod crashes and OOMKilled events</li><li>Your team uses Slack/Discord/Teams for operational communication</li><li>You want pod logs automatically attached to alert messages</li><li>You have a small-to-medium cluster and need simple setup</li></ul><p><strong>kube-eventer</strong> excels when:</p><ul><li>You need to forward events to multiple sinks simultaneously</li><li>You are building event-driven architectures (events trigger downstream processing)</li><li>You need persistent event storage in Elasticsearch or Kafka</li><li>You operate large clusters with high event volumes</li></ul><p><strong>kubernetes-event-exporter</strong> is best when:</p><ul><li>You already use Prometheus/Alertmanager for monitoring</li><li>You want to correlate events with metrics using PromQL</li><li>You prefer rule-based event matching and filtering</li><li>Your team is comfortable with Prometheus alerting rules</li></ul><h2 id=building-a-complete-event-monitoring-pipeline>Building a Complete Event Monitoring Pipeline</h2><p>For comprehensive Kubernetes observability, combine event monitoring with other tools:</p><ul><li><strong>Metrics</strong>: Prometheus + <a href=../2026-05-16-self-hosted-alertmanager-dashboard-karma-unsee-native-guide/>Alertmanager dashboard</a> for metric-based alerting</li><li><strong>Logs</strong>: <a href=../2026-05-09-self-hosted-log-forwarding-fluent-bit-vector-otel-collector-guide/>Vector + Fluent Bit</a> for log aggregation from monitored pods</li><li><strong>Tracing</strong>: Distributed tracing for request-level debugging</li><li><strong>Policy</strong>: <a href=../2026-04-23-kyverno-vs-opa-gatekeeper-vs-trivy-operator-kubernetes-policy-enforcement-2026/>Kubernetes policy enforcement</a> with Kyverno or OPA Gatekeeper to prevent issues before they generate events</li></ul><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted Kubernetes Event Monitoring: kwatch vs kube-eventer vs kubernetes-event-exporter","description":"Compare Kubernetes event monitoring tools for crash detection, event forwarding, and metrics-driven alerting in production clusters.","datePublished":"2026-05-16","dateModified":"2026-05-16","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script><h2 id=faq>FAQ</h2><h3 id=how-long-are-kubernetes-events-stored-by-default>How long are Kubernetes events stored by default?</h3><p>Kubernetes stores events in etcd with a default TTL of one hour. After this period, events are garbage-collected. This is why dedicated event monitoring tools are necessary — without them, you lose visibility into past events that could indicate recurring issues.</p><h3 id=can-these-tools-detect-node-level-issues>Can these tools detect node-level issues?</h3><p>kwatch primarily monitors pod-level events (crashes, image pulls, scheduling failures). kube-eventer and kubernetes-event-exporter can capture node-level events like <code>NodeNotReady</code>, <code>NodeUnderMemoryPressure</code>, and <code>NodeUnderDiskPressure</code> by watching all events in the cluster, not just pod events.</p><h3 id=do-these-tools-work-with-managed-kubernetes-eks-gke-aks>Do these tools work with managed Kubernetes (EKS, GKE, AKS)?</h3><p>Yes, all three tools work with managed Kubernetes clusters. They require ClusterRole permissions to read events, which are available on all major managed Kubernetes platforms. Note that some managed platforms (like GKE) have their own event export mechanisms that may overlap with these tools.</p><h3 id=how-do-i-reduce-alert-noise-from-kwatch>How do I reduce alert noise from kwatch?</h3><p>Use the <code>EXCLUDE_NAMESPACES</code> environment variable to exclude noisy system namespaces, and set <code>MAX_RESTART_COUNT</code> to a higher threshold (e.g., 5) to avoid alerts from transient restarts. You can also configure namespace-specific alerting by deploying multiple kwatch instances with different namespace filters.</p><h3 id=can-i-forward-events-to-both-slack-and-elasticsearch>Can I forward events to both Slack and Elasticsearch?</h3><p>Yes, but you need different tools for this. kwatch only supports notification channels (Slack, Discord, etc.) without persistent storage. kube-eventer can forward to both webhooks (Slack) and Elasticsearch simultaneously using multiple <code>--sink</code> flags. Alternatively, use kube-eventer for ES persistence and kwatch for instant Slack alerts.</p><h3 id=what-rbac-permissions-do-these-tools-need>What RBAC permissions do these tools need?</h3><p>All three tools need at minimum <code>get</code>, <code>watch</code>, and <code>list</code> permissions on the <code>events</code> resource. kwatch additionally needs access to <code>pods</code> and <code>pods/log</code> to attach log output to alerts. Deploy each tool with a dedicated ServiceAccount and ClusterRole scoped to only the required permissions.</p></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20Kubernetes%20Event%20Monitoring%3a%20kwatch%20vs%20kube-eventer%20vs%20kubernetes-event-exporter&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-16-self-hosted-kubernetes-event-monitoring-kwatch-kube-eventer-exporter-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-16-self-hosted-kubernetes-event-monitoring-kwatch-kube-eventer-exporter-guide%2f&t=Self-Hosted%20Kubernetes%20Event%20Monitoring%3a%20kwatch%20vs%20kube-eventer%20vs%20kubernetes-event-exporter" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/kubernetes/ class=tag-link>Kubernetes</a>
+<a href=/tags/monitoring/ class=tag-link>Monitoring</a>
+<a href=/tags/event-management/ class=tag-link>Event-Management</a>
+<a href=/tags/alerting/ class=tag-link>Alerting</a>
+<a href=/tags/observability/ class=tag-link>Observability</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-05-16-self-hosted-alertmanager-dashboard-karma-unsee-native-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Prometheus</span></div><h3 class=post-title>Self-Hosted Alertmanager Dashboard UIs: Karma vs Unsee vs Native</h3><div class=post-excerpt>Prometheus Alertmanager handles alert deduplication, grouping, routing, and notification — but its built-in web UI is …</div><div class=post-footer><span class=post-date>May 16, 2026</span></div></a><a href=/posts/2026-05-14-kiali-vs-linkerd-viz-vs-consul-dashboard-service-mesh-observability-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Service-Mesh</span></div><h3 class=post-title>Kiali vs Linkerd Viz vs Consul Dashboard: Best Service Mesh Observability Tools 2026</h3><div class=post-excerpt>Service meshes add a critical infrastructure layer to Kubernetes clusters — handling service-to-service communication, …</div><div class=post-footer><span class=post-date>May 14, 2026</span></div></a><a href=/posts/2026-04-30-k8s-monitoring-operators-kube-prometheus-victoriametrics-opentelemetry-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Comparison</span></div><h3 class=post-title>Kubernetes Monitoring Operators: kube-prometheus-stack vs VictoriaMetrics vs OpenTelemetry</h3><div class=post-excerpt>Monitoring a Kubernetes cluster requires collecting metrics from nodes, pods, containers, and the control plane, then …</div><div class=post-footer><span class=post-date>Apr 30, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>

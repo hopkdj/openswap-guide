@@ -1,0 +1,453 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted DHCP Failover and High Availability: ISC Kea vs ISC DHCP vs dnsmasq | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-05-14-self-hosted-dhcp-failover-ha-kea-dhcp-dnsmasq-guide/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted DHCP Failover and High Availability: ISC Kea vs ISC DHCP vs dnsmasq"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-05-14-self-hosted-dhcp-failover-ha-kea-dhcp-dnsmasq-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-05-14T00:00:00Z"><meta property="article:modified_time" content="2026-05-14T00:00:00Z"><meta property="article:tag" content="dhcp"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted DHCP Failover and High Availability: ISC Kea vs ISC DHCP vs dnsmasq"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted DHCP Failover and High Availability: ISC Kea vs ISC DHCP vs dnsmasq","description":"\u003cp\u003eRunning DHCP without redundancy is a single point of failure for your entire network. When the DHCP server goes down, new devices cannot obtain IP addresses, existing leases eventually expire, and your infrastructure grinds to a halt. This guide compares three open-source approaches to DHCP high availability — ISC Kea with its built-in HA framework, the classic ISC DHCP failover protocol, and dnsmasq paired with Keepalived VRRP — so you can choose the right strategy for your environment.\u003c\/p\u003e","datePublished":"2026-05-14T00:00:00Z","dateModified":"2026-05-14T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-05-14-self-hosted-dhcp-failover-ha-kea-dhcp-dnsmasq-guide\/"},"keywords":["dhcp","high-availability","networking","failover","self-hosted"],"articleSection":"dhcp","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted DHCP Failover and High Availability: ISC Kea vs ISC DHCP vs dnsmasq","item":"https:\/\/www.pistack.xyz\/posts\/2026-05-14-self-hosted-dhcp-failover-ha-kea-dhcp-dnsmasq-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Dhcp</span>
+<span class="tag tag-purple">High-Availability</span>
+<span class="tag tag-purple">Networking</span></div><h1>Self-Hosted DHCP Failover and High Availability: ISC Kea vs ISC DHCP vs dnsmasq</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>May 14, 2026</span>
+<span>12 min read</span>
+<span>Updated May 14, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#why-dhcp-high-availability-matters>Why DHCP High Availability Matters</a></li><li><a href=#isc-kea-dhcp-built-in-high-availability-framework>ISC Kea DHCP: Built-In High Availability Framework</a><ul><li><a href=#architecture>Architecture</a></li><li><a href=#docker-compose-deployment>Docker Compose Deployment</a></li><li><a href=#kea-ha-configuration-kea-primaryconf>Kea HA Configuration (kea-primary.conf)</a></li></ul></li><li><a href=#isc-dhcp-the-classic-failover-protocol>ISC DHCP: The Classic Failover Protocol</a><ul><li><a href=#architecture-1>Architecture</a></li><li><a href=#docker-compose-deployment-1>Docker Compose Deployment</a></li><li><a href=#failover-configuration-dhcpdconf-excerpt>Failover Configuration (dhcpd.conf excerpt)</a></li></ul></li><li><a href=#dnsmasq--keepalived-lightweight-ha>dnsmasq + Keepalived: Lightweight HA</a><ul><li><a href=#architecture-2>Architecture</a></li><li><a href=#docker-compose-deployment-2>Docker Compose Deployment</a></li><li><a href=#keepalived-configuration>Keepalived Configuration</a></li><li><a href=#dnsmasq-configuration>dnsmasq Configuration</a></li></ul></li><li><a href=#comparison-table>Comparison Table</a></li><li><a href=#choosing-the-right-dhcp-ha-strategy>Choosing the Right DHCP HA Strategy</a></li><li><a href=#security-best-practices-for-dhcp-ha>Security Best Practices for DHCP HA</a></li><li><a href=#why-self-host-your-dhcp-infrastructure>Why Self-Host Your DHCP Infrastructure?</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#what-happens-to-active-dhcp-leases-during-a-failover-event>What happens to active DHCP leases during a failover event?</a></li><li><a href=#can-i-run-dhcp-ha-across-different-physical-sites>Can I run DHCP HA across different physical sites?</a></li><li><a href=#how-do-i-monitor-dhcp-ha-health>How do I monitor DHCP HA health?</a></li><li><a href=#is-isc-dhcp-still-safe-to-use-if-it-is-deprecated>Is ISC DHCP still safe to use if it is deprecated?</a></li><li><a href=#what-is-the-difference-between-hot-standby-and-load-balancing-modes-in-kea>What is the difference between hot-standby and load-balancing modes in Kea?</a></li><li><a href=#can-i-migrate-from-isc-dhcp-to-kea-without-downtime>Can I migrate from ISC DHCP to Kea without downtime?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><p>Running DHCP without redundancy is a single point of failure for your entire network. When the DHCP server goes down, new devices cannot obtain IP addresses, existing leases eventually expire, and your infrastructure grinds to a halt. This guide compares three open-source approaches to DHCP high availability — ISC Kea with its built-in HA framework, the classic ISC DHCP failover protocol, and dnsmasq paired with Keepalived VRRP — so you can choose the right strategy for your environment.</p><h2 id=why-dhcp-high-availability-matters>Why DHCP High Availability Matters</h2><p>DHCP is a foundational network service. Every device on your network — servers, workstations, IoT sensors, phones, and guest devices — depends on it for IP address assignment, DNS configuration, and optional parameters like NTP servers and boot filenames.</p><p>Unlike DNS, which can be cached for hours, DHCP leases have finite lifetimes. When a lease expires and the server is unreachable, the device loses its ability to renew, eventually dropping off the network entirely. In enterprise environments with hundreds or thousands of endpoints, a DHCP outage causes cascading failures: new employees cannot connect, IoT devices stop reporting, and VoIP phones fail to register.</p><p>High availability for DHCP can be achieved through several architectural patterns. The choice depends on your scale, existing infrastructure, and tolerance for complexity. Below we examine three proven approaches used in production environments worldwide.</p><h2 id=isc-kea-dhcp-built-in-high-availability-framework>ISC Kea DHCP: Built-In High Availability Framework</h2><p>ISC Kea is the modern successor to the legacy ISC DHCP server, designed from the ground up with enterprise requirements in mind. Its most significant advantage for HA deployments is the <strong>native HA framework</strong> — a purpose-built system for synchronizing state between primary and secondary servers without external orchestration.</p><h3 id=architecture>Architecture</h3><p>Kea&rsquo;s HA model uses a primary-secondary (or hot-standby) topology where both servers communicate over HTTP/REST. The primary server handles all DHCP requests while the secondary stays synchronized. If the primary fails, the secondary automatically takes over within seconds.</p><p>Key components of the HA framework:</p><ul><li><strong>HA hook library</strong>: Loaded into kea-dhcp4 or kea-dhcp6, it intercepts lease operations and replicates them to the partner server</li><li><strong>Communication daemon</strong>: HTTP-based protocol for state synchronization and health monitoring</li><li><strong>Lease database backend</strong>: Supports MySQL, PostgreSQL, and Cassandra for shared or local storage</li><li><strong>Control Agent</strong>: REST API for runtime configuration changes and monitoring</li></ul><h3 id=docker-compose-deployment>Docker Compose Deployment</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>kea-primary</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>isc/kea:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>kea-primary</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;67:67/udp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8000:8000&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./kea-primary.conf:/etc/kea/kea-dhcp4.conf:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./kea-primary-logging.conf:/etc/kea/logging.conf:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>dhcp-net</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>ipv4_address</span><span class=p>:</span><span class=w> </span><span class=m>10.0.100.10</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>mysql</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>kea-secondary</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>isc/kea:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>kea-secondary</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;68:67/udp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./kea-secondary.conf:/etc/kea/kea-dhcp4.conf:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>dhcp-net</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>ipv4_address</span><span class=p>:</span><span class=w> </span><span class=m>10.0.100.11</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>mysql</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>mysql</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>mysql:8.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>MYSQL_ROOT_PASSWORD</span><span class=p>:</span><span class=w> </span><span class=l>kea-root-pass</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>MYSQL_DATABASE</span><span class=p>:</span><span class=w> </span><span class=l>kea</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>MYSQL_USER</span><span class=p>:</span><span class=w> </span><span class=l>kea</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>MYSQL_PASSWORD</span><span class=p>:</span><span class=w> </span><span class=l>kea-pass</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>mysql-data:/var/lib/mysql</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>dhcp-net</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>ipv4_address</span><span class=p>:</span><span class=w> </span><span class=m>10.0.100.20</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>dhcp-net</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>bridge</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ipam</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>config</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>subnet</span><span class=p>:</span><span class=w> </span><span class=m>10.0.100.0</span><span class=l>/24</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>mysql-data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=kea-ha-configuration-kea-primaryconf>Kea HA Configuration (kea-primary.conf)</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;Dhcp4&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;interfaces-config&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;interfaces&#34;</span><span class=p>:</span> <span class=p>[</span><span class=s2>&#34;eth0&#34;</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>    <span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;lease-database&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;type&#34;</span><span class=p>:</span> <span class=s2>&#34;mysql&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;name&#34;</span><span class=p>:</span> <span class=s2>&#34;kea&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;user&#34;</span><span class=p>:</span> <span class=s2>&#34;kea&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;password&#34;</span><span class=p>:</span> <span class=s2>&#34;kea-pass&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;host&#34;</span><span class=p>:</span> <span class=s2>&#34;mysql&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>      <span class=nt>&#34;persist&#34;</span><span class=p>:</span> <span class=kc>true</span>
+</span></span><span class=line><span class=cl>    <span class=p>},</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;hooks-libraries&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>      <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&#34;library&#34;</span><span class=p>:</span> <span class=s2>&#34;/usr/lib/kea/hooks/libdhcp_ha.so&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&#34;parameters&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>          <span class=nt>&#34;high-availability&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>            <span class=p>{</span>
+</span></span><span class=line><span class=cl>              <span class=nt>&#34;this-server-name&#34;</span><span class=p>:</span> <span class=s2>&#34;kea-primary&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>              <span class=nt>&#34;mode&#34;</span><span class=p>:</span> <span class=s2>&#34;hot-standby&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>              <span class=nt>&#34;heartbeat-delay&#34;</span><span class=p>:</span> <span class=mi>10000</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>              <span class=nt>&#34;max-response-delay&#34;</span><span class=p>:</span> <span class=mi>10000</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>              <span class=nt>&#34;max-ack-delay&#34;</span><span class=p>:</span> <span class=mi>5000</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>              <span class=nt>&#34;max-unacked-clients&#34;</span><span class=p>:</span> <span class=mi>0</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>              <span class=nt>&#34;peers&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>                <span class=p>{</span>
+</span></span><span class=line><span class=cl>                  <span class=nt>&#34;name&#34;</span><span class=p>:</span> <span class=s2>&#34;kea-primary&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                  <span class=nt>&#34;url&#34;</span><span class=p>:</span> <span class=s2>&#34;http://10.0.100.10:8000/&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                  <span class=nt>&#34;role&#34;</span><span class=p>:</span> <span class=s2>&#34;primary&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                  <span class=nt>&#34;auto-failover&#34;</span><span class=p>:</span> <span class=kc>true</span>
+</span></span><span class=line><span class=cl>                <span class=p>},</span>
+</span></span><span class=line><span class=cl>                <span class=p>{</span>
+</span></span><span class=line><span class=cl>                  <span class=nt>&#34;name&#34;</span><span class=p>:</span> <span class=s2>&#34;kea-secondary&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                  <span class=nt>&#34;url&#34;</span><span class=p>:</span> <span class=s2>&#34;http://10.0.100.11:8000/&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                  <span class=nt>&#34;role&#34;</span><span class=p>:</span> <span class=s2>&#34;standby&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>                  <span class=nt>&#34;auto-failover&#34;</span><span class=p>:</span> <span class=kc>true</span>
+</span></span><span class=line><span class=cl>                <span class=p>}</span>
+</span></span><span class=line><span class=cl>              <span class=p>]</span>
+</span></span><span class=line><span class=cl>            <span class=p>}</span>
+</span></span><span class=line><span class=cl>          <span class=p>]</span>
+</span></span><span class=line><span class=cl>        <span class=p>}</span>
+</span></span><span class=line><span class=cl>      <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=p>],</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;subnet4&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>      <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&#34;subnet&#34;</span><span class=p>:</span> <span class=s2>&#34;192.168.1.0/24&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&#34;pools&#34;</span><span class=p>:</span> <span class=p>[{</span> <span class=nt>&#34;pool&#34;</span><span class=p>:</span> <span class=s2>&#34;192.168.1.100 - 192.168.1.200&#34;</span> <span class=p>}],</span>
+</span></span><span class=line><span class=cl>        <span class=nt>&#34;option-data&#34;</span><span class=p>:</span> <span class=p>[</span>
+</span></span><span class=line><span class=cl>          <span class=p>{</span> <span class=nt>&#34;name&#34;</span><span class=p>:</span> <span class=s2>&#34;routers&#34;</span><span class=p>,</span> <span class=nt>&#34;data&#34;</span><span class=p>:</span> <span class=s2>&#34;192.168.1.1&#34;</span> <span class=p>},</span>
+</span></span><span class=line><span class=cl>          <span class=p>{</span> <span class=nt>&#34;name&#34;</span><span class=p>:</span> <span class=s2>&#34;domain-name-servers&#34;</span><span class=p>,</span> <span class=nt>&#34;data&#34;</span><span class=p>:</span> <span class=s2>&#34;192.168.1.2&#34;</span> <span class=p>}</span>
+</span></span><span class=line><span class=cl>        <span class=p>]</span>
+</span></span><span class=line><span class=cl>      <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=p>]</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>Kea supports both <strong>hot-standby</strong> (one active, one passive) and <strong>load-balancing</strong> (both active, splitting the address pool) modes. In load-balancing mode, each server handles roughly half the requests and replicates lease state to its partner.</p><h2 id=isc-dhcp-the-classic-failover-protocol>ISC DHCP: The Classic Failover Protocol</h2><p>The ISC DHCP server has been the gold standard for open-source DHCP for over two decades. Its failover protocol is a well-tested, RFC-documented approach that remains in widespread use despite ISC officially deprecating the project in favor of Kea.</p><h3 id=architecture-1>Architecture</h3><p>The ISC DHCP failover protocol operates at the protocol level, not as an add-on hook. Two servers establish a TCP connection and synchronize their lease databases through a continuous exchange of update messages. The protocol supports:</p><ul><li><strong>Primary-secondary topology</strong>: One server owns each address, the partner has backup copies</li><li><strong>Split-scope mode</strong>: Address ranges are divided between servers with no overlap</li><li><strong>Load-balancing mode</strong>: Both servers respond to requests with configurable load ratios</li></ul><h3 id=docker-compose-deployment-1>Docker Compose Deployment</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>isc-dhcp-primary</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>networkboot/dhcpd:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>isc-dhcp-primary</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>network_mode</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;host&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>cap_add</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>NET_ADMIN</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DHCP_INTERFACE=eth0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./dhcpd-primary.conf:/etc/dhcp/dhcpd.conf:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>dhcp-leases-primary:/var/lib/dhcp</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>isc-dhcp-secondary</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>networkboot/dhcpd:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>isc-dhcp-secondary</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>network_mode</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;host&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>cap_add</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>NET_ADMIN</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>DHCP_INTERFACE=eth0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./dhcpd-secondary.conf:/etc/dhcp/dhcpd.conf:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>dhcp-leases-secondary:/var/lib/dhcp</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>dhcp-leases-primary</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>dhcp-leases-secondary</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=failover-configuration-dhcpdconf-excerpt>Failover Configuration (dhcpd.conf excerpt)</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-gdscript3 data-lang=gdscript3><span class=line><span class=cl><span class=c1># Primary server</span>
+</span></span><span class=line><span class=cl><span class=n>failover</span> <span class=n>peer</span> <span class=s2>&#34;dhcp-failover&#34;</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>primary</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=n>address</span> <span class=mf>192.168</span><span class=o>.</span><span class=mf>1.10</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=n>port</span> <span class=mi>647</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=n>peer</span> <span class=n>address</span> <span class=mf>192.168</span><span class=o>.</span><span class=mf>1.11</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=n>peer</span> <span class=n>port</span> <span class=mi>647</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=nb>max</span><span class=o>-</span><span class=n>response</span><span class=o>-</span><span class=n>delay</span> <span class=mi>30</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=nb>max</span><span class=o>-</span><span class=n>unacked</span><span class=o>-</span><span class=n>updates</span> <span class=mi>10</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=n>mclt</span> <span class=mi>3600</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=n>split</span> <span class=mi>128</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=nb>load</span> <span class=n>balance</span> <span class=nb>max</span> <span class=n>seconds</span> <span class=mi>3</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>subnet</span> <span class=mf>192.168</span><span class=o>.</span><span class=mf>1.0</span> <span class=n>netmask</span> <span class=mf>255.255</span><span class=o>.</span><span class=mf>255.0</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>pool</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>failover</span> <span class=n>peer</span> <span class=s2>&#34;dhcp-failover&#34;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=nb>range</span> <span class=mf>192.168</span><span class=o>.</span><span class=mf>1.100</span> <span class=mf>192.168</span><span class=o>.</span><span class=mf>1.200</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=n>option</span> <span class=n>routers</span> <span class=mf>192.168</span><span class=o>.</span><span class=mf>1.1</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=n>option</span> <span class=n>domain</span><span class=o>-</span><span class=n>name</span><span class=o>-</span><span class=n>servers</span> <span class=mf>192.168</span><span class=o>.</span><span class=mf>1.2</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>The <code>split 128</code> directive divides the address pool evenly between the two servers. The <code>mclt</code> (Maximum Client Lead Time) prevents conflicts during network partitions by limiting how long a server can extend leases before syncing.</p><h2 id=dnsmasq--keepalived-lightweight-ha>dnsmasq + Keepalived: Lightweight HA</h2><p>For small to medium networks that do not need the complexity of full lease database synchronization, dnsmasq combined with Keepalived VRRP provides a simple, effective HA solution. This approach uses a virtual IP (VIP) that floats between two physical servers — whichever server holds the VIP responds to DHCP requests.</p><h3 id=architecture-2>Architecture</h3><p>Keepalived uses the Virtual Router Redundancy Protocol (VRRP) to manage VIP assignment. The master server owns the VIP and responds to DHCP. If the master fails, VRRP detects the loss and promotes the backup to master within 2-3 seconds. The dnsmasq instance on the backup already has the same configuration and static leases, so it seamlessly takes over.</p><h3 id=docker-compose-deployment-2>Docker Compose Deployment</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>dnsmasq-master</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>jpillora/dnsmasq:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>dnsmasq-master</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>network_mode</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;host&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>cap_add</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>NET_ADMIN</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>NET_RAW</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./dnsmasq.conf:/etc/dnsmasq.conf:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./dnsmasq.hosts:/etc/dnsmasq.hosts:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>keepalived</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>osixia/keepalived:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>keepalived</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>network_mode</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;host&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>cap_add</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>NET_ADMIN</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>NET_RAW</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./keepalived.conf:/container/service/keepalived/assets/keepalived.conf:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>KEEPALIVED_INTERFACE=eth0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=keepalived-configuration>Keepalived Configuration</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>vrrp_instance DHCP_VIP {
+</span></span><span class=line><span class=cl>    state MASTER
+</span></span><span class=line><span class=cl>    interface eth0
+</span></span><span class=line><span class=cl>    virtual_router_id 51
+</span></span><span class=line><span class=cl>    priority 150
+</span></span><span class=line><span class=cl>    advert_int 1
+</span></span><span class=line><span class=cl>    unicast_src_ip 192.168.1.10
+</span></span><span class=line><span class=cl>    unicast_peer {
+</span></span><span class=line><span class=cl>        192.168.1.11
+</span></span><span class=line><span class=cl>    }
+</span></span><span class=line><span class=cl>    authentication {
+</span></span><span class=line><span class=cl>        auth_type PASS
+</span></span><span class=line><span class=cl>        auth_pass vrrp-secret-2026
+</span></span><span class=line><span class=cl>    }
+</span></span><span class=line><span class=cl>    virtual_ipaddress {
+</span></span><span class=line><span class=cl>        192.168.1.1/24 dev eth0 label eth0:dhcp-vip
+</span></span><span class=line><span class=cl>    }
+</span></span><span class=line><span class=cl>    notify_master &#34;/etc/keepalived/notify-master.sh&#34;
+</span></span><span class=line><span class=cl>    notify_backup &#34;/etc/keepalived/notify-backup.sh&#34;
+</span></span><span class=line><span class=cl>}
+</span></span></code></pre></td></tr></table></div></div><h3 id=dnsmasq-configuration>dnsmasq Configuration</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl># Listen only on the VIP
+</span></span><span class=line><span class=cl>bind-interfaces
+</span></span><span class=line><span class=cl>interface=eth0
+</span></span><span class=line><span class=cl>except-interface=lo
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># DHCP settings
+</span></span><span class=line><span class=cl>dhcp-range=192.168.1.100,192.168.1.200,255.255.255.0,24h
+</span></span><span class=line><span class=cl>dhcp-option=option:router,192.168.1.1
+</span></span><span class=line><span class=cl>dhcp-option=option:dns-server,192.168.1.2
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># Static leases (identical on both servers)
+</span></span><span class=line><span class=cl>dhcp-host=aa:bb:cc:dd:ee:01,192.168.1.50,server01
+</span></span><span class=line><span class=cl>dhcp-host=aa:bb:cc:dd:ee:02,192.168.1.51,server02
+</span></span></code></pre></td></tr></table></div></div><p>The key limitation of this approach is that <strong>active DHCP leases are not synchronized</strong> between servers. If a failover occurs mid-lease, the backup server does not know which addresses are currently in use. For networks with long lease times (24 hours), this is rarely a problem because the backup will not reassign addresses that were recently active. For short lease times, consider the ISC Kea or ISC DHCP approaches instead.</p><h2 id=comparison-table>Comparison Table</h2><table><thead><tr><th>Feature</th><th>ISC Kea HA</th><th>ISC DHCP Failover</th><th>dnsmasq + Keepalived</th></tr></thead><tbody><tr><td><strong>Active development</strong></td><td>Yes (current)</td><td>No (deprecated)</td><td>Yes (upstream mirror)</td></tr><tr><td><strong>Stars on GitHub</strong></td><td>714</td><td>203</td><td>378</td></tr><tr><td><strong>Lease sync</strong></td><td>Real-time (HTTP/REST)</td><td>Real-time (TCP protocol)</td><td>No sync (identical config)</td></tr><tr><td><strong>Failover mode</strong></td><td>Hot-standby + load-balance</td><td>Primary-secondary + split-scope</td><td>VRRP VIP float</td></tr><tr><td><strong>Failover time</strong></td><td>&lt; 5 seconds</td><td>&lt; 10 seconds</td><td>2-3 seconds</td></tr><tr><td><strong>Database backend</strong></td><td>MySQL, PostgreSQL, Cassandra</td><td>Flat file</td><td>Flat file</td></tr><tr><td><strong>IPv6 support</strong></td><td>Yes (native)</td><td>Yes (native)</td><td>Yes (native)</td></tr><tr><td><strong>REST API</strong></td><td>Yes (Control Agent)</td><td>No</td><td>No</td></tr><tr><td><strong>Web UI</strong></td><td>Stork dashboard</td><td>Glass ISC DHCP</td><td>None (CLI only)</td></tr><tr><td><strong>Complexity</strong></td><td>High (hooks, DB, HTTP)</td><td>Medium (TCP protocol)</td><td>Low (VRRP + single config)</td></tr><tr><td><strong>Best for</strong></td><td>Enterprise, 1000+ clients</td><td>Legacy environments</td><td>Small/medium, &lt; 500 clients</td></tr></tbody></table><h2 id=choosing-the-right-dhcp-ha-strategy>Choosing the Right DHCP HA Strategy</h2><p>For <strong>enterprise deployments</strong> with hundreds or thousands of endpoints, ISC Kea&rsquo;s built-in HA framework is the strongest choice. It offers real-time lease synchronization, a REST API for monitoring and automation, and active development with a modern codebase. The Stork dashboard provides centralized management and visibility into both servers&rsquo; health.</p><p>For <strong>existing ISC DHCP installations</strong> that need HA without migration, the classic failover protocol continues to work reliably. However, note that ISC has declared the project in maintenance mode — no new features are being added. Plan a migration to Kea when practical.</p><p>For <strong>small offices, homelabs, or edge deployments</strong>, dnsmasq with Keepalived offers the simplest path to redundancy. There is no lease database to maintain, no hook libraries to configure, and the VRRP failover is well-understood and battle-tested. The tradeoff is the lack of lease synchronization during failover, which is acceptable for most small networks with standard 24-hour lease times.</p><h2 id=security-best-practices-for-dhcp-ha>Security Best Practices for DHCP HA</h2><p>Regardless of which HA approach you choose, follow these security practices:</p><ul><li><strong>Restrict HA communication</strong> to a dedicated management VLAN — the Kea HTTP control channel and ISC DHCP TCP failover connection should never traverse untrusted networks</li><li><strong>Use TLS for Kea</strong> — the HA hook supports HTTPS for peer communication; enable it in production</li><li><strong>Authenticate Keepalived</strong> — use strong VRRP passwords and consider switching to AH (Authentication Header) for VRRPv3</li><li><strong>Monitor lease consistency</strong> — run periodic checks comparing lease counts between primary and secondary servers</li><li><strong>Test failover regularly</strong> — schedule monthly failover drills to verify automatic switchover and switchover-back</li></ul><h2 id=why-self-host-your-dhcp-infrastructure>Why Self-Host Your DHCP Infrastructure?</h2><p>DHCP is the foundation of network connectivity. Every device that joins your network — from servers and workstations to IoT sensors and IP phones — relies on DHCP for IP address assignment and network configuration. When you outsource DHCP to a cloud provider or rely on your ISP&rsquo;s router, you lose visibility, control, and the ability to implement custom policies.</p><p>Self-hosting DHCP gives you complete ownership of your address allocation strategy. You can define custom options for PXE boot, set per-subnet DNS servers, implement MAC-based static reservations, and enforce lease duration policies that match your operational needs. In regulated environments, self-hosted DHCP ensures that network configuration data never leaves your data center.</p><p>High availability is equally critical. A DHCP outage means new devices cannot connect and existing devices eventually lose network access as leases expire. The three approaches covered in this guide — ISC Kea with native HA, ISC DHCP with the classic failover protocol, and dnsmasq with Keepalived VRRP — provide different tradeoffs between complexity, synchronization guarantees, and operational overhead.</p><p>For self-hosted DNS infrastructure, see our <a href=../2026-04-21-self-hosted-dns-firewall-rpz-unbound-powerdns-bind9-knot-guide-2026/>DNS firewall comparison</a> and <a href=../2026-04-18-powerdns-vs-bind9-vs-nsd-vs-knot-self-hosted-authoritative-dns-2026/>PowerDNS vs BIND authoritative DNS guide</a>. For high-availability networking, our <a href=../2026-04-22-bird-vs-frrouting-vs-keepalived-self-hosted-dns-anycast-guide-2026/>DNS anycast with Keepalived guide</a> covers complementary redundancy patterns.</p><h2 id=faq>FAQ</h2><h3 id=what-happens-to-active-dhcp-leases-during-a-failover-event>What happens to active DHCP leases during a failover event?</h3><p>With ISC Kea&rsquo;s hot-standby mode, leases are replicated in real-time to the secondary server. When failover occurs, the secondary already knows about every active lease and can immediately honor renewals. With ISC DHCP&rsquo;s failover protocol, lease state is continuously synchronized over the TCP connection, providing similar guarantees. With dnsmasq + Keepalived, leases are not synchronized — the backup server will not know about recent dynamic assignments, though static leases in the shared config file are preserved.</p><h3 id=can-i-run-dhcp-ha-across-different-physical-sites>Can I run DHCP HA across different physical sites?</h3><p>Yes, but with caveats. ISC Kea supports geographic separation if the network latency between sites is under 100ms. The HTTP-based heartbeat mechanism will tolerate moderate delays. ISC DHCP&rsquo;s failover protocol is more sensitive to latency and may produce split-brain scenarios if the link is unreliable. dnsmasq + Keepalived requires layer-2 connectivity for VRRP, making it unsuitable for WAN-separated sites.</p><h3 id=how-do-i-monitor-dhcp-ha-health>How do I monitor DHCP HA health?</h3><p>ISC Kea provides a Control Agent REST API at port 8000 that exposes lease statistics, server state, and HA peer status. The Stork dashboard visualizes this data in a web interface. For ISC DHCP, you can parse the lease file (<code>/var/lib/dhcp/dhcpd.leases</code>) and monitor the failover TCP connection with netstat. For dnsmasq + Keepalived, use <code>keepalived --dump-conf</code> and VRRP state monitoring scripts.</p><h3 id=is-isc-dhcp-still-safe-to-use-if-it-is-deprecated>Is ISC DHCP still safe to use if it is deprecated?</h3><p>ISC DHCP is in maintenance mode — it receives security patches but no new features. The failover protocol has been stable and production-tested for over 15 years. If your current installation works and is properly firewalled, it remains a viable option. However, for new deployments, ISC Kea is the recommended path forward.</p><h3 id=what-is-the-difference-between-hot-standby-and-load-balancing-modes-in-kea>What is the difference between hot-standby and load-balancing modes in Kea?</h3><p>In <strong>hot-standby</strong> mode, only the primary server responds to DHCP requests. The secondary listens to the network but does not issue addresses until the primary fails. In <strong>load-balancing</strong> mode, both servers respond to requests, with the address pool divided between them. If one server fails, the surviving server takes over the entire pool. Load-balancing provides better resource utilization but requires more careful configuration.</p><h3 id=can-i-migrate-from-isc-dhcp-to-kea-without-downtime>Can I migrate from ISC DHCP to Kea without downtime?</h3><p>Yes. ISC provides a lease file conversion tool that reads the ISC DHCP <code>dhcpd.leases</code> file and imports leases into Kea&rsquo;s database. You can run Kea in parallel with your existing ISC DHCP server, import the leases, verify consistency, then switch over. For the most seamless migration, configure Kea as a secondary failover partner first, then promote it to primary.</p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted DHCP Failover and High Availability: ISC Kea vs ISC DHCP vs dnsmasq","description":"Self-hosted guide comparing open-source tools for infrastructure management and deployment.","datePublished":"2026-05-14","dateModified":"2026-05-14","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20DHCP%20Failover%20and%20High%20Availability%3a%20ISC%20Kea%20vs%20ISC%20DHCP%20vs%20dnsmasq&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-14-self-hosted-dhcp-failover-ha-kea-dhcp-dnsmasq-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-14-self-hosted-dhcp-failover-ha-kea-dhcp-dnsmasq-guide%2f&t=Self-Hosted%20DHCP%20Failover%20and%20High%20Availability%3a%20ISC%20Kea%20vs%20ISC%20DHCP%20vs%20dnsmasq" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/dhcp/ class=tag-link>Dhcp</a>
+<a href=/tags/high-availability/ class=tag-link>High-Availability</a>
+<a href=/tags/networking/ class=tag-link>Networking</a>
+<a href=/tags/failover/ class=tag-link>Failover</a>
+<a href=/tags/self-hosted/ class=tag-link>Self-Hosted</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-05-14-self-hosted-dhcp-high-availability-isc-kea-keepalived-dnsmasq-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Dhcp</span></div><h3 class=post-title>Self-Hosted DHCP High Availability: ISC DHCP Failover vs Kea HA vs Keepalived + dnsmasq</h3><div class=post-excerpt>Running DHCP as a single point of failure in your network is a recipe for disaster. When your sole DHCP server goes …</div><div class=post-footer><span class=post-date>May 14, 2026</span></div></a><a href=/posts/2026-05-11-self-hosted-dhcp-high-availability-kea-isc-dnsmasq-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Dhcp</span></div><h3 class=post-title>Self-Hosted DHCP High Availability: ISC Kea vs ISC DHCP Failover vs Dnsmasq</h3><div class=post-excerpt>Dynamic Host Configuration Protocol (DHCP) is foundational network infrastructure — without it, devices cannot obtain IP …</div><div class=post-footer><span class=post-date>May 11, 2026</span></div></a><a href=/posts/2026-05-09-self-hosted-dhcp-high-availability-kea-ha-vs-isc-dhcp-vs-keepalived-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Dhcp</span></div><h3 class=post-title>Self-Hosted DHCP High Availability: Kea HA vs ISC DHCP Failover vs Keepalived+dnsmasq</h3><div class=post-excerpt>Running DHCP without redundancy is a single point of failure. When your DHCP server goes down, new devices cannot join …</div><div class=post-footer><span class=post-date>May 9, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>

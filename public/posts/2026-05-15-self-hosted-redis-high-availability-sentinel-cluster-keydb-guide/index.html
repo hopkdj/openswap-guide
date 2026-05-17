@@ -1,0 +1,542 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted Redis High Availability: Sentinel vs Cluster vs KeyDB | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-05-15-self-hosted-redis-high-availability-sentinel-cluster-keydb-guide/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted Redis High Availability: Sentinel vs Cluster vs KeyDB"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-05-15-self-hosted-redis-high-availability-sentinel-cluster-keydb-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-05-15T00:00:00Z"><meta property="article:modified_time" content="2026-05-15T00:00:00Z"><meta property="article:tag" content="redis"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted Redis High Availability: Sentinel vs Cluster vs KeyDB"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted Redis High Availability: Sentinel vs Cluster vs KeyDB","description":"\u003cp\u003eWhen running Redis in production, a single-node deployment is a single point of failure. If that node goes down, your cache layer vanishes, session stores evaporate, and application performance collapses. High availability (HA) for Redis is not optional — it is essential.\u003c\/p\u003e","datePublished":"2026-05-15T00:00:00Z","dateModified":"2026-05-15T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-05-15-self-hosted-redis-high-availability-sentinel-cluster-keydb-guide\/"},"keywords":["redis","high-availability","caching","database"],"articleSection":"redis","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted Redis High Availability: Sentinel vs Cluster vs KeyDB","item":"https:\/\/www.pistack.xyz\/posts\/2026-05-15-self-hosted-redis-high-availability-sentinel-cluster-keydb-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Redis</span>
+<span class="tag tag-purple">High-Availability</span>
+<span class="tag tag-purple">Caching</span></div><h1>Self-Hosted Redis High Availability: Sentinel vs Cluster vs KeyDB</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>May 15, 2026</span>
+<span>12 min read</span>
+<span>Updated May 15, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#redis-sentinel-automated-failover-with-master-replica>Redis Sentinel: Automated Failover with Master-Replica</a><ul><li><a href=#architecture>Architecture</a></li><li><a href=#docker-compose-deployment>Docker Compose Deployment</a></li><li><a href=#failover-behavior>Failover Behavior</a></li></ul></li><li><a href=#redis-cluster-native-sharding-with-built-in-ha>Redis Cluster: Native Sharding with Built-In HA</a><ul><li><a href=#architecture-1>Architecture</a></li><li><a href=#docker-compose-deployment-1>Docker Compose Deployment</a></li><li><a href=#cluster-operations>Cluster Operations</a></li></ul></li><li><a href=#keydb-multi-active-active-active-replication>KeyDB Multi-Active: Active-Active Replication</a><ul><li><a href=#architecture-2>Architecture</a></li><li><a href=#docker-compose-deployment-2>Docker Compose Deployment</a></li></ul></li><li><a href=#comparison-redis-sentinel-vs-cluster-vs-keydb>Comparison: Redis Sentinel vs Cluster vs KeyDB</a></li><li><a href=#choosing-the-right-redis-ha-strategy>Choosing the Right Redis HA Strategy</a></li><li><a href=#why-self-host-your-redis-infrastructure>Why Self-Host Your Redis Infrastructure?</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#what-happens-to-in-flight-requests-during-redis-sentinel-failover>What happens to in-flight requests during Redis Sentinel failover?</a></li><li><a href=#can-redis-cluster-run-with-fewer-than-6-nodes>Can Redis Cluster run with fewer than 6 nodes?</a></li><li><a href=#does-keydb-multi-active-resolve-write-conflicts-automatically>Does KeyDB Multi-Active resolve write conflicts automatically?</a></li><li><a href=#how-do-i-monitor-redis-ha-health>How do I monitor Redis HA health?</a></li><li><a href=#can-i-mix-redis-sentinel-and-cluster>Can I mix Redis Sentinel and Cluster?</a></li><li><a href=#what-is-the-memory-overhead-of-keydb-multi-active-vs-redis-sentinel>What is the memory overhead of KeyDB Multi-Active vs Redis Sentinel?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><p>When running Redis in production, a single-node deployment is a single point of failure. If that node goes down, your cache layer vanishes, session stores evaporate, and application performance collapses. High availability (HA) for Redis is not optional — it is essential.</p><p>This guide compares three approaches to Redis high availability: <strong>Redis Sentinel</strong> (the official automated failover system), <strong>Redis Cluster</strong> (native sharding with built-in HA), and <strong>KeyDB Multi-Active</strong> (a Redis-compatible fork with active-active replication). We will cover architecture, deployment with Docker Compose, failover behavior, and trade-offs to help you choose the right HA strategy for your infrastructure.</p><h2 id=redis-sentinel-automated-failover-with-master-replica>Redis Sentinel: Automated Failover with Master-Replica</h2><p>Redis Sentinel is the official high availability solution for Redis. It does not handle data sharding — instead, it monitors your master and replica instances and automatically promotes a replica to master if the master fails.</p><h3 id=architecture>Architecture</h3><p>Sentinel runs as a separate process (or set of processes) alongside your Redis instances. A typical deployment uses three or five Sentinel nodes for quorum-based decision making. The Sentinel nodes monitor the master, detect failures through periodic pings, and coordinate a failover election when the master is unreachable.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+</span></span><span class=line><span class=cl>│  Sentinel 1  │────▶│  Sentinel 2  │────▶│  Sentinel 3  │
+</span></span><span class=line><span class=cl>└──────┬──────┘     └──────┬──────┘     └──────┬──────┘
+</span></span><span class=line><span class=cl>       │                   │                   │
+</span></span><span class=line><span class=cl>       ▼                   ▼                   ▼
+</span></span><span class=line><span class=cl>  ┌──────────┐       ┌──────────┐       ┌──────────┐
+</span></span><span class=line><span class=cl>  │ Master   │       │ Replica 1 │       │ Replica 2 │
+</span></span><span class=line><span class=cl>  │ :6379    │       │ :6380     │       │ :6381     │
+</span></span><span class=line><span class=cl>  └──────────┘       └──────────┘       └──────────┘
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-compose-deployment>Docker Compose Deployment</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span><span class=lnt>62
+</span><span class=lnt>63
+</span><span class=lnt>64
+</span><span class=lnt>65
+</span><span class=lnt>66
+</span><span class=lnt>67
+</span><span class=lnt>68
+</span><span class=lnt>69
+</span><span class=lnt>70
+</span><span class=lnt>71
+</span><span class=lnt>72
+</span><span class=lnt>73
+</span><span class=lnt>74
+</span><span class=lnt>75
+</span><span class=lnt>76
+</span><span class=lnt>77
+</span><span class=lnt>78
+</span><span class=lnt>79
+</span><span class=lnt>80
+</span><span class=lnt>81
+</span><span class=lnt>82
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>redis-master</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>redis:7-alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;redis-server&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;--appendonly&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;yes&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;--requirepass&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;YourStrongPassword123&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;6379:6379&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>redis-master-data:/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>healthcheck</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>test</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;CMD&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;redis-cli&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;-a&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;YourStrongPassword123&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;ping&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>interval</span><span class=p>:</span><span class=w> </span><span class=l>10s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>timeout</span><span class=p>:</span><span class=w> </span><span class=l>5s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>retries</span><span class=p>:</span><span class=w> </span><span class=m>3</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>redis-replica-1</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>redis:7-alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;redis-server&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;--replicaof&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;redis-master&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;6379&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;--masterauth&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;YourStrongPassword123&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;--requirepass&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;YourStrongPassword123&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;--appendonly&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;yes&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>redis-master</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>redis-replica-2</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>redis:7-alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;redis-server&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;--replicaof&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;redis-master&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;6379&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;--masterauth&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;YourStrongPassword123&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;--requirepass&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;YourStrongPassword123&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;--appendonly&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;yes&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>redis-master</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>sentinel-1</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>redis:7-alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      redis-sentinel /usr/local/etc/redis/sentinel.conf</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./sentinel-1.conf:/usr/local/etc/redis/sentinel.conf</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>redis-master</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>redis-replica-1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>redis-replica-2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>sentinel-2</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>redis:7-alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      redis-sentinel /usr/local/etc/redis/sentinel.conf</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./sentinel-2.conf:/usr/local/etc/redis/sentinel.conf</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>redis-master</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>redis-replica-1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>redis-replica-2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>sentinel-3</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>redis:7-alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      redis-sentinel /usr/local/etc/redis/sentinel.conf</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./sentinel-3.conf:/usr/local/etc/redis/sentinel.conf</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>redis-master</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>redis-replica-1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>redis-replica-2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>redis-master-data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Sentinel configuration file (<code>sentinel.conf</code>):</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>port 26379
+</span></span><span class=line><span class=cl>sentinel monitor mymaster redis-master 6379 2
+</span></span><span class=line><span class=cl>sentinel auth-pass mymaster YourStrongPassword123
+</span></span><span class=line><span class=cl>sentinel down-after-milliseconds mymaster 5000
+</span></span><span class=line><span class=cl>sentinel failover-timeout mymaster 60000
+</span></span><span class=line><span class=cl>sentinel parallel-syncs mymaster 1
+</span></span></code></pre></td></tr></table></div></div><p>The <code>sentinel monitor</code> line defines the master name, address, port, and quorum (2 out of 3 Sentinels must agree on a failure before failover triggers).</p><h3 id=failover-behavior>Failover Behavior</h3><p>When the master becomes unreachable, Sentinels detect the failure after the configured <code>down-after-milliseconds</code> period (default 30 seconds, set to 5 seconds above). A leader Sentinel is elected to coordinate the failover. It selects the best replica (lowest replication offset, most up-to-date) and promotes it. The old master, when it comes back online, is reconfigured as a replica of the new master.</p><p>Failover typically completes in 10-30 seconds depending on configuration. Clients must support Sentinel-aware connection pooling (e.g., Jedis, Lettuce, redis-py with Sentinel support) to automatically redirect to the new master.</p><h2 id=redis-cluster-native-sharding-with-built-in-ha>Redis Cluster: Native Sharding with Built-In HA</h2><p>Redis Cluster distributes data across multiple nodes using hash slots (16,384 slots total). Each node handles a subset of slots, and replicas provide HA for each shard. Cluster combines horizontal scaling with automatic failover in a single system.</p><h3 id=architecture-1>Architecture</h3><p>A minimum Redis Cluster requires six nodes: three masters (each handling ~5,461 hash slots) and three replicas (one per master). Data is partitioned using CRC16 hashing of keys modulo 16,384.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>┌──────────────┐  ┌──────────────┐  ┌──────────────┐
+</span></span><span class=line><span class=cl>│ Master A     │  │ Master B     │  │ Master C     │
+</span></span><span class=line><span class=cl>│ Slots 0-5460 │  │ Slots 5461-  │  │ Slots 10923- │
+</span></span><span class=line><span class=cl>│              │  │ 10922        │  │ 16383        │
+</span></span><span class=line><span class=cl>└──────┬───────┘  └──────┬───────┘  └──────┬───────┘
+</span></span><span class=line><span class=cl>       │                 │                 │
+</span></span><span class=line><span class=cl>┌──────┴───────┐  ┌──────┴───────┐  ┌──────┴───────┐
+</span></span><span class=line><span class=cl>│ Replica A    │  │ Replica B    │  │ Replica C    │
+</span></span><span class=line><span class=cl>│ (backs up A) │  │ (backs up B) │  │ (backs up C) │
+</span></span><span class=line><span class=cl>└──────────────┘  └──────────────┘  └──────────────┘
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-compose-deployment-1>Docker Compose Deployment</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>  1
+</span><span class=lnt>  2
+</span><span class=lnt>  3
+</span><span class=lnt>  4
+</span><span class=lnt>  5
+</span><span class=lnt>  6
+</span><span class=lnt>  7
+</span><span class=lnt>  8
+</span><span class=lnt>  9
+</span><span class=lnt> 10
+</span><span class=lnt> 11
+</span><span class=lnt> 12
+</span><span class=lnt> 13
+</span><span class=lnt> 14
+</span><span class=lnt> 15
+</span><span class=lnt> 16
+</span><span class=lnt> 17
+</span><span class=lnt> 18
+</span><span class=lnt> 19
+</span><span class=lnt> 20
+</span><span class=lnt> 21
+</span><span class=lnt> 22
+</span><span class=lnt> 23
+</span><span class=lnt> 24
+</span><span class=lnt> 25
+</span><span class=lnt> 26
+</span><span class=lnt> 27
+</span><span class=lnt> 28
+</span><span class=lnt> 29
+</span><span class=lnt> 30
+</span><span class=lnt> 31
+</span><span class=lnt> 32
+</span><span class=lnt> 33
+</span><span class=lnt> 34
+</span><span class=lnt> 35
+</span><span class=lnt> 36
+</span><span class=lnt> 37
+</span><span class=lnt> 38
+</span><span class=lnt> 39
+</span><span class=lnt> 40
+</span><span class=lnt> 41
+</span><span class=lnt> 42
+</span><span class=lnt> 43
+</span><span class=lnt> 44
+</span><span class=lnt> 45
+</span><span class=lnt> 46
+</span><span class=lnt> 47
+</span><span class=lnt> 48
+</span><span class=lnt> 49
+</span><span class=lnt> 50
+</span><span class=lnt> 51
+</span><span class=lnt> 52
+</span><span class=lnt> 53
+</span><span class=lnt> 54
+</span><span class=lnt> 55
+</span><span class=lnt> 56
+</span><span class=lnt> 57
+</span><span class=lnt> 58
+</span><span class=lnt> 59
+</span><span class=lnt> 60
+</span><span class=lnt> 61
+</span><span class=lnt> 62
+</span><span class=lnt> 63
+</span><span class=lnt> 64
+</span><span class=lnt> 65
+</span><span class=lnt> 66
+</span><span class=lnt> 67
+</span><span class=lnt> 68
+</span><span class=lnt> 69
+</span><span class=lnt> 70
+</span><span class=lnt> 71
+</span><span class=lnt> 72
+</span><span class=lnt> 73
+</span><span class=lnt> 74
+</span><span class=lnt> 75
+</span><span class=lnt> 76
+</span><span class=lnt> 77
+</span><span class=lnt> 78
+</span><span class=lnt> 79
+</span><span class=lnt> 80
+</span><span class=lnt> 81
+</span><span class=lnt> 82
+</span><span class=lnt> 83
+</span><span class=lnt> 84
+</span><span class=lnt> 85
+</span><span class=lnt> 86
+</span><span class=lnt> 87
+</span><span class=lnt> 88
+</span><span class=lnt> 89
+</span><span class=lnt> 90
+</span><span class=lnt> 91
+</span><span class=lnt> 92
+</span><span class=lnt> 93
+</span><span class=lnt> 94
+</span><span class=lnt> 95
+</span><span class=lnt> 96
+</span><span class=lnt> 97
+</span><span class=lnt> 98
+</span><span class=lnt> 99
+</span><span class=lnt>100
+</span><span class=lnt>101
+</span><span class=lnt>102
+</span><span class=lnt>103
+</span><span class=lnt>104
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>redis-node-0</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>redis:7-alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      redis-server --port 6379 --cluster-enabled yes
+</span></span></span><span class=line><span class=cl><span class=sd>      --cluster-config-file nodes.conf --cluster-node-timeout 5000
+</span></span></span><span class=line><span class=cl><span class=sd>      --appendonly yes --protected-mode no --requirepass YourStrongPassword123
+</span></span></span><span class=line><span class=cl><span class=sd>      --masterauth YourStrongPassword123</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;7000:6379&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;17000:16379&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>redis-node-0-data:/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>redis-node-1</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>redis:7-alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      redis-server --port 6379 --cluster-enabled yes
+</span></span></span><span class=line><span class=cl><span class=sd>      --cluster-config-file nodes.conf --cluster-node-timeout 5000
+</span></span></span><span class=line><span class=cl><span class=sd>      --appendonly yes --protected-mode no --requirepass YourStrongPassword123
+</span></span></span><span class=line><span class=cl><span class=sd>      --masterauth YourStrongPassword123</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;7001:6379&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;17001:16379&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>redis-node-1-data:/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>redis-node-2</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>redis:7-alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      redis-server --port 6379 --cluster-enabled yes
+</span></span></span><span class=line><span class=cl><span class=sd>      --cluster-config-file nodes.conf --cluster-node-timeout 5000
+</span></span></span><span class=line><span class=cl><span class=sd>      --appendonly yes --protected-mode no --requirepass YourStrongPassword123
+</span></span></span><span class=line><span class=cl><span class=sd>      --masterauth YourStrongPassword123</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;7002:6379&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;17002:16379&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>redis-node-2-data:/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>redis-node-3</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>redis:7-alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      redis-server --port 6379 --cluster-enabled yes
+</span></span></span><span class=line><span class=cl><span class=sd>      --cluster-config-file nodes.conf --cluster-node-timeout 5000
+</span></span></span><span class=line><span class=cl><span class=sd>      --appendonly yes --protected-mode no --requirepass YourStrongPassword123
+</span></span></span><span class=line><span class=cl><span class=sd>      --masterauth YourStrongPassword123</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;7003:6379&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;17003:16379&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>redis-node-3-data:/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>redis-node-4</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>redis:7-alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      redis-server --port 6379 --cluster-enabled yes
+</span></span></span><span class=line><span class=cl><span class=sd>      --cluster-config-file nodes.conf --cluster-node-timeout 5000
+</span></span></span><span class=line><span class=cl><span class=sd>      --appendonly yes --protected-mode no --requirepass YourStrongPassword123
+</span></span></span><span class=line><span class=cl><span class=sd>      --masterauth YourStrongPassword123</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;7004:6379&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;17004:16379&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>redis-node-4-data:/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>redis-node-5</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>redis:7-alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      redis-server --port 6379 --cluster-enabled yes
+</span></span></span><span class=line><span class=cl><span class=sd>      --cluster-config-file nodes.conf --cluster-node-timeout 5000
+</span></span></span><span class=line><span class=cl><span class=sd>      --appendonly yes --protected-mode no --requirepass YourStrongPassword123
+</span></span></span><span class=line><span class=cl><span class=sd>      --masterauth YourStrongPassword123</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;7005:6379&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;17005:16379&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>redis-node-5-data:/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>cluster-init</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>redis:7-alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>redis-node-0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>redis-node-1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>redis-node-2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>redis-node-3</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>redis-node-4</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>redis-node-5</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>entrypoint</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      bash -c &#34;
+</span></span></span><span class=line><span class=cl><span class=sd>      sleep 5 &amp;&amp;
+</span></span></span><span class=line><span class=cl><span class=sd>      redis-cli -a YourStrongPassword123 --cluster create
+</span></span></span><span class=line><span class=cl><span class=sd>      redis-node-0:6379 redis-node-1:6379 redis-node-2:6379
+</span></span></span><span class=line><span class=cl><span class=sd>      redis-node-3:6379 redis-node-4:6379 redis-node-5:6379
+</span></span></span><span class=line><span class=cl><span class=sd>      --cluster-replicas 1 --cluster-yes&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>redis-node-0-data</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>redis-node-1-data</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>redis-node-2-data</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>redis-node-3-data</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>redis-node-4-data</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>redis-node-5-data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=cluster-operations>Cluster Operations</h3><p>Redis Cluster requires the <code>--cluster-enabled yes</code> flag and uses a bus port (client port + 10000) for node-to-node communication. The <code>cluster-init</code> service runs <code>redis-cli --cluster create</code> to assign hash slots and set up master-replica relationships.</p><p>Clients must be Cluster-aware. The Redis Cluster protocol returns MOVED or ASK redirects when a key maps to a different node, and the client library handles the redirect transparently.</p><h2 id=keydb-multi-active-active-active-replication>KeyDB Multi-Active: Active-Active Replication</h2><p>KeyDB is a high-performance fork of Redis that introduces Multi-Active Replication — a feature that allows multiple instances to accept writes simultaneously and replicate changes bidirectionally. Unlike Sentinel (active-passive) or Cluster (sharded), Multi-Active provides true active-active operation.</p><h3 id=architecture-2>Architecture</h3><p>All KeyDB nodes in a Multi-Active ring accept reads and writes. Changes propagate asynchronously between nodes using a last-writer-wins conflict resolution strategy based on timestamps.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>┌──────────┐     ┌──────────┐     ┌──────────┐
+</span></span><span class=line><span class=cl>│ KeyDB A  │◀───▶│ KeyDB B  │◀───▶│ KeyDB C  │
+</span></span><span class=line><span class=cl>│ (active) │     │ (active) │     │ (active) │
+</span></span><span class=line><span class=cl>└──────────┘     └──────────┘     └──────────┘
+</span></span><span class=line><span class=cl>     ▲                ▲                ▲
+</span></span><span class=line><span class=cl>     └────────────────┴────────────────┘
+</span></span><span class=line><span class=cl>         Multi-Active Replication Ring
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-compose-deployment-2>Docker Compose Deployment</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>keydb-1</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>eqalpha/keydb:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      keydb-server --active-replica yes
+</span></span></span><span class=line><span class=cl><span class=sd>      --replicaof keydb-2 6379
+</span></span></span><span class=line><span class=cl><span class=sd>      --requirepass YourStrongPassword123
+</span></span></span><span class=line><span class=cl><span class=sd>      --masterauth YourStrongPassword123
+</span></span></span><span class=line><span class=cl><span class=sd>      --appendonly yes</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;6380:6379&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>keydb-1-data:/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>keydb-2</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>eqalpha/keydb:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      keydb-server --active-replica yes
+</span></span></span><span class=line><span class=cl><span class=sd>      --replicaof keydb-3 6379
+</span></span></span><span class=line><span class=cl><span class=sd>      --requirepass YourStrongPassword123
+</span></span></span><span class=line><span class=cl><span class=sd>      --masterauth YourStrongPassword123
+</span></span></span><span class=line><span class=cl><span class=sd>      --appendonly yes</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;6381:6379&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>keydb-2-data:/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>keydb-3</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>eqalpha/keydb:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      keydb-server --active-replica yes
+</span></span></span><span class=line><span class=cl><span class=sd>      --replicaof keydb-1 6379
+</span></span></span><span class=line><span class=cl><span class=sd>      --requirepass YourStrongPassword123
+</span></span></span><span class=line><span class=cl><span class=sd>      --masterauth YourStrongPassword123
+</span></span></span><span class=line><span class=cl><span class=sd>      --appendonly yes</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;6382:6379&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>keydb-3-data:/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>keydb-1-data</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>keydb-2-data</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>keydb-3-data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>KeyDB uses the <code>--active-replica yes</code> flag to enable bidirectional replication. Each node replicates to the next node in the ring, creating a circular replication topology. Any node can accept writes, and changes propagate around the ring.</p><h2 id=comparison-redis-sentinel-vs-cluster-vs-keydb>Comparison: Redis Sentinel vs Cluster vs KeyDB</h2><table><thead><tr><th>Feature</th><th>Redis Sentinel</th><th>Redis Cluster</th><th>KeyDB Multi-Active</th></tr></thead><tbody><tr><td><strong>Topology</strong></td><td>Master + replicas (active-passive)</td><td>Sharded masters + replicas</td><td>Active-active ring</td></tr><tr><td><strong>Write nodes</strong></td><td>1 (master only)</td><td>3+ (each shard master)</td><td>All nodes</td></tr><tr><td><strong>Read scaling</strong></td><td>Yes (replicas serve reads)</td><td>Yes (any node serves reads)</td><td>Yes (all nodes serve reads)</td></tr><tr><td><strong>Failover time</strong></td><td>10-30 seconds</td><td>5-15 seconds</td><td>Near-instant</td></tr><tr><td><strong>Data sharding</strong></td><td>No</td><td>Yes (16,384 hash slots)</td><td>No (full dataset on each node)</td></tr><tr><td><strong>Max dataset size</strong></td><td>Limited by single node memory</td><td>Scales with number of masters</td><td>Limited by single node memory</td></tr><tr><td><strong>Cross-slot operations</strong></td><td>Supported</td><td>Limited (HASH tags required)</td><td>Supported</td></tr><tr><td><strong>Client support</strong></td><td>Sentinel-aware clients required</td><td>Cluster-aware clients required</td><td>Standard Redis clients work</td></tr><tr><td><strong>Conflict resolution</strong></td><td>N/A (single writer)</td><td>N/A (sharded)</td><td>Last-writer-wins (timestamps)</td></tr><tr><td><strong>Memory overhead</strong></td><td>Low (replicas mirror master)</td><td>Moderate (shard metadata)</td><td>High (full dataset on each node)</td></tr><tr><td><strong>Operational complexity</strong></td><td>Low</td><td>High (slot management, rebalancing)</td><td>Low</td></tr><tr><td><strong>Docker image</strong></td><td>redis:7-alpine (official)</td><td>redis:7-alpine (official)</td><td>eqalpha/keydb:latest</td></tr><tr><td><strong>License</strong></td><td>BSD 3-Clause</td><td>BSD 3-Clause</td><td>GPL 3.0</td></tr><tr><td><strong>GitHub stars</strong></td><td>N/A (part of redis/redis)</td><td>N/A (part of redis/redis)</td><td>14,000+</td></tr><tr><td><strong>Last update</strong></td><td>Active (redis/redis repo)</td><td>Active (redis/redis repo)</td><td>Active (2025)</td></tr></tbody></table><h2 id=choosing-the-right-redis-ha-strategy>Choosing the Right Redis HA Strategy</h2><p><strong>Use Redis Sentinel when:</strong></p><ul><li>Your dataset fits in a single node&rsquo;s memory</li><li>You need simple active-passive failover with minimal complexity</li><li>Your application already uses Redis and you need HA without architectural changes</li><li>You want to avoid the operational overhead of managing hash slots</li></ul><p>Sentinel is the right choice for session stores, cache layers, and work queues where the total data size stays below the memory capacity of a single server. It adds HA with minimal changes to your application code.</p><p><strong>Use Redis Cluster when:</strong></p><ul><li>Your dataset exceeds the memory capacity of a single server</li><li>You need horizontal write scaling across multiple nodes</li><li>You can tolerate the complexity of slot management and rebalancing</li><li>Your application can handle or avoid cross-slot operations (using HASH tags)</li></ul><p>Cluster is the right choice for high-throughput caching, real-time analytics, and large-scale session management where data growth requires horizontal scaling. The complexity trade-off is worth it when a single node cannot hold your dataset.</p><p><strong>Use KeyDB Multi-Active when:</strong></p><ul><li>You need active-active writes for geographic distribution</li><li>Your application cannot tolerate even brief failover windows</li><li>You want multi-threaded performance (KeyDB&rsquo;s other key feature)</li><li>Your dataset fits in memory and you can accept full replication on each node</li></ul><p>KeyDB Multi-Active is ideal for globally distributed applications where write latency matters, or for environments where the failover window of Sentinel/Cluster is unacceptable. The last-writer-wins conflict resolution works well for cache and session data but requires careful consideration for data with concurrent writes.</p><h2 id=why-self-host-your-redis-infrastructure>Why Self-Host Your Redis Infrastructure?</h2><p>Running your own Redis infrastructure gives you full control over data residency, security policies, and performance tuning. Managed Redis services are convenient, but self-hosting eliminates vendor lock-in, reduces costs at scale, and allows deep customization of replication, persistence, and eviction policies.</p><p>For organizations managing sensitive session data or caching layers, self-hosted Redis ensures that no third party has access to your in-memory data. You control TLS configuration, password rotation, network isolation, and backup schedules. Combined with proper monitoring and alerting, self-hosted Redis HA deployments can achieve five-nines availability.</p><p>For infrastructure automation and configuration management of your Redis clusters, see our <a href=../2026-05-15-self-hosted-ceph-deployment-cephadm-vs-rook-vs-ceph-ansible-guide/>Ansible vs SaltStack vs Puppet comparison</a>. For container orchestration options that can manage Redis deployments at scale, our <a href=../k3s-vs-k0s-vs-talos-linux-self-hosted-kubernetes-guide-2026/>K3s vs K0s vs Talos Linux guide</a> covers lightweight Kubernetes. If you are managing Redis GUI tools for administration, our <a href=../2026-04-23-redis-commander-vs-redis-insight-vs-ardm-self-hosted-redis-gui-2026/>Redis Commander vs Redis Insight vs ARDM comparison</a> provides operational insights.</p><h2 id=faq>FAQ</h2><h3 id=what-happens-to-in-flight-requests-during-redis-sentinel-failover>What happens to in-flight requests during Redis Sentinel failover?</h3><p>During the failover window (typically 10-30 seconds), clients connected to the old master will receive connection errors. Sentinel-aware clients will automatically reconnect to the new master once failover completes. In-flight commands are lost because Redis does not persist in-memory operations during a failover.</p><h3 id=can-redis-cluster-run-with-fewer-than-6-nodes>Can Redis Cluster run with fewer than 6 nodes?</h3><p>No. Redis Cluster requires a minimum of 3 master nodes for quorum and at least 1 replica per master for HA, totaling 6 nodes. You can run a 3-node cluster without replicas, but this provides no HA — if any master fails, its hash slots become unavailable.</p><h3 id=does-keydb-multi-active-resolve-write-conflicts-automatically>Does KeyDB Multi-Active resolve write conflicts automatically?</h3><p>Yes, using a last-writer-wins strategy based on logical timestamps. The key with the most recent write wins across all replicas. This works well for cache and session data but can cause data loss if two clients write to the same key simultaneously. For critical data, consider using Redis Cluster or Sentinel instead.</p><h3 id=how-do-i-monitor-redis-ha-health>How do I monitor Redis HA health?</h3><p>Use the <code>INFO replication</code> command on any Redis instance to check replication status, connected replicas, and replication offset. For Sentinel, use <code>SENTINEL master &lt;name></code> to check the monitored master&rsquo;s status. Redis Cluster provides <code>CLUSTER INFO</code> and <code>CLUSTER NODES</code> commands for cluster-wide health checks.</p><h3 id=can-i-mix-redis-sentinel-and-cluster>Can I mix Redis Sentinel and Cluster?</h3><p>No. Sentinel and Cluster are mutually exclusive. Sentinel manages master-replica relationships for a single dataset, while Cluster manages sharding across multiple nodes. If you need both sharding and automated failover, use Redis Cluster (which includes built-in failover for each shard).</p><h3 id=what-is-the-memory-overhead-of-keydb-multi-active-vs-redis-sentinel>What is the memory overhead of KeyDB Multi-Active vs Redis Sentinel?</h3><p>KeyDB Multi-Active stores the full dataset on every node in the ring. With 3 nodes, you need 3x the total memory. Redis Sentinel also stores the full dataset on the master and each replica, so the memory overhead is identical. The difference is that all KeyDB nodes accept writes, while only the Sentinel master does.</p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted Redis High Availability: Sentinel vs Cluster vs KeyDB","description":"Compare three Redis high availability strategies: Sentinel for automated failover, Cluster for sharded HA, and KeyDB Multi-Active for active-active replication. Includes Docker Compose configs and deployment guides.","datePublished":"2026-05-15","dateModified":"2026-05-15","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20Redis%20High%20Availability%3a%20Sentinel%20vs%20Cluster%20vs%20KeyDB&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-15-self-hosted-redis-high-availability-sentinel-cluster-keydb-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-15-self-hosted-redis-high-availability-sentinel-cluster-keydb-guide%2f&t=Self-Hosted%20Redis%20High%20Availability%3a%20Sentinel%20vs%20Cluster%20vs%20KeyDB" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/redis/ class=tag-link>Redis</a>
+<a href=/tags/high-availability/ class=tag-link>High-Availability</a>
+<a href=/tags/caching/ class=tag-link>Caching</a>
+<a href=/tags/database/ class=tag-link>Database</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-05-11-self-hosted-mysql-high-availability-innodb-cluster-percona-xtradb-orchestrator-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Mysql</span></div><h3 class=post-title>Self-Hosted MySQL High Availability: InnoDB Cluster vs Percona XtraDB Cluster vs Orchestrator (2026)</h3><div class=post-excerpt>MySQL remains the world&rsquo;s most popular open-source relational database, but running it in production without a …</div><div class=post-footer><span class=post-date>May 11, 2026</span></div></a><a href=/posts/2026-05-10-database-query-routing-mysql-router-maxscale-proxysql-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Database</span></div><h3 class=post-title>Self-Hosted Database Query Routing: MySQL Router vs MariaDB MaxScale vs ProxySQL (2026)</h3><div class=post-excerpt>Database query routing is a critical layer in any production database architecture. Unlike connection pooling, which …</div><div class=post-footer><span class=post-date>May 10, 2026</span></div></a><a href=/posts/2026-05-10-self-hosted-redis-operators-kubernetes-ot-container-kit-spotahome-ibm-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Redis</span></div><h3 class=post-title>Self-Hosted Redis Operators for Kubernetes: OT Container Kit vs Spotahome vs IBM</h3><div class=post-excerpt>Redis is the most popular in-memory data store, used for caching, session management, message brokering, and real-time …</div><div class=post-footer><span class=post-date>May 10, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>

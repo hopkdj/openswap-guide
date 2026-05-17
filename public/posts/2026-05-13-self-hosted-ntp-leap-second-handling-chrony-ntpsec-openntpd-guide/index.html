@@ -1,0 +1,284 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted NTP Leap Second Handling: chrony vs NTPsec vs OpenNTPD | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-05-13-self-hosted-ntp-leap-second-handling-chrony-ntpsec-openntpd-guide/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted NTP Leap Second Handling: chrony vs NTPsec vs OpenNTPD"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-05-13-self-hosted-ntp-leap-second-handling-chrony-ntpsec-openntpd-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-05-13T00:00:00Z"><meta property="article:modified_time" content="2026-05-13T00:00:00Z"><meta property="article:tag" content="ntp"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted NTP Leap Second Handling: chrony vs NTPsec vs OpenNTPD"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted NTP Leap Second Handling: chrony vs NTPsec vs OpenNTPD","description":"\u003cp\u003eWhen the International Earth Rotation and Reference Systems Service (IERS) announces a leap second, every NTP server on the internet must handle it correctly. The choice of NTP daemon determines whether your systems experience time jumps, clock smearing, or complete service disruption. This guide compares how \u003cstrong\u003echrony\u003c\/strong\u003e, \u003cstrong\u003eNTPsec\u003c\/strong\u003e, and \u003cstrong\u003eOpenNTPD\u003c\/strong\u003e handle leap second events — a critical consideration for financial trading platforms, distributed databases, and any infrastructure where time continuity matters.\u003c\/p\u003e","datePublished":"2026-05-13T00:00:00Z","dateModified":"2026-05-13T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-05-13-self-hosted-ntp-leap-second-handling-chrony-ntpsec-openntpd-guide\/"},"keywords":["ntp","time-synchronization","leap-second","chrony","ntpsec","self-hosted"],"articleSection":"ntp","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted NTP Leap Second Handling: chrony vs NTPsec vs OpenNTPD","item":"https:\/\/www.pistack.xyz\/posts\/2026-05-13-self-hosted-ntp-leap-second-handling-chrony-ntpsec-openntpd-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Ntp</span>
+<span class="tag tag-purple">Time-Synchronization</span>
+<span class="tag tag-purple">Leap-Second</span></div><h1>Self-Hosted NTP Leap Second Handling: chrony vs NTPsec vs OpenNTPD</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>May 13, 2026</span>
+<span>9 min read</span>
+<span>Updated May 13, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#why-leap-second-handling-matters>Why Leap Second Handling Matters</a></li><li><a href=#chrony-leap-second-handling>chrony Leap Second Handling</a><ul><li><a href=#leap-second-insertion-mode>Leap Second Insertion Mode</a></li><li><a href=#chrony-smearing-configuration>chrony Smearing Configuration</a></li><li><a href=#verification>Verification</a></li></ul></li><li><a href=#ntpsec-leap-second-handling>NTPsec Leap Second Handling</a><ul><li><a href=#ntpsecs-approach>NTPsec&rsquo;s Approach</a></li><li><a href=#ntpsec-smoothtime>NTPsec smoothtime</a></li><li><a href=#docker-deployment-for-ntpsec>Docker Deployment for NTPsec</a></li></ul></li><li><a href=#openntpd-leap-second-handling>OpenNTPD Leap Second Handling</a><ul><li><a href=#openntpd-philosophy>OpenNTPD Philosophy</a></li><li><a href=#advantages-of-ignoring-leap-seconds>Advantages of Ignoring Leap Seconds</a></li><li><a href=#docker-deployment-for-openntpd>Docker Deployment for OpenNTPD</a></li></ul></li><li><a href=#comparison-table>Comparison Table</a></li><li><a href=#choosing-the-right-ntp-leap-second-strategy>Choosing the Right NTP Leap Second Strategy</a><ul><li><a href=#use-chrony-when>Use chrony When:</a></li><li><a href=#use-ntpsec-when>Use NTPsec When:</a></li><li><a href=#use-openntpd-when>Use OpenNTPD When:</a></li></ul></li><li><a href=#deployment-architecture>Deployment Architecture</a></li><li><a href=#why-self-host-your-ntp-infrastructure>Why Self-Host Your NTP Infrastructure?</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#what-is-a-leap-second-and-why-does-it-matter>What is a leap second and why does it matter?</a></li><li><a href=#which-ntp-daemon-handles-leap-seconds-best>Which NTP daemon handles leap seconds best?</a></li><li><a href=#what-is-ntp-leap-second-smearing>What is NTP leap second smearing?</a></li><li><a href=#will-leap-seconds-be-eliminated>Will leap seconds be eliminated?</a></li><li><a href=#can-i-use-chronys-smearing-with-public-ntp-pools>Can I use chrony&rsquo;s smearing with public NTP pools?</a></li><li><a href=#does-openntpds-ignore-approach-cause-problems>Does OpenNTPD&rsquo;s &ldquo;ignore&rdquo; approach cause problems?</a></li><li><a href=#how-do-i-test-leap-second-handling-before-an-actual-event>How do I test leap second handling before an actual event?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><p>When the International Earth Rotation and Reference Systems Service (IERS) announces a leap second, every NTP server on the internet must handle it correctly. The choice of NTP daemon determines whether your systems experience time jumps, clock smearing, or complete service disruption. This guide compares how <strong>chrony</strong>, <strong>NTPsec</strong>, and <strong>OpenNTPD</strong> handle leap second events — a critical consideration for financial trading platforms, distributed databases, and any infrastructure where time continuity matters.</p><h2 id=why-leap-second-handling-matters>Why Leap Second Handling Matters</h2><p>Leap seconds are inserted (or theoretically removed) to keep UTC aligned with Earth&rsquo;s irregular rotation. Since 1972, 27 leap seconds have been added. Each one causes problems:</p><ul><li><strong>Cloudflare outage (2012)</strong>: Linux kernel leap second bug caused recursive scheduler loops, taking down Cloudflare and multiple other services</li><li><strong>Reddit outage (2012)</strong>: Java application servers crashed when system time repeated a second</li><li><strong>Australian airline grounding (2017)</strong>: Qantas reservation system failed during a leap second event</li><li><strong>Google, AWS, Azure smearing</strong>: Major cloud providers smear leap seconds over hours to avoid discontinuity</li></ul><p>For self-hosted infrastructure, you need an NTP daemon that either handles the leap second gracefully or implements smearing to eliminate the discontinuity entirely.</p><h2 id=chrony-leap-second-handling>chrony Leap Second Handling</h2><p><strong>chrony</strong> (maintained by Miroslav Lichvar) is the default NTP implementation on most modern Linux distributions. It offers the most sophisticated leap second handling of the three daemons.</p><h3 id=leap-second-insertion-mode>Leap Second Insertion Mode</h3><p>chrony supports multiple leap second handling modes:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># /etc/chrony/chrony.conf</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Mode 1: Insert leap second (default behavior)</span>
+</span></span><span class=line><span class=cl><span class=c1># chrony will step or slew the clock at 23:59:60 UTC</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Mode 2: Smear the leap second over 24 hours</span>
+</span></span><span class=line><span class=cl>leapsecmode smear
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Mode 3: Ignore the leap second entirely</span>
+</span></span><span class=line><span class=cl><span class=c1># leapsecmode ignore</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Configure smearing duration (default 86400 seconds = 24 hours)</span>
+</span></span><span class=line><span class=cl><span class=c1># The smear rate is calculated automatically</span>
+</span></span><span class=line><span class=cl>maxupdatesize 0.1
+</span></span></code></pre></td></tr></table></div></div><h3 id=chrony-smearing-configuration>chrony Smearing Configuration</h3><p>chrony&rsquo;s smearing is the closest to Google&rsquo;s &ldquo;leap smear&rdquo; approach:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Full chrony.conf for leap second handling</span>
+</span></span><span class=line><span class=cl>server time.cloudflare.com iburst
+</span></span><span class=line><span class=cl>server time.google.com iburst
+</span></span><span class=line><span class=cl>server time.nist.gov iburst
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Enable leap second smearing</span>
+</span></span><span class=line><span class=cl>leapsecmode smear
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Set the system clock offset threshold</span>
+</span></span><span class=line><span class=cl>makestep 1.0 <span class=m>3</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Save drift and RTC data</span>
+</span></span><span class=line><span class=cl>driftfile /var/lib/chrony/chrony.drift
+</span></span><span class=line><span class=cl>rtcsync
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Allow smearing to start 12 hours before the leap second</span>
+</span></span><span class=line><span class=cl><span class=c1># chrony automatically calculates the smear window</span>
+</span></span></code></pre></td></tr></table></div></div><p>When <code>leapsecmode smear</code> is set, chrony gradually adjusts the clock rate over 24 hours around the leap second event. Instead of inserting or deleting a second, it makes each second slightly longer or shorter — eliminating the discontinuity that breaks applications.</p><h3 id=verification>Verification</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Check chrony&#39;s leap second status</span>
+</span></span><span class=line><span class=cl>chronyc tracking
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Expected output shows:</span>
+</span></span><span class=line><span class=cl><span class=c1># Leap status     : Normal / Insert second / Delete second</span>
+</span></span><span class=line><span class=cl><span class=c1># System time     : 0.000000001 seconds fast of NTP time</span>
+</span></span><span class=line><span class=cl><span class=c1># Last offset     : +0.000001234 seconds</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Check if smearing is active</span>
+</span></span><span class=line><span class=cl>chronyc tracking <span class=p>|</span> grep <span class=s2>&#34;Leap status&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=ntpsec-leap-second-handling>NTPsec Leap Second Handling</h2><p><strong>NTPsec</strong> is a hardened fork of the classic NTP reference implementation (ntpd). It focuses on security and correctness, with a different philosophy on leap seconds.</p><h3 id=ntpsecs-approach>NTPsec&rsquo;s Approach</h3><p>NTPsec provides explicit control over leap second behavior:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># /etc/ntpsec/ntp.conf</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Reference servers</span>
+</span></span><span class=line><span class=cl>server 0.pool.ntp.org iburst
+</span></span><span class=line><span class=cl>server 1.pool.ntp.org iburst
+</span></span><span class=line><span class=cl>server 2.pool.ntp.org iburst
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Leap second handling options:</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Option 1: Standard leap second insertion (default)</span>
+</span></span><span class=line><span class=cl><span class=c1># NTPsec will announce the leap second and insert it at midnight UTC</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Option 2: Smooth time mode (similar to smearing)</span>
+</span></span><span class=line><span class=cl>smoothtime <span class=m>400</span> 0.001 lean
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Option 3: Ignore leap seconds</span>
+</span></span><span class=line><span class=cl><span class=c1># leapignore</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Security hardening</span>
+</span></span><span class=line><span class=cl>disable monitor
+</span></span><span class=line><span class=cl>restrict default nomodify nopeer noquery notrap
+</span></span><span class=line><span class=cl>restrict 127.0.0.1
+</span></span><span class=line><span class=cl>restrict ::1
+</span></span></code></pre></td></tr></table></div></div><h3 id=ntpsec-smoothtime>NTPsec smoothtime</h3><p>The <code>smoothtime</code> directive in NTPsec implements gradual time adjustment:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># smoothtime &lt;offset&gt; &lt;rate&gt; [lean|slew]</span>
+</span></span><span class=line><span class=cl><span class=c1># offset: maximum offset to smooth (seconds)</span>
+</span></span><span class=line><span class=cl><span class=c1># rate: maximum rate adjustment (seconds/second)</span>
+</span></span><span class=line><span class=cl>smoothtime <span class=m>400</span> 0.001 lean
+</span></span></code></pre></td></tr></table></div></div><p>This gradually slews the clock by up to 400 seconds at a rate of 0.001 seconds per second. For a 1-second leap second, this takes approximately 16.7 minutes of adjustment — much faster than chrony&rsquo;s 24-hour smear but still avoiding a step.</p><h3 id=docker-deployment-for-ntpsec>Docker Deployment for NTPsec</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>ntpsec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>ntpsec/ntpsec:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>ntpsec-server</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>cap_add</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>SYS_TIME</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./ntp.conf:/etc/ntpsec/ntp.conf:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>ntpsec-data:/var/lib/ntpsec</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;123:123/udp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>network_mode</span><span class=p>:</span><span class=w> </span><span class=l>host</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;-n&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;-c&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;/etc/ntpsec/ntp.conf&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>ntpsec-data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=openntpd-leap-second-handling>OpenNTPD Leap Second Handling</h2><p><strong>OpenNTPD</strong> (OpenBSD NTP Daemon) takes the simplest approach: it ignores leap seconds entirely. The portable version runs on Linux and other Unix-like systems.</p><h3 id=openntpd-philosophy>OpenNTPD Philosophy</h3><p>OpenNTPD&rsquo;s design principle is that leap seconds cause more problems than they solve. It simply ignores them:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># /etc/openntpd/ntpd.conf</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Upstream NTP servers</span>
+</span></span><span class=line><span class=cl>servers pool.ntp.org
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># OpenNTPD automatically ignores leap seconds</span>
+</span></span><span class=line><span class=cl><span class=c1># No special configuration needed</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Optional: constrain to specific servers</span>
+</span></span><span class=line><span class=cl>server time.cloudflare.com
+</span></span><span class=line><span class=cl>server time.google.com
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Sensor-based time correction (OpenBSD only)</span>
+</span></span><span class=line><span class=cl><span class=c1># sensor *</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=advantages-of-ignoring-leap-seconds>Advantages of Ignoring Leap Seconds</h3><p>OpenNTPD&rsquo;s approach means:</p><ul><li><strong>Zero configuration</strong>: No leap second mode to set</li><li><strong>No smearing calculation</strong>: The daemon doesn&rsquo;t need to know about upcoming leap seconds</li><li><strong>Consistent time</strong>: Your servers never experience a repeated or skipped second</li><li><strong>Simplicity</strong>: The smallest codebase of the three daemons (reduced attack surface)</li></ul><h3 id=docker-deployment-for-openntpd>Docker Deployment for OpenNTPD</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>openntpd</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image: dockur/chrony:latest  # Alternative</span><span class=p>:</span><span class=w> </span><span class=l>build from openntpd-portable</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>openntpd-server</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>cap_add</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>SYS_TIME</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./ntpd.conf:/etc/openntpd/ntpd.conf:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>network_mode</span><span class=p>:</span><span class=w> </span><span class=l>host</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;-d&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;-f&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;/etc/openntpd/ntpd.conf&#34;</span><span class=p>]</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=comparison-table>Comparison Table</h2><table><thead><tr><th>Feature</th><th>chrony</th><th>NTPsec</th><th>OpenNTPD</th></tr></thead><tbody><tr><td><strong>Leap second insertion</strong></td><td>✅ Supported</td><td>✅ Supported</td><td>❌ Ignored</td></tr><tr><td><strong>Smearing</strong></td><td>✅ Built-in (24hr)</td><td>✅ smoothtime</td><td>❌ Not needed</td></tr><tr><td><strong>Zero configuration</strong></td><td>❌ Requires <code>leapsecmode</code></td><td>❌ Requires <code>smoothtime</code></td><td>✅ Default behavior</td></tr><tr><td><strong>Security focus</strong></td><td>Moderate</td><td>High (hardened fork)</td><td>High (OpenBSD)</td></tr><tr><td><strong>Docker image</strong></td><td>✅ Official</td><td>✅ Community</td><td>✅ Community</td></tr><tr><td><strong>Default on Linux</strong></td><td>✅ RHEL/Debian/Ubuntu</td><td>❌ Manual install</td><td>❌ Manual install</td></tr><tr><td><strong>Code size</strong></td><td>~50K lines</td><td>~80K lines</td><td>~5K lines</td></tr><tr><td><strong>Last update</strong></td><td>Active (mlichvar/chrony)</td><td>Active (NTPsec/ntpsec)</td><td>Active (openntpd-portable)</td></tr><tr><td><strong>Smear window</strong></td><td>24 hours (configurable)</td><td>~17 minutes</td><td>N/A</td></tr><tr><td><strong>Kernel PLL support</strong></td><td>✅ Full</td><td>✅ Full</td><td>⚠️ Limited</td></tr></tbody></table><h2 id=choosing-the-right-ntp-leap-second-strategy>Choosing the Right NTP Leap Second Strategy</h2><h3 id=use-chrony-when>Use chrony When:</h3><ul><li>You need the most sophisticated leap second handling</li><li>Your infrastructure spans multiple time zones and needs consistent smearing</li><li>You want the default NTP daemon with the best out-of-the-box experience</li><li>You need fast convergence after network interruptions</li></ul><h3 id=use-ntpsec-when>Use NTPsec When:</h3><ul><li>Security hardening is your top priority</li><li>You need fine-grained control over time adjustment rates</li><li>You want to use <code>smoothtime</code> for faster-than-24-hour smearing</li><li>Your organization has compliance requirements for auditable timekeeping</li></ul><h3 id=use-openntpd-when>Use OpenNTPD When:</h3><ul><li>You want zero-config NTP that &ldquo;just works&rdquo;</li><li>Simplicity and minimal attack surface are priorities</li><li>Your applications don&rsquo;t care about the extra second</li><li>You&rsquo;re running OpenBSD (native support) or want OpenBSD-style simplicity on Linux</li></ul><h2 id=deployment-architecture>Deployment Architecture</h2><p>For production environments, a common pattern combines multiple approaches:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>                    ┌─────────────────────────────────────┐
+</span></span><span class=line><span class=cl>                    │     Stratum 0 (Atomic/GPS Clock)    │
+</span></span><span class=line><span class=cl>                    └──────────────┬──────────────────────┘
+</span></span><span class=line><span class=cl>                                   │
+</span></span><span class=line><span class=cl>                    ┌──────────────▼──────────────────────┐
+</span></span><span class=line><span class=cl>                    │     Stratum 1 NTP Servers           │
+</span></span><span class=line><span class=cl>                    │  (chrony with leapsecmode smear)    │
+</span></span><span class=line><span class=cl>                    └──────────────┬──────────────────────┘
+</span></span><span class=line><span class=cl>                                   │
+</span></span><span class=line><span class=cl>              ┌────────────────────┼────────────────────┐
+</span></span><span class=line><span class=cl>              ▼                    ▼                    ▼
+</span></span><span class=line><span class=cl>     ┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+</span></span><span class=line><span class=cl>     │ Stratum 2   │     │ Stratum 2   │     │ Stratum 2   │
+</span></span><span class=line><span class=cl>     │ chrony      │     │ NTPsec      │     │ OpenNTPD    │
+</span></span><span class=line><span class=cl>     │ (smear)     │     │ (smoothtime)│     │ (ignore)    │
+</span></span><span class=line><span class=cl>     └──────┬──────┘     └──────┬──────┘     └──────┬──────┘
+</span></span><span class=line><span class=cl>            │                   │                   │
+</span></span><span class=line><span class=cl>     ┌──────▼──────┐     ┌──────▼──────┐     ┌──────▼──────┐
+</span></span><span class=line><span class=cl>     │ Trading     │     │ Database    │     │ Web/App     │
+</span></span><span class=line><span class=cl>     │ Servers     │     │ Clusters    │     │ Servers     │
+</span></span><span class=line><span class=cl>     └─────────────┘     └─────────────┘     └─────────────┘
+</span></span></code></pre></td></tr></table></div></div><p>The IERS announced that leap seconds will be discontinued by 2035, but until then, proper handling remains essential for infrastructure reliability.</p><h2 id=why-self-host-your-ntp-infrastructure>Why Self-Host Your NTP Infrastructure?</h2><p>Running your own NTP servers with proper leap second handling gives you control over one of the most fundamental infrastructure dependencies. When public NTP pools experience issues during leap second events — as they have multiple times in the past — your internal servers continue operating correctly.</p><p>For time-sensitive applications like financial trading, distributed consensus protocols (Raft, Paxos), and database replication, even a single second of clock discontinuity can cause cascading failures. Self-hosting with chrony&rsquo;s smearing or NTPsec&rsquo;s smoothtime eliminates this risk entirely.</p><p>For related reading on time synchronization, see our <a href=../2026-05-10-self-hosted-precision-time-protocol-ptp-linuxptp-chrony-ntpsec-guide/>PTP precision time protocol guide</a> and <a href=../2026-05-07-self-hosted-ntp-time-sync-monitoring-chronyc-ntpstat-ntpviz-guide/>NTP time sync monitoring comparison</a>.</p><h2 id=faq>FAQ</h2><h3 id=what-is-a-leap-second-and-why-does-it-matter>What is a leap second and why does it matter?</h3><p>A leap second is a one-second adjustment added to UTC to account for the gradual slowing of Earth&rsquo;s rotation. It matters because many software systems assume every minute has exactly 60 seconds. When a leap second is inserted (at 23:59:60 UTC), applications that aren&rsquo;t prepared can crash, hang, or produce incorrect results.</p><h3 id=which-ntp-daemon-handles-leap-seconds-best>Which NTP daemon handles leap seconds best?</h3><p>chrony is generally considered the best for leap second handling because it supports built-in smearing over 24 hours, eliminating the discontinuity entirely. NTPsec offers <code>smoothtime</code> for faster adjustments, while OpenNTPD simply ignores leap seconds — which works fine for most applications.</p><h3 id=what-is-ntp-leap-second-smearing>What is NTP leap second smearing?</h3><p>Smearing gradually adjusts the clock rate over a period (typically 24 hours) so that the extra second is distributed across many seconds instead of inserted all at once. Google pioneered this approach, and chrony implements it natively via <code>leapsecmode smear</code>.</p><h3 id=will-leap-seconds-be-eliminated>Will leap seconds be eliminated?</h3><p>Yes. In 2022, the International Telecommunication Union (ITU) voted to discontinue leap seconds by 2035. Earth&rsquo;s rotation will be allowed to drift up to one minute from UTC before a larger correction is applied. Until then, proper leap second handling remains necessary.</p><h3 id=can-i-use-chronys-smearing-with-public-ntp-pools>Can I use chrony&rsquo;s smearing with public NTP pools?</h3><p>Yes. Configure <code>leapsecmode smear</code> in chrony.conf and point to any NTP server pool. chrony will receive the leap second announcement from upstream servers and smear it locally, regardless of where the time source comes from.</p><h3 id=does-openntpds-ignore-approach-cause-problems>Does OpenNTPD&rsquo;s &ldquo;ignore&rdquo; approach cause problems?</h3><p>For most applications, no. The one-second difference between OpenNTPD and UTC is negligible for logging, monitoring, and general server operations. However, applications that require strict UTC alignment (like certain financial systems) may need chrony or NTPsec instead.</p><h3 id=how-do-i-test-leap-second-handling-before-an-actual-event>How do I test leap second handling before an actual event?</h3><p>Use <code>chronyc -a makestep</code> to manually step the clock, or set <code>leapsecmode insert</code> and use the <code>leap</code> command in chronyc. For NTPsec, you can simulate with <code>ntpd -g</code> and observe the behavior. Always test in a staging environment first.</p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted NTP Leap Second Handling: chrony vs NTPsec vs OpenNTPD","description":"Compare how chrony, NTPsec, and OpenNTPD handle NTP leap seconds — smearing, smoothtime, and ignoring strategies for self-hosted time infrastructure.","datePublished":"2026-05-13","dateModified":"2026-05-13","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20NTP%20Leap%20Second%20Handling%3a%20chrony%20vs%20NTPsec%20vs%20OpenNTPD&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-13-self-hosted-ntp-leap-second-handling-chrony-ntpsec-openntpd-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-13-self-hosted-ntp-leap-second-handling-chrony-ntpsec-openntpd-guide%2f&t=Self-Hosted%20NTP%20Leap%20Second%20Handling%3a%20chrony%20vs%20NTPsec%20vs%20OpenNTPD" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/ntp/ class=tag-link>Ntp</a>
+<a href=/tags/time-synchronization/ class=tag-link>Time-Synchronization</a>
+<a href=/tags/leap-second/ class=tag-link>Leap-Second</a>
+<a href=/tags/chrony/ class=tag-link>Chrony</a>
+<a href=/tags/ntpsec/ class=tag-link>Ntpsec</a>
+<a href=/tags/self-hosted/ class=tag-link>Self-Hosted</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-05-11-self-hosted-ntp-monitoring-chrony-exporter-ntpsec-chronyc-dashboard-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Ntp</span></div><h3 class=post-title>Self-Hosted NTP Monitoring: chrony_exporter vs NTPsec vs chronyc Dashboard Solutions</h3><div class=post-excerpt>Accurate time synchronization is the invisible foundation of distributed systems. When NTP drifts, authentication fails, …</div><div class=post-footer><span class=post-date>May 11, 2026</span></div></a><a href=/posts/2026-05-10-self-hosted-ptp-servers-linuxptp-chrony-ntpsec-precision-time-sync/ class=post-card><div class=post-tags><span class="tag tag-purple">Ptp</span></div><h3 class=post-title>Self-Hosted PTP Servers: linuxptp vs chrony vs NTPsec for Sub-Microsecond Time Sync</h3><div class=post-excerpt>Precision Time Protocol (PTP, IEEE 1588) delivers sub-microsecond clock synchronization across local networks — orders …</div><div class=post-footer><span class=post-date>May 10, 2026</span></div></a><a href=/posts/2026-05-07-self-hosted-ntp-time-sync-monitoring-chronyc-ntpstat-ntpviz-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Comparison</span></div><h3 class=post-title>Self-Hosted NTP Time Synchronization Monitoring: chronyc, ntpstat, and ntpviz Guide 2026</h3><div class=post-excerpt>Accurate time synchronization is a silent but critical dependency for every distributed system. From database …</div><div class=post-footer><span class=post-date>May 7, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>
