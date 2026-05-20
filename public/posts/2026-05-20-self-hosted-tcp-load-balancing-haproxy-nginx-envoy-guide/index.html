@@ -1,0 +1,529 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted TCP Load Balancing — HAProxy TCP Mode vs Nginx Stream vs Envoy TCP Proxy | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-05-20-self-hosted-tcp-load-balancing-haproxy-nginx-envoy-guide/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted TCP Load Balancing — HAProxy TCP Mode vs Nginx Stream vs Envoy TCP Proxy"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-05-20-self-hosted-tcp-load-balancing-haproxy-nginx-envoy-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-05-20T00:00:00Z"><meta property="article:modified_time" content="2026-05-20T00:00:00Z"><meta property="article:tag" content="networking"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted TCP Load Balancing — HAProxy TCP Mode vs Nginx Stream vs Envoy TCP Proxy"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted TCP Load Balancing — HAProxy TCP Mode vs Nginx Stream vs Envoy TCP Proxy","description":"\u003cp\u003eWhile HTTP load balancing gets most of the attention, many critical services operate at the TCP layer — databases, message queues, game servers, and custom protocols. When you need to distribute raw TCP traffic across backend servers without inspecting the application payload, three open-source tools stand out: \u003cstrong\u003eHAProxy TCP mode\u003c\/strong\u003e, \u003cstrong\u003eNginx stream module\u003c\/strong\u003e, and \u003cstrong\u003eEnvoy TCP proxy\u003c\/strong\u003e.\u003c\/p\u003e","datePublished":"2026-05-20T00:00:00Z","dateModified":"2026-05-20T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-05-20-self-hosted-tcp-load-balancing-haproxy-nginx-envoy-guide\/"},"keywords":["networking","load-balancer","tcp","proxy","self-hosted"],"articleSection":"networking","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted TCP Load Balancing — HAProxy TCP Mode vs Nginx Stream vs Envoy TCP Proxy","item":"https:\/\/www.pistack.xyz\/posts\/2026-05-20-self-hosted-tcp-load-balancing-haproxy-nginx-envoy-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Networking</span>
+<span class="tag tag-purple">Load-Balancer</span>
+<span class="tag tag-purple">Tcp</span></div><h1>Self-Hosted TCP Load Balancing — HAProxy TCP Mode vs Nginx Stream vs Envoy TCP Proxy</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>May 20, 2026</span>
+<span>11 min read</span>
+<span>Updated May 20, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#why-layer-4-tcp-load-balancing-matters>Why Layer 4 (TCP) Load Balancing Matters</a></li><li><a href=#tool-comparison>Tool Comparison</a></li><li><a href=#haproxy-tcp-mode-the-dedicated-load-balancer>HAProxy TCP Mode: The Dedicated Load Balancer</a></li><li><a href=#nginx-stream-module-the-versatile-proxy>Nginx Stream Module: The Versatile Proxy</a></li><li><a href=#envoy-tcp-proxy-the-dynamic-modern-option>Envoy TCP Proxy: The Dynamic Modern Option</a></li><li><a href=#performance-and-resource-usage>Performance and Resource Usage</a></li><li><a href=#when-to-choose-each-tool>When to Choose Each Tool</a></li><li><a href=#why-self-host-your-tcp-load-balancer>Why Self-Host Your TCP Load Balancer?</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#what-is-the-difference-between-layer-4-and-layer-7-load-balancing>What is the difference between layer 4 and layer 7 load balancing?</a></li><li><a href=#can-haproxy-do-both-tcp-and-http-load-balancing>Can HAProxy do both TCP and HTTP load balancing?</a></li><li><a href=#does-nginx-stream-support-health-checks>Does Nginx stream support health checks?</a></li><li><a href=#which-tool-has-the-best-health-checking>Which tool has the best health checking?</a></li><li><a href=#can-i-use-these-tools-for-tls-passthrough>Can I use these tools for TLS passthrough?</a></li><li><a href=#how-do-i-monitor-tcp-load-balancer-performance>How do I monitor TCP load balancer performance?</a></li><li><a href=#can-i-run-multiple-tcp-load-balancers-for-high-availability>Can I run multiple TCP load balancers for high availability?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><p>While HTTP load balancing gets most of the attention, many critical services operate at the TCP layer — databases, message queues, game servers, and custom protocols. When you need to distribute raw TCP traffic across backend servers without inspecting the application payload, three open-source tools stand out: <strong>HAProxy TCP mode</strong>, <strong>Nginx stream module</strong>, and <strong>Envoy TCP proxy</strong>.</p><p>This guide compares all three for TCP-only load balancing scenarios, covering performance, configuration, health checking, and Docker deployment to help you build a reliable layer 4 load balancing infrastructure.</p><h2 id=why-layer-4-tcp-load-balancing-matters>Why Layer 4 (TCP) Load Balancing Matters</h2><p>Layer 4 load balancers operate at the transport layer, forwarding TCP connections without parsing the application protocol. This approach offers several advantages over layer 7 (HTTP) load balancing:</p><ul><li><strong>Protocol agnostic</strong>: Works with any TCP-based service — MySQL, Redis, PostgreSQL, gRPC, custom protocols</li><li><strong>Lower latency</strong>: No HTTP parsing overhead — direct TCP connection forwarding</li><li><strong>TLS passthrough</strong>: Backend servers handle encryption; the load balancer sees only encrypted bytes</li><li><strong>Simpler configuration</strong>: No need to understand application-specific headers or routing rules</li></ul><p>For self-hosted infrastructure, TCP load balancing is essential for database clusters, cache pools, and any service that uses a custom TCP protocol.</p><h2 id=tool-comparison>Tool Comparison</h2><table><thead><tr><th>Feature</th><th>HAProxy TCP Mode</th><th>Nginx Stream</th><th>Envoy TCP Proxy</th></tr></thead><tbody><tr><td>GitHub Stars</td><td>6,553</td><td>Part of Nginx (21,000+)</td><td>24,000+</td></tr><tr><td>TCP Proxy Support</td><td>Native (primary mode)</td><td>Via stream module</td><td>Native listener filter</td></tr><tr><td>Health Checks</td><td>TCP check, HTTP check, custom</td><td>TCP check</td><td>TCP, HTTP, gRPC, Redis, custom</td></tr><tr><td>Load Algorithms</td><td>Round-robin, leastconn, source, uri, hdr</td><td>Round-robin, leastconn, ip_hash</td><td>Round-robin, least_request, ring_hash, maglev</td></tr><tr><td>Connection Limits</td><td>Per-backend, per-server</td><td>Per-server</td><td>Per-cluster, per-endpoint</td></tr><tr><td>Rate Limiting</td><td>Stick tables, counters</td><td>limit_conn, limit_req</td><td>Local rate limit, global rate limit service</td></tr><tr><td>TLS Passthrough</td><td>Yes (SNI-based routing)</td><td>Yes (SNI-based routing)</td><td>Yes (via filter chain)</td></tr><tr><td>Observability</td><td>Stats page, Prometheus export</td><td>stub_status, third-party exporters</td><td>Built-in stats, Prometheus, tracing</td></tr><tr><td>Dynamic Config</td><td>Runtime API (HAProxy 2.0+)</td><td>Requires reload</td><td>xDS API (dynamic, no restart)</td></tr><tr><td>Configuration Style</td><td>Declarative (haproxy.cfg)</td><td>Declarative (nginx.conf)</td><td>Declarative + API (xDS)</td></tr><tr><td>License</td><td>GPL v2</td><td>BSD 2-Clause</td><td>Apache 2.0</td></tr></tbody></table><h2 id=haproxy-tcp-mode-the-dedicated-load-balancer>HAProxy TCP Mode: The Dedicated Load Balancer</h2><p>HAProxy was built specifically as a load balancer and reverse proxy. Its TCP mode provides mature, battle-tested layer 4 load balancing with extensive configuration options.</p><p><strong>Strengths:</strong></p><ul><li>Best-in-class health checking — TCP, HTTP, SMTP, LDAP, MySQL, and custom checks</li><li>Runtime API for dynamic configuration changes without restart</li><li>Stick tables for connection persistence and rate limiting</li><li>Extremely low memory footprint — handles 100K+ concurrent connections</li><li>Mature ecosystem with extensive documentation and community</li><li>Dedicated TCP proxy mode — this is HAProxy&rsquo;s native strength</li></ul><p><strong>Weaknesses:</strong></p><ul><li>Configuration reload requires a brief transition period</li><li>No built-in service discovery (requires external scripts or HAProxy Enterprise)</li><li>Steeper learning curve for advanced features</li><li>Stats interface is functional but dated</li></ul><p><strong>Installation:</strong></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Ubuntu/Debian</span>
+</span></span><span class=line><span class=cl>apt-get update <span class=o>&amp;&amp;</span> apt-get install -y haproxy
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Verify TCP module support</span>
+</span></span><span class=line><span class=cl>haproxy -vv <span class=p>|</span> grep -i stream
+</span></span></code></pre></td></tr></table></div></div><p><strong>Docker Compose deployment:</strong></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>haproxy-tcp</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>haproxy:3.1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>haproxy-tcp</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;3306:3306&#34;</span><span class=w>   </span><span class=c># MySQL</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;6379:6379&#34;</span><span class=w>   </span><span class=c># Redis</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;5432:5432&#34;</span><span class=w>   </span><span class=c># PostgreSQL</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8404:8404&#34;</span><span class=w>   </span><span class=c># Stats</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ulimits</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>nofile</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>soft</span><span class=p>:</span><span class=w> </span><span class=m>65536</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>hard</span><span class=p>:</span><span class=w> </span><span class=m>65536</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>haproxy-config</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p><strong>HAProxy TCP configuration:</strong></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>global
+</span></span><span class=line><span class=cl>    maxconn 50000
+</span></span><span class=line><span class=cl>    log stdout format raw local0
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>defaults
+</span></span><span class=line><span class=cl>    mode tcp
+</span></span><span class=line><span class=cl>    timeout connect 5s
+</span></span><span class=line><span class=cl>    timeout client 30s
+</span></span><span class=line><span class=cl>    timeout server 30s
+</span></span><span class=line><span class=cl>    option tcplog
+</span></span><span class=line><span class=cl>    log global
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># MySQL cluster - least connections
+</span></span><span class=line><span class=cl>frontend mysql_fe
+</span></span><span class=line><span class=cl>    bind *:3306
+</span></span><span class=line><span class=cl>    default_backend mysql_be
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>backend mysql_be
+</span></span><span class=line><span class=cl>    balance leastconn
+</span></span><span class=line><span class=cl>    option mysql-check user haproxy
+</span></span><span class=line><span class=cl>    server mysql1 10.0.1.10:3306 check inter 3s fall 3 rise 2
+</span></span><span class=line><span class=cl>    server mysql2 10.0.1.11:3306 check inter 3s fall 3 rise 2
+</span></span><span class=line><span class=cl>    server mysql3 10.0.1.12:3306 check inter 3s fall 3 rise 2 backup
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># Redis cluster with source IP hashing
+</span></span><span class=line><span class=cl>frontend redis_fe
+</span></span><span class=line><span class=cl>    bind *:6379
+</span></span><span class=line><span class=cl>    default_backend redis_be
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>backend redis_be
+</span></span><span class=line><span class=cl>    balance source
+</span></span><span class=line><span class=cl>    option tcp-check
+</span></span><span class=line><span class=cl>    tcp-check send PING
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    tcp-check expect string +PONG
+</span></span><span class=line><span class=cl>    server redis1 10.0.2.10:6379 check inter 2s fall 2 rise 2
+</span></span><span class=line><span class=cl>    server redis2 10.0.2.11:6379 check inter 2s fall 2 rise 2
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># Stats page
+</span></span><span class=line><span class=cl>listen stats
+</span></span><span class=line><span class=cl>    bind *:8404
+</span></span><span class=line><span class=cl>    stats enable
+</span></span><span class=line><span class=cl>    stats uri /
+</span></span><span class=line><span class=cl>    stats refresh 10s
+</span></span></code></pre></td></tr></table></div></div><h2 id=nginx-stream-module-the-versatile-proxy>Nginx Stream Module: The Versatile Proxy</h2><p>Nginx&rsquo;s stream module adds layer 4 load balancing capabilities to the already popular web server. If you already run Nginx for HTTP traffic, adding TCP proxying is straightforward.</p><p><strong>Strengths:</strong></p><ul><li>Unified configuration with HTTP proxy — one tool for both layers</li><li>Excellent performance — event-driven architecture</li><li>SNI-based TLS routing without decrypting traffic</li><li>IP-based connection limiting</li><li>Familiar configuration syntax for existing Nginx users</li></ul><p><strong>Weaknesses:</strong></p><ul><li>Health checks require Nginx Plus (commercial) or third-party modules</li><li>Configuration changes require full reload (not graceful for TCP)</li><li>Less granular TCP control compared to HAProxy</li><li>Fewer load balancing algorithms than HAProxy</li></ul><p><strong>Installation:</strong></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Nginx with stream module (compiled by default in most distributions)</span>
+</span></span><span class=line><span class=cl>apt-get update <span class=o>&amp;&amp;</span> apt-get install -y nginx
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Verify stream module is loaded</span>
+</span></span><span class=line><span class=cl>nginx -V 2&gt;<span class=p>&amp;</span><span class=m>1</span> <span class=p>|</span> grep --color<span class=o>=</span>never <span class=s2>&#34;with-stream&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><p><strong>Docker Compose deployment:</strong></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>nginx-stream</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>nginx:1.27</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>nginx-stream</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;3306:3306&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;6379:6379&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;5432:5432&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./nginx-stream.conf:/etc/nginx/nginx.conf:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p><strong>Nginx stream configuration:</strong></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-nginx data-lang=nginx><span class=line><span class=cl><span class=k>events</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=kn>worker_connections</span> <span class=mi>4096</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>stream</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=kn>log_format</span> <span class=s>basic</span> <span class=s>&#39;</span><span class=nv>$remote_addr</span> <span class=s>[</span><span class=nv>$time_local]</span> <span class=s>&#39;</span>
+</span></span><span class=line><span class=cl>                     <span class=s>&#39;</span><span class=nv>$protocol</span> <span class=nv>$status</span> <span class=nv>$bytes_sent</span> <span class=nv>$bytes_received</span> <span class=s>&#39;</span>
+</span></span><span class=line><span class=cl>                     <span class=s>&#39;</span><span class=nv>$session_time&#39;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kn>access_log</span> <span class=s>/var/log/nginx/stream-access.log</span> <span class=s>basic</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1># MySQL load balancing
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=kn>upstream</span> <span class=s>mysql_backend</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=kn>least_conn</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>server</span> <span class=n>10.0.1.10</span><span class=p>:</span><span class=mi>3306</span> <span class=s>weight=3</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>server</span> <span class=n>10.0.1.11</span><span class=p>:</span><span class=mi>3306</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>server</span> <span class=n>10.0.1.12</span><span class=p>:</span><span class=mi>3306</span> <span class=s>backup</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kn>server</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=kn>listen</span> <span class=mi>3306</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_pass</span> <span class=s>mysql_backend</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_timeout</span> <span class=s>30s</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_connect_timeout</span> <span class=s>5s</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1># Redis with IP hash
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=kn>upstream</span> <span class=s>redis_backend</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=kn>ip_hash</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>server</span> <span class=n>10.0.2.10</span><span class=p>:</span><span class=mi>6379</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>server</span> <span class=n>10.0.2.11</span><span class=p>:</span><span class=mi>6379</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kn>server</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=kn>listen</span> <span class=mi>6379</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_pass</span> <span class=s>redis_backend</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_timeout</span> <span class=s>60s</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1># PostgreSQL with round-robin
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=kn>upstream</span> <span class=s>postgres_backend</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=kn>server</span> <span class=n>10.0.3.10</span><span class=p>:</span><span class=mi>5432</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>server</span> <span class=n>10.0.3.11</span><span class=p>:</span><span class=mi>5432</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>server</span> <span class=n>10.0.3.12</span><span class=p>:</span><span class=mi>5432</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=kn>server</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=kn>listen</span> <span class=mi>5432</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_pass</span> <span class=s>postgres_backend</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_timeout</span> <span class=s>30s</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=kn>proxy_connect_timeout</span> <span class=s>5s</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=envoy-tcp-proxy-the-dynamic-modern-option>Envoy TCP Proxy: The Dynamic Modern Option</h2><p>Envoy&rsquo;s TCP proxy filter provides layer 4 load balancing as part of its broader service mesh capabilities. It excels in dynamic environments where backend endpoints change frequently.</p><p><strong>Strengths:</strong></p><ul><li>Dynamic configuration via xDS API — no restarts needed for backend changes</li><li>Extensive observability — built-in Prometheus metrics, distributed tracing</li><li>Advanced load balancing — ring hash, maglev, weighted round-robin</li><li>Filter chain architecture — composable TCP processing pipeline</li><li>Native integration with Kubernetes and service mesh ecosystems</li><li>Excellent for multi-tenant environments</li></ul><p><strong>Weaknesses:</strong></p><ul><li>Steeper learning curve — xDS API and protobuf configuration</li><li>Higher resource usage than HAProxy or Nginx</li><li>Complex setup for simple use cases</li><li>Configuration can be verbose compared to declarative config files</li></ul><p><strong>Installation:</strong></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Download Envoy binary</span>
+</span></span><span class=line><span class=cl>curl -L https://github.com/envoyproxy/envoy/releases/download/v1.31.0/envoy-1.31.0-linux-x86_64
+</span></span><span class=line><span class=cl>chmod +x envoy
+</span></span><span class=line><span class=cl>sudo mv envoy /usr/local/bin/
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Or use Docker (recommended)</span>
+</span></span><span class=line><span class=cl>docker pull envoyproxy/envoy:v1.31.0
+</span></span></code></pre></td></tr></table></div></div><p><strong>Docker Compose deployment:</strong></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>envoy-tcp</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>envoyproxy/envoy:v1.31.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>envoy-tcp</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;3306:3306&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;6379:6379&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;5432:5432&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;9901:9901&#34;</span><span class=w>   </span><span class=c># Admin/stats</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./envoy.yaml:/etc/envoy/envoy.yaml:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=l>envoy -c /etc/envoy/envoy.yaml --log-level info</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p><strong>Envoy TCP proxy configuration:</strong></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span><span class=lnt>62
+</span><span class=lnt>63
+</span><span class=lnt>64
+</span><span class=lnt>65
+</span><span class=lnt>66
+</span><span class=lnt>67
+</span><span class=lnt>68
+</span><span class=lnt>69
+</span><span class=lnt>70
+</span><span class=lnt>71
+</span><span class=lnt>72
+</span><span class=lnt>73
+</span><span class=lnt>74
+</span><span class=lnt>75
+</span><span class=lnt>76
+</span><span class=lnt>77
+</span><span class=lnt>78
+</span><span class=lnt>79
+</span><span class=lnt>80
+</span><span class=lnt>81
+</span><span class=lnt>82
+</span><span class=lnt>83
+</span><span class=lnt>84
+</span><span class=lnt>85
+</span><span class=lnt>86
+</span><span class=lnt>87
+</span><span class=lnt>88
+</span><span class=lnt>89
+</span><span class=lnt>90
+</span><span class=lnt>91
+</span><span class=lnt>92
+</span><span class=lnt>93
+</span><span class=lnt>94
+</span><span class=lnt>95
+</span><span class=lnt>96
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>admin</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>address</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>socket_address</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>address</span><span class=p>:</span><span class=w> </span><span class=m>0.0.0.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>port_value</span><span class=p>:</span><span class=w> </span><span class=m>9901</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>static_resources</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>listeners</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=c># MySQL listener</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>mysql_listener</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>address</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>socket_address</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>address</span><span class=p>:</span><span class=w> </span><span class=m>0.0.0.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>port_value</span><span class=p>:</span><span class=w> </span><span class=m>3306</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>filter_chains</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>filters</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>envoy.filters.network.tcp_proxy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>typed_config</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=nt>&#34;@type&#34;: </span><span class=l>type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=nt>stat_prefix</span><span class=p>:</span><span class=w> </span><span class=l>mysql</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=nt>cluster</span><span class=p>:</span><span class=w> </span><span class=l>mysql_cluster</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=c># Redis listener</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>redis_listener</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>address</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>socket_address</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>address</span><span class=p>:</span><span class=w> </span><span class=m>0.0.0.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>port_value</span><span class=p>:</span><span class=w> </span><span class=m>6379</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>filter_chains</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>filters</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>envoy.filters.network.tcp_proxy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>typed_config</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=nt>&#34;@type&#34;: </span><span class=l>type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=nt>stat_prefix</span><span class=p>:</span><span class=w> </span><span class=l>redis</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                </span><span class=nt>cluster</span><span class=p>:</span><span class=w> </span><span class=l>redis_cluster</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>clusters</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>mysql_cluster</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>connect_timeout</span><span class=p>:</span><span class=w> </span><span class=l>5s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>type</span><span class=p>:</span><span class=w> </span><span class=l>STRICT_DNS</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>lb_policy</span><span class=p>:</span><span class=w> </span><span class=l>LEAST_REQUEST</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>load_assignment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>cluster_name</span><span class=p>:</span><span class=w> </span><span class=l>mysql_cluster</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>endpoints</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span>- <span class=nt>lb_endpoints</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span>- <span class=nt>endpoint</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                  </span><span class=nt>address</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                    </span><span class=nt>socket_address</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                      </span><span class=nt>address</span><span class=p>:</span><span class=w> </span><span class=m>10.0.1.10</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                      </span><span class=nt>port_value</span><span class=p>:</span><span class=w> </span><span class=m>3306</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span>- <span class=nt>endpoint</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                  </span><span class=nt>address</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                    </span><span class=nt>socket_address</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                      </span><span class=nt>address</span><span class=p>:</span><span class=w> </span><span class=m>10.0.1.11</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                      </span><span class=nt>port_value</span><span class=p>:</span><span class=w> </span><span class=m>3306</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span>- <span class=nt>endpoint</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                  </span><span class=nt>address</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                    </span><span class=nt>socket_address</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                      </span><span class=nt>address</span><span class=p>:</span><span class=w> </span><span class=m>10.0.1.12</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                      </span><span class=nt>port_value</span><span class=p>:</span><span class=w> </span><span class=m>3306</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>health_checks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>timeout</span><span class=p>:</span><span class=w> </span><span class=l>3s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>interval</span><span class=p>:</span><span class=w> </span><span class=l>5s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>unhealthy_threshold</span><span class=p>:</span><span class=w> </span><span class=m>3</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>healthy_threshold</span><span class=p>:</span><span class=w> </span><span class=m>2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>tcp_health_check</span><span class=p>:</span><span class=w> </span>{}<span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>redis_cluster</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>connect_timeout</span><span class=p>:</span><span class=w> </span><span class=l>5s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>type</span><span class=p>:</span><span class=w> </span><span class=l>STRICT_DNS</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>lb_policy</span><span class=p>:</span><span class=w> </span><span class=l>RING_HASH</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>lb_policy_config</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>ring_hash_lb_config</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>maximum_ring_size</span><span class=p>:</span><span class=w> </span><span class=m>65536</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>load_assignment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>cluster_name</span><span class=p>:</span><span class=w> </span><span class=l>redis_cluster</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>endpoints</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span>- <span class=nt>lb_endpoints</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span>- <span class=nt>endpoint</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                  </span><span class=nt>address</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                    </span><span class=nt>socket_address</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                      </span><span class=nt>address</span><span class=p>:</span><span class=w> </span><span class=m>10.0.2.10</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                      </span><span class=nt>port_value</span><span class=p>:</span><span class=w> </span><span class=m>6379</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span>- <span class=nt>endpoint</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                  </span><span class=nt>address</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                    </span><span class=nt>socket_address</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                      </span><span class=nt>address</span><span class=p>:</span><span class=w> </span><span class=m>10.0.2.11</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>                      </span><span class=nt>port_value</span><span class=p>:</span><span class=w> </span><span class=m>6379</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>health_checks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>timeout</span><span class=p>:</span><span class=w> </span><span class=l>2s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>interval</span><span class=p>:</span><span class=w> </span><span class=l>3s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>unhealthy_threshold</span><span class=p>:</span><span class=w> </span><span class=m>2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>healthy_threshold</span><span class=p>:</span><span class=w> </span><span class=m>2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>custom_health_check</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>health_checker</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>              </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>envoy.health_checkers.redis</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=performance-and-resource-usage>Performance and Resource Usage</h2><table><thead><tr><th>Metric</th><th>HAProxy</th><th>Nginx Stream</th><th>Envoy</th></tr></thead><tbody><tr><td>Memory per 10K connections</td><td>~50 MB</td><td>~40 MB</td><td>~120 MB</td></tr><tr><td>CPU overhead (idle)</td><td>Minimal</td><td>Minimal</td><td>Moderate</td></tr><tr><td>Throughput (connections/sec)</td><td>200K+</td><td>150K+</td><td>100K+</td></tr><tr><td>Config reload time</td><td>~0ms (runtime API)</td><td>~100ms (graceful)</td><td>~0ms (xDS)</td></tr><tr><td>Startup time</td><td>Instant</td><td>Instant</td><td>~1-2s</td></tr></tbody></table><h2 id=when-to-choose-each-tool>When to Choose Each Tool</h2><p><strong>Choose HAProxy TCP mode when:</strong></p><ul><li>You need the most mature and battle-tested TCP load balancer</li><li>Advanced health checks are critical (MySQL, SMTP, LDAP, custom protocols)</li><li>You want runtime configuration changes without restarts</li><li>You need connection persistence via stick tables</li><li>Your primary workload is load balancing (not HTTP serving)</li></ul><p><strong>Choose Nginx stream when:</strong></p><ul><li>You already run Nginx and want to add TCP proxying without new infrastructure</li><li>Your TCP load balancing needs are straightforward (round-robin, least connections)</li><li>You want unified HTTP and TCP configuration in a single tool</li><li>You value simplicity and minimal configuration complexity</li></ul><p><strong>Choose Envoy TCP proxy when:</strong></p><ul><li>You run Kubernetes or a service mesh and want consistent load balancing</li><li>Backend endpoints change dynamically and you need zero-downtime updates</li><li>You need advanced load balancing algorithms (ring hash, maglev)</li><li>Built-in observability and distributed tracing are important</li><li>You are building a multi-tenant platform with per-tenant TCP routing</li></ul><h2 id=why-self-host-your-tcp-load-balancer>Why Self-Host Your TCP Load Balancer?</h2><p>Running your own layer 4 load balancer gives you complete visibility into connection patterns, latency distributions, and backend health. Commercial load balancers often abstract away these details, making it harder to debug connection issues or optimize traffic distribution.</p><p>Self-hosted TCP load balancers integrate seamlessly with self-hosted backend services. Pair HAProxy or Nginx stream with your self-hosted database clusters, message queues, and application servers for a fully self-contained infrastructure stack. For related load balancing guides, see our <a href=../2026-04-24-self-hosted-dns-failover-keepalived-powerdns-haproxy-guide/>DNS failover with Keepalived and PowerDNS</a> and <a href=../2026-04-26-metallb-vs-kube-vip-vs-cilium-lb-bare-metal-kubernetes-load-balancer-guide/>bare metal Kubernetes load balancing</a>.</p><p>Cost savings are substantial. Hardware load balancers from F5 or Citrix cost $10,000-$50,000 plus annual support contracts. HAProxy, Nginx stream, and Envoy are free and run on commodity hardware. Even for high-traffic deployments, a single commodity server with HAProxy can handle more connections than entry-level hardware appliances.</p><p>Self-hosting also eliminates vendor lock-in. Your load balancing configuration is stored in plain text files or version-controlled YAML, making it portable across environments. When you need to replicate your load balancing setup across data centers or cloud providers, the same configuration works everywhere without licensing complications.</p><p>If you are also configuring SNI-based TLS routing for your TCP services, our <a href=../2026-04-26-sniproxy-vs-haproxy-vs-caddy-self-hosted-sni-proxy-tls-routing-guide/>SNI proxy comparison</a> covers tools that route encrypted traffic based on the TLS Server Name Indication extension.</p><h2 id=faq>FAQ</h2><h3 id=what-is-the-difference-between-layer-4-and-layer-7-load-balancing>What is the difference between layer 4 and layer 7 load balancing?</h3><p>Layer 4 (TCP) load balancers forward connections based on IP addresses and port numbers without inspecting the application data. Layer 7 (HTTP) load balancers parse HTTP headers and can route based on URL paths, hostnames, cookies, and content. Use layer 4 for database and cache traffic, layer 7 for web applications.</p><h3 id=can-haproxy-do-both-tcp-and-http-load-balancing>Can HAProxy do both TCP and HTTP load balancing?</h3><p>Yes. HAProxy supports both modes simultaneously. Use <code>mode tcp</code> for TCP proxying and <code>mode http</code> for HTTP load balancing in the same configuration file. You can even mix modes across different frontend/backend pairs.</p><h3 id=does-nginx-stream-support-health-checks>Does Nginx stream support health checks?</h3><p>The open-source version of Nginx has basic passive health checking (marks servers as down after connection failures). Active health checks require Nginx Plus (commercial) or third-party modules like nginx_upstream_check.</p><h3 id=which-tool-has-the-best-health-checking>Which tool has the best health checking?</h3><p>HAProxy has the most comprehensive health check options, supporting TCP, HTTP, SMTP, LDAP, MySQL, and custom check scripts. Envoy also supports a wide range including TCP, HTTP, gRPC, and Redis checks. Nginx stream has the most limited options in its open-source version.</p><h3 id=can-i-use-these-tools-for-tls-passthrough>Can I use these tools for TLS passthrough?</h3><p>Yes. All three support TLS passthrough, where encrypted traffic is forwarded to backend servers without decryption. Both HAProxy and Nginx support SNI-based routing even in passthrough mode, allowing you to route to different backends based on the requested hostname.</p><h3 id=how-do-i-monitor-tcp-load-balancer-performance>How do I monitor TCP load balancer performance?</h3><p>HAProxy provides a built-in stats page (HTTP) and Prometheus export. Nginx stream logs connection metrics that can be parsed with log analyzers. Envoy has the most comprehensive built-in metrics, including connection counts, byte rates, and per-endpoint health status — all exportable to Prometheus.</p><h3 id=can-i-run-multiple-tcp-load-balancers-for-high-availability>Can I run multiple TCP load balancers for high availability?</h3><p>Yes. Deploy two or more load balancer instances with keepalived (VRRP) or a DNS-based failover mechanism. For Kubernetes deployments, use a Service of type LoadBalancer to distribute traffic across Envoy or Nginx pods.</p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted TCP Load Balancing — HAProxy TCP Mode vs Nginx Stream vs Envoy TCP Proxy","description":"Compare three open-source TCP load balancers for self-hosted infrastructure: HAProxy TCP mode, Nginx stream module, and Envoy TCP proxy. Covers health checks, Docker deployment, and when to choose each.","datePublished":"2026-05-20","dateModified":"2026-05-20","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20TCP%20Load%20Balancing%20%e2%80%94%20HAProxy%20TCP%20Mode%20vs%20Nginx%20Stream%20vs%20Envoy%20TCP%20Proxy&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-20-self-hosted-tcp-load-balancing-haproxy-nginx-envoy-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-20-self-hosted-tcp-load-balancing-haproxy-nginx-envoy-guide%2f&t=Self-Hosted%20TCP%20Load%20Balancing%20%e2%80%94%20HAProxy%20TCP%20Mode%20vs%20Nginx%20Stream%20vs%20Envoy%20TCP%20Proxy" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/networking/ class=tag-link>Networking</a>
+<a href=/tags/load-balancer/ class=tag-link>Load-Balancer</a>
+<a href=/tags/tcp/ class=tag-link>Tcp</a>
+<a href=/tags/proxy/ class=tag-link>Proxy</a>
+<a href=/tags/self-hosted/ class=tag-link>Self-Hosted</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-05-11-self-hosted-websocket-proxies-whistle-proxyee-koding-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Comparison</span></div><h3 class=post-title>Self-Hosted WebSocket Proxies: Whistle vs Proxyee vs WebSocketProxy</h3><div class=post-excerpt>WebSocket technology enables persistent, bidirectional communication between clients and servers — essential for …</div><div class=post-footer><span class=post-date>May 11, 2026</span></div></a><a href=/posts/2026-05-10-self-hosted-quic-http3-terminators-h2o-quiche-ngtcp2-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Comparison</span></div><h3 class=post-title>Self-Hosted QUIC & HTTP/3 Terminators: h2o vs quiche vs ngtcp2 Guide 2026</h3><div class=post-excerpt>QUIC (Quick UDP Internet Connections) and HTTP/3 represent the next generation of web transport protocols. QUIC operates …</div><div class=post-footer><span class=post-date>May 10, 2026</span></div></a><a href=/posts/2026-05-08-self-hosted-ssh-tunnel-management-sshuttle-autossh-sshtunnel-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Ssh</span></div><h3 class=post-title>Self-Hosted SSH Tunnel Management: sshuttle vs autossh vs sshtunnel</h3><div class=post-excerpt>SSH tunnels are one of the most versatile tools in a self-hosted infrastructure toolkit. They provide encrypted …</div><div class=post-footer><span class=post-date>May 8, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>

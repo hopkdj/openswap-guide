@@ -1,0 +1,483 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted DNS Cache Statistics & Performance Monitoring: Unbound vs PowerDNS Recursor vs BIND 9 | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-05-20-self-hosted-dns-cache-statistics-monitoring-unbound-pdns-bind9-guide/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted DNS Cache Statistics & Performance Monitoring: Unbound vs PowerDNS Recursor vs BIND 9"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:description" content="Monitor DNS cache hit rates, query latency, and resolver performance with Unbound, PowerDNS Recursor, and BIND 9. Includes Prometheus exporters and dashboard configurations."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-05-20-self-hosted-dns-cache-statistics-monitoring-unbound-pdns-bind9-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-05-20T00:00:00Z"><meta property="article:modified_time" content="2026-05-20T00:00:00Z"><meta property="article:tag" content="dns"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted DNS Cache Statistics & Performance Monitoring: Unbound vs PowerDNS Recursor vs BIND 9"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:description content="Monitor DNS cache hit rates, query latency, and resolver performance with Unbound, PowerDNS Recursor, and BIND 9. Includes Prometheus exporters and dashboard configurations."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted DNS Cache Statistics \u0026 Performance Monitoring: Unbound vs PowerDNS Recursor vs BIND 9","description":"Monitor DNS cache hit rates, query latency, and resolver performance with Unbound, PowerDNS Recursor, and BIND 9. Includes Prometheus exporters and dashboard configurations.","datePublished":"2026-05-20T00:00:00Z","dateModified":"2026-05-20T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-05-20-self-hosted-dns-cache-statistics-monitoring-unbound-pdns-bind9-guide\/"},"keywords":["dns","cache-monitoring","dns-performance","resolver-monitoring","prometheus"],"articleSection":"dns","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted DNS Cache Statistics \u0026 Performance Monitoring: Unbound vs PowerDNS Recursor vs BIND 9","item":"https:\/\/www.pistack.xyz\/posts\/2026-05-20-self-hosted-dns-cache-statistics-monitoring-unbound-pdns-bind9-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Dns</span>
+<span class="tag tag-purple">Cache-Monitoring</span>
+<span class="tag tag-purple">Dns-Performance</span></div><h1>Self-Hosted DNS Cache Statistics & Performance Monitoring: Unbound vs PowerDNS Recursor vs BIND 9</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>May 20, 2026</span>
+<span>9 min read</span>
+<span>Updated May 20, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#why-monitor-dns-cache-performance>Why Monitor DNS Cache Performance?</a></li><li><a href=#1-unbound-cache-statistics>1. Unbound Cache Statistics</a><ul><li><a href=#key-metrics-available>Key Metrics Available</a></li><li><a href=#docker-compose-setup>Docker Compose Setup</a></li><li><a href=#unbound-configuration-unboundconf>Unbound Configuration (unbound.conf)</a></li><li><a href=#collect-cache-stats>Collect Cache Stats</a></li></ul></li><li><a href=#2-powerdns-recursor-statistics>2. PowerDNS Recursor Statistics</a><ul><li><a href=#key-metrics-available-1>Key Metrics Available</a></li><li><a href=#docker-compose-setup-1>Docker Compose Setup</a></li><li><a href=#powerdns-recursor-configuration-recursorconf>PowerDNS Recursor Configuration (recursor.conf)</a></li><li><a href=#fetch-statistics-via-api>Fetch Statistics via API</a></li></ul></li><li><a href=#3-bind-9-statistics-channel>3. BIND 9 Statistics Channel</a><ul><li><a href=#key-metrics-available-2>Key Metrics Available</a></li><li><a href=#docker-compose-setup-2>Docker Compose Setup</a></li><li><a href=#bind-9-statistics-configuration-namedconfoptions>BIND 9 Statistics Configuration (named.conf.options)</a></li><li><a href=#collect-statistics-via-rndc>Collect Statistics via rndc</a></li></ul></li><li><a href=#comparison-table>Comparison Table</a></li><li><a href=#prometheus-dashboard-setup>Prometheus Dashboard Setup</a><ul><li><a href=#key-grafana-panels>Key Grafana Panels</a></li></ul></li><li><a href=#why-monitor-dns-cache-performance-1>Why Monitor DNS Cache Performance?</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#what-is-a-good-dns-cache-hit-rate>What is a good DNS cache hit rate?</a></li><li><a href=#how-do-i-monitor-dns-cache-performance-without-a-dashboard>How do I monitor DNS cache performance without a dashboard?</a></li><li><a href=#why-is-my-dns-cache-hit-rate-dropping-suddenly>Why is my DNS cache hit rate dropping suddenly?</a></li><li><a href=#how-much-memory-should-i-allocate-for-dns-cache>How much memory should I allocate for DNS cache?</a></li><li><a href=#can-i-monitor-dns-cache-performance-across-multiple-resolvers>Can I monitor DNS cache performance across multiple resolvers?</a></li><li><a href=#does-dns-cache-monitoring-help-with-security>Does DNS cache monitoring help with security?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><p>DNS resolver performance directly impacts every application and user on your network. Cache hit rates, query latency, and upstream resolution times are critical metrics that determine whether users experience instant page loads or frustrating delays. This guide covers how to monitor DNS cache statistics and resolver performance using three widely-deployed open-source DNS resolvers: <strong>Unbound</strong>, <strong>PowerDNS Recursor</strong>, and <strong>BIND 9</strong>.</p><h2 id=why-monitor-dns-cache-performance>Why Monitor DNS Cache Performance?</h2><p>DNS resolution is the first step in nearly every network request. A slow or misconfigured DNS resolver cascades delays across your entire infrastructure:</p><ul><li><strong>Cache hit rate below 80%</strong> means your resolver is performing excessive upstream queries, increasing latency and upstream DNS server load</li><li><strong>High query latency</strong> (above 100ms for cached queries) indicates resource constraints, disk I/O bottlenecks, or recursive resolver issues</li><li><strong>NXDomain spikes</strong> can indicate misconfigured applications, DNS-based attacks, or reconnaissance activity</li><li><strong>Cache poisoning attempts</strong> manifest as anomalous query patterns that monitoring can detect early</li></ul><h2 id=1-unbound-cache-statistics>1. Unbound Cache Statistics</h2><p><a href=https://github.com/NLnetLabs/unbound>Unbound</a> is a validating, recursive, and caching DNS resolver developed by NLnet Labs. It provides detailed cache statistics through its <code>unbound-control</code> command and Prometheus exporter.</p><h3 id=key-metrics-available>Key Metrics Available</h3><ul><li><strong>Cache hit ratio</strong>: Percentage of queries served from cache vs. upstream resolution</li><li><strong>Query types</strong>: Distribution of A, AAAA, MX, TXT, and other query types</li><li><strong>Response codes</strong>: NOERROR, NXDOMAIN, SERVFAIL breakdown</li><li><strong>Memory usage</strong>: Cache size, RRset count, and memory allocation</li><li><strong>Upstream query time</strong>: Average latency for recursive resolution</li></ul><h3 id=docker-compose-setup>Docker Compose Setup</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>unbound</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>mvance/unbound:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>unbound</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;53:53/udp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;53:53/tcp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8953:8953&#34;</span><span class=w>       </span><span class=c># unbound-control</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./unbound.conf:/opt/unbound/etc/unbound/unbound.conf:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>dns-monitoring</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>unbound-exporter</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>kumina/unbound_exporter:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>unbound-exporter</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;9167:9167&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;--unbound.host=unbound&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;--unbound.port=8953&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>unbound</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>dns-monitoring</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>dns-monitoring</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>bridge</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=unbound-configuration-unboundconf>Unbound Configuration (unbound.conf)</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>server</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># Cache settings</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>cache-min-ttl</span><span class=p>:</span><span class=w> </span><span class=m>300</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>cache-max-ttl</span><span class=p>:</span><span class=w> </span><span class=m>86400</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>msg-cache-size</span><span class=p>:</span><span class=w> </span><span class=l>128m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>rrset-cache-size</span><span class=p>:</span><span class=w> </span><span class=l>256m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># Statistics</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>statistics-interval</span><span class=p>:</span><span class=w> </span><span class=m>0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>extended-statistics</span><span class=p>:</span><span class=w> </span><span class=kc>yes</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>statistics-cumulative</span><span class=p>:</span><span class=w> </span><span class=kc>no</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># Remote control for unbound-control</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>remote-control</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>control-enable</span><span class=p>:</span><span class=w> </span><span class=kc>yes</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>control-interface</span><span class=p>:</span><span class=w> </span><span class=m>0.0.0.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>control-port</span><span class=p>:</span><span class=w> </span><span class=m>8953</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>server-key-file</span><span class=p>:</span><span class=w> </span><span class=l>/opt/unbound/etc/unbound/unbound_server.key</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>server-cert-file</span><span class=p>:</span><span class=w> </span><span class=l>/opt/unbound/etc/unbound/unbound_server.pem</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>control-key-file</span><span class=p>:</span><span class=w> </span><span class=l>/opt/unbound/etc/unbound/unbound_control.key</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>control-cert-file</span><span class=p>:</span><span class=w> </span><span class=l>/opt/unbound/etc/unbound/unbound_control.pem</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=c># Logging</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>log-queries</span><span class=p>:</span><span class=w> </span><span class=kc>no</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>log-replies</span><span class=p>:</span><span class=w> </span><span class=kc>no</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>log-tag-queryreply</span><span class=p>:</span><span class=w> </span><span class=kc>no</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>log-local-actions</span><span class=p>:</span><span class=w> </span><span class=kc>no</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>verbosity</span><span class=p>:</span><span class=w> </span><span class=m>1</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=collect-cache-stats>Collect Cache Stats</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># View cache statistics</span>
+</span></span><span class=line><span class=cl>docker <span class=nb>exec</span> unbound unbound-control stats
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Key metrics output example:</span>
+</span></span><span class=line><span class=cl><span class=c1># total.num.queries=45230</span>
+</span></span><span class=line><span class=cl><span class=c1># total.num.cachehits=38456</span>
+</span></span><span class=line><span class=cl><span class=c1># total.num.cachemiss=6774</span>
+</span></span><span class=line><span class=cl><span class=c1># total.num.recursivereplies=6774</span>
+</span></span><span class=line><span class=cl><span class=c1># avg.num.querytype.A=32100</span>
+</span></span><span class=line><span class=cl><span class=c1># avg.num.querytype.AAAA=8900</span>
+</span></span><span class=line><span class=cl><span class=c1># avg.num.querytype.MX=1200</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Calculate cache hit ratio</span>
+</span></span><span class=line><span class=cl><span class=nv>HITS</span><span class=o>=</span><span class=k>$(</span>docker <span class=nb>exec</span> unbound unbound-control stats <span class=p>|</span> grep cachehits <span class=p>|</span> cut -d<span class=o>=</span> -f2<span class=k>)</span>
+</span></span><span class=line><span class=cl><span class=nv>MISSES</span><span class=o>=</span><span class=k>$(</span>docker <span class=nb>exec</span> unbound unbound-control stats <span class=p>|</span> grep cachemiss <span class=p>|</span> cut -d<span class=o>=</span> -f2<span class=k>)</span>
+</span></span><span class=line><span class=cl><span class=nv>RATIO</span><span class=o>=</span><span class=k>$(</span><span class=nb>echo</span> <span class=s2>&#34;scale=2; </span><span class=nv>$HITS</span><span class=s2> * 100 / (</span><span class=nv>$HITS</span><span class=s2> + </span><span class=nv>$MISSES</span><span class=s2>)&#34;</span> <span class=p>|</span> bc<span class=k>)</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;Cache hit ratio: </span><span class=nv>$RATIO</span><span class=s2>%&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=2-powerdns-recursor-statistics>2. PowerDNS Recursor Statistics</h2><p><a href=https://github.com/PowerDNS/pdns>PowerDNS Recursor</a> is a high-performance, security-focused recursive DNS resolver. It provides statistics via HTTP API, SNMP, and built-in Prometheus metrics.</p><h3 id=key-metrics-available-1>Key Metrics Available</h3><ul><li><strong>Question rate</strong>: Queries per second</li><li><strong>Cache size</strong>: Number of entries in the packet cache and negative cache</li><li><strong>CPU usage</strong>: User and system time breakdown</li><li><strong>Query distribution</strong>: Per-query-type and per-qclass statistics</li><li><strong>Slow query tracking</strong>: Queries exceeding configurable latency thresholds</li><li><strong>Throttled queries</strong>: Rate-limited and blocked queries</li></ul><h3 id=docker-compose-setup-1>Docker Compose Setup</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>pdns-recursor</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>powerdns/pdns-recursor:4.9</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>pdns-recursor</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;53:53/udp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;53:53/tcp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8082:8082&#34;</span><span class=w>       </span><span class=c># Web API</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./recursor.conf:/etc/pdns-recursor/recursor.conf:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>PDNS_recurring=yes</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>dns-monitoring</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>prometheus</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>prom/prometheus:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>pdns-prometheus</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;9090:9090&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./prometheus.yml:/etc/prometheus/prometheus.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>dns-monitoring</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>dns-monitoring</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>bridge</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=powerdns-recursor-configuration-recursorconf>PowerDNS Recursor Configuration (recursor.conf)</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=c1># Listen on all interfaces</span>
+</span></span><span class=line><span class=cl><span class=na>local-address</span><span class=o>=</span><span class=s>0.0.0.0</span>
+</span></span><span class=line><span class=cl><span class=na>local-port</span><span class=o>=</span><span class=s>53</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Web API for statistics</span>
+</span></span><span class=line><span class=cl><span class=na>webserver</span><span class=o>=</span><span class=s>yes</span>
+</span></span><span class=line><span class=cl><span class=na>webserver-address</span><span class=o>=</span><span class=s>0.0.0.0</span>
+</span></span><span class=line><span class=cl><span class=na>webserver-port</span><span class=o>=</span><span class=s>8082</span>
+</span></span><span class=line><span class=cl><span class=na>webserver-password</span><span class=o>=</span><span class=s>monitoring_secret</span>
+</span></span><span class=line><span class=cl><span class=na>webserver-allow-from</span><span class=o>=</span><span class=s>0.0.0.0/0, ::/0</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Prometheus metrics</span>
+</span></span><span class=line><span class=cl><span class=na>webserver-loglevel</span><span class=o>=</span><span class=s>normal</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Cache tuning</span>
+</span></span><span class=line><span class=cl><span class=na>max-cache-entries</span><span class=o>=</span><span class=s>1000000</span>
+</span></span><span class=line><span class=cl><span class=na>max-negative-ttl</span><span class=o>=</span><span class=s>3600</span>
+</span></span><span class=line><span class=cl><span class=na>max-cache-ttl</span><span class=o>=</span><span class=s>86400</span>
+</span></span><span class=line><span class=cl><span class=na>max-tmp-cache-entries</span><span class=o>=</span><span class=s>100000</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Query logging (disable in production for performance)</span>
+</span></span><span class=line><span class=cl><span class=na>quiet</span><span class=o>=</span><span class=s>yes</span>
+</span></span><span class=line><span class=cl><span class=na>log-common-errors</span><span class=o>=</span><span class=s>yes</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Security</span>
+</span></span><span class=line><span class=cl><span class=na>dnssec</span><span class=o>=</span><span class=s>validate</span>
+</span></span><span class=line><span class=cl><span class=na>serve-rfc1918</span><span class=o>=</span><span class=s>no</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=fetch-statistics-via-api>Fetch Statistics via API</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Get all statistics</span>
+</span></span><span class=line><span class=cl>curl -s -H <span class=s2>&#34;X-API-Key: monitoring_secret&#34;</span>   http://localhost:8082/api/v1/servers/localhost/statistics <span class=p>|</span> python3 -m json.tool
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Key metrics from API response:</span>
+</span></span><span class=line><span class=cl><span class=c1># &#34;all-outqueries&#34;: total upstream queries</span>
+</span></span><span class=line><span class=cl><span class=c1># &#34;cache-hits&#34;: cache hit count</span>
+</span></span><span class=line><span class=cl><span class=c1># &#34;cache-misses&#34;: cache miss count</span>
+</span></span><span class=line><span class=cl><span class=c1># &#34;answers-slow&#34;: queries taking &gt; 1 second</span>
+</span></span><span class=line><span class=cl><span class=c1># &#34;sys-msec&#34;: system CPU time</span>
+</span></span><span class=line><span class=cl><span class=c1># &#34;user-msec&#34;: user CPU time</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=3-bind-9-statistics-channel>3. BIND 9 Statistics Channel</h2><p><a href=https://github.com/isc-projects/bind9>BIND 9</a> is the most widely deployed DNS server, serving as both authoritative and recursive resolver. Its statistics channel provides detailed XML/JSON metrics.</p><h3 id=key-metrics-available-2>Key Metrics Available</h3><ul><li><strong>Resolver statistics</strong>: Queries received, resolved, cached</li><li><strong>Cache database size</strong>: RRset and message cache sizes</li><li><strong>Client query statistics</strong>: Per-view, per-client statistics</li><li><strong>Memory management</strong>: Heap, mmap, and context memory usage</li><li><strong>TSIG and DNSSEC validation</strong>: Signature validation rates</li></ul><h3 id=docker-compose-setup-2>Docker Compose Setup</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>bind9</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>ubuntu/bind9:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>bind9</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;53:53/udp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;53:53/tcp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8053:8053&#34;</span><span class=w>       </span><span class=c># Statistics channel</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./named.conf:/etc/bind/named.conf:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./named.conf.options:/etc/bind/named.conf.options:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./bind9-data:/var/cache/bind</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>BIND9_USER=root</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>dns-monitoring</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>bind9-exporter</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>ghcr.io/prometheus-community/bind_exporter:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>bind9-exporter</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;9119:9119&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;--bind.stats-groups&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;server,view,tasks&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>BIND9_URL=http://bind9:8053</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>dns-monitoring</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>networks</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>dns-monitoring</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>bridge</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=bind-9-statistics-configuration-namedconfoptions>BIND 9 Statistics Configuration (named.conf.options)</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-gdscript3 data-lang=gdscript3><span class=line><span class=cl><span class=n>options</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>directory</span> <span class=s2>&#34;/var/cache/bind&#34;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=o>//</span> <span class=n>Enable</span> <span class=n>statistics</span> <span class=n>channel</span>
+</span></span><span class=line><span class=cl>    <span class=n>statistics</span><span class=o>-</span><span class=n>channels</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>inet</span> <span class=o>*</span> <span class=n>port</span> <span class=mi>8053</span> <span class=n>allow</span> <span class=p>{</span> <span class=n>any</span><span class=p>;</span> <span class=p>};</span>
+</span></span><span class=line><span class=cl>    <span class=p>};</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=o>//</span> <span class=n>Cache</span> <span class=n>tuning</span>
+</span></span><span class=line><span class=cl>    <span class=nb>max</span><span class=o>-</span><span class=n>cache</span><span class=o>-</span><span class=n>size</span> <span class=mi>256</span><span class=n>m</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=nb>max</span><span class=o>-</span><span class=n>ncache</span><span class=o>-</span><span class=n>ttl</span> <span class=mi>3600</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=nb>max</span><span class=o>-</span><span class=n>cache</span><span class=o>-</span><span class=n>ttl</span> <span class=mi>86400</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=o>//</span> <span class=n>DNSSEC</span> <span class=n>validation</span>
+</span></span><span class=line><span class=cl>    <span class=n>dnssec</span><span class=o>-</span><span class=n>validation</span> <span class=n>auto</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=o>//</span> <span class=n>Query</span> <span class=n>logging</span>
+</span></span><span class=line><span class=cl>    <span class=n>querylog</span> <span class=n>no</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=p>};</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>logging</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=n>channel</span> <span class=n>query_log</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=n>file</span> <span class=s2>&#34;/var/log/bind9/query.log&#34;</span> <span class=n>versions</span> <span class=mi>3</span> <span class=n>size</span> <span class=mi>50</span><span class=n>m</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=n>severity</span> <span class=n>info</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        <span class=nb>print</span><span class=o>-</span><span class=n>time</span> <span class=n>yes</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=p>};</span>
+</span></span><span class=line><span class=cl>    <span class=n>category</span> <span class=n>queries</span> <span class=p>{</span> <span class=n>query_log</span><span class=p>;</span> <span class=p>};</span>
+</span></span><span class=line><span class=cl><span class=p>};</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=collect-statistics-via-rndc>Collect Statistics via rndc</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Dump statistics to file</span>
+</span></span><span class=line><span class=cl>docker <span class=nb>exec</span> bind9 rndc stats
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># View cache statistics</span>
+</span></span><span class=line><span class=cl>docker <span class=nb>exec</span> bind9 cat /var/cache/bind/named_stats.txt
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Key sections in the stats file:</span>
+</span></span><span class=line><span class=cl><span class=c1># +++ Statistics Dump +++</span>
+</span></span><span class=line><span class=cl><span class=c1># ++ Incoming Requests ++</span>
+</span></span><span class=line><span class=cl><span class=c1># ++ Outgoing Queries ++</span>
+</span></span><span class=line><span class=cl><span class=c1># ++ Name Server Statistics ++</span>
+</span></span><span class=line><span class=cl><span class=c1># ++ Resolver Statistics ++</span>
+</span></span><span class=line><span class=cl><span class=c1># ++ Cache DB RRsets ++</span>
+</span></span><span class=line><span class=cl><span class=c1># ++ Socket I/O Statistics ++</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=comparison-table>Comparison Table</h2><table><thead><tr><th>Feature</th><th>Unbound</th><th>PowerDNS Recursor</th><th>BIND 9</th></tr></thead><tbody><tr><td><strong>Cache hit metrics</strong></td><td>Via unbound-control</td><td>HTTP API + Prometheus</td><td>Statistics channel + rndc</td></tr><tr><td><strong>Prometheus exporter</strong></td><td>kumina/unbound_exporter</td><td>Built-in</td><td>prometheus-community/bind_exporter</td></tr><tr><td><strong>Per-query logging</strong></td><td>Optional (verbosity)</td><td>Lua scripting</td><td>Query logging category</td></tr><tr><td><strong>DNSSEC validation stats</strong></td><td>Yes</td><td>Yes</td><td>Yes</td></tr><tr><td><strong>Cache size tuning</strong></td><td>msg-cache-size, rrset-cache-size</td><td>max-cache-entries</td><td>max-cache-size</td></tr><tr><td><strong>Slow query tracking</strong></td><td>Via response time histogram</td><td>answers-slow metric</td><td>Via query logging</td></tr><tr><td><strong>Negative cache stats</strong></td><td>Yes (NXDOMAIN)</td><td>max-negative-ttl</td><td>Via cache DB RRsets</td></tr><tr><td><strong>Resource usage</strong></td><td>Low (~100MB RAM)</td><td>Low (~150MB RAM)</td><td>Medium (~300MB RAM)</td></tr><tr><td><strong>Best for</strong></td><td>Simple, secure caching</td><td>High-performance with rich API</td><td>Enterprise, multi-view setups</td></tr></tbody></table><h2 id=prometheus-dashboard-setup>Prometheus Dashboard Setup</h2><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># prometheus.yml — scrape all DNS resolvers</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>scrape_configs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=nt>job_name</span><span class=p>:</span><span class=w> </span><span class=l>unbound</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>static_configs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>targets</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;unbound-exporter:9167&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=nt>job_name</span><span class=p>:</span><span class=w> </span><span class=l>pdns-recursor</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>static_configs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>targets</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;pdns-recursor:8082&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=nt>job_name</span><span class=p>:</span><span class=w> </span><span class=l>bind9</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>static_configs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>targets</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;bind9-exporter:9119&#34;</span><span class=p>]</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=key-grafana-panels>Key Grafana Panels</h3><ul><li><strong>Cache Hit Rate</strong>: <code>rate(unbound_response_cache_hits[5m]) / rate(unbound_response_total[5m]) * 100</code></li><li><strong>Queries per Second</strong>: <code>rate(unbound_queries_total[1m])</code></li><li><strong>Upstream Query Latency</strong>: <code>histogram_quantile(0.95, rate(unbound_response_time_seconds_bucket[5m]))</code></li><li><strong>Cache Memory Usage</strong>: <code>unbound_memory_cache_bytes</code></li></ul><h2 id=why-monitor-dns-cache-performance-1>Why Monitor DNS Cache Performance?</h2><p>Proactive DNS cache monitoring prevents performance degradation before users notice it:</p><ul><li><strong>Capacity planning</strong>: Track cache utilization trends to predict when you need to increase cache size or add resolver instances</li><li><strong>Anomaly detection</strong>: Sudden drops in cache hit rate often indicate upstream DNS issues, cache poisoning attempts, or application misconfigurations</li><li><strong>Cost optimization</strong>: Higher cache hit rates reduce upstream DNS queries, lowering bandwidth costs and improving response times for users</li><li><strong>SLA compliance</strong>: DNS resolution time is part of most application performance SLAs. Monitoring cache performance ensures you meet these commitments</li><li><strong>Security insights</strong>: NXDomain spikes can reveal malware C2 communication, DGA-based domain generation, or DNS tunneling attempts</li><li><strong>Cache tuning validation</strong>: When you adjust TTL values or cache sizes, monitoring confirms whether the changes improve hit rates or waste memory</li></ul><p>For DNS traffic analysis, see our <a href=../2026-04-26-pktvisor-vs-dns-collector-vs-dsc-self-hosted-dns-traff/>DNS traffic collector comparison</a>.
+If you need authoritative DNS management, check our <a href=../2026-04-18-powerdns-vs-bind9-vs-nsd-vs-knot-self-hosted-authoritative-dns-2026/>DNS authoritative server comparison</a>.
+For DNS-over-TLS setup, our <a href=../self-hosted-dns-over-tls-resolver-stubby-unbound-knot-2026/>DNS-over-TLS guide</a> covers encrypted resolution.</p><h2 id=faq>FAQ</h2><h3 id=what-is-a-good-dns-cache-hit-rate>What is a good DNS cache hit rate?</h3><p>For a typical internal DNS resolver serving a stable set of domains, a cache hit rate of <strong>80-95%</strong> is expected. Enterprise environments with diverse client applications may see 60-80%. Below 50% suggests the cache is too small, TTLs are very short, or the resolver is serving too many unique domains.</p><h3 id=how-do-i-monitor-dns-cache-performance-without-a-dashboard>How do I monitor DNS cache performance without a dashboard?</h3><p>All three resolvers provide command-line tools for quick checks: <code>unbound-control stats</code>, <code>rec_control get-all</code>, and <code>rndc stats</code>. For automated monitoring, each has a Prometheus exporter that feeds into time-series databases for alerting.</p><h3 id=why-is-my-dns-cache-hit-rate-dropping-suddenly>Why is my DNS cache hit rate dropping suddenly?</h3><p>Common causes include: (1) A new application or service making queries for unique domains, (2) DNS TTL changes upstream reducing cache lifetime, (3) Cache eviction due to memory pressure, (4) A cache flush command was accidentally executed, or (5) DNS-based attacks generating random queries for non-existent domains.</p><h3 id=how-much-memory-should-i-allocate-for-dns-cache>How much memory should I allocate for DNS cache?</h3><p>For Unbound, start with 128MB message cache and 256MB RRset cache for up to 1000 clients. Scale to 512MB/1GB for 10,000+ clients. PowerDNS Recursor uses <code>max-cache-entries</code> (default 1M entries ≈ 200MB). BIND 9&rsquo;s <code>max-cache-size</code> defaults to 90% of available RAM but should be capped at 512MB-1GB for dedicated resolvers.</p><h3 id=can-i-monitor-dns-cache-performance-across-multiple-resolvers>Can I monitor DNS cache performance across multiple resolvers?</h3><p>Yes. Deploy a Prometheus instance that scrapes each resolver&rsquo;s exporter, then use Grafana to aggregate and compare metrics. This is especially useful for anycast deployments where you want to compare cache hit rates across geographically distributed resolvers.</p><h3 id=does-dns-cache-monitoring-help-with-security>Does DNS cache monitoring help with security?</h3><p>Absolutely. Monitoring cache statistics reveals security-relevant patterns: sudden spikes in NXDomain responses may indicate malware using domain generation algorithms (DGAs), unusual TXT query volumes could signal DNS tunneling, and abnormal query patterns from single sources may reveal compromised hosts.</p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted DNS Cache Statistics & Performance Monitoring: Unbound vs PowerDNS Recursor vs BIND 9","description":"Monitor DNS cache hit rates, query latency, and resolver performance with Unbound, PowerDNS Recursor, and BIND 9. Includes Prometheus exporters and dashboard configurations.","datePublished":"2026-05-20","dateModified":"2026-05-20","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20DNS%20Cache%20Statistics%20%26%20Performance%20Monitoring%3a%20Unbound%20vs%20PowerDNS%20Recursor%20vs%20BIND%209&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-20-self-hosted-dns-cache-statistics-monitoring-unbound-pdns-bind9-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-20-self-hosted-dns-cache-statistics-monitoring-unbound-pdns-bind9-guide%2f&t=Self-Hosted%20DNS%20Cache%20Statistics%20%26%20Performance%20Monitoring%3a%20Unbound%20vs%20PowerDNS%20Recursor%20vs%20BIND%209" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/dns/ class=tag-link>Dns</a>
+<a href=/tags/cache-monitoring/ class=tag-link>Cache-Monitoring</a>
+<a href=/tags/dns-performance/ class=tag-link>Dns-Performance</a>
+<a href=/tags/resolver-monitoring/ class=tag-link>Resolver-Monitoring</a>
+<a href=/tags/prometheus/ class=tag-link>Prometheus</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-04-29-self-hosted-dns-cache-monitoring-unbound-powerdns-bind9-stats-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Comparison</span></div><h3 class=post-title>Self-Hosted DNS Cache Monitoring: Unbound vs PowerDNS Recursor vs BIND9 Stats Guide 2026</h3><div class=post-excerpt>If you run a self-hosted DNS resolver, knowing what&rsquo;s happening inside your cache is just as important as keeping …</div><div class=post-footer><span class=post-date>Apr 29, 2026</span></div></a><a href=/posts/2026-05-20-self-hosted-dns-blocklist-management-pihole-adguard-technitium-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Dns</span></div><h3 class=post-title>Self-Hosted DNS Blocklist Management: Pi-hole vs AdGuard Home vs Technitium DNS Server</h3><div class=post-excerpt>DNS-based content filtering is one of the most effective ways to block ads, trackers, malware domains, and unwanted …</div><div class=post-footer><span class=post-date>May 20, 2026</span></div></a><a href=/posts/2026-05-20-self-hosted-dns-over-quic-servers-stubby-dnsproxy-getdns-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Dns</span></div><h3 class=post-title>Self-Hosted DNS-over-QUIC Servers: Stubby vs dnsproxy vs getdns (2026)</h3><div class=post-excerpt>DNS-over-QUIC (DoQ, RFC 9250) is the newest protocol for encrypted DNS resolution, combining the security of TLS 1.3 …</div><div class=post-footer><span class=post-date>May 20, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>
