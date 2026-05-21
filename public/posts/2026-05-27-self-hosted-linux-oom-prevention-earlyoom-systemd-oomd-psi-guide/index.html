@@ -1,0 +1,389 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted Linux OOM Prevention: earlyoom vs systemd-oomd vs PSI Monitors (2026) | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-05-27-self-hosted-linux-oom-prevention-earlyoom-systemd-oomd-psi-guide/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted Linux OOM Prevention: earlyoom vs systemd-oomd vs PSI Monitors (2026)"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-05-27-self-hosted-linux-oom-prevention-earlyoom-systemd-oomd-psi-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-05-27T00:00:00Z"><meta property="article:modified_time" content="2026-05-27T00:00:00Z"><meta property="article:tag" content="linux"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted Linux OOM Prevention: earlyoom vs systemd-oomd vs PSI Monitors (2026)"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted Linux OOM Prevention: earlyoom vs systemd-oomd vs PSI Monitors (2026)","description":"\u003cp\u003eThe Linux Out-Of-Memory (OOM) killer is a last-resort mechanism that terminates processes when the system runs out of memory. By the time it activates, your services are already degraded — swap is exhausted, page reclaim has failed, and the system may be completely unresponsive. The OOM killer\u0026rsquo;s heuristic process selection often terminates the wrong service, taking down your database while leaving memory-leaking background processes alive.\u003c\/p\u003e","datePublished":"2026-05-27T00:00:00Z","dateModified":"2026-05-27T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-05-27-self-hosted-linux-oom-prevention-earlyoom-systemd-oomd-psi-guide\/"},"keywords":["linux","monitoring","containers","system-administration","reliability"],"articleSection":"linux","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted Linux OOM Prevention: earlyoom vs systemd-oomd vs PSI Monitors (2026)","item":"https:\/\/www.pistack.xyz\/posts\/2026-05-27-self-hosted-linux-oom-prevention-earlyoom-systemd-oomd-psi-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Linux</span>
+<span class="tag tag-purple">Monitoring</span>
+<span class="tag tag-purple">Containers</span></div><h1>Self-Hosted Linux OOM Prevention: earlyoom vs systemd-oomd vs PSI Monitors (2026)</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>May 27, 2026</span>
+<span>10 min read</span>
+<span>Updated May 27, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#why-early-oom-prevention-matters>Why Early OOM Prevention Matters</a></li><li><a href=#comparison-earlyoom-vs-systemd-oomd-vs-psi-monitors>Comparison: earlyoom vs systemd-oomd vs PSI Monitors</a></li><li><a href=#earlyoom-simple-standalone-oom-prevention>earlyoom: Simple Standalone OOM Prevention</a><ul><li><a href=#installation>Installation</a></li><li><a href=#configuration>Configuration</a></li><li><a href=#docker-compose-deployment>Docker Compose Deployment</a></li><li><a href=#monitoring-earlyoom>Monitoring earlyoom</a></li></ul></li><li><a href=#systemd-oomd-integrated-memory-pressure-management>systemd-oomd: Integrated Memory Pressure Management</a><ul><li><a href=#how-psi-works>How PSI Works</a></li><li><a href=#configuration-1>Configuration</a></li><li><a href=#cgroup-level-oom-control>cgroup-Level OOM Control</a></li><li><a href=#docker-compose-with-systemd-oomd-awareness>Docker Compose with systemd-oomd Awareness</a></li><li><a href=#enabling-systemd-oomd>Enabling systemd-oomd</a></li></ul></li><li><a href=#psi-based-custom-monitors>PSI-Based Custom Monitors</a><ul><li><a href=#simple-psi-monitor-script>Simple PSI Monitor Script</a></li><li><a href=#psi-exporter-for-prometheus>PSI Exporter for Prometheus</a></li></ul></li><li><a href=#container-specific-oom-prevention>Container-Specific OOM Prevention</a><ul><li><a href=#docker-oom-score-adjustments>Docker OOM Score Adjustments</a></li><li><a href=#kubernetes-memory-limits-and-oom>Kubernetes Memory Limits and OOM</a></li></ul></li><li><a href=#choosing-the-right-oom-prevention-strategy>Choosing the Right OOM Prevention Strategy</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#what-is-the-difference-between-earlyoom-and-the-kernel-oom-killer>What is the difference between earlyoom and the kernel OOM killer?</a></li><li><a href=#does-systemd-oomd-work-without-psi-support>Does systemd-oomd work without PSI support?</a></li><li><a href=#can-earlyoom-and-systemd-oomd-run-together>Can earlyoom and systemd-oomd run together?</a></li><li><a href=#how-do-i-prevent-oom-killer-from-terminating-my-database>How do I prevent OOM killer from terminating my database?</a></li><li><a href=#what-psi-threshold-should-i-use-for-production-servers>What PSI threshold should I use for production servers?</a></li><li><a href=#can-oom-prevention-daemons-work-inside-containers>Can OOM prevention daemons work inside containers?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><p>The Linux Out-Of-Memory (OOM) killer is a last-resort mechanism that terminates processes when the system runs out of memory. By the time it activates, your services are already degraded — swap is exhausted, page reclaim has failed, and the system may be completely unresponsive. The OOM killer&rsquo;s heuristic process selection often terminates the wrong service, taking down your database while leaving memory-leaking background processes alive.</p><p>Early OOM prevention daemons solve this by monitoring memory pressure <strong>before</strong> the kernel OOM killer activates. They detect memory exhaustion trends and gracefully terminate the least-critical processes before the system becomes unresponsive.</p><p>This guide compares three self-hosted OOM prevention approaches: <strong>earlyoom</strong> (standalone daemon), <strong>systemd-oomd</strong> (systemd-integrated), and <strong>PSI-based monitoring</strong> (Pressure Stall Information). We&rsquo;ll cover deployment, configuration, and Docker Compose setups for container environments.</p><h2 id=why-early-oom-prevention-matters>Why Early OOM Prevention Matters</h2><p>The default Linux OOM killer has several problems for production servers:</p><ol><li><strong>Reactive, not proactive</strong> — It only triggers when memory is already exhausted, often after the system has been swapping for minutes</li><li><strong>Heuristic victim selection</strong> — The OOM score calculation doesn&rsquo;t understand your service priorities. It might kill PostgreSQL while keeping a memory-leaking cron job alive</li><li><strong>System unresponsiveness</strong> — By the time OOM killer activates, the system may be too slow to respond to SSH or health checks, triggering cascading failures</li><li><strong>No graceful shutdown</strong> — OOM killer sends SIGKILL (unblockable), giving processes no chance to save state or close connections</li></ol><p>Early OOM prevention daemons monitor memory availability trends and act <strong>before</strong> the system reaches critical levels. They can:</p><ul><li>Send SIGTERM first (graceful shutdown), then SIGKILL if needed</li><li>Target specific processes based on your configuration</li><li>Alert your monitoring system before killing anything</li><li>Use PSI metrics to detect memory pressure before actual exhaustion</li></ul><p>For broader system reliability, see our <a href=../2026-05-07-kubearmor-vs-falco-vs-tetragon-runtime-security-guide/>container runtime security comparison</a> and <a href=../2026-05-10-container-seccomp-profile-management-apparmor-firejail-guide/>container seccomp profile management guide</a>.</p><h2 id=comparison-earlyoom-vs-systemd-oomd-vs-psi-monitors>Comparison: earlyoom vs systemd-oomd vs PSI Monitors</h2><table><thead><tr><th>Feature</th><th>earlyoom</th><th>systemd-oomd</th><th>PSI-based monitors</th></tr></thead><tbody><tr><td><strong>Trigger mechanism</strong></td><td>Available memory %</td><td>Memory pressure (PSI)</td><td>PSI (Pressure Stall Information)</td></tr><tr><td><strong>Kill signal</strong></td><td>SIGTERM then SIGKILL</td><td>SIGTERM (cgroup-level)</td><td>Configurable</td></tr><tr><td><strong>Victim selection</strong></td><td>Highest RSS process</td><td>cgroup with highest pressure</td><td>Configurable</td></tr><tr><td><strong>Configuration</strong></td><td>CLI flags + systemd unit</td><td>Drop-in config file</td><td>Custom scripts / exporters</td></tr><tr><td><strong>cgroup v2 support</strong></td><td>Yes</td><td>Yes (native)</td><td>Yes (native)</td></tr><tr><td><strong>Container awareness</strong></td><td>Basic (can exclude by name)</td><td>Full (cgroup-aware)</td><td>Full (cgroup-aware)</td></tr><tr><td><strong>Notification support</strong></td><td>Email, webhook, syslog</td><td>Journal only</td><td>Prometheus, alertmanager</td></tr><tr><td><strong>Package availability</strong></td><td>Most distros</td><td>systemd 247+</td><td>Kernel 4.20+ (PSI)</td></tr><tr><td><strong>Resource usage</strong></td><td>~2 MB RAM</td><td>~3 MB RAM</td><td>Varies (depends on implementation)</td></tr><tr><td><strong>Best for</strong></td><td>Simple servers, desktops</td><td>systemd-based servers, containers</td><td>Advanced monitoring, K8s</td></tr></tbody></table><h2 id=earlyoom-simple-standalone-oom-prevention>earlyoom: Simple Standalone OOM Prevention</h2><p>earlyoom is a lightweight daemon that monitors available memory and swap, killing the largest memory consumer when levels drop below configured thresholds.</p><h3 id=installation>Installation</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Ubuntu/Debian</span>
+</span></span><span class=line><span class=cl>apt install earlyoom
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># RHEL/CentOS/Fedora</span>
+</span></span><span class=line><span class=cl>dnf install earlyoom
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># From source</span>
+</span></span><span class=line><span class=cl>git clone https://github.com/rfjakob/earlyoom.git
+</span></span><span class=line><span class=cl><span class=nb>cd</span> earlyoom <span class=o>&amp;&amp;</span> make <span class=o>&amp;&amp;</span> make install
+</span></span></code></pre></td></tr></table></div></div><h3 id=configuration>Configuration</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=c1># /etc/default/earlyoom (Debian/Ubuntu)</span>
+</span></span><span class=line><span class=cl><span class=na>EARLYOOM_ARGS</span><span class=o>=</span><span class=s>&#34;-m 5 -s 10 -r 60 --prefer &#39;(java|node)&#39; --avoid &#39;(sshd|postgres)&#39;&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><table><thead><tr><th>Flag</th><th>Description</th></tr></thead><tbody><tr><td><code>-m 5</code></td><td>Trigger when available memory drops below 5%</td></tr><tr><td><code>-s 10</code></td><td>Trigger when swap drops below 10%</td></tr><tr><td><code>-r 60</code></td><td>Report memory status every 60 seconds</td></tr><tr><td><code>--prefer</code></td><td>Regex for processes to prefer killing</td></tr><tr><td><code>--avoid</code></td><td>Regex for processes to avoid killing</td></tr></tbody></table><h3 id=docker-compose-deployment>Docker Compose Deployment</h3><p>For container hosts running Docker Compose, earlyoom runs as a privileged container with access to the host&rsquo;s <code>/proc</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>earlyoom</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>ghcr.io/rfjakob/earlyoom:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>earlyoom</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>pid</span><span class=p>:</span><span class=w> </span><span class=l>host</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>privileged</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>EARLYOOM_ARGS</span><span class=p>:</span><span class=w> </span><span class=p>&gt;-</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>        -m 5
+</span></span></span><span class=line><span class=cl><span class=sd>        -s 10
+</span></span></span><span class=line><span class=cl><span class=sd>        -r 30
+</span></span></span><span class=line><span class=cl><span class=sd>        --prefer &#39;(node|java|python)&#39;
+</span></span></span><span class=line><span class=cl><span class=sd>        --avoid &#39;(sshd|dockerd|containerd)&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>logging</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>json-file</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>options</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>max-size</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;5m&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>max-file</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;2&#34;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=monitoring-earlyoom>Monitoring earlyoom</h3><p>earlyoom logs to syslog by default. Check for OOM prevention events:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>journalctl -u earlyoom --since <span class=s2>&#34;1 hour ago&#34;</span>
+</span></span><span class=line><span class=cl><span class=c1># Example output:</span>
+</span></span><span class=line><span class=cl><span class=c1># earlyoom[1234]: mem 4.2% &lt; avail 5.0%: sending SIGTERM to process 5678 java</span>
+</span></span><span class=line><span class=cl><span class=c1># earlyoom[1234]: mem 3.1% &lt; avail 5.0%: sending SIGKILL to process 5678 java</span>
+</span></span></code></pre></td></tr></table></div></div><p>For Prometheus monitoring, pair earlyoom with the <code>node_exporter</code> textfile collector to expose earlyoom metrics.</p><h2 id=systemd-oomd-integrated-memory-pressure-management>systemd-oomd: Integrated Memory Pressure Management</h2><p>systemd-oomd is built into systemd (v247+) and uses PSI (Pressure Stall Information) metrics to detect memory pressure. Unlike earlyoom&rsquo;s percentage-based triggers, systemd-oomd responds to actual memory stall times — the time processes spend waiting for memory allocation.</p><h3 id=how-psi-works>How PSI Works</h3><p>PSI metrics (available since Linux 4.20) measure how long processes are stalled waiting for resources:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Read PSI memory pressure stats</span>
+</span></span><span class=line><span class=cl>cat /proc/pressure/memory
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Output:</span>
+</span></span><span class=line><span class=cl><span class=c1># some avg10=0.00 avg60=0.00 avg300=0.00 total=1234567</span>
+</span></span><span class=line><span class=cl><span class=c1># full avg10=0.15 avg60=0.08 avg300=0.03 total=987654</span>
+</span></span></code></pre></td></tr></table></div></div><ul><li><strong><code>some</code></strong>: Time when some tasks are stalled on memory allocation</li><li><strong><code>full</code></strong>: Time when ALL non-idle tasks are stalled (system-wide memory pressure)</li><li><strong><code>avg10/60/300</code></strong>: Average stall percentage over 10/60/300 seconds</li><li><strong><code>total</code></strong>: Cumulative stall time in microseconds</li></ul><p>systemd-oomd monitors the <code>full</code> metric — when all tasks are stalled, the system is effectively unresponsive.</p><h3 id=configuration-1>Configuration</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=c1># /etc/systemd/oomd.conf</span>
+</span></span><span class=line><span class=cl><span class=k>[OOM]</span>
+</span></span><span class=line><span class=cl><span class=na>DefaultMemoryPressureDurationSec</span><span class=o>=</span><span class=s>5</span>
+</span></span><span class=line><span class=cl><span class=na>DefaultMemoryPressureThresholdSec</span><span class=o>=</span><span class=s>60</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Per-service override: /etc/systemd/oomd.conf.d/override.conf</span>
+</span></span><span class=line><span class=cl><span class=k>[Service]</span>
+</span></span><span class=line><span class=cl><span class=na>MemoryPressureLimitSec</span><span class=o>=</span><span class=s>30</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=cgroup-level-oom-control>cgroup-Level OOM Control</h3><p>systemd-oomd works at the cgroup level, making it ideal for container environments:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Check which cgroups are under oomd management</span>
+</span></span><span class=line><span class=cl>busctl get-property org.freedesktop.oom1 /org/freedesktop/oom1   org.freedesktop.oom1.MemoryPressureThreshold
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># View OOM killer settings for a cgroup</span>
+</span></span><span class=line><span class=cl>cat /sys/fs/cgroup/system.slice/memory.oom.group
+</span></span><span class=line><span class=cl><span class=c1># 0 = per-process OOM kill</span>
+</span></span><span class=line><span class=cl><span class=c1># 1 = kill all processes in cgroup together</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-compose-with-systemd-oomd-awareness>Docker Compose with systemd-oomd Awareness</h3><p>Configure your containers to work with systemd-oomd&rsquo;s cgroup-level killing:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>webapp</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>nginx:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>mem_limit</span><span class=p>:</span><span class=w> </span><span class=l>512m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>memswap_limit</span><span class=p>:</span><span class=w> </span><span class=l>512m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=c># OOM kill the entire container if any process triggers it</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>oom_kill_disable</span><span class=p>:</span><span class=w> </span><span class=kc>false</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8080:80&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>database</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>postgres:15</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>mem_limit</span><span class=p>:</span><span class=w> </span><span class=l>1g</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>memswap_limit</span><span class=p>:</span><span class=w> </span><span class=l>1g</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_PASSWORD</span><span class=p>:</span><span class=w> </span><span class=l>secret</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>pg_data:/var/lib/postgresql/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>pg_data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=enabling-systemd-oomd>Enabling systemd-oomd</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Check if oomd is running</span>
+</span></span><span class=line><span class=cl>systemctl status systemd-oomd
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Enable and start</span>
+</span></span><span class=line><span class=cl>systemctl <span class=nb>enable</span> --now systemd-oomd
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Verify it&#39;s monitoring cgroups</span>
+</span></span><span class=line><span class=cl>oomctl
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Output shows:</span>
+</span></span><span class=line><span class=cl><span class=c1># Daemon:</span>
+</span></span><span class=line><span class=cl><span class=c1>#   Mem Pressure Watch: /system.slice</span>
+</span></span><span class=line><span class=cl><span class=c1>#   Swap Pressure Watch: /system.slice</span>
+</span></span><span class=line><span class=cl><span class=c1>#   Default Memory Pressure Limit: 60.00%</span>
+</span></span><span class=line><span class=cl><span class=c1>#   Default Memory Pressure Duration Sec: 5.000000</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=psi-based-custom-monitors>PSI-Based Custom Monitors</h2><p>For advanced use cases, you can build custom OOM prevention monitors using PSI metrics directly from <code>/proc/pressure/</code>.</p><h3 id=simple-psi-monitor-script>Simple PSI Monitor Script</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=cp>#!/bin/bash
+</span></span></span><span class=line><span class=cl><span class=cp></span><span class=c1># psi-oom-monitor.sh - Custom PSI-based OOM prevention</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nv>THRESHOLD</span><span class=o>=</span><span class=m>30</span>  <span class=c1># 30% memory pressure over 10 seconds</span>
+</span></span><span class=line><span class=cl><span class=nv>CHECK_INTERVAL</span><span class=o>=</span><span class=m>5</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>while</span> true<span class=p>;</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>    <span class=c1># Parse PSI full avg10 value</span>
+</span></span><span class=line><span class=cl>    <span class=nv>PSI_FULL</span><span class=o>=</span><span class=k>$(</span>awk <span class=s1>&#39;/^full/ {print $2}&#39;</span> /proc/pressure/memory <span class=p>|</span> cut -d<span class=o>=</span> -f2<span class=k>)</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    <span class=c1># Compare with threshold (bc for floating point)</span>
+</span></span><span class=line><span class=cl>    <span class=k>if</span> <span class=o>((</span> <span class=k>$(</span><span class=nb>echo</span> <span class=s2>&#34;</span><span class=nv>$PSI_FULL</span><span class=s2> &gt; </span><span class=nv>$THRESHOLD</span><span class=s2>&#34;</span> <span class=p>|</span> bc -l<span class=k>)</span> <span class=o>))</span><span class=p>;</span> <span class=k>then</span>
+</span></span><span class=line><span class=cl>        <span class=nb>echo</span> <span class=s2>&#34;</span><span class=k>$(</span>date<span class=k>)</span><span class=s2>: HIGH memory pressure detected: </span><span class=si>${</span><span class=nv>PSI_FULL</span><span class=si>}</span><span class=s2>%&#34;</span>
+</span></span><span class=line><span class=cl>        
+</span></span><span class=line><span class=cl>        <span class=c1># Find the largest memory consumer (excluding critical services)</span>
+</span></span><span class=line><span class=cl>        <span class=nv>VICTIM</span><span class=o>=</span><span class=k>$(</span>ps aux --sort<span class=o>=</span>-%mem <span class=p>|</span> awk <span class=s1>&#39;NR==2 &amp;&amp; !/sshd|systemd|dockerd/ {print $2, $11, $6/1024&#34;MB&#34;}&#39;</span><span class=k>)</span>
+</span></span><span class=line><span class=cl>        
+</span></span><span class=line><span class=cl>        <span class=k>if</span> <span class=o>[</span> -n <span class=s2>&#34;</span><span class=nv>$VICTIM</span><span class=s2>&#34;</span> <span class=o>]</span><span class=p>;</span> <span class=k>then</span>
+</span></span><span class=line><span class=cl>            <span class=nv>PID</span><span class=o>=</span><span class=k>$(</span><span class=nb>echo</span> <span class=s2>&#34;</span><span class=nv>$VICTIM</span><span class=s2>&#34;</span> <span class=p>|</span> awk <span class=s1>&#39;{print $1}&#39;</span><span class=k>)</span>
+</span></span><span class=line><span class=cl>            <span class=nb>echo</span> <span class=s2>&#34;Sending SIGTERM to PID </span><span class=nv>$PID</span><span class=s2> (</span><span class=nv>$VICTIM</span><span class=s2>)&#34;</span>
+</span></span><span class=line><span class=cl>            <span class=nb>kill</span> -TERM <span class=s2>&#34;</span><span class=nv>$PID</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl>            sleep <span class=m>5</span>
+</span></span><span class=line><span class=cl>            <span class=c1># If still running, SIGKILL</span>
+</span></span><span class=line><span class=cl>            <span class=k>if</span> <span class=nb>kill</span> -0 <span class=s2>&#34;</span><span class=nv>$PID</span><span class=s2>&#34;</span> 2&gt;/dev/null<span class=p>;</span> <span class=k>then</span>
+</span></span><span class=line><span class=cl>                <span class=nb>echo</span> <span class=s2>&#34;SIGKILL to PID </span><span class=nv>$PID</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl>                <span class=nb>kill</span> -KILL <span class=s2>&#34;</span><span class=nv>$PID</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl>            <span class=k>fi</span>
+</span></span><span class=line><span class=cl>        <span class=k>fi</span>
+</span></span><span class=line><span class=cl>    <span class=k>fi</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    sleep <span class=s2>&#34;</span><span class=nv>$CHECK_INTERVAL</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl><span class=k>done</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=psi-exporter-for-prometheus>PSI Exporter for Prometheus</h3><p>For Kubernetes and monitoring-centric environments, run a PSI exporter:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose.yml for PSI exporter</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>psi-exporter</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>prom/node-exporter:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>psi-exporter</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;9100:9100&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/proc:/host/proc:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/sys:/host/sys:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s1>&#39;--path.procfs=/host/proc&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s1>&#39;--path.sysfs=/host/sys&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s1>&#39;--collector.pressure&#39;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Prometheus alert rule for PSI memory pressure:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># prometheus-rules.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>groups</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>memory-pressure</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>rules</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=nt>alert</span><span class=p>:</span><span class=w> </span><span class=l>HighMemoryPressure</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>expr</span><span class=p>:</span><span class=w> </span><span class=l>node_pressure_memory_waiting_seconds_total / 10 &gt; 0.3</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>for</span><span class=p>:</span><span class=w> </span><span class=l>10s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>labels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>severity</span><span class=p>:</span><span class=w> </span><span class=l>critical</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>annotations</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>summary</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;High memory pressure on {{ $labels.instance }}&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>description</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;Memory stall time is {{ $value }}% over 10 seconds&#34;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=container-specific-oom-prevention>Container-Specific OOM Prevention</h2><p>When running containers, OOM prevention needs to work at the container level, not just the host level.</p><h3 id=docker-oom-score-adjustments>Docker OOM Score Adjustments</h3><p>Set OOM score adjustments per container to influence which containers get killed first:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>critical-db</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>postgres:15</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>oom_score_adj</span><span class=p>:</span><span class=w> </span>-<span class=m>500</span><span class=w>  </span><span class=c># Least likely to be killed</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>mem_limit</span><span class=p>:</span><span class=w> </span><span class=l>2g</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>web-app</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>nginx:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>oom_score_adj</span><span class=p>:</span><span class=w> </span><span class=m>0</span><span class=w>  </span><span class=c># Default priority</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>mem_limit</span><span class=p>:</span><span class=w> </span><span class=l>512m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>batch-worker</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>worker:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>oom_score_adj</span><span class=p>:</span><span class=w> </span><span class=m>500</span><span class=w>  </span><span class=c># First to be killed under memory pressure</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>mem_limit</span><span class=p>:</span><span class=w> </span><span class=l>1g</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=kubernetes-memory-limits-and-oom>Kubernetes Memory Limits and OOM</h3><p>In Kubernetes, set memory requests and limits to ensure the scheduler places pods correctly and the kubelet manages OOM:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Pod</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>memory-critical-pod</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>containers</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>app</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>myapp:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>resources</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>requests</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>memory</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;256Mi&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>limits</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>memory</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;512Mi&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=c># OOM kill the entire pod if any container exceeds limits</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>terminationMessagePolicy</span><span class=p>:</span><span class=w> </span><span class=l>FallbackToLogsOnError</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=choosing-the-right-oom-prevention-strategy>Choosing the Right OOM Prevention Strategy</h2><p><strong>For simple Linux servers:</strong> earlyoom is the easiest to deploy and configure. It works on any Linux distribution, requires minimal configuration, and handles the most common scenario: preventing system-wide lockups from runaway processes.</p><p><strong>For systemd-based infrastructure:</strong> systemd-oomd is the most integrated option. It uses PSI metrics for accurate pressure detection, works at the cgroup level (perfect for containers), and requires no additional packages on modern systemd distributions.</p><p><strong>For Kubernetes and monitoring-centric environments:</strong> PSI-based custom monitors give you the most flexibility. Export pressure metrics to Prometheus, set up alerting rules, and integrate with your existing incident response workflows. This approach is best when you need fine-grained control over which processes get killed and when.</p><h2 id=faq>FAQ</h2><h3 id=what-is-the-difference-between-earlyoom-and-the-kernel-oom-killer>What is the difference between earlyoom and the kernel OOM killer?</h3><p>The kernel OOM killer is a reactive mechanism that activates only when the system has zero available memory and swap is exhausted. It sends SIGKILL (unblockable) to the process with the highest OOM score. earlyoom is a proactive userspace daemon that monitors available memory percentages and kills processes <strong>before</strong> the system reaches zero. It sends SIGTERM first (allowing graceful shutdown), then SIGKILL if the process doesn&rsquo;t exit within a timeout.</p><h3 id=does-systemd-oomd-work-without-psi-support>Does systemd-oomd work without PSI support?</h3><p>No. systemd-oomd requires kernel PSI (Pressure Stall Information) support, which was introduced in Linux 4.20. Most modern distributions (Ubuntu 20.04+, RHEL 9+, Debian 11+) ship with kernels that support PSI. Verify with: <code>cat /proc/pressure/memory</code>. If this file doesn&rsquo;t exist, your kernel doesn&rsquo;t support PSI.</p><h3 id=can-earlyoom-and-systemd-oomd-run-together>Can earlyoom and systemd-oomd run together?</h3><p>It is not recommended. Both daemons monitor memory and may try to kill the same processes, creating race conditions. Choose one: use systemd-oomd on systems with systemd 247+ and PSI support, or earlyoom on older systems or non-systemd distributions.</p><h3 id=how-do-i-prevent-oom-killer-from-terminating-my-database>How do I prevent OOM killer from terminating my database?</h3><p>Three approaches:</p><ol><li><strong>OOM score adjustment</strong>: Set <code>oom_score_adj=-1000</code> (via <code>systemd</code> unit or container config) to make the process immune to the OOM killer. Note: this also prevents earlyoom from killing it unless explicitly configured.</li><li><strong>Memory limits</strong>: Set strict <code>mem_limit</code> in Docker or <code>resources.limits.memory</code> in Kubernetes so the container is killed before affecting the host.</li><li><strong>earlyoom &ndash;avoid flag</strong>: Configure earlyoom to avoid processes matching specific patterns: <code>--avoid '(postgres|mysql|mongod)'</code>.</li></ol><h3 id=what-psi-threshold-should-i-use-for-production-servers>What PSI threshold should I use for production servers?</h3><p>The <code>full</code> metric&rsquo;s <code>avg10</code> (10-second average) is the most responsive indicator. A threshold of 30-60% means that for 10 seconds, 30-60% of non-idle time is spent stalled on memory allocation. Start with 60% and lower it if you experience system unresponsiveness before the OOM prevention triggers. Monitor the metric over a week to understand your server&rsquo;s normal pressure patterns before setting thresholds.</p><h3 id=can-oom-prevention-daemons-work-inside-containers>Can OOM prevention daemons work inside containers?</h3><p>Yes, but with limitations. The daemon needs access to <code>/proc/pressure/memory</code> for PSI metrics (requires <code>CAP_SYS_ADMIN</code> or running on a kernel with unprivileged PSI access). earlyoom can run inside a container with <code>--privileged</code> or by mounting <code>/proc</code> from the host. For Kubernetes, it is more effective to run OOM prevention at the node level (as a DaemonSet) rather than inside individual pods.</p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted Linux OOM Prevention: earlyoom vs systemd-oomd vs PSI Monitors (2026)","description":"Compare self-hosted OOM prevention daemons — earlyoom, systemd-oomd, and PSI-based monitors — with Docker Compose configs, Kubernetes settings, and production configurations.","datePublished":"2026-05-27","dateModified":"2026-05-27","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20Linux%20OOM%20Prevention%3a%20earlyoom%20vs%20systemd-oomd%20vs%20PSI%20Monitors%20%282026%29&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-27-self-hosted-linux-oom-prevention-earlyoom-systemd-oomd-psi-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-27-self-hosted-linux-oom-prevention-earlyoom-systemd-oomd-psi-guide%2f&t=Self-Hosted%20Linux%20OOM%20Prevention%3a%20earlyoom%20vs%20systemd-oomd%20vs%20PSI%20Monitors%20%282026%29" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/linux/ class=tag-link>Linux</a>
+<a href=/tags/monitoring/ class=tag-link>Monitoring</a>
+<a href=/tags/containers/ class=tag-link>Containers</a>
+<a href=/tags/system-administration/ class=tag-link>System-Administration</a>
+<a href=/tags/reliability/ class=tag-link>Reliability</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-05-20-self-hosted-process-sandboxing-firejail-bubblewrap-nsjail-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Sandboxing</span></div><h3 class=post-title>Self-Hosted Process Sandboxing: Firejail vs Bubblewrap vs nsjail (2026)</h3><div class=post-excerpt>Running untrusted or partially trusted code on Linux requires more than basic user permissions. Modern process …</div><div class=post-footer><span class=post-date>May 20, 2026</span></div></a><a href=/posts/2026-05-16-self-hosted-linux-audit-framework-auditd-goaudit-auditbeat-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Security</span></div><h3 class=post-title>Self-Hosted Linux Audit Framework: auditd vs GoAudit vs Auditbeat (2026)</h3><div class=post-excerpt>The Linux Audit Framework is the kernel-level subsystem that records security-relevant events on your system. Every file …</div><div class=post-footer><span class=post-date>May 16, 2026</span></div></a><a href=/posts/2026-05-15-self-hosted-network-diagnostics-fping-vs-mtr-vs-nping-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Networking</span></div><h3 class=post-title>Self-Hosted Network Diagnostics: fping vs MTR vs nping (2026 Guide)</h3><div class=post-excerpt>Network diagnostics are essential for identifying connectivity issues, measuring latency, and troubleshooting …</div><div class=post-footer><span class=post-date>May 15, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>

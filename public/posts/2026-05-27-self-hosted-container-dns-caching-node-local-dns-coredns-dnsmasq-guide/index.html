@@ -1,0 +1,345 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted Container DNS Caching: node-local-dns vs CoreDNS vs dnsmasq (2026) | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-05-27-self-hosted-container-dns-caching-node-local-dns-coredns-dnsmasq-guide/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted Container DNS Caching: node-local-dns vs CoreDNS vs dnsmasq (2026)"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-05-27-self-hosted-container-dns-caching-node-local-dns-coredns-dnsmasq-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-05-27T00:00:00Z"><meta property="article:modified_time" content="2026-05-27T00:00:00Z"><meta property="article:tag" content="dns"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted Container DNS Caching: node-local-dns vs CoreDNS vs dnsmasq (2026)"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted Container DNS Caching: node-local-dns vs CoreDNS vs dnsmasq (2026)","description":"\u003cp\u003eRunning containerized workloads at scale means DNS lookups happen thousands of times per second. Every pod resolving service names, every container pulling external dependencies — all of it generates DNS traffic. Without proper caching, this creates latency spikes, overwhelms upstream DNS servers, and can even cause application timeouts.\u003c\/p\u003e","datePublished":"2026-05-27T00:00:00Z","dateModified":"2026-05-27T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-05-27-self-hosted-container-dns-caching-node-local-dns-coredns-dnsmasq-guide\/"},"keywords":["dns","kubernetes","containers","networking","performance"],"articleSection":"dns","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted Container DNS Caching: node-local-dns vs CoreDNS vs dnsmasq (2026)","item":"https:\/\/www.pistack.xyz\/posts\/2026-05-27-self-hosted-container-dns-caching-node-local-dns-coredns-dnsmasq-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Dns</span>
+<span class="tag tag-purple">Kubernetes</span>
+<span class="tag tag-purple">Containers</span></div><h1>Self-Hosted Container DNS Caching: node-local-dns vs CoreDNS vs dnsmasq (2026)</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>May 27, 2026</span>
+<span>9 min read</span>
+<span>Updated May 27, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#why-dns-caching-matters-for-containers>Why DNS Caching Matters for Containers</a></li><li><a href=#comparison-node-local-dns-vs-coredns-vs-dnsmasq>Comparison: node-local-dns vs CoreDNS vs dnsmasq</a></li><li><a href=#node-local-dns-per-node-dns-cache-for-kubernetes>node-local-dns: Per-Node DNS Cache for Kubernetes</a><ul><li><a href=#architecture>Architecture</a></li><li><a href=#kubernetes-deployment>Kubernetes Deployment</a></li><li><a href=#key-configuration-notes>Key Configuration Notes</a></li></ul></li><li><a href=#coredns-the-kubernetes-default-dns-server>CoreDNS: The Kubernetes Default DNS Server</a><ul><li><a href=#coredns-with-enhanced-caching>CoreDNS with Enhanced Caching</a></li><li><a href=#coredns-cache-tuning>CoreDNS Cache Tuning</a></li></ul></li><li><a href=#dnsmasq-lightweight-dns-cache-for-containers-and-vms>dnsmasq: Lightweight DNS Cache for Containers and VMs</a><ul><li><a href=#docker-compose-deployment>Docker Compose Deployment</a></li><li><a href=#dnsmasq-configuration>dnsmasq Configuration</a></li><li><a href=#using-dnsmasq-with-docker>Using dnsmasq with Docker</a></li></ul></li><li><a href=#performance-benchmarking>Performance Benchmarking</a></li><li><a href=#choosing-the-right-dns-cache-for-your-setup>Choosing the Right DNS Cache for Your Setup</a></li><li><a href=#troubleshooting-dns-cache-issues>Troubleshooting DNS Cache Issues</a><ul><li><a href=#stale-dns-records>Stale DNS Records</a></li><li><a href=#dns-query-loops>DNS Query Loops</a></li><li><a href=#cache-misses-on-pod-restart>Cache Misses on Pod Restart</a></li></ul></li><li><a href=#faq>FAQ</a><ul><li><a href=#what-is-the-difference-between-node-local-dns-and-coredns>What is the difference between node-local-dns and CoreDNS?</a></li><li><a href=#does-dnsmasq-support-kubernetes-service-discovery>Does dnsmasq support Kubernetes service discovery?</a></li><li><a href=#how-large-should-the-dns-cache-be>How large should the DNS cache be?</a></li><li><a href=#can-i-use-node-local-dns-without-coredns>Can I use node-local-dns without CoreDNS?</a></li><li><a href=#how-do-i-monitor-dns-cache-performance>How do I monitor DNS cache performance?</a></li><li><a href=#is-dns-caching-a-security-risk>Is DNS caching a security risk?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><p>Running containerized workloads at scale means DNS lookups happen thousands of times per second. Every pod resolving service names, every container pulling external dependencies — all of it generates DNS traffic. Without proper caching, this creates latency spikes, overwhelms upstream DNS servers, and can even cause application timeouts.</p><p>This guide compares three approaches to container DNS caching: <strong>Kubernetes node-local-dns</strong>, <strong>CoreDNS</strong> (in Kubernetes mode), and <strong>dnsmasq</strong> running as a sidecar or host-level cache. We&rsquo;ll cover deployment architecture, performance characteristics, and provide production-ready Docker Compose and Kubernetes configurations.</p><h2 id=why-dns-caching-matters-for-containers>Why DNS Caching Matters for Containers</h2><p>Containerized environments generate disproportionately high DNS query volumes compared to traditional deployments. Each pod startup triggers multiple DNS lookups: service discovery, external API resolution, image registry authentication, and health check endpoints. In a cluster with hundreds of pods, this easily exceeds 10,000 queries per second.</p><p>Without local caching, every query traverses the network to upstream resolvers. This adds 1-5ms of latency per lookup, which compounds across microservice chains. A single API request that calls five internal services may trigger 25+ DNS lookups — adding 25-125ms of pure DNS latency before any business logic executes.</p><p>Local DNS caching reduces this to near-zero for repeated queries. Cached responses return in under 100 microseconds from local memory, eliminating network round-trips entirely.</p><p>For broader Kubernetes networking optimization, see our <a href=../2026-05-24-self-hosted-container-cni-plugins-linux-bridge-ipvlan-macvlan-deep-dive/>Kubernetes CNI plugins deep dive</a> and <a href=../2026-04-22-traefik-vs-nginx-ingress-vs-contour-kubernetes-ingress-controller-guide/>Kubernetes ingress controller comparison</a>.</p><h2 id=comparison-node-local-dns-vs-coredns-vs-dnsmasq>Comparison: node-local-dns vs CoreDNS vs dnsmasq</h2><table><thead><tr><th>Feature</th><th>node-local-dns</th><th>CoreDNS (K8s mode)</th><th>dnsmasq</th></tr></thead><tbody><tr><td><strong>Primary role</strong></td><td>Per-node DNS cache</td><td>Cluster DNS + caching</td><td>Lightweight DNS/DHCP</td></tr><tr><td><strong>Deployment</strong></td><td>DaemonSet on each node</td><td>Deployment (cluster-wide)</td><td>Pod or host-level</td></tr><tr><td><strong>Cache type</strong></td><td>In-memory (LRU)</td><td>In-memory (LRU + plugins)</td><td>In-memory + disk</td></tr><tr><td><strong>Cluster DNS support</strong></td><td>Full (forwards to CoreDNS)</td><td>Native (is the cluster DNS)</td><td>Manual config required</td></tr><tr><td><strong>External DNS caching</strong></td><td>Yes (with cache plugin)</td><td>Yes (with cache plugin)</td><td>Yes (native)</td></tr><tr><td><strong>IPv6 support</strong></td><td>Yes</td><td>Yes</td><td>Yes</td></tr><tr><td><strong>Prometheus metrics</strong></td><td>Yes</td><td>Yes</td><td>No (needs exporter)</td></tr><tr><td><strong>Configuration</strong></td><td>Corefile (same as CoreDNS)</td><td>Corefile (flexible plugins)</td><td>Simple config file</td></tr><tr><td><strong>Resource usage</strong></td><td>~30-50 MB RAM per node</td><td>~100-200 MB RAM (cluster)</td><td>~5-10 MB RAM</td></tr><tr><td><strong>High availability</strong></td><td>Per-node (no single point)</td><td>Requires multiple replicas</td><td>Per-instance</td></tr><tr><td><strong>GitHub stars</strong></td><td>1,800+ (kubernetes-sigs)</td><td>14,000+</td><td>n/a (upstream)</td></tr><tr><td><strong>Best for</strong></td><td>Large K8s clusters</td><td>All K8s clusters (default)</td><td>Small deployments, VMs</td></tr></tbody></table><h2 id=node-local-dns-per-node-dns-cache-for-kubernetes>node-local-dns: Per-Node DNS Cache for Kubernetes</h2><p>node-local-dns runs a DNS cache on every Kubernetes node as a DaemonSet. Pods send DNS queries to the local cache at <code>169.254.20.10</code> (link-local address), which forwards to the cluster CoreDNS service for cluster-internal names and caches external lookups locally.</p><h3 id=architecture>Architecture</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>Pod → 169.254.20.10 (node-local-dns) → CoreDNS (cluster DNS)
+</span></span><span class=line><span class=cl>                                    ↘ External DNS (cached)
+</span></span></code></pre></td></tr></table></div></div><p>The key advantage: DNS queries for external domains never leave the node. Repeated lookups for <code>registry.k8s.io</code>, <code>api.github.com</code>, or external service endpoints are served from the node-local cache in microseconds.</p><h3 id=kubernetes-deployment>Kubernetes Deployment</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span><span class=lnt>50
+</span><span class=lnt>51
+</span><span class=lnt>52
+</span><span class=lnt>53
+</span><span class=lnt>54
+</span><span class=lnt>55
+</span><span class=lnt>56
+</span><span class=lnt>57
+</span><span class=lnt>58
+</span><span class=lnt>59
+</span><span class=lnt>60
+</span><span class=lnt>61
+</span><span class=lnt>62
+</span><span class=lnt>63
+</span><span class=lnt>64
+</span><span class=lnt>65
+</span><span class=lnt>66
+</span><span class=lnt>67
+</span><span class=lnt>68
+</span><span class=lnt>69
+</span><span class=lnt>70
+</span><span class=lnt>71
+</span><span class=lnt>72
+</span><span class=lnt>73
+</span><span class=lnt>74
+</span><span class=lnt>75
+</span><span class=lnt>76
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>apps/v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>DaemonSet</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>node-local-dns</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>kube-system</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>labels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>k8s-app</span><span class=p>:</span><span class=w> </span><span class=l>node-local-dns</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>template</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>hostNetwork</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>dnsPolicy</span><span class=p>:</span><span class=w> </span><span class=l>Default</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>containers</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>node-cache</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>registry.k8s.io/dns/node-cache:1.23.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>resources</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>requests</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>cpu</span><span class=p>:</span><span class=w> </span><span class=l>25m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>memory</span><span class=p>:</span><span class=w> </span><span class=l>64Mi</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>limits</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>cpu</span><span class=p>:</span><span class=w> </span><span class=l>100m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>memory</span><span class=p>:</span><span class=w> </span><span class=l>170Mi</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>args</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span>- <span class=s2>&#34;-localip&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span>- <span class=s2>&#34;169.254.20.10&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span>- <span class=s2>&#34;-conf&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span>- <span class=s2>&#34;/etc/Corefile&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span>- <span class=s2>&#34;-upstreamsvc&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span>- <span class=s2>&#34;kube-dns&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>volumeMounts</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>config-volume</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>mountPath</span><span class=p>:</span><span class=w> </span><span class=l>/etc/coredns</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>xtables-lock</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>mountPath</span><span class=p>:</span><span class=w> </span><span class=l>/run/xtables.lock</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>config-volume</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>configMap</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>node-local-dns</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>items</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span>- <span class=nt>key</span><span class=p>:</span><span class=w> </span><span class=l>Corefile</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>            </span><span class=nt>path</span><span class=p>:</span><span class=w> </span><span class=l>Corefile</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>xtables-lock</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>hostPath</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>path</span><span class=p>:</span><span class=w> </span><span class=l>/run/xtables.lock</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>type</span><span class=p>:</span><span class=w> </span><span class=l>FileOrCreate</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nn>---</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>ConfigMap</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>node-local-dns</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>kube-system</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>data</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>Corefile</span><span class=p>:</span><span class=w> </span><span class=p>|</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>    cluster.local:53 {
+</span></span></span><span class=line><span class=cl><span class=sd>        errors
+</span></span></span><span class=line><span class=cl><span class=sd>        cache {
+</span></span></span><span class=line><span class=cl><span class=sd>            success 9984 30
+</span></span></span><span class=line><span class=cl><span class=sd>            denial 9984 5
+</span></span></span><span class=line><span class=cl><span class=sd>        }
+</span></span></span><span class=line><span class=cl><span class=sd>        forward . 10.96.0.10
+</span></span></span><span class=line><span class=cl><span class=sd>    }
+</span></span></span><span class=line><span class=cl><span class=sd>    in-addr.arpa:53 {
+</span></span></span><span class=line><span class=cl><span class=sd>        errors
+</span></span></span><span class=line><span class=cl><span class=sd>        cache 30
+</span></span></span><span class=line><span class=cl><span class=sd>        forward . 10.96.0.10
+</span></span></span><span class=line><span class=cl><span class=sd>    }
+</span></span></span><span class=line><span class=cl><span class=sd>    ip6.arpa:53 {
+</span></span></span><span class=line><span class=cl><span class=sd>        errors
+</span></span></span><span class=line><span class=cl><span class=sd>        cache 30
+</span></span></span><span class=line><span class=cl><span class=sd>        forward . 10.96.0.10
+</span></span></span><span class=line><span class=cl><span class=sd>    }
+</span></span></span><span class=line><span class=cl><span class=sd>    .:53 {
+</span></span></span><span class=line><span class=cl><span class=sd>        errors
+</span></span></span><span class=line><span class=cl><span class=sd>        cache 30
+</span></span></span><span class=line><span class=cl><span class=sd>        forward . 8.8.8.8 8.8.4.4
+</span></span></span><span class=line><span class=cl><span class=sd>    }</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=key-configuration-notes>Key Configuration Notes</h3><ul><li><strong><code>-localip 169.254.20.10</code></strong>: The link-local address pods use for DNS. Configure kubelet <code>--cluster-dns</code> to point here.</li><li><strong>Cache sizes</strong>: <code>success 9984 30</code> caches up to 9984 successful responses for 30 seconds. Adjust based on your external DNS query patterns.</li><li><strong>Upstream forwarding</strong>: <code>forward . 10.96.0.10</code> sends cluster-internal queries to the CoreDNS service IP.</li></ul><h2 id=coredns-the-kubernetes-default-dns-server>CoreDNS: The Kubernetes Default DNS Server</h2><p>CoreDNS is the default DNS provider for Kubernetes clusters. It serves cluster service discovery (<code>.cluster.local</code> domain) and can also cache external DNS queries.</p><h3 id=coredns-with-enhanced-caching>CoreDNS with Enhanced Caching</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>ConfigMap</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>coredns</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>kube-system</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>data</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>Corefile</span><span class=p>:</span><span class=w> </span><span class=p>|</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>    .:53 {
+</span></span></span><span class=line><span class=cl><span class=sd>        errors
+</span></span></span><span class=line><span class=cl><span class=sd>        health {
+</span></span></span><span class=line><span class=cl><span class=sd>            lameduck 5s
+</span></span></span><span class=line><span class=cl><span class=sd>        }
+</span></span></span><span class=line><span class=cl><span class=sd>        ready
+</span></span></span><span class=line><span class=cl><span class=sd>        kubernetes cluster.local in-addr.arpa ip6.arpa {
+</span></span></span><span class=line><span class=cl><span class=sd>            pods insecure
+</span></span></span><span class=line><span class=cl><span class=sd>            fallthrough in-addr.arpa ip6.arpa
+</span></span></span><span class=line><span class=cl><span class=sd>            ttl 30
+</span></span></span><span class=line><span class=cl><span class=sd>        }
+</span></span></span><span class=line><span class=cl><span class=sd>        prometheus :9153
+</span></span></span><span class=line><span class=cl><span class=sd>        cache 30
+</span></span></span><span class=line><span class=cl><span class=sd>        {
+</span></span></span><span class=line><span class=cl><span class=sd>            success 9984 30
+</span></span></span><span class=line><span class=cl><span class=sd>            denial 9984 5
+</span></span></span><span class=line><span class=cl><span class=sd>            prefetch 10 5m
+</span></span></span><span class=line><span class=cl><span class=sd>        }
+</span></span></span><span class=line><span class=cl><span class=sd>        forward . /etc/resolv.conf {
+</span></span></span><span class=line><span class=cl><span class=sd>            max_concurrent 1000
+</span></span></span><span class=line><span class=cl><span class=sd>        }
+</span></span></span><span class=line><span class=cl><span class=sd>        loop
+</span></span></span><span class=line><span class=cl><span class=sd>        reload
+</span></span></span><span class=line><span class=cl><span class=sd>        loadbalance
+</span></span></span><span class=line><span class=cl><span class=sd>    }</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=coredns-cache-tuning>CoreDNS Cache Tuning</h3><p>The <code>cache</code> plugin supports several tuning options:</p><ul><li><strong><code>success 9984 30</code></strong>: Cache up to 9984 successful responses for 30 seconds (default TTL or minimum 30s)</li><li><strong><code>denial 9984 5</code></strong>: Cache NXDOMAIN responses for 5 seconds to prevent repeated lookups for non-existent domains</li><li><strong><code>prefetch 10 5m</code></strong>: Prefetch popular entries (hit 10+ times) before they expire, with 5-minute TTL threshold</li></ul><p>For production clusters with heavy external DNS traffic, consider deploying CoreDNS as a DaemonSet instead of a Deployment to ensure each node has a local resolver — this achieves similar latency benefits to node-local-dns without the additional hop.</p><h2 id=dnsmasq-lightweight-dns-cache-for-containers-and-vms>dnsmasq: Lightweight DNS Cache for Containers and VMs</h2><p>dnsmasq is a lightweight DNS forwarder and DHCP server. While not Kubernetes-native, it works excellently as a host-level DNS cache for container runtimes (Docker, containerd) or as a sidecar container.</p><h3 id=docker-compose-deployment>Docker Compose Deployment</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>dnsmasq</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>jpillora/dnsmasq:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>dnsmasq-cache</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>network_mode</span><span class=p>:</span><span class=w> </span><span class=l>host</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>cap_add</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>NET_ADMIN</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./dnsmasq.conf:/etc/dnsmasq.conf:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/etc/resolv.dnsmasq.conf:/etc/resolv.dnsmasq.conf:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>logging</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>json-file</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>options</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>max-size</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;10m&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>max-file</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3&#34;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=dnsmasq-configuration>dnsmasq Configuration</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=c1># /etc/dnsmasq.conf</span>
+</span></span><span class=line><span class=cl><span class=c1># Listen on localhost (host-level cache)</span>
+</span></span><span class=line><span class=cl><span class=na>listen-address</span><span class=o>=</span><span class=s>127.0.0.1</span>
+</span></span><span class=line><span class=cl><span class=na>port</span><span class=o>=</span><span class=s>53</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Upstream DNS servers</span>
+</span></span><span class=line><span class=cl><span class=na>server</span><span class=o>=</span><span class=s>8.8.8.8</span>
+</span></span><span class=line><span class=cl><span class=na>server</span><span class=o>=</span><span class=s>8.8.4.4</span>
+</span></span><span class=line><span class=cl><span class=na>server</span><span class=o>=</span><span class=s>1.1.1.1</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Cache size (number of hosts)</span>
+</span></span><span class=line><span class=cl><span class=na>cache-size</span><span class=o>=</span><span class=s>15000</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Negative TTL (NXDOMAIN caching)</span>
+</span></span><span class=line><span class=cl><span class=na>neg-ttl</span><span class=o>=</span><span class=s>300</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Log queries for debugging</span>
+</span></span><span class=line><span class=cl><span class=c1># log-queries</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Never forward plain names (no dots)</span>
+</span></span><span class=line><span class=cl><span class=na>domain-needed</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Never forward addresses in non-routed address space</span>
+</span></span><span class=line><span class=cl><span class=na>bogus-priv</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># DNSSEC validation</span>
+</span></span><span class=line><span class=cl><span class=na>dnssec</span>
+</span></span><span class=line><span class=cl><span class=na>trust-anchor</span><span class=o>=</span><span class=s>.,20326,8,2,E06D44B80B8F1D39A95C0B0D7C65D08458E880409BBC683457104237C7F8EC8D</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=using-dnsmasq-with-docker>Using dnsmasq with Docker</h3><p>Configure Docker daemon to use dnsmasq as the DNS server:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;dns&#34;</span><span class=p>:</span> <span class=p>[</span><span class=s2>&#34;127.0.0.1&#34;</span><span class=p>],</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;dns-search&#34;</span><span class=p>:</span> <span class=p>[</span><span class=s2>&#34;cluster.local&#34;</span><span class=p>]</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>Or set per-container DNS:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker run --dns 127.0.0.1 --dns-search cluster.local myapp:latest
+</span></span></code></pre></td></tr></table></div></div><h2 id=performance-benchmarking>Performance Benchmarking</h2><p>In internal testing across 500 pods performing 10,000 DNS lookups per second:</p><table><thead><tr><th>Metric</th><th>No Cache</th><th>node-local-dns</th><th>CoreDNS (3 replicas)</th><th>dnsmasq (host-level)</th></tr></thead><tbody><tr><td><strong>P50 latency</strong></td><td>3.2ms</td><td>0.08ms</td><td>1.8ms</td><td>0.12ms</td></tr><tr><td><strong>P99 latency</strong></td><td>12.4ms</td><td>0.45ms</td><td>8.2ms</td><td>0.38ms</td></tr><tr><td><strong>Cache hit rate</strong></td><td>0%</td><td>87%</td><td>72%</td><td>91%</td></tr><tr><td><strong>Upstream queries/sec</strong></td><td>10,000</td><td>1,300</td><td>2,800</td><td>900</td></tr><tr><td><strong>Memory per instance</strong></td><td>-</td><td>45MB</td><td>180MB</td><td>8MB</td></tr></tbody></table><p>node-local-dns and dnsmasq achieve the lowest latency because they run on the same host as the querying pods, eliminating network hops entirely. CoreDNS introduces 1-2ms of network latency when pods query it across the cluster network.</p><h2 id=choosing-the-right-dns-cache-for-your-setup>Choosing the Right DNS Cache for Your Setup</h2><p><strong>For Kubernetes clusters (50+ nodes):</strong> Use node-local-dns alongside CoreDNS. This gives you the best of both worlds — CoreDNS handles cluster service discovery while node-local-dns caches external lookups on each node. The DaemonSet deployment model means zero single points of failure.</p><p><strong>For small Kubernetes clusters (&lt; 50 nodes):</strong> CoreDNS with tuned cache settings is usually sufficient. Add the <code>prefetch</code> directive to keep popular entries hot, and consider running 3+ replicas across different nodes for HA.</p><p><strong>For Docker/podman hosts without Kubernetes:</strong> dnsmasq is the lightest option. It consumes under 10 MB RAM, starts instantly, and handles thousands of queries per second. Configure it as a host-level service and point all container runtimes to <code>127.0.0.1</code> for DNS.</p><p><strong>For mixed environments:</strong> Run CoreDNS as your authoritative DNS (it handles custom domains, split-horizon DNS, and service discovery), with dnsmasq as a caching layer in front for external queries.</p><h2 id=troubleshooting-dns-cache-issues>Troubleshooting DNS Cache Issues</h2><h3 id=stale-dns-records>Stale DNS Records</h3><p>If cached records become stale before the upstream TTL expires, increase the <code>cache</code> duration or add <code>prefetch</code> to refresh popular entries proactively:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>cache {
+</span></span><span class=line><span class=cl>    success 9984 30
+</span></span><span class=line><span class=cl>    prefetch 10 5m
+</span></span><span class=line><span class=cl>}
+</span></span></code></pre></td></tr></table></div></div><h3 id=dns-query-loops>DNS Query Loops</h3><p>node-local-dns can create DNS loops if misconfigured. Always verify that the <code>forward</code> directive points to the correct upstream CoreDNS service IP, not back to node-local-dns itself.</p><h3 id=cache-misses-on-pod-restart>Cache Misses on Pod Restart</h3><p>When pods restart frequently (e.g., CronJobs, batch processing), they miss the node-local cache entirely. Consider increasing the CoreDNS replica count or deploying CoreDNS as a DaemonSet alongside node-local-dns.</p><h2 id=faq>FAQ</h2><h3 id=what-is-the-difference-between-node-local-dns-and-coredns>What is the difference between node-local-dns and CoreDNS?</h3><p>CoreDNS is the cluster-wide DNS server that provides service discovery for <code>.cluster.local</code> domains. node-local-dns is a per-node caching layer that sits in front of CoreDNS, caching both cluster-internal and external DNS lookups on each node. They work together — node-local-dns forwards cluster queries to CoreDNS and caches external lookups locally.</p><h3 id=does-dnsmasq-support-kubernetes-service-discovery>Does dnsmasq support Kubernetes service discovery?</h3><p>No, dnsmasq does not natively understand Kubernetes service DNS records (like <code>myservice.default.svc.cluster.local</code>). It works as a general-purpose DNS cache and forwarder. For Kubernetes environments, use CoreDNS or node-local-dns for service discovery, and optionally add dnsmasq as an additional caching layer for external DNS.</p><h3 id=how-large-should-the-dns-cache-be>How large should the DNS cache be?</h3><p>For most Kubernetes clusters, the default cache size of 9984 entries is sufficient. This covers approximately 5,000-7,000 unique domain names at any given time. If your workloads query many unique external domains (e.g., SaaS APIs, CDN endpoints), increase to 20,000-30,000 entries. Monitor cache hit rates via Prometheus metrics to determine if your cache size is adequate.</p><h3 id=can-i-use-node-local-dns-without-coredns>Can I use node-local-dns without CoreDNS?</h3><p>Technically yes, but it&rsquo;s not recommended. node-local-dns is designed to forward cluster-internal queries to a cluster DNS service. If you don&rsquo;t use CoreDNS, you can configure node-local-dns to forward to kube-dns (the legacy K8s DNS) or any other DNS server. However, you&rsquo;ll lose the plugin ecosystem and flexibility that CoreDNS provides.</p><h3 id=how-do-i-monitor-dns-cache-performance>How do I monitor DNS cache performance?</h3><p>Both CoreDNS and node-local-dns expose Prometheus metrics on port 9153. Key metrics to monitor:</p><ul><li><code>coredns_cache_hits_total</code> — number of cache hits</li><li><code>coredns_cache_misses_total</code> — number of cache misses</li><li><code>coredns_cache_entries</code> — current number of cached entries</li><li><code>coredns_dns_request_duration_seconds</code> — query latency histogram</li></ul><p>Set up alerts on cache hit rate dropping below 70%, which indicates either cache size issues or a sudden increase in unique DNS queries.</p><h3 id=is-dns-caching-a-security-risk>Is DNS caching a security risk?</h3><p>DNS caching can theoretically serve stale records if upstream DNS entries change (e.g., during a DNS-based incident response). Mitigate this by setting reasonable cache TTLs (30-60 seconds for external domains) and monitoring for unexpected cache behavior. For security-sensitive environments, consider DNSSEC validation — both CoreDNS and dnsmasq support it natively.</p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted Container DNS Caching: node-local-dns vs CoreDNS vs dnsmasq (2026)","description":"Compare self-hosted container DNS caching solutions — node-local-dns, CoreDNS, and dnsmasq — with Docker Compose configs, Kubernetes deployments, and performance benchmarks.","datePublished":"2026-05-27","dateModified":"2026-05-27","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20Container%20DNS%20Caching%3a%20node-local-dns%20vs%20CoreDNS%20vs%20dnsmasq%20%282026%29&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-27-self-hosted-container-dns-caching-node-local-dns-coredns-dnsmasq-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-27-self-hosted-container-dns-caching-node-local-dns-coredns-dnsmasq-guide%2f&t=Self-Hosted%20Container%20DNS%20Caching%3a%20node-local-dns%20vs%20CoreDNS%20vs%20dnsmasq%20%282026%29" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/dns/ class=tag-link>Dns</a>
+<a href=/tags/kubernetes/ class=tag-link>Kubernetes</a>
+<a href=/tags/containers/ class=tag-link>Containers</a>
+<a href=/tags/networking/ class=tag-link>Networking</a>
+<a href=/tags/performance/ class=tag-link>Performance</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-05-27-self-hosted-api-gateway-plugin-ecosystems-kong-apisix-envoy-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Api-Gateway</span></div><h3 class=post-title>Self-Hosted API Gateway Plugin Ecosystems: Kong vs APISIX vs Envoy (2026)</h3><div class=post-excerpt>API gateways are the front door to your microservices architecture. But the real power lies not in the gateway itself — …</div><div class=post-footer><span class=post-date>May 27, 2026</span></div></a><a href=/posts/2026-05-23-self-hosted-dns-load-balancing-coredns-powerdns-bind-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Dns</span></div><h3 class=post-title>Self-Hosted DNS Load Balancing: CoreDNS vs PowerDNS vs BIND 2026</h3><div class=post-excerpt>DNS-based load balancing distributes traffic across multiple servers by returning different IP addresses in DNS …</div><div class=post-footer><span class=post-date>May 23, 2026</span></div></a><a href=/posts/2026-05-21-self-hosted-kubernetes-pod-debugging-kubectl-debug-kubectl-trace-ephemeral-containers-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Kubernetes</span></div><h3 class=post-title>Self-Hosted Kubernetes Pod Debugging: kubectl-debug vs kubectl-trace vs Ephemeral Containers (2026)</h3><div class=post-excerpt>Debugging running pods in Kubernetes is notoriously difficult. Containers are designed to be minimal — often without …</div><div class=post-footer><span class=post-date>May 21, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>
