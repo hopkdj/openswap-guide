@@ -1,0 +1,267 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted VXLAN Termination Gateways: OVN vs Open vSwitch vs FRRouting | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-05-21-self-hosted-vxlan-termination-gateways-ovn-ovs-frr-guide/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted VXLAN Termination Gateways: OVN vs Open vSwitch vs FRRouting"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-05-21-self-hosted-vxlan-termination-gateways-ovn-ovs-frr-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-05-21T00:00:00Z"><meta property="article:modified_time" content="2026-05-21T00:00:00Z"><meta property="article:tag" content="networking"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted VXLAN Termination Gateways: OVN vs Open vSwitch vs FRRouting"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted VXLAN Termination Gateways: OVN vs Open vSwitch vs FRRouting","description":"\u003cp\u003eVXLAN (Virtual Extensible LAN) has become the de facto standard for network overlay infrastructure in data centers and cloud environments. By encapsulating Layer 2 Ethernet frames within UDP packets, VXLAN enables virtual networks that span across physical Layer 3 boundaries. However, deploying VXLAN at scale requires robust termination points — gateways that handle VTEP (VXLAN Tunnel Endpoint) operations, MAC learning, and routing between overlay and underlay networks. In this guide, we compare three open-source VXLAN termination solutions: OVN (Open Virtual Network), Open vSwitch (OVS), and FRRouting (FRR).\u003c\/p\u003e","datePublished":"2026-05-21T00:00:00Z","dateModified":"2026-05-21T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-05-21-self-hosted-vxlan-termination-gateways-ovn-ovs-frr-guide\/"},"keywords":["networking","vxlan","overlay","ovn","openvswitch","frrouting","self-hosted"],"articleSection":"networking","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted VXLAN Termination Gateways: OVN vs Open vSwitch vs FRRouting","item":"https:\/\/www.pistack.xyz\/posts\/2026-05-21-self-hosted-vxlan-termination-gateways-ovn-ovs-frr-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Networking</span>
+<span class="tag tag-purple">Vxlan</span>
+<span class="tag tag-purple">Overlay</span></div><h1>Self-Hosted VXLAN Termination Gateways: OVN vs Open vSwitch vs FRRouting</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>May 21, 2026</span>
+<span>9 min read</span>
+<span>Updated May 21, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#ovn-open-virtual-network>OVN (Open Virtual Network)</a></li><li><a href=#open-vswitch-ovs>Open vSwitch (OVS)</a></li><li><a href=#frrouting-frr>FRRouting (FRR)</a></li><li><a href=#comparison-table>Comparison Table</a></li><li><a href=#why-self-host-a-vxlan-termination-gateway>Why Self-Host a VXLAN Termination Gateway?</a></li><li><a href=#choosing-the-right-vxlan-termination-solution>Choosing the Right VXLAN Termination Solution</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#what-is-vxlan-termination-and-why-does-it-matter>What is VXLAN termination and why does it matter?</a></li><li><a href=#what-is-the-difference-between-ovn-and-open-vswitch-for-vxlan>What is the difference between OVN and Open vSwitch for VXLAN?</a></li><li><a href=#what-is-bgp-evpn-and-how-does-frr-use-it-for-vxlan>What is BGP EVPN and how does FRR use it for VXLAN?</a></li><li><a href=#can-i-run-multiple-vxlan-gateways-for-high-availability>Can I run multiple VXLAN gateways for high availability?</a></li><li><a href=#what-vni-range-should-i-use-for-production-vxlan>What VNI range should I use for production VXLAN?</a></li><li><a href=#does-vxlan-work-over-wan-links>Does VXLAN work over WAN links?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><p>VXLAN (Virtual Extensible LAN) has become the de facto standard for network overlay infrastructure in data centers and cloud environments. By encapsulating Layer 2 Ethernet frames within UDP packets, VXLAN enables virtual networks that span across physical Layer 3 boundaries. However, deploying VXLAN at scale requires robust termination points — gateways that handle VTEP (VXLAN Tunnel Endpoint) operations, MAC learning, and routing between overlay and underlay networks. In this guide, we compare three open-source VXLAN termination solutions: OVN (Open Virtual Network), Open vSwitch (OVS), and FRRouting (FRR).</p><h2 id=ovn-open-virtual-network>OVN (Open Virtual Network)</h2><p>OVN is a software-defined networking (SDN) solution built on top of Open vSwitch. It provides native VXLAN support with logical switching and routing capabilities, making it one of the most comprehensive VXLAN termination platforms available.</p><p><strong>Key Features:</strong></p><ul><li>Native VXLAN termination with hardware VTEP support</li><li>Distributed logical routing between overlay networks</li><li>Integrated DHCP and DNS services for overlay tenants</li><li>ACL and security group enforcement at the VTEP level</li><li>Support for both Geneve and VXLAN encapsulation</li></ul><p><strong>Installation and VXLAN configuration:</strong></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install OVN</span>
+</span></span><span class=line><span class=cl>apt-get install ovn-host ovn-central -y
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Initialize the OVN northbound and southbound databases</span>
+</span></span><span class=line><span class=cl>ovn-sbctl init
+</span></span><span class=line><span class=cl>ovn-nbctl init
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Create a logical switch with VXLAN</span>
+</span></span><span class=line><span class=cl>ovn-nbctl ls-add ls-vxlan0
+</span></span><span class=line><span class=cl>ovn-nbctl lsp-add ls-vxlan0 lsp-port1
+</span></span><span class=line><span class=cl>ovn-nbctl lsp-set-addresses lsp-port1 <span class=s2>&#34;00:00:00:00:01:01 10.0.1.1&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Configure VXLAN tunnel to remote VTEP</span>
+</span></span><span class=line><span class=cl>ovn-nbctl lsp-add ls-vxlan0 lsp-vxlan-remote
+</span></span><span class=line><span class=cl>ovn-nbctl lsp-set-type lsp-vxlan-remote remote
+</span></span><span class=line><span class=cl>ovn-nbctl lsp-set-addresses lsp-vxlan-remote unknown
+</span></span><span class=line><span class=cl>ovn-nbctl lsp-set-options lsp-vxlan-remote <span class=nv>remote_ip</span><span class=o>=</span>192.168.1.100 <span class=nv>key</span><span class=o>=</span><span class=m>5000</span>
+</span></span></code></pre></td></tr></table></div></div><p><strong>Docker Compose for OVN test environment:</strong></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>ovn-central</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>docker.io/ovn/ovn-central:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>network_mode</span><span class=p>:</span><span class=w> </span><span class=l>host</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/var/run/openvswitch:/var/run/openvswitch</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/var/run/ovn:/var/run/ovn</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>OVN_CENTRAL=true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>ovn-controller</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>docker.io/ovn/ovn-host:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>network_mode</span><span class=p>:</span><span class=w> </span><span class=l>host</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/var/run/openvswitch:/var/run/openvswitch</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/var/run/ovn:/var/run/ovn</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>ovn-central</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>OVN&rsquo;s VXLAN implementation includes MAC learning, ARP suppression, and distributed routing. The northbound database stores logical network topology, while the southbound database handles physical binding and tunnel state. OVN controllers on each host translate logical flows into OpenFlow rules in the local OVS instance.</p><h2 id=open-vswitch-ovs>Open vSwitch (OVS)</h2><p>Open vSwitch is the foundational virtual switch that powers OVN, but it can also be used standalone for VXLAN termination. OVS provides a programmable switching layer with support for VXLAN tunnels, flow-based forwarding, and OpenFlow integration.</p><p><strong>Key Features:</strong></p><ul><li>VXLAN tunnel endpoint (VTEP) termination</li><li>Flow-based forwarding with OpenFlow 1.3+</li><li>Hardware offload support for VXLAN decapsulation</li><li>Integration with Linux network namespaces for tenant isolation</li><li>Support for VXLAN-GPE (Generic Protocol Extension)</li></ul><p><strong>Standalone VXLAN configuration:</strong></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Create a bridge for VXLAN termination</span>
+</span></span><span class=line><span class=cl>ovs-vsctl add-br br-vxlan
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Add a VXLAN port to the bridge</span>
+</span></span><span class=line><span class=cl>ovs-vsctl add-port br-vxlan vxlan0 --   <span class=nb>set</span> interface vxlan0 <span class=nv>type</span><span class=o>=</span>vxlan   options:remote_ip<span class=o>=</span>192.168.1.100   options:key<span class=o>=</span><span class=m>5000</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Add a physical interface as uplink</span>
+</span></span><span class=line><span class=cl>ovs-vsctl add-port br-vxlan eth1
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Verify VXLAN tunnel status</span>
+</span></span><span class=line><span class=cl>ovs-vsctl list interface vxlan0
+</span></span><span class=line><span class=cl>ovs-ofctl dump-flows br-vxlan
+</span></span></code></pre></td></tr></table></div></div><p><strong>Advanced VXLAN with multiple tunnels:</strong></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Create VXLAN tunnel group</span>
+</span></span><span class=line><span class=cl>ovs-vsctl add-br br-vxlan-multi
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>for</span> vni in <span class=m>100</span> <span class=m>200</span> 300<span class=p>;</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>  ovs-vsctl add-port br-vxlan-multi vxlan<span class=si>${</span><span class=nv>vni</span><span class=si>}</span> --     <span class=nb>set</span> interface vxlan<span class=si>${</span><span class=nv>vni</span><span class=si>}</span> <span class=nv>type</span><span class=o>=</span>vxlan     options:remote_ip<span class=o>=</span>192.168.1.<span class=si>${</span><span class=nv>vni</span><span class=si>}</span>     options:key<span class=o>=</span><span class=si>${</span><span class=nv>vni</span><span class=si>}</span>
+</span></span><span class=line><span class=cl><span class=k>done</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Set up flow rules for VNI-based forwarding</span>
+</span></span><span class=line><span class=cl>ovs-ofctl add-flow br-vxlan-multi   <span class=s2>&#34;table=0, tun_id=100 actions=output:vxlan100&#34;</span>
+</span></span><span class=line><span class=cl>ovs-ofctl add-flow br-vxlan-multi   <span class=s2>&#34;table=0, tun_id=200 actions=output:vxlan200&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><p><strong>Docker Compose for OVS VXLAN gateway:</strong></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>ovs-vxlan</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>docker.io/openvswitch/ovn:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>privileged</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>network_mode</span><span class=p>:</span><span class=w> </span><span class=l>host</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/lib/modules:/lib/modules:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/var/run/openvswitch:/var/run/openvswitch</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;ovs-vswitchd&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;--pidfile&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;--detach&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;--log-file&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>OVS is the most flexible option for VXLAN termination when you need fine-grained control over forwarding rules. Its OpenFlow integration allows you to implement custom traffic engineering, load balancing, and packet modification at the VTEP level.</p><h2 id=frrouting-frr>FRRouting (FRR)</h2><p>FRRouting is a routing protocol suite that supports VXLAN integration through its BGP EVPN implementation. FRR can serve as a VXLAN termination gateway by using BGP EVPN to advertise MAC and IP reachability across the overlay network.</p><p><strong>Key Features:</strong></p><ul><li>BGP EVPN for VXLAN control plane</li><li>Integrated routing protocols (BGP, OSPF, IS-IS) for underlay</li><li>VRF-aware VXLAN routing</li><li>Support for VXLAN asymmetric and symmetric IRB</li><li>Anycast VTEP for high availability</li></ul><p><strong>FRR VXLAN + BGP EVPN configuration:</strong></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install FRRouting</span>
+</span></span><span class=line><span class=cl>apt-get install frr frr-pythontools -y
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Enable FRR daemons</span>
+</span></span><span class=line><span class=cl>cat &gt; /etc/frr/daemons <span class=s>&lt;&lt; &#39;FRR&#39;
+</span></span></span><span class=line><span class=cl><span class=s>bgpd=yes
+</span></span></span><span class=line><span class=cl><span class=s>zebra=yes
+</span></span></span><span class=line><span class=cl><span class=s>vrrpd=yes
+</span></span></span><span class=line><span class=cl><span class=s>pimd=yes
+</span></span></span><span class=line><span class=cl><span class=s>FRR</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Configure VXLAN interface</span>
+</span></span><span class=line><span class=cl>cat &gt; /etc/frr/frr.conf <span class=s>&lt;&lt; &#39;CONF&#39;
+</span></span></span><span class=line><span class=cl><span class=s>! Zebra configuration for VXLAN
+</span></span></span><span class=line><span class=cl><span class=s>vni 5000
+</span></span></span><span class=line><span class=cl><span class=s>  vxlan localvtep 10.0.0.1
+</span></span></span><span class=line><span class=cl><span class=s>  rd auto
+</span></span></span><span class=line><span class=cl><span class=s>  route-target import 5000:5000
+</span></span></span><span class=line><span class=cl><span class=s>  route-target export 5000:5000
+</span></span></span><span class=line><span class=cl><span class=s>
+</span></span></span><span class=line><span class=cl><span class=s>! BGP EVPN configuration
+</span></span></span><span class=line><span class=cl><span class=s>router bgp 65000
+</span></span></span><span class=line><span class=cl><span class=s>  bgp router-id 10.0.0.1
+</span></span></span><span class=line><span class=cl><span class=s>  neighbor 10.0.0.2 remote-as 65000
+</span></span></span><span class=line><span class=cl><span class=s>  neighbor 10.0.0.2 update-source lo0
+</span></span></span><span class=line><span class=cl><span class=s>
+</span></span></span><span class=line><span class=cl><span class=s>  address-family l2vpn evpn
+</span></span></span><span class=line><span class=cl><span class=s>    neighbor 10.0.0.2 activate
+</span></span></span><span class=line><span class=cl><span class=s>    advertise-all-vni
+</span></span></span><span class=line><span class=cl><span class=s>
+</span></span></span><span class=line><span class=cl><span class=s>  vni 5000
+</span></span></span><span class=line><span class=cl><span class=s>    rd auto
+</span></span></span><span class=line><span class=cl><span class=s>    route-target import 5000:5000
+</span></span></span><span class=line><span class=cl><span class=s>    route-target export 5000:5000
+</span></span></span><span class=line><span class=cl><span class=s>
+</span></span></span><span class=line><span class=cl><span class=s>interface vxlan0
+</span></span></span><span class=line><span class=cl><span class=s>  vxlan id 5000
+</span></span></span><span class=line><span class=cl><span class=s>  vxlan localvtep 10.0.0.1
+</span></span></span><span class=line><span class=cl><span class=s>  bridge access 100
+</span></span></span><span class=line><span class=cl><span class=s>CONF</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Restart FRR to apply configuration</span>
+</span></span><span class=line><span class=cl>systemctl restart frr
+</span></span></code></pre></td></tr></table></div></div><p><strong>Docker Compose for FRR VXLAN gateway:</strong></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>frr-vxlan</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>docker.io/frrouting/frr:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>privileged</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>network_mode</span><span class=p>:</span><span class=w> </span><span class=l>host</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./frr.conf:/etc/frr/frr.conf:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./daemons:/etc/frr/daemons:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>FRR&rsquo;s approach to VXLAN termination is fundamentally different from OVN and OVS. Rather than handling VXLAN at the data plane (switching level), FRR uses BGP EVPN as the control plane to distribute MAC and IP reachability information. The actual VXLAN encapsulation is handled by the Linux kernel&rsquo;s vxlan module, while FRR manages the routing intelligence.</p><h2 id=comparison-table>Comparison Table</h2><table><thead><tr><th>Feature</th><th>OVN</th><th>Open vSwitch</th><th>FRRouting</th></tr></thead><tbody><tr><td><strong>Primary Role</strong></td><td>SDN overlay</td><td>Virtual switch</td><td>Routing protocol suite</td></tr><tr><td><strong>VXLAN Termination</strong></td><td>Native VTEP</td><td>Native VTEP</td><td>Kernel VTEP + BGP EVPN</td></tr><tr><td><strong>Control Plane</strong></td><td>OVN northbound DB</td><td>OpenFlow</td><td>BGP EVPN</td></tr><tr><td><strong>Distributed Routing</strong></td><td>Yes (logical router)</td><td>Via OpenFlow rules</td><td>Via BGP EVPN</td></tr><tr><td><strong>MAC Learning</strong></td><td>Distributed</td><td>Local + controller</td><td>Via BGP EVPN</td></tr><tr><td><strong>Multi-tenant Isolation</strong></td><td>VNI-based + ACLs</td><td>VNI + namespaces</td><td>VRF-based</td></tr><tr><td><strong>Underlay Routing</strong></td><td>Relies on external</td><td>Relies on external</td><td>Built-in (BGP/OSPF/IS-IS)</td></tr><tr><td><strong>Hardware Offload</strong></td><td>Limited</td><td>Yes (NIC offload)</td><td>Kernel-dependent</td></tr><tr><td><strong>High Availability</strong></td><td>Active-active (distributed)</td><td>Active-active</td><td>Anycast VTEP</td></tr><tr><td><strong>GitHub Stars</strong></td><td>700+ (ovn-org/ovn)</td><td>3,900+ (openvswitch/ovs)</td><td>4,100+ (FRRouting/frr)</td></tr><tr><td><strong>Last Updated</strong></td><td>Active (2026)</td><td>Active (2026)</td><td>Active (2026)</td></tr><tr><td><strong>Kubernetes Integration</strong></td><td>Via OVN-Kubernetes CNI</td><td>Via Multus</td><td>Via MetalLB/BGP</td></tr></tbody></table><h2 id=why-self-host-a-vxlan-termination-gateway>Why Self-Host a VXLAN Termination Gateway?</h2><p>VXLAN overlays are essential for modern data center networking, enabling tenant isolation, network virtualization, and seamless workload migration across physical boundaries. The choice of VXLAN termination gateway directly impacts your network&rsquo;s performance, operational complexity, and scalability.</p><p>Self-hosting VXLAN infrastructure eliminates dependency on vendor-specific overlay solutions and their associated licensing costs. Open-source VXLAN gateways provide the same encapsulation and routing capabilities as proprietary alternatives, with the added benefit of community-driven development and transparent security auditing.</p><p>For organizations running private clouds or edge computing deployments, self-hosted VXLAN gateways enable consistent networking across heterogeneous infrastructure. Whether connecting Kubernetes clusters, virtual machine environments, or bare-metal workloads, a standardized VXLAN overlay ensures uniform network policies and security controls.</p><p>The operational benefits include centralized network policy management, automated VTEP provisioning, and integrated monitoring. With proper VXLAN termination, network teams can provision isolated tenant networks on demand, apply security policies consistently, and troubleshoot connectivity issues using familiar overlay abstractions.</p><p>For related reading on overlay networking, see our <a href=../2026-05-19-self-hosted-geneve-overlay-networking-ovn-ovs-linux-guide/>Geneve overlay networking guide</a> and <a href=../2026-05-01-karmada-vs-liqo-vs-submariner-self-hosted-multi-cluster-kubernetes-networking/>Kubernetes multi-cluster networking</a>.</p><h2 id=choosing-the-right-vxlan-termination-solution>Choosing the Right VXLAN Termination Solution</h2><p><strong>Choose OVN if:</strong> You need a full-featured SDN solution with integrated logical switching, routing, and security policies. OVN provides the most complete VXLAN termination experience, with native distributed routing and built-in DHCP/DNS services for overlay tenants.</p><p><strong>Choose Open vSwitch if:</strong> You need maximum flexibility in VXLAN data plane programming. OVS with OpenFlow allows custom forwarding logic, traffic engineering, and packet manipulation at the VTEP level. It is ideal for research environments or organizations with unique VXLAN requirements.</p><p><strong>Choose FRRouting if:</strong> You need BGP EVPN as the VXLAN control plane with integrated underlay routing. FRR&rsquo;s approach is best suited for service provider environments or large data centers where BGP is already the underlay protocol and EVPN provides the overlay intelligence.</p><h2 id=faq>FAQ</h2><h3 id=what-is-vxlan-termination-and-why-does-it-matter>What is VXLAN termination and why does it matter?</h3><p>VXLAN termination is the process of encapsulating and decapsulating VXLAN packets at tunnel endpoints (VTEPs). It matters because every VXLAN packet must be properly terminated to extract the inner Ethernet frame and deliver it to the correct destination. The termination gateway handles MAC address learning, ARP resolution, and routing between overlay and underlay networks.</p><h3 id=what-is-the-difference-between-ovn-and-open-vswitch-for-vxlan>What is the difference between OVN and Open vSwitch for VXLAN?</h3><p>Open vSwitch is the underlying virtual switch that handles packet forwarding and VXLAN encapsulation. OVN is a higher-level SDN solution built on top of OVS that adds logical networking abstractions, distributed routing, and centralized management. OVN uses OVS as its data plane but provides a much richer control plane through its northbound and southbound databases.</p><h3 id=what-is-bgp-evpn-and-how-does-frr-use-it-for-vxlan>What is BGP EVPN and how does FRR use it for VXLAN?</h3><p>BGP EVPN (Ethernet VPN) is a control plane protocol that distributes MAC and IP reachability information across VXLAN tunnels. FRR uses BGP EVPN to advertise which VTEPs can reach which MAC addresses and IP subnets. This eliminates the need for flood-and-learn behavior and enables efficient unicast VXLAN forwarding.</p><h3 id=can-i-run-multiple-vxlan-gateways-for-high-availability>Can I run multiple VXLAN gateways for high availability?</h3><p>Yes. OVN provides active-active high availability through its distributed architecture — each OVN controller handles local VTEP termination. OVS supports active-active with multiple VTEPs sharing the same VNI. FRR supports Anycast VTEP, where multiple gateways share the same VTEP IP address and BGP EVPN handles the routing.</p><h3 id=what-vni-range-should-i-use-for-production-vxlan>What VNI range should I use for production VXLAN?</h3><p>VXLAN Network Identifiers (VNIs) are 24-bit values (0–16,777,215). RFC 7348 recommends avoiding VNI 0. For production, use a structured allocation plan: VNIs 1-1000 for infrastructure networks, 1001-10000 for tenant networks, and 10001+ for testing. Document your VNI assignments to prevent conflicts.</p><h3 id=does-vxlan-work-over-wan-links>Does VXLAN work over WAN links?</h3><p>VXLAN can work over WAN links, but the 50-byte VXLAN header overhead and UDP encapsulation can impact performance. For WAN deployments, consider VXLAN-GPE (Generic Protocol Extension) which adds support for additional protocol types, or use Geneve as an alternative with more flexible header options. MTU configuration is critical — ensure all links support at least 1600 bytes to accommodate VXLAN encapsulation.</p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted VXLAN Termination Gateways: OVN vs Open vSwitch vs FRRouting","description":"Compare open-source VXLAN termination gateways for overlay networking — OVN, Open vSwitch, and FRRouting with Docker deployment and BGP EVPN configuration guides.","datePublished":"2026-05-21","dateModified":"2026-05-21","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20VXLAN%20Termination%20Gateways%3a%20OVN%20vs%20Open%20vSwitch%20vs%20FRRouting&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-21-self-hosted-vxlan-termination-gateways-ovn-ovs-frr-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-21-self-hosted-vxlan-termination-gateways-ovn-ovs-frr-guide%2f&t=Self-Hosted%20VXLAN%20Termination%20Gateways%3a%20OVN%20vs%20Open%20vSwitch%20vs%20FRRouting" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/networking/ class=tag-link>Networking</a>
+<a href=/tags/vxlan/ class=tag-link>Vxlan</a>
+<a href=/tags/overlay/ class=tag-link>Overlay</a>
+<a href=/tags/ovn/ class=tag-link>Ovn</a>
+<a href=/tags/openvswitch/ class=tag-link>Openvswitch</a>
+<a href=/tags/frrouting/ class=tag-link>Frrouting</a>
+<a href=/tags/self-hosted/ class=tag-link>Self-Hosted</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-05-21-self-hosted-evpn-controller-frr-ovn-gobgp-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Evpn</span></div><h3 class=post-title>Self-Hosted EVPN Controller: FRRouting vs OVN vs GoBGP (2026)</h3><div class=post-excerpt>Ethernet VPN (EVPN) is a BGP-based control plane protocol that provides Layer 2 and Layer 3 virtual private network …</div><div class=post-footer><span class=post-date>May 21, 2026</span></div></a><a href=/posts/2026-05-18-self-hosted-gre-tunnel-management-openvswitch-linux-gre-gretap-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Gre</span></div><h3 class=post-title>Self-Hosted GRE Tunnel Management — Open vSwitch vs Linux GRE vs GRETAP (2026)</h3><div class=post-excerpt>Generic Routing Encapsulation (GRE) is a tunneling protocol that encapsulates one network layer protocol inside another, …</div><div class=post-footer><span class=post-date>May 18, 2026</span></div></a><a href=/posts/2026-05-12-self-hosted-vxlan-tunneling-ovs-frr-ovn-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Comparison</span></div><h3 class=post-title>Self-Hosted VXLAN Tunneling: Open vSwitch vs FRRouting vs OVN (2026)</h3><div class=post-excerpt>VXLAN (Virtual Extensible LAN) is a network virtualization technology that extends Layer 2 segments over Layer 3 …</div><div class=post-footer><span class=post-date>May 12, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>
