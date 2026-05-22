@@ -392,7 +392,7 @@ curl -X POST http://localhost:8888/api/v1/cfssl/revoke \
   -d '{"serial": "1234567890", "authority_key_id": "abcdef"}'
 ```
 
-For teams managing public-facing certificates alongside internal ones, see our guide on [TLS certificate automation with certbot, acme.sh, and lego](../2026-04-27-certbot-vs-acme-sh-vs-lego-vs-dehydrated-self-hosted-acme-dns-challenge-guide-2026.md). For verifying TLS configuration across your infrastructure, check our [SSL/TLS scanning tools comparison](../2026-04-22-testssl-vs-sslyze-vs-sslscan-self-hosted-ssl-tls-scanning-guide-2026.md).
+For teams managing public-facing certificates alongside internal ones, see our guide on [TLS certificate automation with certbot, acme.sh, and lego](../2026-04-27-certbot-vs-acme-sh-vs-lego-vs-dehydrated-self-hosted-acme-dns-challenge-guide-2026/). For verifying TLS configuration across your infrastructure, check our [SSL/TLS scanning tools comparison](../2026-04-22-testssl-vs-sslyze-vs-sslscan-self-hosted-ssl-tls-scanning-guide-2026/).
 
 ## FAQ
 

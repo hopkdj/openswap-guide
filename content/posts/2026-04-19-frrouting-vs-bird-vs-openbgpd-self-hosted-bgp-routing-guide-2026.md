@@ -20,7 +20,7 @@ Running your own BGP router gives you full control over how traffic enters and l
 - **Route filtering** — apply custom policies to control which routes you accept and advertise
 - **Traffic engineering** — use BGP communities, local preference, and AS-path prepending to steer traffic
 - **Overlay network integration** — bridge your self-hosted overlay networks (like [ZeroTier or Netmaker](../self-hosted-overlay-networks-zerotier-nebula-netmaker-guide-2026/)) with your physical network infrastructure
-- **Learning and experimentation** — test BGP behavior in a safe lab environment using tools like [GNS3 or EVE-NG](../2026-04-18-gns3-vs-eve-ng-vs-containerlab-self-hosted-network-simulation-2026.md)
+- **Learning and experimentation** — test BGP behavior in a safe lab environment using tools like [GNS3 or EVE-NG](../2026-04-18-gns3-vs-eve-ng-vs-containerlab-self-hosted-network-simulation-2026/)
 
 Commercial routers from Cisco, Juniper, and Arista cost thousands of dollars. With open-source BGP daemons, you can run a full-featured BGP router on a $5/month VPS or a Raspberry Pi at home.
 

@@ -335,7 +335,7 @@ A mature security program uses all three tools at different stages:
 - **Lynis** runs weekly to discover new security issues and track the hardening index trend.
 - **OpenSCAP** runs monthly to generate compliance reports for auditors, with automated remediation for failed checks.
 
-For a complete security posture, pair server auditing with [runtime security monitoring using Falco, osquery, and auditd](../falco-vs-osquery-vs-auditd-self-hosted-runtime-security-guide-2026/) and [vulnerability scanning with Trivy, Grype, and OpenVAS](../openvas-trivy-grype-self-hosted-vulnerability-scanner-guide.md).
+For a complete security posture, pair server auditing with [runtime security monitoring using Falco, osquery, and auditd](../falco-vs-osquery-vs-auditd-self-hosted-runtime-security-guide-2026/) and [vulnerability scanning with Trivy, Grype, and OpenVAS](../openvas-trivy-grype-self-hosted-vulnerability-scanner-guide/).
 
 ## FAQ
 

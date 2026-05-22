@@ -336,7 +336,7 @@ If you're building out a complete authentication infrastructure, consider these 
 
 - For enterprise-scale directory services, see our [OpenLDAP vs 389DS vs FreeIPA guide](../self-hosted-ldap-directory-servers-openldap-389ds-freeipa-guide-2026/)
 - For single sign-on and identity federation, check out [Casdoor vs Zitadel vs Authentik](../2026-04-21-casdoor-vs-zitadel-vs-authentik-lightweight-sso-guide-2026/)
-- For managing access across services, our [Authentik vs Keycloak vs Authelia comparison](../authentik-vs-keycloak-vs-authelia.md) covers full identity providers
+- For managing access across services, our [Authentik vs Keycloak vs Authelia comparison](../authentik-vs-keycloak-vs-authelia/) covers full identity providers
 
 <script type="application/ld+json">
 {

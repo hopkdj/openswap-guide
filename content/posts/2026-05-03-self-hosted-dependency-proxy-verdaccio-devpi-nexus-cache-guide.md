@@ -298,7 +298,7 @@ curl -X POST -u admin:admin123 \
 - **Rate limiting** — configure rate limits to prevent abuse of your proxy
 - **Audit logging** — enable logging of all proxy requests for compliance
 
-For teams managing dependency security, also see our guides on [dependency vulnerability scanning](../2026-04-28-owasp-dependency-check-vs-trivy-vs-grype-self-hosted-dependency-scanning.md) and [dependency automation](../2026-04-19-renovate-vs-dependabot-vs-updatecli-self-hosted-dependency-automation-guide-2026.md).
+For teams managing dependency security, also see our guides on [dependency vulnerability scanning](../2026-04-28-owasp-dependency-check-vs-trivy-vs-grype-self-hosted-dependency-scanning/) and [dependency automation](../2026-04-19-renovate-vs-dependabot-vs-updatecli-self-hosted-dependency-automation-guide-2026/).
 
 ## FAQ
 

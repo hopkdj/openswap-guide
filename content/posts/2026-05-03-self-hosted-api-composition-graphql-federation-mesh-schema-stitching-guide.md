@@ -287,7 +287,7 @@ Self-hosting your API composition layer gives you full control over query execut
 
 For regulated industries, keeping API composition in-house ensures that query patterns, data access logs, and schema definitions never leave your network. You also avoid vendor lock-in — your composition layer is not tied to a specific cloud provider's ecosystem.
 
-For related API tooling, see our [API mocking guide](../self-hosted-api-mocking-testing-tools-wiremock-mockoon-mocks-server-guide-2026/) and [ingress controller comparison](../2026-04-22-traefik-vs-nginx-ingress-vs-contour-kubernetes-ingress-guide-2026/). For service discovery, check our [etcd vs Consul vs ZooKeeper guide](../etcd-vs-consul-vs-zookeeper-self-hosted-service-discovery-guide-2026.md).
+For related API tooling, see our [API mocking guide](../self-hosted-api-mocking-testing-tools-wiremock-mockoon-mocks-server-guide-2026/) and [ingress controller comparison](../2026-04-22-traefik-vs-nginx-ingress-vs-contour-kubernetes-ingress-guide-2026/). For service discovery, check our [etcd vs Consul vs ZooKeeper guide](../etcd-vs-consul-vs-zookeeper-self-hosted-service-discovery-guide-2026/).
 
 ## FAQ
 

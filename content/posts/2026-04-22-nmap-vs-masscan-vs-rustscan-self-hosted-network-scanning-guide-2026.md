@@ -291,7 +291,7 @@ For continuous monitoring, schedule scans with cron and ship results to your mon
 0 2 * * * root /opt/automated-scan.sh >> /var/log/network-scan.log 2>&1
 ```
 
-You can also integrate scan results with [Wazuh SIEM](../self-hosted-siem-wazuh-security-onion-elastic-guide.md/) for centralized alerting. When Nmap detects a new open port or unexpected service, generate alerts through Wazuh's active response system.
+You can also integrate scan results with [Wazuh SIEM](../self-hosted-siem-wazuh-security-onion-elastic-guide/) for centralized alerting. When Nmap detects a new open port or unexpected service, generate alerts through Wazuh's active response system.
 
 ## Choosing the Right Tool
 
