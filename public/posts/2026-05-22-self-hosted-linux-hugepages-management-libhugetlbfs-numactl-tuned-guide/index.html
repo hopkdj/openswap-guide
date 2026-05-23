@@ -1,0 +1,361 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted Linux HugePages Management: libhugetlbfs vs numactl vs tuned (2026) | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-05-22-self-hosted-linux-hugepages-management-libhugetlbfs-numactl-tuned-guide/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted Linux HugePages Management: libhugetlbfs vs numactl vs tuned (2026)"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-05-22-self-hosted-linux-hugepages-management-libhugetlbfs-numactl-tuned-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-05-22T00:00:00Z"><meta property="article:modified_time" content="2026-05-22T00:00:00Z"><meta property="article:tag" content="linux"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted Linux HugePages Management: libhugetlbfs vs numactl vs tuned (2026)"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted Linux HugePages Management: libhugetlbfs vs numactl vs tuned (2026)","description":"\u003cp\u003eLinux HugePages are a kernel memory management feature that uses larger page sizes (2 MB or 1 GB) instead of the standard 4 KB pages. This reduces TLB (Translation Lookaside Buffer) misses, decreases page table overhead, and improves performance for memory-intensive applications — especially databases, in-memory caches, and high-throughput web servers.\u003c\/p\u003e","datePublished":"2026-05-22T00:00:00Z","dateModified":"2026-05-22T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-05-22-self-hosted-linux-hugepages-management-libhugetlbfs-numactl-tuned-guide\/"},"keywords":["linux","memory-management","server-performance","hugepages","kernel-tuning"],"articleSection":"linux","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted Linux HugePages Management: libhugetlbfs vs numactl vs tuned (2026)","item":"https:\/\/www.pistack.xyz\/posts\/2026-05-22-self-hosted-linux-hugepages-management-libhugetlbfs-numactl-tuned-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Linux</span>
+<span class="tag tag-purple">Memory-Management</span>
+<span class="tag tag-purple">Server-Performance</span></div><h1>Self-Hosted Linux HugePages Management: libhugetlbfs vs numactl vs tuned (2026)</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>May 22, 2026</span>
+<span>10 min read</span>
+<span>Updated May 22, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#understanding-hugepages-4-kb-vs-2-mb-vs-1-gb>Understanding HugePages: 4 KB vs 2 MB vs 1 GB</a></li><li><a href=#libhugetlbfs-application-level-hugepages>libhugetlbfs: Application-Level HugePages</a><ul><li><a href=#key-features>Key Features</a></li><li><a href=#installation-and-setup>Installation and Setup</a></li><li><a href=#usage>Usage</a></li><li><a href=#docker-compose-example>Docker Compose Example</a></li><li><a href=#best-use-cases-for-libhugetlbfs>Best Use Cases for libhugetlbfs</a></li></ul></li><li><a href=#numactl-process-level-numa-and-hugepages-binding>numactl: Process-Level NUMA and HugePages Binding</a><ul><li><a href=#key-features-1>Key Features</a></li><li><a href=#installation-and-setup-1>Installation and Setup</a></li><li><a href=#usage-1>Usage</a></li><li><a href=#docker-compose-with-numa-binding>Docker Compose with NUMA Binding</a></li><li><a href=#best-use-cases-for-numactl>Best Use Cases for numactl</a></li></ul></li><li><a href=#tuned-system-level-profile-based-hugepages>tuned: System-Level Profile-Based HugePages</a><ul><li><a href=#key-features-2>Key Features</a></li><li><a href=#installation-and-setup-2>Installation and Setup</a></li><li><a href=#creating-a-custom-hugepages-profile>Creating a Custom HugePages Profile</a></li><li><a href=#docker-integration>Docker Integration</a></li><li><a href=#best-use-cases-for-tuned>Best Use Cases for tuned</a></li></ul></li><li><a href=#comparison-table>Comparison Table</a></li><li><a href=#verifying-hugepages-are-active>Verifying HugePages Are Active</a></li><li><a href=#why-self-host-with-hugepages-optimization>Why Self-Host With HugePages Optimization?</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#how-much-memory-should-i-allocate-to-hugepages>How much memory should I allocate to HugePages?</a></li><li><a href=#can-hugepages-cause-out-of-memory-issues>Can HugePages cause out-of-memory issues?</a></li><li><a href=#do-hugepages-work-inside-docker-containers>Do HugePages work inside Docker containers?</a></li><li><a href=#what-is-the-difference-between-standard-hugepages-and-transparent-hugepages-thp>What is the difference between standard HugePages and Transparent HugePages (THP)?</a></li><li><a href=#how-do-i-disable-transparent-hugepages-when-using-standard-hugepages>How do I disable Transparent HugePages when using standard HugePages?</a></li><li><a href=#can-i-use-libhugetlbfs-and-numactl-together>Can I use libhugetlbfs and numactl together?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><p>Linux HugePages are a kernel memory management feature that uses larger page sizes (2 MB or 1 GB) instead of the standard 4 KB pages. This reduces TLB (Translation Lookaside Buffer) misses, decreases page table overhead, and improves performance for memory-intensive applications — especially databases, in-memory caches, and high-throughput web servers.</p><p>This guide compares three approaches to HugePages management on self-hosted servers: <strong>libhugetlbfs</strong> (application-level HugePages allocation), <strong>numactl</strong> (process-level NUMA and HugePages binding), and <strong>tuned</strong> (system-level profile-based tuning). Each tool serves a different layer of the optimization stack, and choosing the right one depends on your workload architecture.</p><h2 id=understanding-hugepages-4-kb-vs-2-mb-vs-1-gb>Understanding HugePages: 4 KB vs 2 MB vs 1 GB</h2><p>The Linux kernel manages virtual memory in fixed-size pages. The default page size is 4 KB on x86_64. Every process memory reference requires a TLB lookup to translate virtual to physical addresses. With 4 KB pages, a 64 GB application needs 16 million page table entries — each consuming memory and competing for limited TLB slots.</p><p>HugePages reduce this dramatically:</p><ul><li><strong>2 MB pages</strong> (standard hugepages): 64 GB uses only 32,768 entries — a 500x reduction</li><li><strong>1 GB pages</strong> (gigantic pages): 64 GB uses only 64 entries — a 250,000x reduction</li></ul><p>The trade-off is that HugePages must be reserved at boot time (or allocated from a reserved pool) and cannot be swapped. They&rsquo;re pinned in physical memory, which is excellent for performance but requires careful capacity planning.</p><h2 id=libhugetlbfs-application-level-hugepages>libhugetlbfs: Application-Level HugePages</h2><p>libhugetlbfs (252 stars on GitHub, last updated November 2025) intercepts standard memory allocation calls (<code>malloc</code>, <code>mmap</code>) and redirects them to the HugePages pool. This allows applications to benefit from HugePages <strong>without any source code modifications</strong>.</p><h3 id=key-features>Key Features</h3><ul><li><strong>LD_PRELOAD-based interception</strong> — works with any dynamically-linked application</li><li><strong>No code changes required</strong> — simply launch with <code>ldpreload</code> wrapper</li><li><strong>Transparent allocation</strong> — falls back to standard pages if HugePages pool is exhausted</li><li><strong>Per-application control</strong> — some processes use HugePages while others use standard pages</li></ul><h3 id=installation-and-setup>Installation and Setup</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install libhugetlbfs</span>
+</span></span><span class=line><span class=cl>apt install libhugetlbfs-bin -y
+</span></span><span class=line><span class=cl><span class=c1># or</span>
+</span></span><span class=line><span class=cl>yum install libhugetlbfs-utils -y
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Reserve HugePages at boot (add to /etc/default/grub)</span>
+</span></span><span class=line><span class=cl><span class=nv>GRUB_CMDLINE_LINUX</span><span class=o>=</span><span class=s2>&#34;default_hugepagesz=2M hugepagesz=2M hugepages=512&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Or allocate dynamically</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=m>512</span> &gt; /proc/sys/vm/nr_hugepages
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Verify allocation</span>
+</span></span><span class=line><span class=cl>cat /proc/meminfo <span class=p>|</span> grep -i huge
+</span></span><span class=line><span class=cl><span class=c1># HugePages_Total:     512</span>
+</span></span><span class=line><span class=cl><span class=c1># HugePages_Free:      512</span>
+</span></span><span class=line><span class=cl><span class=c1># Hugepagesize:       2048 kB</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=usage>Usage</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Run an application with HugePages</span>
+</span></span><span class=line><span class=cl>ldpreload libhugetlbfs.so.0 --your-application --args
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># For Redis (in-memory database benefits significantly from HugePages)</span>
+</span></span><span class=line><span class=cl>ldpreload libhugetlbfs.so.0 redis-server /etc/redis/redis.conf
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># For PostgreSQL</span>
+</span></span><span class=line><span class=cl>ldpreload libhugetlbfs.so.0 postgres -D /var/lib/postgresql/data
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-compose-example>Docker Compose Example</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose.yml — Redis with HugePages via libhugetlbfs</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>redis</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>redis:7-alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=l>redis-server --maxmemory 8gb --maxmemory-policy allkeys-lru</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>mem_limit</span><span class=p>:</span><span class=w> </span><span class=l>10g</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>redis_data:/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=c># Mount HugePages filesystem into container</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>tmpfs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/dev/hugepages:mode=1770,size=2g</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=c># Run with libhugetlbfs preloaded</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>entrypoint</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;sh&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;-c&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;ldpreload /usr/lib/libhugetlbfs.so.0 redis-server --maxmemory 8gb&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>deploy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>resources</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>limits</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>memory</span><span class=p>:</span><span class=w> </span><span class=l>10G</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>redis_data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=best-use-cases-for-libhugetlbfs>Best Use Cases for libhugetlbfs</h3><ul><li><strong>Redis / Memcached</strong> — in-memory databases where every cache hit saves a TLB miss</li><li><strong>Elasticsearch</strong> — JVM heap allocations benefit from reduced page table overhead</li><li><strong>Custom applications</strong> — third-party software where you cannot modify the source code</li><li><strong>Testing environments</strong> — quickly evaluate HugePages impact without permanent configuration changes</li></ul><h2 id=numactl-process-level-numa-and-hugepages-binding>numactl: Process-Level NUMA and HugePages Binding</h2><p>numactl (496 stars, last updated February 2026) manages NUMA (Non-Uniform Memory Access) policies and HugePages allocation at the <strong>process level</strong>. It binds processes to specific NUMA nodes and allocates memory from HugePages on those nodes, ensuring optimal memory locality.</p><h3 id=key-features-1>Key Features</h3><ul><li><strong>NUMA-aware allocation</strong> — processes access memory from the closest NUMA node</li><li><strong>HugePages with node affinity</strong> — allocates HugePages on specific NUMA nodes</li><li><strong>Process-level granularity</strong> — different processes can use different NUMA policies</li><li><strong>Policy inheritance</strong> — child processes inherit the parent&rsquo;s NUMA policy</li></ul><h3 id=installation-and-setup-1>Installation and Setup</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install numactl</span>
+</span></span><span class=line><span class=cl>apt install numactl -y
+</span></span><span class=line><span class=cl><span class=c1># or</span>
+</span></span><span class=line><span class=cl>yum install numactl -y
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Check NUMA topology</span>
+</span></span><span class=line><span class=cl>numactl --hardware
+</span></span><span class=line><span class=cl><span class=c1># Output:</span>
+</span></span><span class=line><span class=cl><span class=c1># available: 2 nodes (0-1)</span>
+</span></span><span class=line><span class=cl><span class=c1># node 0 cpus: 0 1 2 3 4 5 6 7</span>
+</span></span><span class=line><span class=cl><span class=c1># node 0 size: 32768 MB</span>
+</span></span><span class=line><span class=cl><span class=c1># node 0 free: 4096 MB</span>
+</span></span><span class=line><span class=cl><span class=c1># node 1 cpus: 8 9 10 11 12 13 14 15</span>
+</span></span><span class=line><span class=cl><span class=c1># node 1 size: 32768 MB</span>
+</span></span><span class=line><span class=cl><span class=c1># node 1 free: 3072 MB</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Reserve HugePages per NUMA node</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=m>256</span> &gt; /sys/devices/system/node/node0/hugepages/hugepages-2048kB/nr_hugepages
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=m>256</span> &gt; /sys/devices/system/node/node1/hugepages/hugepages-2048kB/nr_hugepages
+</span></span></code></pre></td></tr></table></div></div><h3 id=usage-1>Usage</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Run PostgreSQL on NUMA node 0 with HugePages</span>
+</span></span><span class=line><span class=cl>numactl --membind<span class=o>=</span><span class=m>0</span> --huge redis-server /etc/redis/redis.conf
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Run MySQL across both NUMA nodes with interleaved memory</span>
+</span></span><span class=line><span class=cl>numactl --interleave<span class=o>=</span>all mysqld --defaults-file<span class=o>=</span>/etc/mysql/my.cnf
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Bind to specific CPUs AND allocate HugePages</span>
+</span></span><span class=line><span class=cl>numactl --cpunodebind<span class=o>=</span><span class=m>0</span> --membind<span class=o>=</span><span class=m>0</span> --huge nginx -g <span class=s2>&#34;daemon off;&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-compose-with-numa-binding>Docker Compose with NUMA Binding</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose.yml — PostgreSQL with NUMA-aware HugePages</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>postgres</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>postgres:17</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_PASSWORD</span><span class=p>:</span><span class=w> </span><span class=l>secure_password</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_SHARED_BUFFERS</span><span class=p>:</span><span class=w> </span><span class=l>8GB</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>pg_data:/var/lib/postgresql/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=c># NUMA binding via entrypoint</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>entrypoint</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;numactl&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;--membind=0&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;--huge&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;postgres&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;-D&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;/var/lib/postgresql/data&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>deploy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>resources</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>limits</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>memory</span><span class=p>:</span><span class=w> </span><span class=l>16G</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>tmpfs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/dev/hugepages:mode=1770,size=4g</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>pg_data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=best-use-cases-for-numactl>Best Use Cases for numactl</h3><ul><li><strong>Multi-socket servers</strong> — dual-socket or quad-socket machines where NUMA locality matters</li><li><strong>Database servers</strong> — PostgreSQL, MySQL, MongoDB benefit from NUMA-aware memory allocation</li><li><strong>Multi-process architectures</strong> — different services bound to different NUMA nodes</li><li><strong>Performance-critical workloads</strong> — where memory access latency directly impacts throughput</li></ul><h2 id=tuned-system-level-profile-based-hugepages>tuned: System-Level Profile-Based HugePages</h2><p>tuned (1,207 stars on GitHub under redhat-performance/tuned, last updated 2026) is a dynamic system tuning daemon that applies pre-built or custom <strong>tuning profiles</strong>. It manages HugePages alongside hundreds of other kernel parameters, making it the most comprehensive option for production servers.</p><h3 id=key-features-2>Key Features</h3><ul><li><strong>Profile-based configuration</strong> — pre-built profiles for database, web server, virtualization workloads</li><li><strong>Dynamic tuning</strong> — monitors system load and adjusts parameters in real-time</li><li><strong>Comprehensive coverage</strong> — manages HugePages, CPU governors, I/O schedulers, network buffers, and more</li><li><strong>Custom profiles</strong> — create your own profiles tailored to specific self-hosted services</li><li><strong>Automatic rollback</strong> — reverts changes when a profile is deactivated</li></ul><h3 id=installation-and-setup-2>Installation and Setup</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install tuned</span>
+</span></span><span class=line><span class=cl>apt install tuned -y
+</span></span><span class=line><span class=cl><span class=c1># or</span>
+</span></span><span class=line><span class=cl>yum install tuned -y
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Enable and start the service</span>
+</span></span><span class=line><span class=cl>systemctl <span class=nb>enable</span> --now tuned
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># List available profiles</span>
+</span></span><span class=line><span class=cl>tuned-adm list
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Check active profile</span>
+</span></span><span class=line><span class=cl>tuned-adm active
+</span></span><span class=line><span class=cl><span class=c1># Output: Current active profile: throughput-performance</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Activate a profile</span>
+</span></span><span class=line><span class=cl>tuned-adm profile throughput-performance
+</span></span></code></pre></td></tr></table></div></div><h3 id=creating-a-custom-hugepages-profile>Creating a Custom HugePages Profile</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=c1># /etc/tuned/hugepages-db/profile</span>
+</span></span><span class=line><span class=cl><span class=k>[main]</span>
+</span></span><span class=line><span class=cl><span class=na>summary</span><span class=o>=</span><span class=s>Optimized for database workloads with HugePages</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>[sysctl]</span>
+</span></span><span class=line><span class=cl><span class=c1># Reserve 1024 x 2 MB HugePages (2 GB total)</span>
+</span></span><span class=line><span class=cl><span class=na>vm.nr_hugepages</span><span class=o>=</span><span class=s>1024</span>
+</span></span><span class=line><span class=cl><span class=c1># Enable transparent HugePages</span>
+</span></span><span class=line><span class=cl><span class=na>vm.hugetlb_shm_group</span><span class=o>=</span><span class=s>0</span>
+</span></span><span class=line><span class=cl><span class=c1># Allow HugePages to be freed under memory pressure</span>
+</span></span><span class=line><span class=cl><span class=na>vm.nr_overcommit_hugepages</span><span class=o>=</span><span class=s>128</span>
+</span></span><span class=line><span class=cl><span class=c1># Optimize swappiness for memory-bound workloads</span>
+</span></span><span class=line><span class=cl><span class=na>vm.swappiness</span><span class=o>=</span><span class=s>10</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>[vm]</span>
+</span></span><span class=line><span class=cl><span class=na>transparent_hugepages</span><span class=o>=</span><span class=s>madvise</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>[cpu]</span>
+</span></span><span class=line><span class=cl><span class=na>force_latency</span><span class=o>=</span><span class=s>70</span>
+</span></span><span class=line><span class=cl><span class=na>energy_perf_bias</span><span class=o>=</span><span class=s>performance</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>[disk]</span>
+</span></span><span class=line><span class=cl><span class=na>elevator</span><span class=o>=</span><span class=s>bfq</span>
+</span></span></code></pre></td></tr></table></div></div><p>Activate the custom profile:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>tuned-adm profile hugepages-db
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Verify</span>
+</span></span><span class=line><span class=cl>tuned-adm active
+</span></span><span class=line><span class=cl>hugeadm --explain
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-integration>Docker Integration</h3><p>tuned runs on the host, and containers automatically benefit from the kernel-level tuning. No container-side configuration is needed:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose.yml — containers automatically inherit host HugePages</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>mysql</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>mysql:8.4</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>MYSQL_ROOT_PASSWORD</span><span class=p>:</span><span class=w> </span><span class=l>secure_password</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>mysql_data:/var/lib/mysql</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=c># No special HugePages config needed — tuned handles it on the host</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>tmpfs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/dev/shm:size=4g</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>nginx</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>nginx:alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./config/nginx.conf:/etc/nginx/nginx.conf:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;80:80&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>mysql_data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=best-use-cases-for-tuned>Best Use Cases for tuned</h3><ul><li><strong>Production servers</strong> — comprehensive, profile-based tuning with minimal manual intervention</li><li><strong>Mixed workload hosts</strong> — switch between profiles based on time of day (database profile during business hours, backup profile at night)</li><li><strong>Teams without dedicated sysadmins</strong> — pre-built profiles provide good defaults</li><li><strong>Servers running multiple services</strong> — tuned optimizes the entire system, not just individual processes</li></ul><h2 id=comparison-table>Comparison Table</h2><table><thead><tr><th>Feature</th><th>libhugetlbfs</th><th>numactl</th><th>tuned</th></tr></thead><tbody><tr><td><strong>Scope</strong></td><td>Per-application</td><td>Per-process</td><td>System-wide</td></tr><tr><td><strong>Configuration Method</strong></td><td>LD_PRELOAD wrapper</td><td>Command-line flags</td><td>Profile files (INI format)</td></tr><tr><td><strong>HugePages Allocation</strong></td><td>Transparent interception</td><td>Explicit per-process</td><td>Reserved pool + transparent</td></tr><tr><td><strong>NUMA Awareness</strong></td><td>No</td><td>Yes (explicit binding)</td><td>Yes (profile-based)</td></tr><tr><td><strong>Dynamic Adjustment</strong></td><td>No</td><td>No</td><td>Yes (adaptive profiles)</td></tr><tr><td><strong>Rollback Support</strong></td><td>Stop the process</td><td>Kill the process</td><td><code>tuned-adm profile original</code></td></tr><tr><td><strong>Docker Integration</strong></td><td>Requires entrypoint override</td><td>Requires entrypoint override</td><td>Host-level (containers inherit)</td></tr><tr><td><strong>Learning Curve</strong></td><td>Low</td><td>Medium</td><td>Medium</td></tr><tr><td><strong>GitHub Stars</strong></td><td>252</td><td>496</td><td>1,207</td></tr><tr><td><strong>Best For</strong></td><td>Individual apps, testing</td><td>Multi-socket DB servers</td><td>Production mixed workloads</td></tr></tbody></table><h2 id=verifying-hugepages-are-active>Verifying HugePages Are Active</h2><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Check HugePages allocation</span>
+</span></span><span class=line><span class=cl>cat /proc/meminfo <span class=p>|</span> grep -i huge
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Check which processes are using HugePages</span>
+</span></span><span class=line><span class=cl>grep -l HugePages /proc/*/smaps 2&gt;/dev/null
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Monitor HugePages usage in real-time</span>
+</span></span><span class=line><span class=cl>watch -n <span class=m>1</span> <span class=s2>&#34;cat /proc/meminfo | grep Huge&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># For libhugetlbfs: check if preload is active</span>
+</span></span><span class=line><span class=cl>cat /proc/<span class=k>$(</span>pgrep -f your-app<span class=k>)</span>/environ <span class=p>|</span> tr <span class=s1>&#39;&#39;</span> <span class=s1>&#39;
+</span></span></span><span class=line><span class=cl><span class=s1>&#39;</span> <span class=p>|</span> grep LD_PRELOAD
+</span></span></code></pre></td></tr></table></div></div><h2 id=why-self-host-with-hugepages-optimization>Why Self-Host With HugePages Optimization?</h2><p>Memory optimization is one of the highest-ROI tunings for self-hosted infrastructure. A well-configured HugePages setup can reduce database query latency by 10-25%, increase Redis cache hit rates, and improve Elasticsearch indexing throughput — all without hardware upgrades.</p><p>When you self-host, you control the entire memory management stack. Cloud providers rarely enable HugePages by default because their workloads are diverse and unpredictable. On your own server, you can precisely match HugePages allocation to your actual workload, reserving exactly the right amount of pinned memory for your databases while leaving standard pages for everything else.</p><p>For database administrators running PostgreSQL or MySQL, HugePages with <code>shared_buffers</code> or <code>innodb_buffer_pool_size</code> is the single most impactful memory tuning available. For Redis operators, pinning the entire dataset to HugePages eliminates TLB thrashing during high-throughput access patterns.</p><p>For deeper system-level optimization, see our <a href=../2026-05-22-self-hosted-linux-io-scheduler-bfq-mq-deadline-kyber-guide/>Linux I/O scheduler comparison</a> for storage-side performance tuning. For CPU frequency management that complements memory tuning, check our <a href=../2026-05-22-self-hosted-linux-cpu-governor-management-auto-cpufreq-vs-cpupower-vs-tuned-guide/>CPU governor guide</a>. And for container memory isolation, our <a href=../2026-05-22-self-hosted-cgroup-monitoring-tools-systemd-cgtop-vs-cgroup-tools-vs-libcgroup-guide/>cgroup monitoring guide</a> covers process-level resource control.</p><h2 id=faq>FAQ</h2><h3 id=how-much-memory-should-i-allocate-to-hugepages>How much memory should I allocate to HugePages?</h3><p>Reserve enough HugePages to cover your largest memory-intensive application&rsquo;s working set. For PostgreSQL, match <code>shared_buffers</code> (typically 25% of RAM). For Redis, match your <code>maxmemory</code> setting. A good rule of thumb: allocate 2 MB pages equal to your largest database buffer pool size, rounded up to the nearest 2 MB boundary. Leave at least 30% of RAM for standard pages to handle the OS and non-database processes.</p><h3 id=can-hugepages-cause-out-of-memory-issues>Can HugePages cause out-of-memory issues?</h3><p>Yes, if you over-allocate. HugePages are pinned in physical memory and cannot be swapped. If you reserve 80% of RAM as HugePages and your other processes need more than 20%, the system will invoke the OOM killer. Always leave sufficient standard memory for the kernel, system services, and non-database applications. Start conservatively (10-20% of RAM) and increase based on monitoring.</p><h3 id=do-hugepages-work-inside-docker-containers>Do HugePages work inside Docker containers?</h3><p>Yes, but you need to mount the HugePages filesystem into the container. Add <code>tmpfs: - /dev/hugepages:mode=1770,size=2g</code> to your compose file, or use <code>docker run --mount type=tmpfs,destination=/dev/hugepages,tmpfs-mode=1770</code>. The container can then allocate from the host&rsquo;s HugePages pool. Alternatively, use <code>tuned</code> on the host for automatic container-side benefits.</p><h3 id=what-is-the-difference-between-standard-hugepages-and-transparent-hugepages-thp>What is the difference between standard HugePages and Transparent HugePages (THP)?</h3><p>Standard HugePages are explicitly reserved and allocated, providing guaranteed 2 MB pages. Transparent HugePages (THP) are a kernel feature that automatically merges standard 4 KB pages into 2 MB pages at runtime. THP is easier to use (no manual reservation) but can cause latency spikes during page collapse operations. For database workloads, <strong>standard HugePages are strongly preferred</strong> because they provide predictable latency without THP&rsquo;s defragmentation overhead.</p><h3 id=how-do-i-disable-transparent-hugepages-when-using-standard-hugepages>How do I disable Transparent HugePages when using standard HugePages?</h3><p>Run <code>echo never > /sys/kernel/mm/transparent_hugepage/enabled</code> or add <code>transparent_hugepage=never</code> to your kernel boot parameters. In tuned, set <code>transparent_hugepages=never</code> in your profile&rsquo;s <code>[vm]</code> section. Disabling THP is recommended for database servers (Redis specifically warns about THP in its logs).</p><h3 id=can-i-use-libhugetlbfs-and-numactl-together>Can I use libhugetlbfs and numactl together?</h3><p>Yes, they operate at different layers. You can use <code>numactl</code> to bind a process to a specific NUMA node and <code>libhugetlbfs</code> to allocate its memory from HugePages: <code>numactl --membind=0 ldpreload libhugetlbfs.so.0 your-application</code>. This gives you both NUMA locality and HugePages benefits simultaneously.</p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted Linux HugePages Management: libhugetlbfs vs numactl vs tuned (2026)","description":"Compare Linux HugePages management tools libhugetlbfs, numactl, and tuned for self-hosted servers. Includes Docker configs, NUMA tuning, and profile-based optimization.","datePublished":"2026-05-22","dateModified":"2026-05-22","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20Linux%20HugePages%20Management%3a%20libhugetlbfs%20vs%20numactl%20vs%20tuned%20%282026%29&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-22-self-hosted-linux-hugepages-management-libhugetlbfs-numactl-tuned-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-22-self-hosted-linux-hugepages-management-libhugetlbfs-numactl-tuned-guide%2f&t=Self-Hosted%20Linux%20HugePages%20Management%3a%20libhugetlbfs%20vs%20numactl%20vs%20tuned%20%282026%29" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/linux/ class=tag-link>Linux</a>
+<a href=/tags/memory-management/ class=tag-link>Memory-Management</a>
+<a href=/tags/server-performance/ class=tag-link>Server-Performance</a>
+<a href=/tags/hugepages/ class=tag-link>Hugepages</a>
+<a href=/tags/kernel-tuning/ class=tag-link>Kernel-Tuning</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-05-22-self-hosted-linux-io-scheduler-bfq-mq-deadline-kyber-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted Linux I/O Scheduler Comparison: BFQ vs mq-deadline vs Kyber (2026)</h3><div class=post-excerpt>Linux I/O schedulers determine how the kernel orders and merges disk requests before they reach the storage device. …</div><div class=post-footer><span class=post-date>May 22, 2026</span></div></a><a href=/posts/2026-05-22-self-hosted-linux-file-access-control-lists-posix-nfs4-richacl-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted File Access Control Lists: POSIX ACL vs NFSv4 ACL vs RichACL</h3><div class=post-excerpt>Standard Unix file permissions (owner/group/other with read/write/execute) are simple but limited. When you need …</div><div class=post-footer><span class=post-date>May 22, 2026</span></div></a><a href=/posts/2026-05-22-self-hosted-file-watch-tools-watchexec-vs-entr-vs-inotify-tools-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">File-Monitoring</span></div><h3 class=post-title>Self-Hosted File Watch Tools: watchexec vs entr vs inotify-tools Guide</h3><div class=post-excerpt>When you need to automatically trigger actions in response to file system changes — reloading a web server, rebuilding a …</div><div class=post-footer><span class=post-date>May 22, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>

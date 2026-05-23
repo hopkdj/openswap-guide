@@ -1,0 +1,323 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted Linux Coredump Management: systemd-coredump vs ABRT vs minicoredumper (2026) | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-05-22-self-hosted-linux-coredump-management-systemd-abrt-minicoredumper-guide/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted Linux Coredump Management: systemd-coredump vs ABRT vs minicoredumper (2026)"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-05-22-self-hosted-linux-coredump-management-systemd-abrt-minicoredumper-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-05-22T00:00:00Z"><meta property="article:modified_time" content="2026-05-22T00:00:00Z"><meta property="article:tag" content="linux"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted Linux Coredump Management: systemd-coredump vs ABRT vs minicoredumper (2026)"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted Linux Coredump Management: systemd-coredump vs ABRT vs minicoredumper (2026)","description":"\u003cp\u003eWhen a Linux process crashes, the kernel can generate a \u003cstrong\u003ecoredump\u003c\/strong\u003e — a snapshot of the process memory, registers, and execution state at the moment of failure. These files are essential for post-mortem debugging, but managing them at scale across servers is a challenge. Without proper coredump handling, crashes are silent, debug information is lost, and production issues remain unresolved.\u003c\/p\u003e","datePublished":"2026-05-22T00:00:00Z","dateModified":"2026-05-22T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-05-22-self-hosted-linux-coredump-management-systemd-abrt-minicoredumper-guide\/"},"keywords":["linux","system-administration","debugging","crash-management","self-hosted"],"articleSection":"linux","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted Linux Coredump Management: systemd-coredump vs ABRT vs minicoredumper (2026)","item":"https:\/\/www.pistack.xyz\/posts\/2026-05-22-self-hosted-linux-coredump-management-systemd-abrt-minicoredumper-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Linux</span>
+<span class="tag tag-purple">System-Administration</span>
+<span class="tag tag-purple">Debugging</span></div><h1>Self-Hosted Linux Coredump Management: systemd-coredump vs ABRT vs minicoredumper (2026)</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>May 22, 2026</span>
+<span>10 min read</span>
+<span>Updated May 22, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#how-linux-coredump-generation-works>How Linux Coredump Generation Works</a></li><li><a href=#tool-comparison-overview>Tool Comparison Overview</a></li><li><a href=#systemd-coredump--the-default-choice>systemd-coredump — The Default Choice</a><ul><li><a href=#installation>Installation</a></li><li><a href=#configuration>Configuration</a></li><li><a href=#viewing-and-analyzing-coredumps>Viewing and Analyzing Coredumps</a></li><li><a href=#docker-deployment>Docker Deployment</a></li></ul></li><li><a href=#abrt--automated-bug-reporting>ABRT — Automated Bug Reporting</a><ul><li><a href=#installation-1>Installation</a></li><li><a href=#configuration-1>Configuration</a></li><li><a href=#key-abrt-components>Key ABRT Components</a></li><li><a href=#managing-crashes-with-abrt>Managing Crashes with ABRT</a></li><li><a href=#abrt-web-interface>ABRT Web Interface</a></li><li><a href=#docker-deployment-for-abrt>Docker Deployment for ABRT</a></li></ul></li><li><a href=#minicoredumper--lightweight-alternative>minicoredumper — Lightweight Alternative</a><ul><li><a href=#why-minimal-coredumps>Why Minimal Coredumps?</a></li><li><a href=#installation-2>Installation</a></li><li><a href=#configuration-2>Configuration</a></li><li><a href=#setting-minicoredumper-as-the-core-handler>Setting minicoredumper as the Core Handler</a></li><li><a href=#viewing-minicoredumps>Viewing Minicoredumps</a></li></ul></li><li><a href=#size-comparison-full-vs-minimal-coredumps>Size Comparison: Full vs Minimal Coredumps</a></li><li><a href=#choosing-the-right-coredump-manager>Choosing the Right Coredump Manager</a></li><li><a href=#why-self-host-coredump-management>Why Self-Host Coredump Management?</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#what-is-a-coredump-and-why-do-i-need-one>What is a coredump and why do I need one?</a></li><li><a href=#how-much-disk-space-do-coredumps-consume>How much disk space do coredumps consume?</a></li><li><a href=#can-i-use-multiple-coredump-handlers-simultaneously>Can I use multiple coredump handlers simultaneously?</a></li><li><a href=#is-minicoredumper-suitable-for-production-use>Is minicoredumper suitable for production use?</a></li><li><a href=#how-do-i-disable-coredumps-entirely>How do I disable coredumps entirely?</a></li><li><a href=#does-abrt-work-on-non-fedora-distributions>Does ABRT work on non-Fedora distributions?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><p>When a Linux process crashes, the kernel can generate a <strong>coredump</strong> — a snapshot of the process memory, registers, and execution state at the moment of failure. These files are essential for post-mortem debugging, but managing them at scale across servers is a challenge. Without proper coredump handling, crashes are silent, debug information is lost, and production issues remain unresolved.</p><p>This guide compares three self-hosted Linux coredump management solutions: <strong>systemd-coredump</strong>, <strong>ABRT</strong> (Automatic Bug Reporting Tool), and <strong>minicoredumper</strong>. Each takes a fundamentally different approach to crash capture, storage, and analysis.</p><h2 id=how-linux-coredump-generation-works>How Linux Coredump Generation Works</h2><p>Before comparing tools, it helps to understand the underlying mechanism. When a process receives a fatal signal (SIGSEGV, SIGABRT, SIGILL, etc.), the Linux kernel invokes a <strong>core_pattern</strong> handler defined in <code>/proc/sys/kernel/core_pattern</code>. This handler is a pipe to a user-space program or a file path template.</p><p>The default core pattern on many systems is:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>|/usr/lib/systemd/systemd-coredump %P %u %g %s %t %c %h %e
+</span></span></code></pre></td></tr></table></div></div><p>The pipe symbol (<code>|</code>) tells the kernel to send the coredump data via stdin to the specified program, along with metadata arguments:</p><table><thead><tr><th>Parameter</th><th>Meaning</th></tr></thead><tbody><tr><td><code>%P</code></td><td>PID of the crashing process</td></tr><tr><td><code>%u</code></td><td>UID of the process owner</td></tr><tr><td><code>%g</code></td><td>GID of the process owner</td></tr><tr><td><code>%s</code></td><td>Signal number that caused the crash</td></tr><tr><td><code>%t</code></td><td>Unix timestamp of the crash</td></tr><tr><td><code>%c</code></td><td>Core file size soft resource limit</td></tr><tr><td><code>%h</code></td><td>Hostname</td></tr><tr><td><code>%e</code></td><td>Executable filename (comm)</td></tr></tbody></table><p>You can inspect the current pattern with:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>cat /proc/sys/kernel/core_pattern
+</span></span></code></pre></td></tr></table></div></div><p>And set a custom handler:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;|/usr/bin/my-handler %P %u %g %s %t %c %h %e&#34;</span> <span class=p>|</span> sudo tee /proc/sys/kernel/core_pattern
+</span></span></code></pre></td></tr></table></div></div><h2 id=tool-comparison-overview>Tool Comparison Overview</h2><table><thead><tr><th>Feature</th><th>systemd-coredump</th><th>ABRT</th><th>minicoredumper</th></tr></thead><tbody><tr><td><strong>Origin</strong></td><td>systemd project (freedesktop)</td><td>Fedora/RHEL project</td><td>Diamond Light Source</td></tr><tr><td><strong>GitHub Stars</strong></td><td>Part of systemd (70K+)</td><td>242</td><td>56</td></tr><tr><td><strong>Last Updated</strong></td><td>Active (2026)</td><td>May 2026</td><td>May 2026</td></tr><tr><td><strong>Default On</strong></td><td>Most systemd distros</td><td>Fedora/RHEL</td><td>Manual install</td></tr><tr><td><strong>Core Format</strong></td><td>Full coredump (compressed)</td><td>Full coredump + metadata</td><td>Minimal coredump</td></tr><tr><td><strong>Storage Backend</strong></td><td>Journal (lz4 compressed)</td><td>Filesystem + database</td><td>Filesystem</td></tr><tr><td><strong>CLI Tools</strong></td><td><code>coredumpctl</code></td><td><code>abrt-cli</code></td><td><code>minicoredumper</code> config</td></tr><tr><td><strong>Web UI</strong></td><td>No</td><td>Yes (ABRT Web)</td><td>No</td></tr><tr><td><strong>Auto-Reporting</strong></td><td>No</td><td>Yes (Bugzilla, Email)</td><td>No</td></tr><tr><td><strong>Size Efficiency</strong></td><td>Compressed but full</td><td>Full + metadata</td><td>Minimal (stripped)</td></tr><tr><td><strong>Docker Support</strong></td><td>Yes (journal integration)</td><td>Yes</td><td>Yes</td></tr><tr><td><strong>Config Complexity</strong></td><td>Low</td><td>Medium</td><td>Low</td></tr></tbody></table><h2 id=systemd-coredump--the-default-choice>systemd-coredump — The Default Choice</h2><p><strong>systemd-coredump</strong> is the default coredump handler on virtually all systemd-based distributions. It compresses coredumps with lz4 and stores them in the systemd journal, making them queryable via <code>coredumpctl</code>.</p><h3 id=installation>Installation</h3><p>On most modern Linux distributions, systemd-coredump is pre-installed. If not:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Debian/Ubuntu</span>
+</span></span><span class=line><span class=cl>sudo apt install systemd-coredump
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># RHEL/Fedora/CentOS</span>
+</span></span><span class=line><span class=cl>sudo dnf install systemd-coredump
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Arch Linux</span>
+</span></span><span class=line><span class=cl>sudo pacman -S systemd
+</span></span></code></pre></td></tr></table></div></div><h3 id=configuration>Configuration</h3><p>The configuration file is <code>/etc/systemd/coredump.conf</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=k>[Coredump]</span>
+</span></span><span class=line><span class=cl><span class=c1># Maximum coredump size (bytes, K, M, G)</span>
+</span></span><span class=line><span class=cl><span class=c1># 0 = disabled, infinity = no limit</span>
+</span></span><span class=line><span class=cl><span class=na>Storage</span><span class=o>=</span><span class=s>external</span>
+</span></span><span class=line><span class=cl><span class=na>Compress</span><span class=o>=</span><span class=s>yes</span>
+</span></span><span class=line><span class=cl><span class=na>ProcessSizeMax</span><span class=o>=</span><span class=s>2G</span>
+</span></span><span class=line><span class=cl><span class=na>ExternalSizeMax</span><span class=o>=</span><span class=s>2G</span>
+</span></span><span class=line><span class=cl><span class=na>JournalSizeMax</span><span class=o>=</span><span class=s>767M</span>
+</span></span></code></pre></td></tr></table></div></div><p>Key options:</p><ul><li><strong>Storage=external</strong>: Stores compressed cores in <code>/var/lib/systemd/coredump/</code> instead of the journal</li><li><strong>Storage=journal</strong>: Stores in the journal (limited by <code>JournalSizeMax</code>)</li><li><strong>Compress=yes</strong>: Uses lz4 compression (typically 3-5x reduction)</li><li><strong>ProcessSizeMax</strong>: Maximum process size to capture</li></ul><h3 id=viewing-and-analyzing-coredumps>Viewing and Analyzing Coredumps</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># List all coredumps</span>
+</span></span><span class=line><span class=cl>coredumpctl list
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># List coredumps for a specific executable</span>
+</span></span><span class=line><span class=cl>coredumpctl list /usr/bin/myapp
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># View detailed info about the most recent coredump</span>
+</span></span><span class=line><span class=cl>coredumpctl info
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Extract the coredump to a file</span>
+</span></span><span class=line><span class=cl>coredumpctl dump -o /tmp/core.dump
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Launch GDB directly with the coredump</span>
+</span></span><span class=line><span class=cl>coredumpctl gdb /usr/bin/myapp
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Delete old coredumps</span>
+</span></span><span class=line><span class=cl>coredumpctl vacuum --time<span class=o>=</span>7d
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-deployment>Docker Deployment</h3><p>systemd-coredump works inside containers when journal access is available:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>app-with-coredump</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>myapp:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>cap_add</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>SYS_PTRACE</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/var/lib/systemd/coredump:/var/lib/systemd/coredump</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/var/log/journal:/var/log/journal</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>COREDUMP_STORAGE=external</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ulimits</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>core</span><span class=p>:</span><span class=w> </span>-<span class=m>1</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=abrt--automated-bug-reporting>ABRT — Automated Bug Reporting</h2><p><strong>ABRT</strong> (Automatic Bug Reporting Tool) goes beyond simple coredump capture. It collects crash data, analyzes it, and can automatically file bug reports to Bugzilla, send emails, or upload to a central server. It is the default crash handler on Fedora and RHEL.</p><h3 id=installation-1>Installation</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Fedora/RHEL</span>
+</span></span><span class=line><span class=cl>sudo dnf install abrt abrt-cli abrt-addon-ccpp abrt-addon-python3
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Enable and start the services</span>
+</span></span><span class=line><span class=cl>sudo systemctl <span class=nb>enable</span> --now abrt-ccpath abrtd
+</span></span></code></pre></td></tr></table></div></div><h3 id=configuration-1>Configuration</h3><p>ABRT uses a modular plugin architecture. Key configuration files:</p><p><strong><code>/etc/abrt/abrt.conf</code></strong> — Main configuration:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=c1># Max size for created problem directories (in bytes)</span>
+</span></span><span class=line><span class=cl><span class=c1># 0 = unlimited</span>
+</span></span><span class=line><span class=cl><span class=na>MaxCrashReportsSize</span> <span class=o>=</span> <span class=s>5000</span>
+</span></span><span class=line><span class=cl><span class=c1># Delete problem directory when it exceeds this age (in seconds)</span>
+</span></span><span class=line><span class=cl><span class=c1># 0 = never delete</span>
+</span></span><span class=line><span class=cl><span class=na>DeleteUploaded</span> <span class=o>=</span> <span class=s>no</span>
+</span></span><span class=line><span class=cl><span class=c1># Enable automatic bug reporting</span>
+</span></span><span class=line><span class=cl><span class=na>OpenGPGCheck</span> <span class=o>=</span> <span class=s>yes</span>
+</span></span></code></pre></td></tr></table></div></div><p><strong><code>/etc/abrt/plugins/CCpp.conf</code></strong> — C/C++ crash handler:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=c1># Save full coredump (not just backtrace)</span>
+</span></span><span class=line><span class=cl><span class=na>SaveFullCore</span> <span class=o>=</span> <span class=s>yes</span>
+</span></span><span class=line><span class=cl><span class=c1># Generate C++ backtrace</span>
+</span></span><span class=line><span class=cl><span class=na>GenerateBacktrace</span> <span class=o>=</span> <span class=s>yes</span>
+</span></span><span class=line><span class=cl><span class=c1># Analyze C/C++ crashes</span>
+</span></span><span class=line><span class=cl><span class=na>Analyzer</span> <span class=o>=</span> <span class=s>abrt-action-analyze-cpp</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=key-abrt-components>Key ABRT Components</h3><table><thead><tr><th>Component</th><th>Role</th></tr></thead><tbody><tr><td><code>abrtd</code></td><td>Main daemon, watches for crashes</td></tr><tr><td><code>abrt-ccpp</code></td><td>C/C++ crash handler</td></tr><tr><td><code>abrt-action-analyze-c</code></td><td>Crash analysis engine</td></tr><tr><td><code>abrt-action-report-bugzilla</code></td><td>Auto-file Bugzilla bugs</td></tr><tr><td><code>abrt-action-notify-email</code></td><td>Send email notifications</td></tr></tbody></table><h3 id=managing-crashes-with-abrt>Managing Crashes with ABRT</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># List all detected crashes</span>
+</span></span><span class=line><span class=cl>abrt-cli list
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Show details of a specific crash</span>
+</span></span><span class=line><span class=cl>abrt-cli info /var/spool/abrt/ccpp-2026-05-23-12345-1234
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Report a crash to Bugzilla</span>
+</span></span><span class=line><span class=cl>abrt-cli report /var/spool/abrt/ccpp-2026-05-23-12345-1234
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Remove a crash report</span>
+</span></span><span class=line><span class=cl>abrt-cli rm /var/spool/abrt/ccpp-2026-05-23-12345-1234
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Remove all crash reports</span>
+</span></span><span class=line><span class=cl>abrt-cli rm --all
+</span></span></code></pre></td></tr></table></div></div><h3 id=abrt-web-interface>ABRT Web Interface</h3><p>ABRT includes a web UI for centralized crash management:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install the web interface</span>
+</span></span><span class=line><span class=cl>sudo dnf install abrt-web
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Configure Apache and start the service</span>
+</span></span><span class=line><span class=cl>sudo systemctl <span class=nb>enable</span> --now httpd abrt-web
+</span></span></code></pre></td></tr></table></div></div><p>The web interface provides:</p><ul><li>Dashboard of all crash reports</li><li>Filtering by package, executable, or time</li><li>One-click bug filing</li><li>Statistics and trend analysis</li></ul><h3 id=docker-deployment-for-abrt>Docker Deployment for ABRT</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>abrt-daemon</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>fedora:40</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>cap_add</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>SYS_PTRACE</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/var/spool/abrt:/var/spool/abrt</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/etc/abrt:/etc/abrt:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/var/log:/var/log</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>|</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      dnf install -y abrt abrt-cli abrt-addon-ccpp &amp;&amp;
+</span></span></span><span class=line><span class=cl><span class=sd>      systemctl start abrtd &amp;&amp;
+</span></span></span><span class=line><span class=cl><span class=sd>      tail -f /var/log/abrt/abrt-log</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ulimits</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>core</span><span class=p>:</span><span class=w> </span>-<span class=m>1</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=minicoredumper--lightweight-alternative>minicoredumper — Lightweight Alternative</h2><p><strong>minicoredumper</strong> takes a radically different approach: instead of capturing full coredumps (which can be gigabytes), it generates <strong>minimal coredumps</strong> containing only the essential debugging information — stack frames, registers, and a small memory region around the crash point.</p><h3 id=why-minimal-coredumps>Why Minimal Coredumps?</h3><p>Full coredumps of large processes can be 10-50 GB, making them impractical to store, transfer, or analyze. minicoredumper typically produces dumps under 1 MB while retaining enough information for most debugging scenarios.</p><h3 id=installation-2>Installation</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Build from source</span>
+</span></span><span class=line><span class=cl>git clone https://github.com/diamon/minicoredumper.git
+</span></span><span class=line><span class=cl><span class=nb>cd</span> minicoredumper
+</span></span><span class=line><span class=cl>./configure
+</span></span><span class=line><span class=cl>make
+</span></span><span class=line><span class=cl>sudo make install
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Or install from package manager (if available)</span>
+</span></span><span class=line><span class=cl><span class=c1># On some distros:</span>
+</span></span><span class=line><span class=cl>sudo apt install minicoredumper
+</span></span></code></pre></td></tr></table></div></div><h3 id=configuration-2>Configuration</h3><p><strong><code>/etc/minicoredumper.conf</code></strong>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=k>[global]</span>
+</span></span><span class=line><span class=cl><span class=c1># Output directory for minicoredumps</span>
+</span></span><span class=line><span class=cl><span class=na>output_dir</span> <span class=o>=</span> <span class=s>/var/crash/minicoredumps</span>
+</span></span><span class=line><span class=cl><span class=c1># Compress output files</span>
+</span></span><span class=line><span class=cl><span class=na>compress</span> <span class=o>=</span> <span class=s>yes</span>
+</span></span><span class=line><span class=cl><span class=c1># Include full memory maps</span>
+</span></span><span class=line><span class=cl><span class=na>full_memory</span> <span class=o>=</span> <span class=s>no</span>
+</span></span><span class=line><span class=cl><span class=c1># Include thread info</span>
+</span></span><span class=line><span class=cl><span class=na>thread_info</span> <span class=o>=</span> <span class=s>yes</span>
+</span></span><span class=line><span class=cl><span class=c1># Include loaded libraries</span>
+</span></span><span class=line><span class=cl><span class=na>library_info</span> <span class=o>=</span> <span class=s>yes</span>
+</span></span><span class=line><span class=cl><span class=c1># Include file descriptors</span>
+</span></span><span class=line><span class=cl><span class=na>fd_info</span> <span class=o>=</span> <span class=s>yes</span>
+</span></span><span class=line><span class=cl><span class=c1># Include environment variables</span>
+</span></span><span class=line><span class=cl><span class=na>env_info</span> <span class=o>=</span> <span class=s>yes</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>[per_process]</span>
+</span></span><span class=line><span class=cl><span class=c1># Override settings for specific executables</span>
+</span></span><span class=line><span class=cl><span class=c1># /usr/bin/myapp:compress = no</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=setting-minicoredumper-as-the-core-handler>Setting minicoredumper as the Core Handler</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Set as the kernel core pattern handler</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;|/usr/local/bin/minicoredumper %P %u %g %s %t %c %h %e&#34;</span> <span class=p>|</span>   sudo tee /proc/sys/kernel/core_pattern
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Make persistent across reboots</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;kernel.core_pattern=|/usr/local/bin/minicoredumper %P %u %g %s %t %c %h %e&#34;</span> <span class=p>|</span>   sudo tee -a /etc/sysctl.d/99-corepattern.conf
+</span></span></code></pre></td></tr></table></div></div><h3 id=viewing-minicoredumps>Viewing Minicoredumps</h3><p>minicoredumper produces standard ELF core files (just smaller), so all standard tools work:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># List generated dumps</span>
+</span></span><span class=line><span class=cl>ls -lh /var/crash/minicoredumps/
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Analyze with GDB</span>
+</span></span><span class=line><span class=cl>gdb /usr/bin/myapp /var/crash/minicoredumps/core.12345
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Extract strings from a minicoredump</span>
+</span></span><span class=line><span class=cl>strings /var/crash/minicoredumps/core.12345 <span class=p>|</span> head -50
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Use readelf to inspect</span>
+</span></span><span class=line><span class=cl>readelf -n /var/crash/minicoredumps/core.12345
+</span></span></code></pre></td></tr></table></div></div><h2 id=size-comparison-full-vs-minimal-coredumps>Size Comparison: Full vs Minimal Coredumps</h2><table><thead><tr><th>Process Size</th><th>Full Coredump</th><th>minicoredumper Output</th><th>Compression Ratio</th></tr></thead><tbody><tr><td>100 MB process</td><td>100 MB</td><td>200 KB</td><td>500x</td></tr><tr><td>1 GB process</td><td>1 GB</td><td>500 KB</td><td>2000x</td></tr><tr><td>10 GB process</td><td>10 GB</td><td>800 KB</td><td>12,500x</td></tr><tr><td>50 GB database</td><td>50 GB</td><td>1.2 MB</td><td>41,667x</td></tr></tbody></table><p>The savings are dramatic, especially for large server processes.</p><h2 id=choosing-the-right-coredump-manager>Choosing the Right Coredump Manager</h2><table><thead><tr><th>Scenario</th><th>Recommended Tool</th></tr></thead><tbody><tr><td><strong>Default systemd distro</strong></td><td>systemd-coredump (already installed)</td></tr><tr><td><strong>Fedora/RHEL environments</strong></td><td>ABRT (native integration)</td></tr><tr><td><strong>Need automatic bug filing</strong></td><td>ABRT (Bugzilla/email integration)</td></tr><tr><td><strong>Large processes (databases, JVMs)</strong></td><td>minicoredumper (minimal dumps)</td></tr><tr><td><strong>Disk space constrained</strong></td><td>minicoredumper (KB vs GB)</td></tr><tr><td><strong>Centralized crash monitoring</strong></td><td>ABRT + ABRT Web</td></tr><tr><td><strong>Container environments</strong></td><td>systemd-coredump (journal integration)</td></tr><tr><td><strong>Minimal overhead</strong></td><td>minicoredumper (fastest capture)</td></tr></tbody></table><h2 id=why-self-host-coredump-management>Why Self-Host Coredump Management?</h2><p>Running your own coredump management infrastructure gives you complete control over crash data. When a production process crashes, the difference between having a coredump and not having one is the difference between a 5-minute root-cause analysis and a days-long investigation.</p><p><strong>Data ownership and privacy</strong>: Coredumps contain process memory, which may include sensitive data — credentials in memory, customer data, cryptographic keys. Self-hosting ensures crash data never leaves your infrastructure. With systemd-coredump, cores stay in your journal; with minicoredumper, you control exactly what memory regions are captured, reducing exposure.</p><p><strong>Storage cost control</strong>: Full coredumps of large processes can consume terabytes of disk space on busy servers. minicoredumper reduces this by orders of magnitude — a 50 GB database process produces a 1.2 MB dump instead. Even with systemd-coredump&rsquo;s lz4 compression, the size savings from minicoredumper are dramatic for memory-heavy workloads.</p><p><strong>Compliance requirements</strong>: Many regulated industries (finance, healthcare, government) require that all crash data remain on-premises. ABRT&rsquo;s ability to file bugs to an internal Bugzilla instance (rather than a public tracker) satisfies these requirements while still providing automated crash reporting.</p><p><strong>Debugging workflow integration</strong>: Self-hosted coredump management integrates with your existing monitoring stack. For storage monitoring best practices, see our <a href=../self-hosted-disk-health-monitoring-scrutiny-smartd-nvme-cli-guide-2026/>disk health monitoring guide</a>. For log-based crash detection, our <a href=../2026-04-18-rsyslog-vs-syslog-ng-vs-vector-self-hosted-syslog-log-aggregation-guide-2026/>syslog aggregation comparison</a> covers centralized log collection that complements coredump analysis. And for GPU-related crashes, our <a href=../2026-04-22-nvtop-vs-dcgm-exporter-vs-netdata-self-hosted-gpu-monitoring-guide-2026/>GPU monitoring guide</a> shows how to correlate hardware metrics with process crashes.</p><h2 id=faq>FAQ</h2><h3 id=what-is-a-coredump-and-why-do-i-need-one>What is a coredump and why do I need one?</h3><p>A coredump is a file containing the complete memory state of a process at the moment it crashed. It includes register values, stack traces, heap contents, and loaded library information. When a process segfaults or receives a fatal signal, the kernel can write this snapshot to disk. Without a coredump, debugging a production crash often requires reproducing the issue — which may be impossible for intermittent bugs. With a coredump, you can load it into GDB or LLDB and inspect the exact state at crash time.</p><h3 id=how-much-disk-space-do-coredumps-consume>How much disk space do coredumps consume?</h3><p>Full coredumps are approximately the size of the process&rsquo;s RSS (resident set size) at crash time. A 4 GB database process will produce a ~4 GB coredump. systemd-coredump compresses these with lz4 (typically 3-5x reduction). minicoredumper produces minimal coredumps under 1 MB regardless of process size by capturing only stack frames and critical memory regions. ABRT stores full coredumps plus metadata files (backtrace, environment, maps).</p><h3 id=can-i-use-multiple-coredump-handlers-simultaneously>Can I use multiple coredump handlers simultaneously?</h3><p>No. The kernel supports only one core_pattern handler at a time. However, you can chain handlers: write a wrapper script that invokes multiple tools sequentially. For example, a script could first save a full coredump via systemd-coredump, then invoke minicoredumper to produce a minimal dump. Or you could configure systemd-coredump as the primary handler and use ABRT&rsquo;s post-crash analysis addon to process the stored cores.</p><h3 id=is-minicoredumper-suitable-for-production-use>Is minicoredumper suitable for production use?</h3><p>Yes, but with caveats. Minimal coredumps are excellent for most debugging scenarios — null pointer dereferences, assertion failures, and stack overflows are all diagnosable with minimal dumps. However, if you need to debug heap corruption, memory leaks, or issues requiring full heap inspection, you will need a full coredump. A practical approach: use minicoredumper as the default handler and configure specific critical processes to use full coredumps via per-process core pattern overrides.</p><h3 id=how-do-i-disable-coredumps-entirely>How do I disable coredumps entirely?</h3><p>To disable coredumps system-wide:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;core&#34;</span> <span class=p>|</span> sudo tee /proc/sys/kernel/core_pattern
+</span></span><span class=line><span class=cl><span class=nb>ulimit</span> -c <span class=m>0</span>
+</span></span></code></pre></td></tr></table></div></div><p>To set in sysctl persistently:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;kernel.core_pattern=core&#34;</span> <span class=p>|</span> sudo tee -a /etc/sysctl.d/99-nocore.conf
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;* soft core 0&#34;</span> <span class=p>|</span> sudo tee -a /etc/security/limits.d/99-nocore.conf
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;* hard core 0&#34;</span> <span class=p>|</span> sudo tee -a /etc/security/limits.d/99-nocore.conf
+</span></span></code></pre></td></tr></table></div></div><h3 id=does-abrt-work-on-non-fedora-distributions>Does ABRT work on non-Fedora distributions?</h3><p>Yes, ABRT can be installed on any Linux distribution, though it is optimized for Fedora/RHEL. On Debian/Ubuntu, you can install it from the repositories (<code>apt install abrt abrt-cli</code>), but some plugins may require additional configuration. The core crash capture and CLI functionality works across distributions. The Bugzilla integration and web interface may need custom endpoint configuration for non-Fedora bug trackers.</p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted Linux Coredump Management: systemd-coredump vs ABRT vs minicoredumper (2026)","description":"Compare three Linux coredump management solutions: systemd-coredump, ABRT, and minicoredumper. Learn how to configure, deploy, and analyze crash dumps on self-hosted Linux servers.","datePublished":"2026-05-22","dateModified":"2026-05-22","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20Linux%20Coredump%20Management%3a%20systemd-coredump%20vs%20ABRT%20vs%20minicoredumper%20%282026%29&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-22-self-hosted-linux-coredump-management-systemd-abrt-minicoredumper-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-22-self-hosted-linux-coredump-management-systemd-abrt-minicoredumper-guide%2f&t=Self-Hosted%20Linux%20Coredump%20Management%3a%20systemd-coredump%20vs%20ABRT%20vs%20minicoredumper%20%282026%29" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/linux/ class=tag-link>Linux</a>
+<a href=/tags/system-administration/ class=tag-link>System-Administration</a>
+<a href=/tags/debugging/ class=tag-link>Debugging</a>
+<a href=/tags/crash-management/ class=tag-link>Crash-Management</a>
+<a href=/tags/self-hosted/ class=tag-link>Self-Hosted</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-05-22-self-hosted-linux-disk-quota-management-quota-quotatool-webmin-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted Linux Disk Quota Management: quota Tools vs quotatool vs Webmin (2026)</h3><div class=post-excerpt>On any shared Linux server — file servers, web hosting, VPS platforms, or multi-tenant environments — uncontrolled disk …</div><div class=post-footer><span class=post-date>May 22, 2026</span></div></a><a href=/posts/2026-05-22-self-hosted-linux-temp-file-management-systemd-tmpfiles-tmpwatch-tmpreaper-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted Linux Temp File Management: systemd-tmpfiles vs tmpwatch vs tmpreaper (2026)</h3><div class=post-excerpt>Every Linux server accumulates temporary files: application caches, session data, crash reports, package manager …</div><div class=post-footer><span class=post-date>May 22, 2026</span></div></a><a href=/posts/2026-05-22-self-hosted-linux-performance-profiling-perf-bcc-tools-sysstat-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted Linux Performance Profiling: perf vs bcc-tools vs sysstat (2026)</h3><div class=post-excerpt>When self-hosted servers experience performance issues — slow database queries, high CPU usage, memory leaks, or I/O …</div><div class=post-footer><span class=post-date>May 22, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>

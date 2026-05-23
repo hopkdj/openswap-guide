@@ -1,0 +1,281 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted Linux Crash Dump Analysis: crash vs makedumpfile vs kdump | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-05-29-self-hosted-linux-crash-dump-analysis-crash-makedumpfile-kdump-guide/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted Linux Crash Dump Analysis: crash vs makedumpfile vs kdump"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-05-29-self-hosted-linux-crash-dump-analysis-crash-makedumpfile-kdump-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-05-23T00:00:00Z"><meta property="article:modified_time" content="2026-05-23T00:00:00Z"><meta property="article:tag" content="linux"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted Linux Crash Dump Analysis: crash vs makedumpfile vs kdump"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted Linux Crash Dump Analysis: crash vs makedumpfile vs kdump","description":"\u003cp\u003eWhen a Linux kernel panics, the system loses all in-memory diagnostic information unless a crash dump mechanism is configured. \u003cstrong\u003eKernel crash dumps\u003c\/strong\u003e capture the complete memory state at the moment of failure, enabling post-mortem analysis that identifies root causes of system crashes. This guide compares three essential tools for Linux crash dump analysis and management.\u003c\/p\u003e","datePublished":"2026-05-23T00:00:00Z","dateModified":"2026-05-23T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-05-29-self-hosted-linux-crash-dump-analysis-crash-makedumpfile-kdump-guide\/"},"keywords":["linux","crash-analysis","system-administration","debugging","kdump"],"articleSection":"linux","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted Linux Crash Dump Analysis: crash vs makedumpfile vs kdump","item":"https:\/\/www.pistack.xyz\/posts\/2026-05-29-self-hosted-linux-crash-dump-analysis-crash-makedumpfile-kdump-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Linux</span>
+<span class="tag tag-purple">Crash-Analysis</span>
+<span class="tag tag-purple">System-Administration</span></div><h1>Self-Hosted Linux Crash Dump Analysis: crash vs makedumpfile vs kdump</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>May 23, 2026</span>
+<span>10 min read</span>
+<span>Updated May 23, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#why-crash-dump-analysis-matters>Why Crash Dump Analysis Matters</a></li><li><a href=#kdump-the-crash-dump-capture-framework>kdump: The Crash Dump Capture Framework</a><ul><li><a href=#how-kdump-works>How kdump Works</a></li><li><a href=#kdump-configuration>kdump Configuration</a></li><li><a href=#kdump-storage-configuration>kdump Storage Configuration</a></li><li><a href=#kdump-advantages>kdump Advantages</a></li><li><a href=#kdump-limitations>kdump Limitations</a></li></ul></li><li><a href=#crash-the-kernel-crash-analysis-utility>crash: The Kernel Crash Analysis Utility</a><ul><li><a href=#how-crash-works>How crash Works</a></li><li><a href=#common-crash-analysis-workflows>Common crash Analysis Workflows</a></li><li><a href=#crash-advantages>crash Advantages</a></li><li><a href=#crash-limitations>crash Limitations</a></li></ul></li><li><a href=#makedumpfile-crash-dump-compression-and-filtering>makedumpfile: Crash Dump Compression and Filtering</a><ul><li><a href=#how-makedumpfile-works>How makedumpfile Works</a></li><li><a href=#dump-level-filtering>Dump Level Filtering</a></li><li><a href=#makedumpfile-with-kdump>makedumpfile with kdump</a></li><li><a href=#makedumpfile-advantages>makedumpfile Advantages</a></li><li><a href=#makedumpfile-limitations>makedumpfile Limitations</a></li></ul></li><li><a href=#comparison-table>Comparison Table</a></li><li><a href=#complete-crash-dump-workflow>Complete Crash Dump Workflow</a><ul><li><a href=#step-1-configure-kdump>Step 1: Configure kdump</a></li><li><a href=#step-2-capture-a-crash-dump>Step 2: Capture a Crash Dump</a></li><li><a href=#step-3-compress-with-makedumpfile>Step 3: Compress with makedumpfile</a></li><li><a href=#step-4-analyze-with-crash>Step 4: Analyze with crash</a></li></ul></li><li><a href=#why-self-host-crash-dump-analysis>Why Self-Host Crash Dump Analysis?</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#what-happens-when-a-linux-kernel-panics-without-kdump-configured>What happens when a Linux kernel panics without kdump configured?</a></li><li><a href=#how-much-memory-does-kdump-reserve-for-the-crash-kernel>How much memory does kdump reserve for the crash kernel?</a></li><li><a href=#can-i-analyze-a-crash-dump-from-a-different-kernel-version>Can I analyze a crash dump from a different kernel version?</a></li><li><a href=#how-do-i-reduce-crash-dump-size-without-losing-important-data>How do I reduce crash dump size without losing important data?</a></li><li><a href=#is-crash-dump-analysis-only-useful-for-kernel-developers>Is crash dump analysis only useful for kernel developers?</a></li><li><a href=#how-do-i-automate-crash-dump-analysis>How do I automate crash dump analysis?</a></li><li><a href=#can-kdump-capture-crashes-caused-by-hardware-failures>Can kdump capture crashes caused by hardware failures?</a></li><li><a href=#what-is-the-difference-between-a-full-dump-and-a-filtered-dump>What is the difference between a full dump and a filtered dump?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><p>When a Linux kernel panics, the system loses all in-memory diagnostic information unless a crash dump mechanism is configured. <strong>Kernel crash dumps</strong> capture the complete memory state at the moment of failure, enabling post-mortem analysis that identifies root causes of system crashes. This guide compares three essential tools for Linux crash dump analysis and management.</p><h2 id=why-crash-dump-analysis-matters>Why Crash Dump Analysis Matters</h2><p>Production Linux servers crash due to kernel bugs, hardware failures, driver issues, or resource exhaustion. Without a crash dump, administrators are left guessing about the root cause. With a proper crash dump, you can:</p><ul><li><strong>Identify the exact kernel function</strong> that triggered the panic</li><li><strong>Examine memory contents</strong> of corrupted data structures</li><li><strong>Trace call stacks</strong> leading to the failure</li><li><strong>Correlate crashes</strong> with specific workloads or configuration changes</li><li><strong>Build evidence</strong> for bug reports to kernel maintainers</li></ul><p>For organizations running mission-critical infrastructure, crash dump analysis is not optional — it is a fundamental component of incident response and root cause analysis.</p><h2 id=kdump-the-crash-dump-capture-framework>kdump: The Crash Dump Capture Framework</h2><p><strong>GitHub:</strong> <a href=https://github.com/horms/kexec-tools>horms/kexec-tools</a> | <strong>Stars:</strong> 80+ | <strong>Last Updated:</strong> May 2026</p><p>kdump is the standard Linux kernel crash dump capture mechanism, built on top of kexec. It reserves a small portion of memory for a <strong>crash kernel</strong> that boots when the primary kernel panics, then captures the primary kernel memory to disk.</p><h3 id=how-kdump-works>How kdump Works</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-gdscript3 data-lang=gdscript3><span class=line><span class=cl><span class=o>+-----------------------------------------+</span>
+</span></span><span class=line><span class=cl><span class=o>|</span>            <span class=n>Primary</span> <span class=n>Kernel</span>               <span class=o>|</span>
+</span></span><span class=line><span class=cl><span class=o>|</span>  <span class=p>(</span><span class=n>running</span> <span class=n>production</span> <span class=n>workloads</span><span class=p>)</span>         <span class=o>|</span>
+</span></span><span class=line><span class=cl><span class=o>|</span>                                         <span class=o>|</span>
+</span></span><span class=line><span class=cl><span class=o>|</span>  <span class=o>+-------------------+</span>                  <span class=o>|</span>
+</span></span><span class=line><span class=cl><span class=o>|</span>  <span class=o>|</span>   <span class=n>Crash</span> <span class=n>Kernel</span>    <span class=o>|</span>  <span class=o>&lt;-</span> <span class=n>Reserved</span> <span class=n>memory</span>
+</span></span><span class=line><span class=cl><span class=o>|</span>  <span class=o>|</span>   <span class=p>(</span><span class=n>minimal</span> <span class=n>init</span><span class=p>)</span>  <span class=o>|</span>     <span class=n>region</span>
+</span></span><span class=line><span class=cl><span class=o>|</span>  <span class=o>+-------------------+</span>                  <span class=o>|</span>
+</span></span><span class=line><span class=cl><span class=o>+-----------------------------------------+</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>On</span> <span class=n>panic</span> <span class=o>-&gt;</span> <span class=n>kexec</span> <span class=n>boots</span> <span class=n>crash</span> <span class=n>kernel</span> <span class=o>-&gt;</span> <span class=n>dumps</span> <span class=n>memory</span> <span class=n>to</span> <span class=n>disk</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=kdump-configuration>kdump Configuration</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install kdump tools</span>
+</span></span><span class=line><span class=cl>sudo apt install linux-crashdump  <span class=c1># Debian/Ubuntu</span>
+</span></span><span class=line><span class=cl>sudo yum install kexec-tools       <span class=c1># RHEL/CentOS</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Configure crash kernel memory reservation (in /etc/default/grub)</span>
+</span></span><span class=line><span class=cl><span class=nv>GRUB_CMDLINE_LINUX</span><span class=o>=</span><span class=s2>&#34;... crashkernel=256M&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Update GRUB and reboot</span>
+</span></span><span class=line><span class=cl>sudo update-grub  <span class=c1># or grub2-mkconfig -o /boot/grub2/grub.cfg</span>
+</span></span><span class=line><span class=cl>sudo reboot
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Enable and start kdump</span>
+</span></span><span class=line><span class=cl>sudo systemctl <span class=nb>enable</span> kdump
+</span></span><span class=line><span class=cl>sudo systemctl start kdump
+</span></span><span class=line><span class=cl>sudo systemctl status kdump
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Test kdump (CAUTION: this will crash the system)</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=m>1</span> <span class=p>|</span> sudo tee /proc/sys/kernel/sysrq
+</span></span><span class=line><span class=cl><span class=nb>echo</span> c <span class=p>|</span> sudo tee /proc/sysrq-trigger
+</span></span></code></pre></td></tr></table></div></div><h3 id=kdump-storage-configuration>kdump Storage Configuration</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=c1># /etc/kdump.conf - where to save crash dumps</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Save to local filesystem</span>
+</span></span><span class=line><span class=cl><span class=na>path /var/crash</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Save to remote server via SSH</span>
+</span></span><span class=line><span class=cl><span class=na>ssh user@dump-server</span>
+</span></span><span class=line><span class=cl><span class=na>sshkey /root/.ssh/kdump_id_rsa</span>
+</span></span><span class=line><span class=cl><span class=na>path /var/crash/dumps</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Save to NFS mount</span>
+</span></span><span class=line><span class=cl><span class=na>nfs dump-server:/export/crashes</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Compression</span>
+</span></span><span class=line><span class=cl><span class=na>core_collector makedumpfile -l --message-level 1 -d 31</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=kdump-advantages>kdump Advantages</h3><ul><li><strong>Industry standard:</strong> Pre-installed on most major Linux distributions</li><li><strong>Flexible storage:</strong> Supports local disk, SSH, NFS, and raw devices</li><li><strong>Integration:</strong> Works seamlessly with systemd and standard Linux tooling</li><li><strong>Proven reliability:</strong> Used in production by thousands of enterprises worldwide</li></ul><h3 id=kdump-limitations>kdump Limitations</h3><ul><li><strong>Memory overhead:</strong> Requires reserving RAM for the crash kernel (typically 256MB-1GB)</li><li><strong>Single dump:</strong> Only captures the most recent crash (older dumps must be manually archived)</li><li><strong>No analysis built in:</strong> kdump captures the dump but requires separate tools for analysis</li></ul><h2 id=crash-the-kernel-crash-analysis-utility>crash: The Kernel Crash Analysis Utility</h2><p><strong>GitHub:</strong> <a href=https://github.com/crash-utility/crash>crash-utility/crash</a> | <strong>Stars:</strong> 949+ | <strong>Last Updated:</strong> May 2026</p><p>The <code>crash</code> utility is the primary tool for analyzing Linux kernel crash dumps. It provides an interactive debugging interface similar to GDB, but specialized for kernel memory analysis.</p><h3 id=how-crash-works>How crash Works</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install crash</span>
+</span></span><span class=line><span class=cl>sudo apt install crash        <span class=c1># Debian/Ubuntu</span>
+</span></span><span class=line><span class=cl>sudo yum install crash        <span class=c1># RHEL/CentOS</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Analyze a crash dump</span>
+</span></span><span class=line><span class=cl>crash /usr/lib/debug/lib/modules/<span class=k>$(</span>uname -r<span class=k>)</span>/vmlinux /var/crash/20260523/vmcore
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Basic analysis commands</span>
+</span></span><span class=line><span class=cl>crash&gt; bt              <span class=c1># Backtrace of all tasks</span>
+</span></span><span class=line><span class=cl>crash&gt; ps              <span class=c1># Process list</span>
+</span></span><span class=line><span class=cl>crash&gt; log             <span class=c1># Kernel log buffer (dmesg)</span>
+</span></span><span class=line><span class=cl>crash&gt; vm              <span class=c1># Virtual memory info</span>
+</span></span><span class=line><span class=cl>crash&gt; sys             <span class=c1># System information</span>
+</span></span><span class=line><span class=cl>crash&gt; rd &lt;address&gt;    <span class=c1># Read memory at address</span>
+</span></span><span class=line><span class=cl>crash&gt; struct task_struct  <span class=c1># Display structure definition</span>
+</span></span><span class=line><span class=cl>crash&gt; kmem -i         <span class=c1># Kernel memory usage</span>
+</span></span><span class=line><span class=cl>crash&gt; runq            <span class=c1># Run queue state</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=common-crash-analysis-workflows>Common crash Analysis Workflows</h3><p><strong>Finding the panic cause:</strong></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>crash&gt; log
+</span></span><span class=line><span class=cl><span class=c1># Look for the panic message and call trace</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>crash&gt; bt
+</span></span><span class=line><span class=cl><span class=c1># Shows the backtrace of all processes at crash time</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>crash&gt; rd -f
+</span></span><span class=line><span class=cl><span class=c1># Display the panic frame</span>
+</span></span></code></pre></td></tr></table></div></div><p><strong>Examining memory corruption:</strong></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>crash&gt; ps
+</span></span><span class=line><span class=cl><span class=c1># Find processes running at crash time</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>crash&gt; struct task_struct &lt;address&gt;
+</span></span><span class=line><span class=cl><span class=c1># Examine specific process memory</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>crash&gt; kmem -s
+</span></span><span class=line><span class=cl><span class=c1># Show slab cache usage</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>crash&gt; vm -p &lt;pid&gt;
+</span></span><span class=line><span class=cl><span class=c1># Show page tables for a specific process</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=crash-advantages>crash Advantages</h3><ul><li><strong>Comprehensive analysis:</strong> Full kernel debugging capabilities</li><li><strong>Interactive interface:</strong> Explore memory, structures, and state freely</li><li><strong>Scriptable:</strong> Supports crash scripts for automated analysis</li><li><strong>Cross-platform:</strong> Works on x86, ARM, ARM64, and other architectures</li></ul><h3 id=crash-limitations>crash Limitations</h3><ul><li><strong>Steep learning curve:</strong> Requires deep kernel knowledge to use effectively</li><li><strong>Manual analysis:</strong> No automated root cause identification</li><li><strong>Debug symbols required:</strong> Needs vmlinux with debug symbols for full functionality</li></ul><h2 id=makedumpfile-crash-dump-compression-and-filtering>makedumpfile: Crash Dump Compression and Filtering</h2><p><strong>GitHub:</strong> <a href=https://github.com/makedumpfile/makedumpfile>makedumpfile/makedumpfile</a> | <strong>Stars:</strong> 61+ | <strong>Last Updated:</strong> May 2026</p><p><code>makedumpfile</code> is a specialized tool for reducing the size of kernel crash dumps by filtering out unnecessary pages and compressing the remaining data. A full memory dump of a 64GB server can exceed 64GB in size — makedumpfile typically reduces this by 80-95%.</p><h3 id=how-makedumpfile-works>How makedumpfile Works</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Create a filtered and compressed dump</span>
+</span></span><span class=line><span class=cl>makedumpfile -l --message-level <span class=m>1</span> -d <span class=m>31</span> /proc/kcore /var/crash/vmcore.dump
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Options explained:</span>
+</span></span><span class=line><span class=cl><span class=c1># -l              : Use LZO compression (faster)</span>
+</span></span><span class=line><span class=cl><span class=c1># --message-level : Verbosity (1 = errors only)</span>
+</span></span><span class=line><span class=cl><span class=c1># -d 31           : Exclude zero, cache, user, and free pages</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Convert a dumpfile back to the original format</span>
+</span></span><span class=line><span class=cl>makedumpfile -R /var/crash/vmcore &lt; /var/crash/vmcore.dump
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Extract specific data from a dump</span>
+</span></span><span class=line><span class=cl>makedumpfile --dump-dmesg /var/crash/vmcore.dump &gt; dmesg.txt
+</span></span></code></pre></td></tr></table></div></div><h3 id=dump-level-filtering>Dump Level Filtering</h3><table><thead><tr><th>Dump Level</th><th>Pages Excluded</th><th>Typical Size Reduction</th></tr></thead><tbody><tr><td><code>-d 1</code></td><td>Zero pages</td><td>10-20%</td></tr><tr><td><code>-d 3</code></td><td>Zero + Cache</td><td>30-50%</td></tr><tr><td><code>-d 7</code></td><td>Zero + Cache + User</td><td>50-70%</td></tr><tr><td><code>-d 15</code></td><td>Zero + Cache + User + Free</td><td>60-80%</td></tr><tr><td><code>-d 31</code></td><td>All above + others</td><td>80-95%</td></tr></tbody></table><h3 id=makedumpfile-with-kdump>makedumpfile with kdump</h3><p>The most common use case is integrating makedumpfile with kdump as the core collector:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=c1># /etc/kdump.conf</span>
+</span></span><span class=line><span class=cl><span class=na>core_collector makedumpfile -l --message-level 1 -d 31</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Or with compression level tuning:</span>
+</span></span><span class=line><span class=cl><span class=na>core_collector makedumpfile -c -l --message-level 1 -d 31</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=makedumpfile-advantages>makedumpfile Advantages</h3><ul><li><strong>Massive size reduction:</strong> 80-95% smaller dumps save significant storage</li><li><strong>Faster capture:</strong> Less data to write means shorter dump times</li><li><strong>Configurable filtering:</strong> Choose what data to keep based on analysis needs</li><li><strong>Standard integration:</strong> Works as kdump core_collector out of the box</li></ul><h3 id=makedumpfile-limitations>makedumpfile Limitations</h3><ul><li><strong>Data loss risk:</strong> Aggressive filtering may exclude pages needed for analysis</li><li><strong>Architecture dependency:</strong> Some filter options are architecture-specific</li><li><strong>Version compatibility:</strong> makedumpfile versions must match the kernel version being analyzed</li></ul><h2 id=comparison-table>Comparison Table</h2><table><thead><tr><th>Feature</th><th>kdump</th><th>crash</th><th>makedumpfile</th></tr></thead><tbody><tr><td><strong>Purpose</strong></td><td>Capture crash dumps</td><td>Analyze crash dumps</td><td>Compress/filter dumps</td></tr><tr><td><strong>GitHub Stars</strong></td><td>80+ (kexec-tools)</td><td>949+</td><td>61+</td></tr><tr><td><strong>Type</strong></td><td>Framework</td><td>Analysis tool</td><td>Filter/compression tool</td></tr><tr><td><strong>Memory Required</strong></td><td>256MB-1GB reserved</td><td>None (post-capture)</td><td>None (post-capture)</td></tr><tr><td><strong>Interactive</strong></td><td>No</td><td>Yes</td><td>No</td></tr><tr><td><strong>Automation</strong></td><td>Automatic on panic</td><td>Manual analysis</td><td>Scriptable</td></tr><tr><td><strong>Storage</strong></td><td>Local, SSH, NFS, raw</td><td>N/A (reads dump files)</td><td>N/A (processes dump files)</td></tr><tr><td><strong>Size Reduction</strong></td><td>No (raw dump)</td><td>N/A</td><td>80-95% reduction</td></tr><tr><td><strong>Architecture Support</strong></td><td>x86, ARM, ARM64, PPC</td><td>x86, ARM, ARM64, PPC</td><td>x86, ARM, ARM64</td></tr><tr><td><strong>Distribution Support</strong></td><td>All major distros</td><td>All major distros</td><td>All major distros</td></tr><tr><td><strong>Learning Curve</strong></td><td>Low (configure once)</td><td>High (kernel debugging)</td><td>Low (command-line options)</td></tr></tbody></table><h2 id=complete-crash-dump-workflow>Complete Crash Dump Workflow</h2><h3 id=step-1-configure-kdump>Step 1: Configure kdump</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Reserve memory for crash kernel</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s1>&#39;GRUB_CMDLINE_LINUX=&#34;${GRUB_CMDLINE_LINUX} crashkernel=512M&#34;&#39;</span> &gt;&gt; /etc/default/grub
+</span></span><span class=line><span class=cl>sudo update-grub
+</span></span><span class=line><span class=cl>sudo reboot
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Enable kdump</span>
+</span></span><span class=line><span class=cl>sudo systemctl <span class=nb>enable</span> kdump
+</span></span><span class=line><span class=cl>sudo systemctl start kdump
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Configure storage and compression</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s1>&#39;core_collector makedumpfile -l --message-level 1 -d 31&#39;</span> <span class=p>|</span> sudo tee -a /etc/kdump.conf
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s1>&#39;path /var/crash&#39;</span> <span class=p>|</span> sudo tee -a /etc/kdump.conf
+</span></span><span class=line><span class=cl>sudo systemctl restart kdump
+</span></span></code></pre></td></tr></table></div></div><h3 id=step-2-capture-a-crash-dump>Step 2: Capture a Crash Dump</h3><p>When the kernel panics, kdump automatically boots the crash kernel and captures memory. The dump is saved to <code>/var/crash/&lt;timestamp>/vmcore</code>.</p><h3 id=step-3-compress-with-makedumpfile>Step 3: Compress with makedumpfile</h3><p>If not configured as the core_collector, compress manually:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>makedumpfile -l --message-level <span class=m>1</span> -d <span class=m>31</span> /var/crash/vmcore /var/crash/vmcore.dump
+</span></span></code></pre></td></tr></table></div></div><h3 id=step-4-analyze-with-crash>Step 4: Analyze with crash</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install debug symbols</span>
+</span></span><span class=line><span class=cl>sudo apt install linux-image-<span class=k>$(</span>uname -r<span class=k>)</span>-dbgsym  <span class=c1># Debian/Ubuntu</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Launch crash</span>
+</span></span><span class=line><span class=cl>crash /usr/lib/debug/lib/modules/<span class=k>$(</span>uname -r<span class=k>)</span>/vmlinux /var/crash/vmcore.dump
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Analyze</span>
+</span></span><span class=line><span class=cl>crash&gt; bt          <span class=c1># Find the crash backtrace</span>
+</span></span><span class=line><span class=cl>crash&gt; log         <span class=c1># Read kernel messages</span>
+</span></span><span class=line><span class=cl>crash&gt; ps          <span class=c1># See running processes</span>
+</span></span><span class=line><span class=cl>crash&gt; sys         <span class=c1># System state</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=why-self-host-crash-dump-analysis>Why Self-Host Crash Dump Analysis?</h2><p>Self-hosted crash dump analysis tools give your team complete control over the diagnostic process:</p><ul><li><strong>Data privacy:</strong> Crash dumps may contain sensitive memory contents — keeping them on-premises avoids exposing proprietary data to third-party analysis services</li><li><strong>Custom analysis scripts:</strong> Build automated analysis workflows tailored to your specific workloads and common failure patterns</li><li><strong>Historical comparison:</strong> Maintain a crash dump archive for trend analysis, identifying recurring issues across kernel versions or hardware generations</li><li><strong>No subscription costs:</strong> All three tools are open source and free to use, unlike commercial crash analysis platforms</li><li><strong>Integration with existing tooling:</strong> Feed crash data into your existing monitoring, alerting, and incident management systems</li></ul><p>For related Linux system administration topics, see our <a href=../2026-05-22-self-hosted-linux-performance-profiling-perf-bcc-tools-sysstat-guide/>Linux performance profiling guide</a> and <a href=../2026-05-22-self-hosted-disk-encryption-automation-clevis-tang-luks2-tpm2-systemd-guide/>disk encryption automation guide</a>.</p><h2 id=faq>FAQ</h2><h3 id=what-happens-when-a-linux-kernel-panics-without-kdump-configured>What happens when a Linux kernel panics without kdump configured?</h3><p>Without kdump, the kernel halts immediately and all in-memory diagnostic information is lost. The system must be rebooted manually, and the only available information is what was written to disk before the panic (typically just the last few lines of the kernel log via pstore or serial console).</p><h3 id=how-much-memory-does-kdump-reserve-for-the-crash-kernel>How much memory does kdump reserve for the crash kernel?</h3><p>The recommended crash kernel size is 256MB for systems with up to 8GB RAM, 512MB for systems with 8-32GB RAM, and 1GB for systems with more than 32GB RAM. Larger systems with complex memory layouts may need more reserved memory.</p><h3 id=can-i-analyze-a-crash-dump-from-a-different-kernel-version>Can I analyze a crash dump from a different kernel version?</h3><p>No. The <code>crash</code> utility requires debug symbols (vmlinux) that exactly match the kernel version and build that generated the dump. Using mismatched symbols will produce incorrect analysis results or fail to load.</p><h3 id=how-do-i-reduce-crash-dump-size-without-losing-important-data>How do I reduce crash dump size without losing important data?</h3><p>Use makedumpfile with dump level <code>-d 31</code> for maximum compression. This excludes zero pages, cache pages, user pages, and free memory. If you need user-space memory for analysis, use <code>-d 7</code> instead, which keeps user pages but still excludes zero, cache, and free pages.</p><h3 id=is-crash-dump-analysis-only-useful-for-kernel-developers>Is crash dump analysis only useful for kernel developers?</h3><p>No. System administrators can use crash dumps to identify hardware failures (ECC memory errors, disk controller issues), driver problems (recently installed or updated drivers), and configuration issues (memory pressure, resource exhaustion). Even basic commands like <code>bt</code> and <code>log</code> provide valuable diagnostic information.</p><h3 id=how-do-i-automate-crash-dump-analysis>How do I automate crash dump analysis?</h3><p>Write crash scripts that run specific commands and save the output:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>cat <span class=s>&lt;&lt; &#39;EOF&#39; &gt; analysis.crash
+</span></span></span><span class=line><span class=cl><span class=s>bt
+</span></span></span><span class=line><span class=cl><span class=s>log
+</span></span></span><span class=line><span class=cl><span class=s>ps
+</span></span></span><span class=line><span class=cl><span class=s>sys
+</span></span></span><span class=line><span class=cl><span class=s>kmem -i
+</span></span></span><span class=line><span class=cl><span class=s>EOF</span>
+</span></span><span class=line><span class=cl>crash -s analysis.crash /path/to/vmlinux /path/to/vmcore
+</span></span></code></pre></td></tr></table></div></div><h3 id=can-kdump-capture-crashes-caused-by-hardware-failures>Can kdump capture crashes caused by hardware failures?</h3><p>Yes, if the hardware failure does not prevent the crash kernel from booting. Memory errors (ECC), CPU failures, and PCI device errors can all be captured. However, storage controller failures may prevent the dump from being written to disk — in such cases, configure kdump to save to a network location (SSH or NFS).</p><h3 id=what-is-the-difference-between-a-full-dump-and-a-filtered-dump>What is the difference between a full dump and a filtered dump?</h3><p>A full dump captures all kernel memory pages exactly as they are in RAM. A filtered dump (created with makedumpfile) excludes pages that are unlikely to be useful for analysis — such as zero-filled pages, page cache, and free memory — significantly reducing the dump file size.</p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted Linux Crash Dump Analysis: crash vs makedumpfile vs kdump","description":"Compare crash, makedumpfile, and kdump for Linux kernel crash dump capture, compression, and post-mortem analysis on self-hosted servers.","datePublished":"2026-05-23","dateModified":"2026-05-23","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20Linux%20Crash%20Dump%20Analysis%3a%20crash%20vs%20makedumpfile%20vs%20kdump&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-29-self-hosted-linux-crash-dump-analysis-crash-makedumpfile-kdump-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-29-self-hosted-linux-crash-dump-analysis-crash-makedumpfile-kdump-guide%2f&t=Self-Hosted%20Linux%20Crash%20Dump%20Analysis%3a%20crash%20vs%20makedumpfile%20vs%20kdump" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/linux/ class=tag-link>Linux</a>
+<a href=/tags/crash-analysis/ class=tag-link>Crash-Analysis</a>
+<a href=/tags/system-administration/ class=tag-link>System-Administration</a>
+<a href=/tags/debugging/ class=tag-link>Debugging</a>
+<a href=/tags/kdump/ class=tag-link>Kdump</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-05-22-self-hosted-linux-coredump-management-systemd-abrt-minicoredumper-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted Linux Coredump Management: systemd-coredump vs ABRT vs minicoredumper (2026)</h3><div class=post-excerpt>When a Linux process crashes, the kernel can generate a coredump — a snapshot of the process memory, registers, and …</div><div class=post-footer><span class=post-date>May 22, 2026</span></div></a><a href=/posts/2026-05-23-linux-open-file-inspection-lsof-fuser-proc-pid-fd-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Linux Open File Inspection: lsof vs fuser vs /proc/PID/fd — Self-Hosted Process File Monitoring</h3><div class=post-excerpt>When a Linux server runs out of disk space due to deleted-but-still-open files, or when you need to figure out which …</div><div class=post-footer><span class=post-date>May 23, 2026</span></div></a><a href=/posts/2026-05-23-linux-kexec-fast-reboot-kexec-tools-alternatives-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Linux kexec Fast Reboot: kexec-tools vs Alternatives — Self-Hosted Kernel Live Boot Management</h3><div class=post-excerpt>Rebooting a Linux server traditionally involves a full hardware reset cycle — the BIOS/UEFI firmware reinitializes, the …</div><div class=post-footer><span class=post-date>May 23, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>

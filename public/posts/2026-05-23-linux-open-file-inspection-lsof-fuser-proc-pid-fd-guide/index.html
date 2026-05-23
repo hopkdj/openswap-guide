@@ -1,0 +1,273 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Linux Open File Inspection: lsof vs fuser vs /proc/PID/fd — Self-Hosted Process File Monitoring | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-05-23-linux-open-file-inspection-lsof-fuser-proc-pid-fd-guide/><meta property="og:type" content="article"><meta property="og:title" content="Linux Open File Inspection: lsof vs fuser vs /proc/PID/fd — Self-Hosted Process File Monitoring"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-05-23-linux-open-file-inspection-lsof-fuser-proc-pid-fd-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-05-23T00:00:00Z"><meta property="article:modified_time" content="2026-05-23T00:00:00Z"><meta property="article:tag" content="linux"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Linux Open File Inspection: lsof vs fuser vs /proc/PID/fd — Self-Hosted Process File Monitoring"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Linux Open File Inspection: lsof vs fuser vs \/proc\/PID\/fd — Self-Hosted Process File Monitoring","description":"\u003cp\u003eWhen a Linux server runs out of disk space due to deleted-but-still-open files, or when you need to figure out which process is holding a mount point busy during unmount, the ability to inspect which processes have which files open becomes critical. Three approaches dominate this space on Linux: \u003cstrong\u003elsof\u003c\/strong\u003e (the Swiss Army knife), \u003cstrong\u003efuser\u003c\/strong\u003e (the quick checker), and direct \u003cstrong\u003e\/proc\/PID\/fd\u003c\/strong\u003e inspection (the kernel-native method). Each serves different operational scenarios — from quick terminal checks to automated monitoring scripts.\u003c\/p\u003e","datePublished":"2026-05-23T00:00:00Z","dateModified":"2026-05-23T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-05-23-linux-open-file-inspection-lsof-fuser-proc-pid-fd-guide\/"},"keywords":["linux","system-administration","process-monitoring","file-descriptors","troubleshooting"],"articleSection":"linux","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Linux Open File Inspection: lsof vs fuser vs \/proc\/PID\/fd — Self-Hosted Process File Monitoring","item":"https:\/\/www.pistack.xyz\/posts\/2026-05-23-linux-open-file-inspection-lsof-fuser-proc-pid-fd-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Linux</span>
+<span class="tag tag-purple">System-Administration</span>
+<span class="tag tag-purple">Process-Monitoring</span></div><h1>Linux Open File Inspection: lsof vs fuser vs /proc/PID/fd — Self-Hosted Process File Monitoring</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>May 23, 2026</span>
+<span>12 min read</span>
+<span>Updated May 23, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#why-inspect-open-files-on-linux>Why Inspect Open Files on Linux?</a></li><li><a href=#understanding-file-descriptors-in-linux>Understanding File Descriptors in Linux</a></li><li><a href=#lsof--list-open-files>lsof — List Open Files</a><ul><li><a href=#what-lsof-can-do>What lsof Can Do</a></li><li><a href=#common-lsof-commands>Common lsof Commands</a></li><li><a href=#docker-deployment>Docker Deployment</a></li><li><a href=#installation>Installation</a></li><li><a href=#performance-considerations>Performance Considerations</a></li></ul></li><li><a href=#fuser--find-processes-using-files>fuser — Find Processes Using Files</a><ul><li><a href=#common-fuser-commands>Common fuser Commands</a></li><li><a href=#output-format>Output Format</a></li><li><a href=#docker-deployment-1>Docker Deployment</a></li><li><a href=#when-to-use-fuser-over-lsof>When to Use fuser Over lsof</a></li></ul></li><li><a href=#procpidfd--direct-kernel-inspection>/proc/PID/fd — Direct Kernel Inspection</a><ul><li><a href=#reading-procpidfd-directly>Reading /proc/PID/fd Directly</a></li><li><a href=#procpidfdinfo--extended-information>/proc/PID/fdinfo — Extended Information</a></li><li><a href=#network-socket-details-via-procnet>Network Socket Details via /proc/net</a></li><li><a href=#when-to-use-proc-directly>When to Use /proc Directly</a></li></ul></li><li><a href=#comparison-lsof-vs-fuser-vs-procpidfd>Comparison: lsof vs fuser vs /proc/PID/fd</a></li><li><a href=#choosing-the-right-tool>Choosing the Right Tool</a></li><li><a href=#why-self-host-your-file-monitoring>Why Self-Host Your File Monitoring?</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#what-does-too-many-open-files-mean-in-linux>What does &ldquo;too many open files&rdquo; mean in Linux?</a></li><li><a href=#how-do-i-find-which-process-is-holding-a-deleted-file-open>How do I find which process is holding a deleted file open?</a></li><li><a href=#can-fuser-find-processes-using-a-network-port>Can fuser find processes using a network port?</a></li><li><a href=#is-procpidfd-safe-to-read-for-all-processes>Is /proc/PID/fd safe to read for all processes?</a></li><li><a href=#how-do-i-increase-the-file-descriptor-limit-for-a-systemd-service>How do I increase the file descriptor limit for a systemd service?</a></li><li><a href=#whats-the-difference-between-lsofs--i-and--i4-i6-flags>What&rsquo;s the difference between lsof&rsquo;s -i and -i4/-i6 flags?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><p>When a Linux server runs out of disk space due to deleted-but-still-open files, or when you need to figure out which process is holding a mount point busy during unmount, the ability to inspect which processes have which files open becomes critical. Three approaches dominate this space on Linux: <strong>lsof</strong> (the Swiss Army knife), <strong>fuser</strong> (the quick checker), and direct <strong>/proc/PID/fd</strong> inspection (the kernel-native method). Each serves different operational scenarios — from quick terminal checks to automated monitoring scripts.</p><h2 id=why-inspect-open-files-on-linux>Why Inspect Open Files on Linux?</h2><p>Linux follows the Unix philosophy that &ldquo;everything is a file.&rdquo; Every socket, pipe, device node, regular file, and directory opened by a process is tracked by the kernel through file descriptors. Understanding which processes hold which file descriptors open is fundamental to server administration for several reasons:</p><p><strong>Recovering disk space.</strong> When you delete a log file that a running process still has open, the disk space isn&rsquo;t freed until the process closes its file descriptor or terminates. Administrators routinely encounter servers reporting 100% disk usage even after deleting large files — the culprit is always an open file descriptor. Knowing which process holds the deleted file lets you either restart the service or signal it to reopen its log files (SIGHUP).</p><p><strong>Unmounting busy filesystems.</strong> The dreaded &ldquo;device is busy&rdquo; error during <code>umount</code> happens when some process has an open file, working directory, or memory-mapped file on that filesystem. Identifying the offending process is the first step to safely unmounting — whether by stopping the service, changing its working directory, or killing the process.</p><p><strong>Security auditing.</strong> Suspicious open files can reveal compromised processes — a web server process opening <code>/etc/shadow</code>, or an unknown process with network sockets to foreign IPs. Regular file descriptor inspection is a lightweight security monitoring technique that requires no additional agents.</p><p><strong>Troubleshooting application errors.</strong> When an application reports &ldquo;too many open files&rdquo; (EMFILE/ENFILE), you need to identify which process is leaking file descriptors and what files it&rsquo;s holding. This is a common production issue with connection-pooled services, log rotation failures, and misconfigured applications.</p><p><strong>Container debugging.</strong> In containerized environments, understanding file descriptor inheritance across container boundaries helps debug volume mount issues, socket sharing problems, and resource leaks in orchestration platforms.</p><h2 id=understanding-file-descriptors-in-linux>Understanding File Descriptors in Linux</h2><p>Every Linux process has a file descriptor table maintained by the kernel. File descriptors 0, 1, and 2 are reserved for stdin, stdout, and stderr. Beyond that, each <code>open()</code>, <code>socket()</code>, <code>pipe()</code>, or <code>epoll_create()</code> call allocates a new descriptor. The kernel tracks the file type, permissions, current position (for seekable files), and the underlying inode.</p><p>The limits are controlled by two parameters: the per-process soft limit (<code>ulimit -n</code>, typically 1024 by default) and the system-wide maximum (<code>/proc/sys/fs/file-max</code>). When either limit is reached, new file operations fail with EMFILE (process limit) or ENFILE (system limit).</p><p>For self-hosted server administration, the default 1024 file descriptor limit is often insufficient — database servers, web proxies, and message brokers routinely need tens of thousands of open connections. The tools we&rsquo;ll compare help you audit current usage and identify which processes need higher limits.</p><h2 id=lsof--list-open-files>lsof — List Open Files</h2><p><a href=https://github.com/lsof-org/lsof>lsof</a> (List Open Files) is the most comprehensive file descriptor inspection tool on Linux. Written by Victor A. Abell and maintained as an open-source project with over 550 GitHub stars, lsof has been the go-to tool for file descriptor inspection since 1995.</p><h3 id=what-lsof-can-do>What lsof Can Do</h3><p>lsof reports on <strong>all</strong> open file types: regular files, directories, block special files, character special files, executing text references, libraries, streams, network files (Internet sockets, NFS files, UNIX domain sockets), and more. Its output columns include:</p><table><thead><tr><th>Column</th><th>Description</th></tr></thead><tbody><tr><td>COMMAND</td><td>Process name</td></tr><tr><td>PID</td><td>Process ID</td></tr><tr><td>TID</td><td>Thread ID (if applicable)</td></tr><tr><td>USER</td><td>Process owner</td></tr><tr><td>FD</td><td>File descriptor number and type</td></tr><tr><td>TYPE</td><td>File type (REG, DIR, CHR, BLK, FIFO, IPv4, etc.)</td></tr><tr><td>DEVICE</td><td>Device numbers or network addresses</td></tr><tr><td>SIZE/OFF</td><td>File size or offset</td></tr><tr><td>NODE</td><td>Inode number</td></tr><tr><td>NAME</td><td>File path or network endpoint</td></tr></tbody></table><h3 id=common-lsof-commands>Common lsof Commands</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># List all open files system-wide</span>
+</span></span><span class=line><span class=cl>lsof
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Find processes using a specific file</span>
+</span></span><span class=line><span class=cl>lsof /var/log/syslog
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Find all open files by a user</span>
+</span></span><span class=line><span class=cl>lsof -u www-data
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Find all network connections (TCP and UDP)</span>
+</span></span><span class=line><span class=cl>lsof -i
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Find processes listening on a specific port</span>
+</span></span><span class=line><span class=cl>lsof -i :8080
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Find deleted files still held open</span>
+</span></span><span class=line><span class=cl>lsof +L1
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Find processes with files open on a specific mount</span>
+</span></span><span class=line><span class=cl>lsof +D /mnt/data
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># List open files for a specific PID</span>
+</span></span><span class=line><span class=cl>lsof -p <span class=m>1234</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Find processes using IPv4 connections only</span>
+</span></span><span class=line><span class=cl>lsof -i4
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Monitor lsof output in repeat mode</span>
+</span></span><span class=line><span class=cl>lsof -r <span class=m>5</span> -i :443
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-deployment>Docker Deployment</h3><p>lsof can be run in a Docker container for isolated inspection:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>lsof-inspect</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>ubuntu:24.04</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;bash&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;-c&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;apt-get update &amp;&amp; apt-get install -y lsof &amp;&amp; lsof -i&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>network_mode</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;host&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>pid</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;host&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/proc:/proc:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/etc:/etc:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>read_only</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>tmpfs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/tmp</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Running lsof in a container requires <code>--pid=host</code> to see all processes and <code>--network=host</code> to see network file descriptors. The <code>/proc</code> mount must be read-only for safety.</p><h3 id=installation>Installation</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Debian/Ubuntu</span>
+</span></span><span class=line><span class=cl>sudo apt install lsof
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># RHEL/CentOS/Fedora</span>
+</span></span><span class=line><span class=cl>sudo dnf install lsof
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Alpine (Docker)</span>
+</span></span><span class=line><span class=cl>apk add lsof
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Build from source</span>
+</span></span><span class=line><span class=cl>git clone https://github.com/lsof-org/lsof.git
+</span></span><span class=line><span class=cl><span class=nb>cd</span> lsof
+</span></span><span class=line><span class=cl>./Configure linux
+</span></span><span class=line><span class=cl>make
+</span></span><span class=line><span class=cl>sudo make install
+</span></span></code></pre></td></tr></table></div></div><h3 id=performance-considerations>Performance Considerations</h3><p>lsof scans <code>/proc</code> extensively and can be slow on systems with thousands of processes and tens of thousands of open file descriptors. A full <code>lsof</code> on a busy server may take 5-30 seconds. Use targeted queries (<code>-p</code>, <code>-u</code>, <code>-i</code>) to minimize overhead. For automated monitoring, consider running lsof during off-peak hours or using the repeat mode (<code>-r</code>) at long intervals.</p><h2 id=fuser--find-processes-using-files>fuser — Find Processes Using Files</h2><p><strong>fuser</strong> (file user) is a lighter-weight alternative included in the <strong>psmisc</strong> package. It answers a single question: &ldquo;which process is using this file or filesystem?&rdquo; Unlike lsof&rsquo;s comprehensive output, fuser returns only PIDs — making it ideal for scripts and quick checks.</p><h3 id=common-fuser-commands>Common fuser Commands</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Find processes using a specific file</span>
+</span></span><span class=line><span class=cl>fuser /var/log/syslog
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Find processes using a mount point (shows all files on that fs)</span>
+</span></span><span class=line><span class=cl>fuser -m /mnt/data
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Kill all processes using a mount point</span>
+</span></span><span class=line><span class=cl>fuser -km /mnt/data
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Show detailed information (user, access type)</span>
+</span></span><span class=line><span class=cl>fuser -v /var/log/syslog
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Find processes using a TCP port</span>
+</span></span><span class=line><span class=cl>fuser 8080/tcp
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Find processes using a UDP port</span>
+</span></span><span class=line><span class=cl>fuser 53/udp
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Send a specific signal instead of SIGKILL</span>
+</span></span><span class=line><span class=cl>fuser -k -SIGHUP /var/log/app.log
+</span></span></code></pre></td></tr></table></div></div><h3 id=output-format>Output Format</h3><p>fuser&rsquo;s default output is minimal — just PIDs separated by spaces:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>$ fuser /var/log/syslog
+</span></span><span class=line><span class=cl>/var/log/syslog:  <span class=m>1234</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>$ fuser -v /var/log/syslog
+</span></span><span class=line><span class=cl>                     USER        PID ACCESS COMMAND
+</span></span><span class=line><span class=cl>/var/log/syslog:     root       <span class=m>1234</span> F.... rsyslogd
+</span></span></code></pre></td></tr></table></div></div><p>The ACCESS codes indicate how the file is being used:</p><ul><li><code>c</code> — current directory</li><li><code>e</code> — executable being run</li><li><code>f</code> — open file (default, omitted in display)</li><li><code>F</code> — open file for writing</li><li><code>r</code> — root directory</li><li><code>m</code> — mmap&rsquo;ed file or shared library</li></ul><h3 id=docker-deployment-1>Docker Deployment</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>fuser-check</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>alpine:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;sh&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;-c&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;apk add psmisc &amp;&amp; fuser -v /etc/passwd&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>pid</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;host&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/proc:/proc:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>read_only</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=when-to-use-fuser-over-lsof>When to Use fuser Over lsof</h3><p>fuser excels in three scenarios where lsof is overkill:</p><ol><li><strong>Quick unmount checks</strong> — <code>fuser -m /mnt/data</code> instantly tells you if anything is using a mount point, without the overhead of scanning the entire file descriptor table.</li><li><strong>Script automation</strong> — fuser&rsquo;s exit code indicates whether processes were found (0 = yes, 1 = no), making it perfect for conditional logic in bash scripts.</li><li><strong>Force unmount</strong> — <code>fuser -km</code> is the fastest way to kill everything using a filesystem before unmounting, useful in emergency recovery situations.</li></ol><h2 id=procpidfd--direct-kernel-inspection>/proc/PID/fd — Direct Kernel Inspection</h2><p>The <strong>/proc filesystem</strong> provides direct access to kernel data structures, including every process&rsquo;s file descriptor table. Each process has a <code>/proc/PID/fd/</code> directory containing symbolic links to every open file descriptor:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>$ ls -la /proc/1234/fd/
+</span></span><span class=line><span class=cl>lrwx------ <span class=m>1</span> root root <span class=m>64</span> May <span class=m>23</span> 10:00 <span class=m>0</span> -&gt; /dev/null
+</span></span><span class=line><span class=cl>lrwx------ <span class=m>1</span> root root <span class=m>64</span> May <span class=m>23</span> 10:00 <span class=m>1</span> -&gt; /var/log/syslog
+</span></span><span class=line><span class=cl>lrwx------ <span class=m>1</span> root root <span class=m>64</span> May <span class=m>23</span> 10:00 <span class=m>2</span> -&gt; /var/log/syslog
+</span></span><span class=line><span class=cl>lr-x------ <span class=m>1</span> root root <span class=m>64</span> May <span class=m>23</span> 10:00 <span class=m>3</span> -&gt; /etc/passwd
+</span></span><span class=line><span class=cl>lrwx------ <span class=m>1</span> root root <span class=m>64</span> May <span class=m>23</span> 10:00 <span class=m>4</span> -&gt; socket:<span class=o>[</span>45678<span class=o>]</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=reading-procpidfd-directly>Reading /proc/PID/fd Directly</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># List all file descriptors for PID 1234</span>
+</span></span><span class=line><span class=cl>ls -la /proc/1234/fd/
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Count open file descriptors for all processes</span>
+</span></span><span class=line><span class=cl><span class=k>for</span> pid in /proc/<span class=o>[</span>0-9<span class=o>]</span>*/fd<span class=p>;</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>    <span class=nv>count</span><span class=o>=</span><span class=k>$(</span>ls <span class=s2>&#34;</span><span class=nv>$pid</span><span class=s2>&#34;</span> 2&gt;/dev/null <span class=p>|</span> wc -l<span class=k>)</span>
+</span></span><span class=line><span class=cl>    <span class=nb>echo</span> <span class=s2>&#34;</span><span class=si>${</span><span class=nv>pid</span><span class=si>}</span><span class=s2>: </span><span class=nv>$count</span><span class=s2> fds&#34;</span>
+</span></span><span class=line><span class=cl><span class=k>done</span> <span class=p>|</span> sort -t: -k2 -rn <span class=p>|</span> head -10
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Find deleted files (links point to &#34;(deleted)&#34;)</span>
+</span></span><span class=line><span class=cl>find /proc/<span class=o>[</span>0-9<span class=o>]</span>*/fd -lname <span class=s1>&#39;*(deleted)*&#39;</span> -ls 2&gt;/dev/null
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Find all socket file descriptors</span>
+</span></span><span class=line><span class=cl>find /proc/<span class=o>[</span>0-9<span class=o>]</span>*/fd -lname <span class=s1>&#39;socket:*&#39;</span> 2&gt;/dev/null <span class=p>|</span> wc -l
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Check a specific process&#39;s FD count</span>
+</span></span><span class=line><span class=cl>ls /proc/<span class=nv>$$</span>/fd/ <span class=p>|</span> wc -l
+</span></span></code></pre></td></tr></table></div></div><h3 id=procpidfdinfo--extended-information>/proc/PID/fdinfo — Extended Information</h3><p>Beyond the symlinks in <code>/proc/PID/fd/</code>, the <code>/proc/PID/fdinfo/</code> directory provides detailed information about each file descriptor:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>$ cat /proc/1234/fdinfo/3
+</span></span><span class=line><span class=cl>pos:    <span class=m>0</span>
+</span></span><span class=line><span class=cl>flags:  <span class=m>0100002</span>
+</span></span><span class=line><span class=cl>mnt_id: <span class=m>23</span>
+</span></span><span class=line><span class=cl>ino:    <span class=m>131073</span>
+</span></span></code></pre></td></tr></table></div></div><p>This includes the file position (offset), open flags, mount ID, and inode number — information not available through lsof or fuser.</p><h3 id=network-socket-details-via-procnet>Network Socket Details via /proc/net</h3><p>For network file descriptors, <code>/proc/net/tcp</code>, <code>/proc/net/tcp6</code>, <code>/proc/net/udp</code>, and <code>/proc/net/udp6</code> provide raw kernel socket tables:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># View all TCP sockets (hex format)</span>
+</span></span><span class=line><span class=cl>cat /proc/net/tcp
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Decode a socket inode to find the owning process</span>
+</span></span><span class=line><span class=cl>grep <span class=s2>&#34;45678&#34;</span> /proc/net/tcp
+</span></span><span class=line><span class=cl><span class=k>for</span> pid in /proc/<span class=o>[</span>0-9<span class=o>]</span>*/fd<span class=p>;</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>    ls -la <span class=s2>&#34;</span><span class=nv>$pid</span><span class=s2>&#34;</span> 2&gt;/dev/null <span class=p>|</span> grep <span class=s2>&#34;45678&#34;</span>
+</span></span><span class=line><span class=cl><span class=k>done</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=when-to-use-proc-directly>When to Use /proc Directly</h3><p>Direct <code>/proc</code> inspection is the best approach when:</p><ol><li><strong>lsof is not installed</strong> — on minimal Docker containers or embedded systems, <code>/proc</code> is always available.</li><li><strong>You need programmatic access</strong> — scripts can parse <code>/proc/PID/fd</code> without depending on external tools or parsing lsof&rsquo;s formatted output.</li><li><strong>You need fdinfo details</strong> — file positions, flags, and mount IDs are only available through <code>/proc/PID/fdinfo/</code>.</li><li><strong>Performance matters</strong> — reading <code>/proc</code> directly is faster than running lsof, which parses the same <code>/proc</code> data but adds formatting overhead.</li></ol><h2 id=comparison-lsof-vs-fuser-vs-procpidfd>Comparison: lsof vs fuser vs /proc/PID/fd</h2><table><thead><tr><th>Feature</th><th>lsof</th><th>fuser</th><th>/proc/PID/fd</th></tr></thead><tbody><tr><td><strong>File types</strong></td><td>All types</td><td>Files, sockets, mounts</td><td>All types</td></tr><tr><td><strong>Network info</strong></td><td>Full (IP, port, state)</td><td>Port numbers only</td><td>Via /proc/net/*</td></tr><tr><td><strong>Deleted files</strong></td><td>Yes (<code>+L1</code>)</td><td>No</td><td>Yes (<code>(deleted)</code> symlink)</td></tr><tr><td><strong>Output format</strong></td><td>Detailed table</td><td>PIDs or brief table</td><td>Symlink listing</td></tr><tr><td><strong>Script-friendly</strong></td><td>Parse required</td><td>Exit codes available</td><td>Direct file access</td></tr><tr><td><strong>Installation</strong></td><td>Separate package</td><td>psmisc (usually pre-installed)</td><td>Always available</td></tr><tr><td><strong>Performance</strong></td><td>Slow (full scan)</td><td>Fast (targeted)</td><td>Fastest (direct)</td></tr><tr><td><strong>File positions</strong></td><td>No</td><td>No</td><td>Yes (fdinfo)</td></tr><tr><td><strong>Kill processes</strong></td><td>No</td><td>Yes (<code>-k</code>)</td><td>No</td></tr><tr><td><strong>Container support</strong></td><td>Requires host PID</td><td>Requires host PID</td><td>Always in host</td></tr></tbody></table><h2 id=choosing-the-right-tool>Choosing the Right Tool</h2><p><strong>Use lsof</strong> when you need comprehensive information about what files are open, who owns them, and what network connections exist. It&rsquo;s the best tool for deep troubleshooting and security auditing. The detailed output format makes it ideal for interactive investigation.</p><p><strong>Use fuser</strong> when you need a quick answer to &ldquo;what&rsquo;s using this file?&rdquo; or need to kill processes holding a filesystem. Its simplicity and exit code behavior make it perfect for automation scripts and emergency recovery procedures.</p><p><strong>Use /proc/PID/fd</strong> when you&rsquo;re working in minimal environments without lsof installed, need programmatic access for custom monitoring tools, or require file descriptor metadata (positions, flags) that neither lsof nor fuser provides.</p><p>For a robust self-hosted server administration toolkit, install all three: lsof for deep investigation, fuser for quick checks and scripts, and rely on <code>/proc</code> for environments where packages cannot be installed.</p><h2 id=why-self-host-your-file-monitoring>Why Self-Host Your File Monitoring?</h2><p>Understanding open file descriptors on your own Linux servers gives you complete visibility into resource consumption without depending on commercial monitoring platforms. Self-hosted file descriptor inspection:</p><p><strong>Catches resource leaks early.</strong> File descriptor leaks are a common cause of service crashes. By regularly auditing open file counts across processes, you can identify leaking services before they hit system limits and cause cascading failures. For related guidance, see our <a href=../2026-05-29-self-hosted-linux-service-restart-detection-needrestart-checkrestart-debsums-guide/>Linux service restart detection tools</a> for automating service recovery.</p><p><strong>Enables zero-cost troubleshooting.</strong> Commercial APM platforms charge per host for file descriptor monitoring. The native Linux tools described here provide the same information at zero cost — no agents, no subscriptions, no vendor lock-in. If you&rsquo;re interested in broader system profiling approaches, our <a href=../2026-05-22-self-hosted-linux-performance-profiling-perf-bcc-tools-sysstat-guide/>Linux performance profiling comparison</a> covers complementary tools.</p><p><strong>Improves security posture.</strong> Unauthorized file access is a common indicator of compromise. Regular file descriptor audits can reveal processes reading sensitive files they shouldn&rsquo;t access, or network connections to unexpected destinations. For kernel-level security hardening, check our <a href=../2026-05-23-self-hosted-linux-kernel-security-auditing-kconfig-hardened-check-checksec-guide/>Linux kernel security auditing guide</a>.</p><p><strong>Supports capacity planning.</strong> Tracking file descriptor usage trends over time helps predict when you&rsquo;ll need to increase system-wide limits or add server capacity. This data feeds directly into capacity planning decisions without requiring external monitoring infrastructure.</p><h2 id=faq>FAQ</h2><h3 id=what-does-too-many-open-files-mean-in-linux>What does &ldquo;too many open files&rdquo; mean in Linux?</h3><p>This error (EMFILE or ENFILE) occurs when a process or the system has reached its maximum number of simultaneously open file descriptors. The per-process default limit is typically 1024 (<code>ulimit -n</code>), and the system-wide limit is defined in <code>/proc/sys/fs/file-max</code>. Use <code>lsof -p &lt;PID> | wc -l</code> to count a process&rsquo;s open files, then increase limits in <code>/etc/security/limits.conf</code> if needed.</p><h3 id=how-do-i-find-which-process-is-holding-a-deleted-file-open>How do I find which process is holding a deleted file open?</h3><p>Run <code>lsof +L1</code> to list all files with link count less than 1 (i.e., deleted but still open). The output shows the process name, PID, and file path. To recover disk space, either restart the process or send it SIGHUP to reopen its log files: <code>kill -HUP &lt;PID></code>.</p><h3 id=can-fuser-find-processes-using-a-network-port>Can fuser find processes using a network port?</h3><p>Yes. Use <code>fuser &lt;port>/tcp</code> or <code>fuser &lt;port>/udp</code> to find processes listening on or connected to a specific port. For example, <code>fuser 80/tcp</code> shows all processes using TCP port 80. This is equivalent to <code>lsof -i :80</code> but with simpler output.</p><h3 id=is-procpidfd-safe-to-read-for-all-processes>Is /proc/PID/fd safe to read for all processes?</h3><p>Reading <code>/proc/PID/fd/</code> symlinks is safe — it doesn&rsquo;t modify the process or kernel state. However, you need appropriate permissions (typically root) to read other users&rsquo; file descriptors. On systems with hidepid mount option for <code>/proc</code>, you may only see your own process&rsquo;s file descriptors.</p><h3 id=how-do-i-increase-the-file-descriptor-limit-for-a-systemd-service>How do I increase the file descriptor limit for a systemd service?</h3><p>Add <code>LimitNOFILE=65536</code> (or your desired limit) to the service&rsquo;s <code>[Service]</code> section in its systemd unit file, then run <code>systemctl daemon-reload</code> and <code>systemctl restart &lt;service></code>. You can verify the new limit with <code>cat /proc/&lt;PID>/limits | grep "Max open files"</code>.</p><h3 id=whats-the-difference-between-lsofs--i-and--i4-i6-flags>What&rsquo;s the difference between lsof&rsquo;s -i and -i4/-i6 flags?</h3><p><code>-i</code> shows all network file descriptors (both IPv4 and IPv6). <code>-i4</code> filters to IPv4 only, and <code>-i6</code> filters to IPv6 only. You can also specify protocols (<code>-i tcp</code>, <code>-i udp</code>), ports (<code>-i :80</code>), or addresses (<code>-i @192.168.1.1</code>) for more targeted queries.</p><hr><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Linux Open File Inspection: lsof vs fuser vs /proc/PID/fd — Self-Hosted Process File Monitoring","description":"Compare three approaches to inspecting open file descriptors on Linux servers — lsof for comprehensive analysis, fuser for quick checks, and /proc/PID/fd for direct kernel access.","datePublished":"2026-05-23","dateModified":"2026-05-23","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Linux%20Open%20File%20Inspection%3a%20lsof%20vs%20fuser%20vs%20%2fproc%2fPID%2ffd%20%e2%80%94%20Self-Hosted%20Process%20File%20Monitoring&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-23-linux-open-file-inspection-lsof-fuser-proc-pid-fd-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-23-linux-open-file-inspection-lsof-fuser-proc-pid-fd-guide%2f&t=Linux%20Open%20File%20Inspection%3a%20lsof%20vs%20fuser%20vs%20%2fproc%2fPID%2ffd%20%e2%80%94%20Self-Hosted%20Process%20File%20Monitoring" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/linux/ class=tag-link>Linux</a>
+<a href=/tags/system-administration/ class=tag-link>System-Administration</a>
+<a href=/tags/process-monitoring/ class=tag-link>Process-Monitoring</a>
+<a href=/tags/file-descriptors/ class=tag-link>File-Descriptors</a>
+<a href=/tags/troubleshooting/ class=tag-link>Troubleshooting</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-05-23-linux-kexec-fast-reboot-kexec-tools-alternatives-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Linux kexec Fast Reboot: kexec-tools vs Alternatives — Self-Hosted Kernel Live Boot Management</h3><div class=post-excerpt>Rebooting a Linux server traditionally involves a full hardware reset cycle — the BIOS/UEFI firmware reinitializes, the …</div><div class=post-footer><span class=post-date>May 23, 2026</span></div></a><a href=/posts/2026-05-29-self-hosted-linux-crash-dump-analysis-crash-makedumpfile-kdump-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted Linux Crash Dump Analysis: crash vs makedumpfile vs kdump</h3><div class=post-excerpt>When a Linux kernel panics, the system loses all in-memory diagnostic information unless a crash dump mechanism is …</div><div class=post-footer><span class=post-date>May 23, 2026</span></div></a><a href=/posts/2026-05-23-self-hosted-linux-hardware-inventory-dmidecode-lshw-hwinfo-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted Linux Hardware Inventory: dmidecode vs lshw vs hwinfo</h3><div class=post-excerpt>Accurate hardware inventory is essential for server administration, capacity planning, compliance auditing, and …</div><div class=post-footer><span class=post-date>May 23, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>

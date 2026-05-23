@@ -1,0 +1,333 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted Linux Performance Profiling: perf vs bcc-tools vs sysstat (2026) | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-05-22-self-hosted-linux-performance-profiling-perf-bcc-tools-sysstat-guide/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted Linux Performance Profiling: perf vs bcc-tools vs sysstat (2026)"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-05-22-self-hosted-linux-performance-profiling-perf-bcc-tools-sysstat-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-05-22T00:00:00Z"><meta property="article:modified_time" content="2026-05-22T00:00:00Z"><meta property="article:tag" content="linux"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted Linux Performance Profiling: perf vs bcc-tools vs sysstat (2026)"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted Linux Performance Profiling: perf vs bcc-tools vs sysstat (2026)","description":"\u003cp\u003eWhen self-hosted servers experience performance issues — slow database queries, high CPU usage, memory leaks, or I\/O bottlenecks — the first step is always \u003cstrong\u003emeasurement\u003c\/strong\u003e. Linux offers a rich ecosystem of performance profiling and monitoring tools, each with different strengths, depths of visibility, and operational complexity.\u003c\/p\u003e","datePublished":"2026-05-22T00:00:00Z","dateModified":"2026-05-22T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-05-22-self-hosted-linux-performance-profiling-perf-bcc-tools-sysstat-guide\/"},"keywords":["linux","performance-monitoring","profiling","ebpf","system-administration"],"articleSection":"linux","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted Linux Performance Profiling: perf vs bcc-tools vs sysstat (2026)","item":"https:\/\/www.pistack.xyz\/posts\/2026-05-22-self-hosted-linux-performance-profiling-perf-bcc-tools-sysstat-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Linux</span>
+<span class="tag tag-purple">Performance-Monitoring</span>
+<span class="tag tag-purple">Profiling</span></div><h1>Self-Hosted Linux Performance Profiling: perf vs bcc-tools vs sysstat (2026)</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>May 22, 2026</span>
+<span>11 min read</span>
+<span>Updated May 22, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#the-performance-debugging-hierarchy>The Performance Debugging Hierarchy</a></li><li><a href=#sysstat-system-statistics-collection>sysstat: System Statistics Collection</a><ul><li><a href=#key-features>Key Features</a></li><li><a href=#installation-and-setup>Installation and Setup</a></li><li><a href=#essential-sysstat-commands>Essential sysstat Commands</a></li><li><a href=#identifying-io-bottlenecks-with-iostat>Identifying I/O Bottlenecks with iostat</a></li><li><a href=#docker-compose-monitoring-setup>Docker Compose Monitoring Setup</a></li><li><a href=#best-use-cases-for-sysstat>Best Use Cases for sysstat</a></li></ul></li><li><a href=#bcc-tools-ebpf-based-dynamic-tracing>bcc-tools: eBPF-Based Dynamic Tracing</a><ul><li><a href=#key-features-1>Key Features</a></li><li><a href=#installation-and-setup-1>Installation and Setup</a></li><li><a href=#essential-bcc-tools-for-self-hosted-servers>Essential bcc-tools for Self-Hosted Servers</a></li><li><a href=#diagnosing-a-slow-database-query>Diagnosing a Slow Database Query</a></li><li><a href=#docker-compose-with-ebpf-monitoring>Docker Compose with eBPF Monitoring</a></li><li><a href=#best-use-cases-for-bcc-tools>Best Use Cases for bcc-tools</a></li></ul></li><li><a href=#perf-kernel-performance-counter-profiling>perf: Kernel Performance Counter Profiling</a><ul><li><a href=#key-features-2>Key Features</a></li><li><a href=#installation-and-setup-2>Installation and Setup</a></li><li><a href=#essential-perf-commands>Essential perf Commands</a></li><li><a href=#generating-flame-graphs>Generating Flame Graphs</a></li><li><a href=#docker-container-profiling>Docker Container Profiling</a></li><li><a href=#best-use-cases-for-perf>Best Use Cases for perf</a></li></ul></li><li><a href=#comparison-table>Comparison Table</a></li><li><a href=#choosing-the-right-tool-for-the-job>Choosing the Right Tool for the Job</a></li><li><a href=#why-self-host-with-performance-profiling-tools>Why Self-Host With Performance Profiling Tools?</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#which-profiling-tool-should-i-install-first-on-a-new-self-hosted-server>Which profiling tool should I install first on a new self-hosted server?</a></li><li><a href=#do-bcc-tools-require-kernel-recompilation>Do bcc-tools require kernel recompilation?</a></li><li><a href=#can-i-use-perf-inside-docker-containers>Can I use perf inside Docker containers?</a></li><li><a href=#how-much-overhead-does-sysstat-add-to-production-systems>How much overhead does sysstat add to production systems?</a></li><li><a href=#why-would-i-use-bcc-tools-instead-of-perf-for-kernel-tracing>Why would I use bcc-tools instead of perf for kernel tracing?</a></li><li><a href=#how-do-i-profile-a-production-database-without-impacting-performance>How do I profile a production database without impacting performance?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><p>When self-hosted servers experience performance issues — slow database queries, high CPU usage, memory leaks, or I/O bottlenecks — the first step is always <strong>measurement</strong>. Linux offers a rich ecosystem of performance profiling and monitoring tools, each with different strengths, depths of visibility, and operational complexity.</p><p>This guide compares three essential Linux performance toolkits — <strong>perf</strong> (the kernel&rsquo;s built-in profiler), <strong>bcc-tools</strong> (eBPF-based tracing utilities), and <strong>sysstat</strong> (system statistics collectors) — with practical examples for diagnosing production issues on self-hosted infrastructure.</p><h2 id=the-performance-debugging-hierarchy>The Performance Debugging Hierarchy</h2><p>Effective performance troubleshooting follows a layered approach:</p><ol><li><strong>System-level metrics</strong> — CPU, memory, disk, and network utilization over time (sysstat)</li><li><strong>Kernel-level tracing</strong> — what the kernel is actually doing: syscalls, page faults, context switches (bcc-tools)</li><li><strong>Application-level profiling</strong> — where time is spent inside your code: function hotspots, call graphs (perf)</li></ol><p>Each tool occupies a different layer. sysstat tells you <strong>what</strong> is happening, bcc-tools tells you <strong>why</strong> at the kernel level, and perf tells you <strong>where</strong> at the application level.</p><h2 id=sysstat-system-statistics-collection>sysstat: System Statistics Collection</h2><p>sysstat (3,319 stars on GitHub, last updated May 2026) is the oldest and most widely deployed Linux performance monitoring toolkit. It collects and reports system-level metrics through a suite of complementary commands, making it the go-to tool for baseline performance assessment and historical trend analysis.</p><h3 id=key-features>Key Features</h3><ul><li><strong>sar (System Activity Reporter)</strong> — collects and reports CPU, memory, I/O, and network statistics</li><li><strong>iostat</strong> — detailed disk I/O statistics per device, including wait times and throughput</li><li><strong>mpstat</strong> — per-CPU utilization reports for multi-core systems</li><li><strong>pidstat</strong> — per-process resource usage (CPU, memory, I/O, context switches)</li><li><strong>Historical data</strong> — stores metrics for post-incident analysis (configurable retention)</li></ul><h3 id=installation-and-setup>Installation and Setup</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install sysstat</span>
+</span></span><span class=line><span class=cl>apt install sysstat -y
+</span></span><span class=line><span class=cl><span class=c1># or</span>
+</span></span><span class=line><span class=cl>yum install sysstat -y
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Enable data collection (edit /etc/default/sysstat on Debian)</span>
+</span></span><span class=line><span class=cl><span class=nv>ENABLED</span><span class=o>=</span><span class=s2>&#34;true&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Restart to begin collection</span>
+</span></span><span class=line><span class=cl>systemctl <span class=nb>enable</span> --now sysstat
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Data is stored in /var/log/sysstat/saDD (DD = day of month)</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=essential-sysstat-commands>Essential sysstat Commands</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Current CPU utilization (refresh every 2 seconds)</span>
+</span></span><span class=line><span class=cl>sar -u <span class=m>2</span> <span class=m>5</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Per-CPU utilization</span>
+</span></span><span class=line><span class=cl>mpstat -P ALL <span class=m>2</span> <span class=m>5</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Disk I/O statistics</span>
+</span></span><span class=line><span class=cl>iostat -x <span class=m>2</span> <span class=m>5</span>
+</span></span><span class=line><span class=cl><span class=c1># Output columns: %util, await, svctm, r/s, w/s, rkB/s, wkB/s</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Network statistics</span>
+</span></span><span class=line><span class=cl>sar -n DEV <span class=m>2</span> <span class=m>5</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Memory and swap usage</span>
+</span></span><span class=line><span class=cl>sar -r <span class=m>2</span> <span class=m>5</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Historical data for a specific day</span>
+</span></span><span class=line><span class=cl>sar -f /var/log/sysstat/sa23 -u
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Per-process stats (CPU, memory, I/O)</span>
+</span></span><span class=line><span class=cl>pidstat -urdh <span class=m>2</span> <span class=m>5</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=identifying-io-bottlenecks-with-iostat>Identifying I/O Bottlenecks with iostat</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Extended I/O stats with human-readable units</span>
+</span></span><span class=line><span class=cl>iostat -xh <span class=m>2</span> <span class=m>10</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Key columns to watch:</span>
+</span></span><span class=line><span class=cl><span class=c1># %util &gt; 80% → device is saturated</span>
+</span></span><span class=line><span class=cl><span class=c1># await &gt; 10ms → high latency (possible I/O bottleneck)</span>
+</span></span><span class=line><span class=cl><span class=c1># r/s + w/s → IOPS (compare against device specs)</span>
+</span></span><span class=line><span class=cl><span class=c1># rkB/s + wkB/s → throughput</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># For NVMe devices, expect:</span>
+</span></span><span class=line><span class=cl><span class=c1># - await &lt; 1ms under normal load</span>
+</span></span><span class=line><span class=cl><span class=c1># - %util varies with queue depth</span>
+</span></span><span class=line><span class=cl><span class=c1># - IOPS can exceed 100,000</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-compose-monitoring-setup>Docker Compose Monitoring Setup</h3><p>sysstat runs on the host and monitors all container activity:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Monitor container I/O specifically</span>
+</span></span><span class=line><span class=cl><span class=c1># Find container PIDs</span>
+</span></span><span class=line><span class=cl>docker inspect --format <span class=s1>&#39;{{.State.Pid}}&#39;</span> &lt;container_name&gt;
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Then use pidstat for that PID</span>
+</span></span><span class=line><span class=cl>pidstat -d <span class=m>2</span> <span class=m>5</span> -p &lt;container_pid&gt;
+</span></span></code></pre></td></tr></table></div></div><h3 id=best-use-cases-for-sysstat>Best Use Cases for sysstat</h3><ul><li><strong>Baseline monitoring</strong> — establishing normal performance patterns</li><li><strong>Post-incident analysis</strong> — reviewing historical data after an outage</li><li><strong>Capacity planning</strong> — trending resource usage over weeks and months</li><li><strong>First-response triage</strong> — &ldquo;is it CPU, memory, disk, or network?&rdquo;</li><li><strong>Production servers</strong> — minimal overhead (typically &lt; 1% CPU for data collection)</li></ul><h2 id=bcc-tools-ebpf-based-dynamic-tracing>bcc-tools: eBPF-Based Dynamic Tracing</h2><p>bcc-tools (22,414 stars on GitHub, last updated May 2026) is a collection of tracing and performance analysis tools built on eBPF (extended Berkeley Packet Filter). It allows you to observe kernel behavior <strong>in production with near-zero overhead</strong>, making it the most powerful option for diagnosing live performance issues without restarting services.</p><h3 id=key-features-1>Key Features</h3><ul><li><strong>Zero-code kernel tracing</strong> — attach probes to any kernel function, syscall, or tracepoint</li><li><strong>Production-safe</strong> — eBPF programs are verified by the kernel before execution; they cannot crash the system</li><li><strong>Per-process tracing</strong> — trace specific PIDs or process groups without affecting other workloads</li><li><strong>Rich pre-built tools</strong> — 100+ command-line utilities for common performance scenarios</li><li><strong>Python-based custom tools</strong> — write your own tracers using the BCC Python library</li></ul><h3 id=installation-and-setup-1>Installation and Setup</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install bcc-tools</span>
+</span></span><span class=line><span class=cl>apt install bpfcc-tools linux-headers-<span class=k>$(</span>uname -r<span class=k>)</span> -y
+</span></span><span class=line><span class=cl><span class=c1># or</span>
+</span></span><span class=line><span class=cl>yum install bcc-tools kernel-headers -y
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Verify eBPF is available</span>
+</span></span><span class=line><span class=cl>bpftool feature probe <span class=p>|</span> grep -c <span class=s2>&#34;eBPF&#34;</span>
+</span></span><span class=line><span class=cl><span class=c1># Should return a high number (100+)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Tools are installed in /usr/share/bcc/tools/</span>
+</span></span><span class=line><span class=cl>ls /usr/share/bcc/tools/
+</span></span><span class=line><span class=cl><span class=c1># argdist, biosnoop, cachestat, cpudist, execsnoop, fileslower,</span>
+</span></span><span class=line><span class=cl><span class=c1># funclatency, kprobe, offcputime, opensnoop, pidpersec, runqlat,</span>
+</span></span><span class=line><span class=cl><span class=c1># tcpconnlat, tcpretrans, vfscount, ... (100+ tools)</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=essential-bcc-tools-for-self-hosted-servers>Essential bcc-tools for Self-Hosted Servers</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># What processes are opening files? (diagnose file descriptor leaks)</span>
+</span></span><span class=line><span class=cl>/usr/share/bcc/tools/opensnoop
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># How long are disk I/O operations taking? (identify slow storage)</span>
+</span></span><span class=line><span class=cl>/usr/share/bcc/tools/biosnoop
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># What is the kernel page cache hit rate? (diagnose memory I/O)</span>
+</span></span><span class=line><span class=cl>/usr/share/bcc/tools/cachestat
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># How long do processes spend waiting for CPU? (run queue latency)</span>
+</span></span><span class=line><span class=cl>/usr/share/bcc/tools/runqlat
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Track TCP connection latency (diagnose network issues)</span>
+</span></span><span class=line><span class=cl>/usr/share/bcc/tools/tcpconnlat
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Which processes are executing slow syscalls?</span>
+</span></span><span class=line><span class=cl>/usr/share/bcc/tools/execsnoop
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Profile kernel function latency</span>
+</span></span><span class=line><span class=cl>/usr/share/bcc/tools/funclatency -p <span class=k>$(</span>pgrep -f postgres<span class=k>)</span> vfs_read
+</span></span></code></pre></td></tr></table></div></div><h3 id=diagnosing-a-slow-database-query>Diagnosing a Slow Database Query</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Step 1: Check if it&#39;s I/O-bound</span>
+</span></span><span class=line><span class=cl>/usr/share/bcc/tools/biosnoop -p <span class=k>$(</span>pgrep -f postgres<span class=k>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Step 2: Check page cache behavior</span>
+</span></span><span class=line><span class=cl>/usr/share/bcc/tools/cachestat <span class=m>1</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Step 3: Check run queue latency (CPU contention)</span>
+</span></span><span class=line><span class=cl>/usr/share/bcc/tools/runqlat <span class=m>1</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Step 4: Profile specific kernel functions</span>
+</span></span><span class=line><span class=cl>/usr/share/bcc/tools/funclatency vfs_read
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-compose-with-ebpf-monitoring>Docker Compose with eBPF Monitoring</h3><p>bcc-tools runs on the host and can monitor specific containers by PID:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Find the container&#39;s PID</span>
+</span></span><span class=line><span class=cl><span class=nv>CONTAINER_PID</span><span class=o>=</span><span class=k>$(</span>docker inspect --format <span class=s1>&#39;{{.State.Pid}}&#39;</span> postgres<span class=k>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Monitor that container&#39;s I/O</span>
+</span></span><span class=line><span class=cl>/usr/share/bcc/tools/biosnoop -p <span class=nv>$CONTAINER_PID</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Monitor that container&#39;s file opens</span>
+</span></span><span class=line><span class=cl>/usr/share/bcc/tools/opensnoop -p <span class=nv>$CONTAINER_PID</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=best-use-cases-for-bcc-tools>Best Use Cases for bcc-tools</h3><ul><li><strong>Live production debugging</strong> — trace running systems without restarts</li><li><strong>Intermittent performance issues</strong> — catch sporadic slowdowns that don&rsquo;t appear in aggregate metrics</li><li><strong>Kernel-level root cause analysis</strong> — understand why syscalls are slow, which locks are contended</li><li><strong>Network troubleshooting</strong> — diagnose TCP retransmits, connection latency, DNS resolution delays</li><li><strong>Storage optimization</strong> — identify slow disk operations, cache misses, and I/O patterns</li></ul><h2 id=perf-kernel-performance-counter-profiling>perf: Kernel Performance Counter Profiling</h2><p>perf (part of the Linux kernel source, 234,051+ stars) is the official Linux performance analysis tool. It uses hardware performance counters and kernel tracepoints to provide <strong>function-level profiling</strong> with call graphs, making it the most detailed option for understanding where CPU time is spent.</p><h3 id=key-features-2>Key Features</h3><ul><li><strong>Hardware performance counters</strong> — CPU-level metrics (cache misses, branch mispredictions, instructions per cycle)</li><li><strong>Call graph generation</strong> — full stack traces showing which functions consume the most CPU time</li><li><strong>Flame graph support</strong> — visualize profiling data as interactive flame graphs</li><li><strong>Event-based sampling</strong> — profile specific events (cache misses, page faults, context switches)</li><li><strong>Per-thread profiling</strong> — isolate profiling to specific threads or processes</li></ul><h3 id=installation-and-setup-2>Installation and Setup</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install perf</span>
+</span></span><span class=line><span class=cl>apt install linux-tools-common linux-tools-generic -y
+</span></span><span class=line><span class=cl><span class=c1># or</span>
+</span></span><span class=line><span class=cl>yum install perf -y
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Verify perf is working</span>
+</span></span><span class=line><span class=cl>perf version
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Check available events</span>
+</span></span><span class=line><span class=cl>perf list <span class=p>|</span> head -30
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Check hardware counters available</span>
+</span></span><span class=line><span class=cl>perf stat -e cycles,instructions,cache-misses,branch-misses sleep <span class=m>1</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=essential-perf-commands>Essential perf Commands</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># CPU profiling (sample every 99 Hz)</span>
+</span></span><span class=line><span class=cl>perf record -F <span class=m>99</span> -p <span class=k>$(</span>pgrep -f postgres<span class=k>)</span> -g -- sleep <span class=m>30</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Generate a report</span>
+</span></span><span class=line><span class=cl>perf report
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># System-wide profiling (all processes)</span>
+</span></span><span class=line><span class=cl>perf record -a -g -- sleep <span class=m>10</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Profile specific events</span>
+</span></span><span class=line><span class=cl>perf stat -e cpu-clock,task-clock,context-switches,cpu-migrations     -p <span class=k>$(</span>pgrep -f nginx<span class=k>)</span> sleep <span class=m>10</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Profile a single command</span>
+</span></span><span class=line><span class=cl>perf stat -d nginx -g <span class=s2>&#34;daemon off;&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Trace syscalls</span>
+</span></span><span class=line><span class=cl>perf trace -p <span class=k>$(</span>pgrep -f redis-server<span class=k>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Profile kernel scheduler behavior</span>
+</span></span><span class=line><span class=cl>perf sched record -- sleep <span class=m>10</span>
+</span></span><span class=line><span class=cl>perf sched latency
+</span></span></code></pre></td></tr></table></div></div><h3 id=generating-flame-graphs>Generating Flame Graphs</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install flame graph tools</span>
+</span></span><span class=line><span class=cl>git clone https://github.com/brendangregg/FlameGraph.git
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Record with call graphs</span>
+</span></span><span class=line><span class=cl>perf record -F <span class=m>99</span> -a -g -- sleep <span class=m>30</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Generate flame graph</span>
+</span></span><span class=line><span class=cl>perf script <span class=p>|</span> FlameGraph/stackcollapse-perf.pl <span class=p>|</span>     FlameGraph/flamegraph.pl &gt; perf.svg
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Open in browser</span>
+</span></span><span class=line><span class=cl>firefox perf.svg
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-container-profiling>Docker Container Profiling</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Profile a specific container</span>
+</span></span><span class=line><span class=cl><span class=nv>CONTAINER_PID</span><span class=o>=</span><span class=k>$(</span>docker inspect --format <span class=s1>&#39;{{.State.Pid}}&#39;</span> mysql<span class=k>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Record with call graphs (follow child processes)</span>
+</span></span><span class=line><span class=cl>perf record -F <span class=m>99</span> -p <span class=nv>$CONTAINER_PID</span> -g -- sleep <span class=m>30</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># For containers with --pid=host, perf works directly inside</span>
+</span></span><span class=line><span class=cl>docker run --pid<span class=o>=</span>host --cap-add SYS_ADMIN     -v /tmp:/tmp     ubuntu perf record -a -g -- sleep <span class=m>10</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=best-use-cases-for-perf>Best Use Cases for perf</h3><ul><li><strong>CPU bottleneck analysis</strong> — which function or code path is consuming the most CPU time?</li><li><strong>Cache performance optimization</strong> — are cache misses degrading throughput?</li><li><strong>Application profiling</strong> — understanding hotspots in custom code or open-source services</li><li><strong>Kernel debugging</strong> — analyzing scheduler behavior, lock contention, and interrupt handling</li><li><strong>Benchmarking</strong> — measuring performance before and after configuration changes</li></ul><h2 id=comparison-table>Comparison Table</h2><table><thead><tr><th>Feature</th><th>sysstat</th><th>bcc-tools</th><th>perf</th></tr></thead><tbody><tr><td><strong>Primary Focus</strong></td><td>System-level metrics</td><td>Kernel-level tracing</td><td>Application-level profiling</td></tr><tr><td><strong>Data Collection</strong></td><td>Continuous (daemon)</td><td>On-demand (interactive)</td><td>On-demand (sampling)</td></tr><tr><td><strong>Historical Data</strong></td><td>Yes (days/weeks)</td><td>No (real-time only)</td><td>No (per-session)</td></tr><tr><td><strong>Overhead</strong></td><td>Very low (&lt; 1%)</td><td>Low (eBPF JIT compiled)</td><td>Low (hardware counters)</td></tr><tr><td><strong>Production Safety</strong></td><td>Excellent</td><td>Excellent (kernel-verified)</td><td>Good (sampling-based)</td></tr><tr><td><strong>Learning Curve</strong></td><td>Low</td><td>Medium-High</td><td>Medium</td></tr><tr><td><strong>Pre-built Tools</strong></td><td>6 commands (sar, iostat, etc.)</td><td>100+ tools</td><td>15 subcommands</td></tr><tr><td><strong>Custom Tracing</strong></td><td>No</td><td>Yes (Python API)</td><td>Yes (perf events)</td></tr><tr><td><strong>Flame Graphs</strong></td><td>No</td><td>Yes</td><td>Yes (built-in)</td></tr><tr><td><strong>Container Support</strong></td><td>Host-level (all containers)</td><td>Per-PID (specific containers)</td><td>Per-PID or namespace</td></tr><tr><td><strong>GitHub Stars</strong></td><td>3,319</td><td>22,414</td><td>234,051+ (kernel)</td></tr><tr><td><strong>Best For</strong></td><td>Baseline monitoring, capacity planning</td><td>Live debugging, kernel analysis</td><td>CPU profiling, flame graphs</td></tr></tbody></table><h2 id=choosing-the-right-tool-for-the-job>Choosing the Right Tool for the Job</h2><table><thead><tr><th>Scenario</th><th>Recommended Tool</th><th>Command</th></tr></thead><tbody><tr><td>&ldquo;Server is slow — is it CPU or I/O?&rdquo;</td><td>sysstat</td><td><code>sar -u 2 5</code> + <code>iostat -x 2 5</code></td></tr><tr><td>&ldquo;Which process is using the most CPU?&rdquo;</td><td>sysstat</td><td><code>pidstat -u 2 5</code></td></tr><tr><td>&ldquo;Why are disk operations so slow?&rdquo;</td><td>bcc-tools</td><td><code>biosnoop</code> or <code>cachestat</code></td></tr><tr><td>&ldquo;Which function consumes the most CPU?&rdquo;</td><td>perf</td><td><code>perf record -p &lt;pid> -g</code></td></tr><tr><td>&ldquo;What files is this process opening?&rdquo;</td><td>bcc-tools</td><td><code>opensnoop -p &lt;pid></code></td></tr><tr><td>&ldquo;Are there TCP retransmits?&rdquo;</td><td>bcc-tools</td><td><code>tcpretrans</code></td></tr><tr><td>&ldquo;How many cache misses per second?&rdquo;</td><td>perf</td><td><code>perf stat -e cache-misses</code></td></tr><tr><td>&ldquo;What happened at 2 AM last night?&rdquo;</td><td>sysstat</td><td><code>sar -f /var/log/sysstat/saXX -u</code></td></tr><tr><td>&ldquo;Show me a visual CPU profile&rdquo;</td><td>perf</td><td><code>perf record</code> + flamegraph.pl</td></tr></tbody></table><h2 id=why-self-host-with-performance-profiling-tools>Why Self-Host With Performance Profiling Tools?</h2><p>When you run self-hosted infrastructure, <strong>you are the performance engineer</strong>. Cloud providers abstract away the underlying hardware, making deep performance analysis difficult or impossible. On your own server, you have full visibility into every layer — from hardware performance counters to application-level function profiles.</p><p>Performance profiling tools are essential for:</p><ul><li><strong>Capacity planning</strong> — knowing exactly when to scale up or out</li><li><strong>Incident response</strong> — quickly identifying the root cause of slowdowns</li><li><strong>Optimization validation</strong> — measuring the impact of configuration changes before and after</li><li><strong>Cost efficiency</strong> — maximizing hardware utilization without over-provisioning</li></ul><p>A self-hosted PostgreSQL server running on properly tuned hardware can outperform a cloud-managed instance at a fraction of the cost — but only if you have the tools to measure and optimize. sysstat provides the baseline, bcc-tools reveals kernel-level bottlenecks, and perf pinpoints application-level hotspots.</p><p>For I/O-side optimization that complements profiling, see our <a href=../2026-05-22-self-hosted-linux-io-scheduler-bfq-mq-deadline-kyber-guide/>I/O scheduler comparison</a> for storage tuning. For memory optimization, our <a href=../2026-05-22-self-hosted-linux-hugepages-management-libhugetlbfs-numactl-tuned-guide/>HugePages management guide</a> covers RAM-side performance. And for container-level resource monitoring, check our <a href=../2026-05-22-self-hosted-cgroup-monitoring-tools-systemd-cgtop-vs-cgroup-tools-vs-libcgroup-guide/>cgroup monitoring tools guide</a> for process isolation metrics.</p><h2 id=faq>FAQ</h2><h3 id=which-profiling-tool-should-i-install-first-on-a-new-self-hosted-server>Which profiling tool should I install first on a new self-hosted server?</h3><p>Start with <strong>sysstat</strong>. It provides continuous baseline monitoring with near-zero overhead, and the historical data it collects is invaluable for post-incident analysis. Enable it during initial server setup — the data it accumulates over the first week establishes performance baselines that make future anomalies easy to spot. Add bcc-tools and perf as needed for deeper analysis.</p><h3 id=do-bcc-tools-require-kernel-recompilation>Do bcc-tools require kernel recompilation?</h3><p>No. Modern Linux kernels (4.9+) include eBPF support by default. bcc-tools load eBPF programs into the running kernel at runtime using the <code>bpf()</code> syscall. The kernel&rsquo;s eBPF verifier ensures programs are safe before executing them. You only need matching kernel headers installed (<code>linux-headers-$(uname -r)</code> on Debian, <code>kernel-headers</code> on RHEL).</p><h3 id=can-i-use-perf-inside-docker-containers>Can I use perf inside Docker containers?</h3><p>Yes, but you need elevated privileges. Run the container with <code>--cap-add SYS_ADMIN</code> and <code>--pid=host</code>, or mount the host&rsquo;s <code>/tmp</code> directory for perf data storage. For production, it&rsquo;s safer to run perf on the host and target specific container PIDs using <code>docker inspect --format '{{.State.Pid}}' &lt;container></code>.</p><h3 id=how-much-overhead-does-sysstat-add-to-production-systems>How much overhead does sysstat add to production systems?</h3><p>Typically less than 1% CPU. sysstat&rsquo;s data collection interval defaults to 10 minutes, which is negligible. You can increase collection frequency (e.g., every 1 minute in <code>/etc/cron.d/sysstat</code>) with minimal impact. The <code>sar</code> command reads pre-collected data — it doesn&rsquo;t add overhead at query time.</p><h3 id=why-would-i-use-bcc-tools-instead-of-perf-for-kernel-tracing>Why would I use bcc-tools instead of perf for kernel tracing?</h3><p>bcc-tools are better for <strong>specific kernel event tracing</strong> (which files are opened, how long syscalls take, TCP connection states) because they provide targeted, pre-built tools for each scenario. perf is better for <strong>CPU profiling and call graphs</strong> (which functions consume the most CPU time). They&rsquo;re complementary: use bcc-tools to identify the problematic subsystem, then use perf to find the exact code path.</p><h3 id=how-do-i-profile-a-production-database-without-impacting-performance>How do I profile a production database without impacting performance?</h3><p>Use <code>perf record -F 49</code> (lower frequency, 49 Hz instead of the default 99 Hz) for reduced sampling overhead. Limit profiling duration to 30-60 seconds. For bcc-tools, the overhead is already minimal (eBPF JIT compilation means near-native speed). For sysstat, there&rsquo;s virtually no overhead since it reads existing kernel counters. Always profile during low-traffic periods when possible, and avoid <code>perf record -a</code> (system-wide) on production — target specific PIDs instead.</p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted Linux Performance Profiling: perf vs bcc-tools vs sysstat (2026)","description":"Compare Linux performance profiling tools perf, bcc-tools, and sysstat for self-hosted servers. Includes Docker monitoring, eBPF tracing, and flame graph generation.","datePublished":"2026-05-22","dateModified":"2026-05-22","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20Linux%20Performance%20Profiling%3a%20perf%20vs%20bcc-tools%20vs%20sysstat%20%282026%29&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-22-self-hosted-linux-performance-profiling-perf-bcc-tools-sysstat-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-22-self-hosted-linux-performance-profiling-perf-bcc-tools-sysstat-guide%2f&t=Self-Hosted%20Linux%20Performance%20Profiling%3a%20perf%20vs%20bcc-tools%20vs%20sysstat%20%282026%29" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/linux/ class=tag-link>Linux</a>
+<a href=/tags/performance-monitoring/ class=tag-link>Performance-Monitoring</a>
+<a href=/tags/profiling/ class=tag-link>Profiling</a>
+<a href=/tags/ebpf/ class=tag-link>Ebpf</a>
+<a href=/tags/system-administration/ class=tag-link>System-Administration</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-05-22-self-hosted-linux-coredump-management-systemd-abrt-minicoredumper-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted Linux Coredump Management: systemd-coredump vs ABRT vs minicoredumper (2026)</h3><div class=post-excerpt>When a Linux process crashes, the kernel can generate a coredump — a snapshot of the process memory, registers, and …</div><div class=post-footer><span class=post-date>May 22, 2026</span></div></a><a href=/posts/2026-05-22-self-hosted-linux-disk-quota-management-quota-quotatool-webmin-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted Linux Disk Quota Management: quota Tools vs quotatool vs Webmin (2026)</h3><div class=post-excerpt>On any shared Linux server — file servers, web hosting, VPS platforms, or multi-tenant environments — uncontrolled disk …</div><div class=post-footer><span class=post-date>May 22, 2026</span></div></a><a href=/posts/2026-05-22-self-hosted-linux-temp-file-management-systemd-tmpfiles-tmpwatch-tmpreaper-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted Linux Temp File Management: systemd-tmpfiles vs tmpwatch vs tmpreaper (2026)</h3><div class=post-excerpt>Every Linux server accumulates temporary files: application caches, session data, crash reports, package manager …</div><div class=post-footer><span class=post-date>May 22, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>

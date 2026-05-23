@@ -1,0 +1,225 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted File Access Control Lists: POSIX ACL vs NFSv4 ACL vs RichACL | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-05-22-self-hosted-linux-file-access-control-lists-posix-nfs4-richacl-guide/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted File Access Control Lists: POSIX ACL vs NFSv4 ACL vs RichACL"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-05-22-self-hosted-linux-file-access-control-lists-posix-nfs4-richacl-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-05-22T00:00:00Z"><meta property="article:modified_time" content="2026-05-22T00:00:00Z"><meta property="article:tag" content="linux"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted File Access Control Lists: POSIX ACL vs NFSv4 ACL vs RichACL"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted File Access Control Lists: POSIX ACL vs NFSv4 ACL vs RichACL","description":"\u003cp\u003eStandard Unix file permissions (owner\/group\/other with read\/write\/execute) are simple but limited. When you need fine-grained access control — allowing specific users or groups access without changing ownership or creating complex group hierarchies — \u003cstrong\u003eAccess Control Lists (ACLs)\u003c\/strong\u003e provide the solution.\u003c\/p\u003e","datePublished":"2026-05-22T00:00:00Z","dateModified":"2026-05-22T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-05-22-self-hosted-linux-file-access-control-lists-posix-nfs4-richacl-guide\/"},"keywords":["linux","security","filesystem","access-control","comparison"],"articleSection":"linux","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted File Access Control Lists: POSIX ACL vs NFSv4 ACL vs RichACL","item":"https:\/\/www.pistack.xyz\/posts\/2026-05-22-self-hosted-linux-file-access-control-lists-posix-nfs4-richacl-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Linux</span>
+<span class="tag tag-purple">Security</span>
+<span class="tag tag-purple">Filesystem</span></div><h1>Self-Hosted File Access Control Lists: POSIX ACL vs NFSv4 ACL vs RichACL</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>May 22, 2026</span>
+<span>8 min read</span>
+<span>Updated May 22, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#why-standard-unix-permissions-fall-short>Why Standard Unix Permissions Fall Short</a></li><li><a href=#acl-implementation-comparison>ACL Implementation Comparison</a><ul><li><a href=#posix-acls-the-linux-standard>POSIX ACLs: The Linux Standard</a></li><li><a href=#nfsv4-acls-network-aware-permissions>NFSv4 ACLs: Network-Aware Permissions</a></li><li><a href=#richacls-extended-posix-for-local-filesystems>RichACLs: Extended POSIX for Local Filesystems</a></li></ul></li><li><a href=#practical-configuration-examples>Practical Configuration Examples</a><ul><li><a href=#shared-project-directory-with-posix-acls>Shared Project Directory with POSIX ACLs</a></li><li><a href=#nfsv4-export-with-fine-grained-acls>NFSv4 Export with Fine-Grained ACLs</a></li><li><a href=#backup-and-restore-acls>Backup and Restore ACLs</a></li></ul></li><li><a href=#filesystem-requirements>Filesystem Requirements</a></li><li><a href=#security-best-practices-for-acl-management>Security Best Practices for ACL Management</a></li><li><a href=#related-guides>Related Guides</a></li><li><a href=#frequently-asked-questions>Frequently Asked Questions</a><ul><li><a href=#does-the-posix-acl-mask-affect-the-file-owner>Does the POSIX ACL mask affect the file owner?</a></li><li><a href=#can-i-use-acls-on-nfs-mounts>Can I use ACLs on NFS mounts?</a></li><li><a href=#what-happens-to-acls-when-i-copy-a-file>What happens to ACLs when I copy a file?</a></li><li><a href=#how-do-i-check-if-a-filesystem-supports-acls>How do I check if a filesystem supports ACLs?</a></li><li><a href=#can-acls-replace-group-based-permissions>Can ACLs replace group-based permissions?</a></li><li><a href=#do-acls-impact-filesystem-performance>Do ACLs impact filesystem performance?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><p>Standard Unix file permissions (owner/group/other with read/write/execute) are simple but limited. When you need fine-grained access control — allowing specific users or groups access without changing ownership or creating complex group hierarchies — <strong>Access Control Lists (ACLs)</strong> provide the solution.</p><p>This guide compares three ACL implementations available on Linux servers: <strong>POSIX ACLs</strong> (the standard extended permission model), <strong>NFSv4 ACLs</strong> (rich ACLs for networked filesystems), and <strong>RichACLs</strong> (extended POSIX ACLs for local filesystems). Understanding the differences helps you choose the right ACL system for your self-hosted infrastructure.</p><h2 id=why-standard-unix-permissions-fall-short>Why Standard Unix Permissions Fall Short</h2><p>The traditional Unix permission model uses three permission sets (user, group, other) with three bits each (read, write, execute). This works for simple scenarios but creates challenges in multi-user environments:</p><ul><li><strong>No per-user permissions</strong> — you cannot grant write access to one specific user without adding them to the file&rsquo;s group</li><li><strong>Group proliferation</strong> — managing dozens of groups for different access combinations becomes unwieldy</li><li><strong>No inheritance</strong> — newly created files in a directory do not automatically inherit the directory&rsquo;s ACL</li><li><strong>No deny rules</strong> — you cannot explicitly deny access to a specific user while allowing a group</li><li><strong>Limited audit granularity</strong> — standard permissions provide no logging of access decisions</li></ul><p>ACLs address these limitations by allowing multiple named users and groups to have independent permissions on the same file or directory.</p><h2 id=acl-implementation-comparison>ACL Implementation Comparison</h2><table><thead><tr><th>Feature</th><th>POSIX ACL</th><th>NFSv4 ACL</th><th>RichACL</th></tr></thead><tbody><tr><td><strong>Standard</strong></td><td>POSIX.1e (draft)</td><td>RFC 5661</td><td>Experimental (ext4 patch)</td></tr><tr><td><strong>Tools</strong></td><td><code>setfacl</code>, <code>getfacl</code></td><td><code>nfs4_getfacl</code>, <code>nfs4_setfacl</code></td><td><code>richacl</code> (kernel module)</td></tr><tr><td><strong>Package</strong></td><td><code>acl</code> (installed by default)</td><td><code>nfs4-acl-tools</code></td><td>Not in mainline kernel</td></tr><tr><td><strong>Filesystem Support</strong></td><td>ext4, XFS, btrfs, zfs</td><td>NFSv4, zfs, btrfs</td><td>ext4 (patched)</td></tr><tr><td><strong>Permission Granularity</strong></td><td>rwx per user/group</td><td>14 permission bits</td><td>14 permission bits</td></tr><tr><td><strong>Inheritance</strong></td><td>Yes (default ACL)</td><td>Yes (inheritance flags)</td><td>Yes</td></tr><tr><td><strong>Deny Entries</strong></td><td>No (allow only)</td><td>Yes (A:deny)</td><td>Yes</td></tr><tr><td><strong>Named Users</strong></td><td>Yes</td><td>Yes</td><td>Yes</td></tr><tr><td><strong>Named Groups</strong></td><td>Yes</td><td>Yes</td><td>Yes</td></tr><tr><td><strong>Mask Entry</strong></td><td>Yes (limits named entries)</td><td>No mask needed</td><td>No mask</td></tr><tr><td><strong>Network Sharing</strong></td><td>Via NFSv3 (mapped)</td><td>Native (NFSv4 protocol)</td><td>Local only</td></tr><tr><td><strong>Windows ACL Mapping</strong></td><td>Partial</td><td>Full</td><td>Partial</td></tr></tbody></table><h3 id=posix-acls-the-linux-standard>POSIX ACLs: The Linux Standard</h3><p>POSIX ACLs extend the traditional Unix permission model by adding named user and group entries. They are supported by all major Linux filesystems and are the default ACL implementation on most distributions.</p><p>The permission model adds:</p><ul><li><strong>User entries</strong> — per-user permissions beyond the file owner</li><li><strong>Group entries</strong> — per-group permissions beyond the file&rsquo;s owning group</li><li><strong>Mask</strong> — limits the maximum permissions for named users and groups (acts like a group permission cap)</li><li><strong>Default ACL</strong> — inherited by new files and directories created within a directory</li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># View current ACL</span>
+</span></span><span class=line><span class=cl>getfacl /data/shared/project
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Grant read-write access to specific user</span>
+</span></span><span class=line><span class=cl>setfacl -m u:developer:rw /data/shared/project
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Grant read access to a group</span>
+</span></span><span class=line><span class=cl>setfacl -m g:auditors:r /data/shared/project
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Set default ACL for new files in directory</span>
+</span></span><span class=line><span class=cl>setfacl -d -m u:intern:r /data/shared/project
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Remove a specific ACL entry</span>
+</span></span><span class=line><span class=cl>setfacl -x u:developer /data/shared/project
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Remove all extended ACL entries</span>
+</span></span><span class=line><span class=cl>setfacl -b /data/shared/project
+</span></span></code></pre></td></tr></table></div></div><h3 id=nfsv4-acls-network-aware-permissions>NFSv4 ACLs: Network-Aware Permissions</h3><p>NFSv4 ACLs provide a richer permission model designed for networked environments. They support 14 distinct permission types (compared to POSIX&rsquo;s 3) and include native deny entries.</p><p>The 14 NFSv4 permission bits:</p><ul><li><code>read_data</code>, <code>write_data</code>, <code>append_data</code></li><li><code>read_xattr</code>, <code>write_xattr</code></li><li><code>execute</code>, <code>delete_child</code>, <code>delete</code></li><li><code>read_acl</code>, <code>write_acl</code>, <code>write_owner</code></li><li><code>read_attributes</code>, <code>write_attributes</code>, <code>synchronize</code></li></ul><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># View NFSv4 ACL</span>
+</span></span><span class=line><span class=cl>nfs4_getfacl /mnt/nfs/shared
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Grant read access to a user</span>
+</span></span><span class=line><span class=cl>nfs4_setfacl -a <span class=s2>&#34;A::developer@domain:RX&#34;</span> /mnt/nfs/shared
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Deny write access to a specific user</span>
+</span></span><span class=line><span class=cl>nfs4_setfacl -a <span class=s2>&#34;A:d:contractor:W&#34;</span> /mnt/nfs/shared
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Set inherited permissions for new files</span>
+</span></span><span class=line><span class=cl>nfs4_setfacl -a <span class=s2>&#34;A:fdi:team@domain:RWX&#34;</span> /mnt/nfs/shared
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Remove an ACE (Access Control Entry)</span>
+</span></span><span class=line><span class=cl>nfs4_setfacl -x <span class=s2>&#34;A::developer@domain:RX&#34;</span> /mnt/nfs/shared
+</span></span></code></pre></td></tr></table></div></div><h3 id=richacls-extended-posix-for-local-filesystems>RichACLs: Extended POSIX for Local Filesystems</h3><p>RichACLs are an experimental kernel patch set for ext4 that brings NFSv4-style ACLs to local filesystems. They are not in the mainline kernel but have been discussed for inclusion.</p><p>RichACLs combine the familiarity of POSIX ACL tools with the granularity of NFSv4 ACLs:</p><ul><li>Uses the same <code>setfacl</code>/<code>getfacl</code> interface as POSIX ACLs</li><li>Supports deny entries (like NFSv4)</li><li>No mask entry (simpler permission model)</li><li>Supports the full 14-permission set</li></ul><p>Since RichACLs are not in mainline, they require a patched kernel and are primarily of academic interest for most administrators. In practice, POSIX ACLs (for local) and NFSv4 ACLs (for networked) cover virtually all production use cases.</p><h2 id=practical-configuration-examples>Practical Configuration Examples</h2><h3 id=shared-project-directory-with-posix-acls>Shared Project Directory with POSIX ACLs</h3><p>A common scenario: a shared directory where multiple teams need different access levels.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Create the shared directory</span>
+</span></span><span class=line><span class=cl>mkdir -p /data/projects/alpha
+</span></span><span class=line><span class=cl>chmod <span class=m>2770</span> /data/projects/alpha  <span class=c1># Set setgid bit for group inheritance</span>
+</span></span><span class=line><span class=cl>chgrp alpha-team /data/projects/alpha
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Set base ACL for the team</span>
+</span></span><span class=line><span class=cl>setfacl -m g:alpha-team:rwx /data/projects/alpha
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Grant specific access to individual users</span>
+</span></span><span class=line><span class=cl>setfacl -m u:alice:rwx /data/projects/alpha
+</span></span><span class=line><span class=cl>setfacl -m u:bob:rx /data/projects/alpha
+</span></span><span class=line><span class=cl>setfacl -m u:charlie:r /data/projects/alpha
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Set default ACL so new files inherit team access</span>
+</span></span><span class=line><span class=cl>setfacl -d -m g:alpha-team:rwx /data/projects/alpha
+</span></span><span class=line><span class=cl>setfacl -d -m u:alice:rwx /data/projects/alpha
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Verify the complete ACL</span>
+</span></span><span class=line><span class=cl>getfacl /data/projects/alpha
+</span></span><span class=line><span class=cl><span class=c1># Output:</span>
+</span></span><span class=line><span class=cl><span class=c1># file: data/projects/alpha</span>
+</span></span><span class=line><span class=cl><span class=c1># owner: root</span>
+</span></span><span class=line><span class=cl><span class=c1># group: alpha-team</span>
+</span></span><span class=line><span class=cl><span class=c1># flags: -s-</span>
+</span></span><span class=line><span class=cl><span class=c1># user::rwx</span>
+</span></span><span class=line><span class=cl><span class=c1># user:alice:rwx</span>
+</span></span><span class=line><span class=cl><span class=c1># user:bob:r-x</span>
+</span></span><span class=line><span class=cl><span class=c1># user:charlie:r--</span>
+</span></span><span class=line><span class=cl><span class=c1># group::rwx</span>
+</span></span><span class=line><span class=cl><span class=c1># group:alpha-team:rwx</span>
+</span></span><span class=line><span class=cl><span class=c1># mask::rwx</span>
+</span></span><span class=line><span class=cl><span class=c1># other::---</span>
+</span></span><span class=line><span class=cl><span class=c1># default:user::rwx</span>
+</span></span><span class=line><span class=cl><span class=c1># default:user:alice:rwx</span>
+</span></span><span class=line><span class=cl><span class=c1># default:group::rwx</span>
+</span></span><span class=line><span class=cl><span class=c1># default:group:alpha-team:rwx</span>
+</span></span><span class=line><span class=cl><span class=c1># default:mask::rwx</span>
+</span></span><span class=line><span class=cl><span class=c1># default:other::---</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=nfsv4-export-with-fine-grained-acls>NFSv4 Export with Fine-Grained ACLs</h3><p>Setting up NFSv4 exports with ACL-based access control:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># NFS server: configure export in /etc/exports</span>
+</span></span><span class=line><span class=cl>/data/shared    *<span class=o>(</span>rw,sync,no_subtree_check,sec<span class=o>=</span>sys<span class=o>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Set NFSv4 ACL on the server</span>
+</span></span><span class=line><span class=cl>nfs4_setfacl -a <span class=s2>&#34;A::admin@domain:RWX&#34;</span> /data/shared
+</span></span><span class=line><span class=cl>nfs4_setfacl -a <span class=s2>&#34;A::developers@domain:RWX&#34;</span> /data/shared
+</span></span><span class=line><span class=cl>nfs4_setfacl -a <span class=s2>&#34;A::viewers@domain:RX&#34;</span> /data/shared
+</span></span><span class=line><span class=cl>nfs4_setfacl -a <span class=s2>&#34;A:d:external:R&#34;</span> /data/shared
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Client mounts with NFSv4</span>
+</span></span><span class=line><span class=cl>mount -t nfs4 -o <span class=nv>vers</span><span class=o>=</span>4.2 server:/data/shared /mnt/shared
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Verify ACL on client</span>
+</span></span><span class=line><span class=cl>nfs4_getfacl /mnt/shared
+</span></span></code></pre></td></tr></table></div></div><h3 id=backup-and-restore-acls>Backup and Restore ACLs</h3><p>When migrating data between servers, preserving ACLs is critical.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Backup POSIX ACLs</span>
+</span></span><span class=line><span class=cl>getfacl -R /data/ &gt; /backup/acl-backup.txt
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Restore POSIX ACLs</span>
+</span></span><span class=line><span class=cl>setfacl --restore<span class=o>=</span>/backup/acl-backup.txt
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Backup with rsync (preserves ACLs)</span>
+</span></span><span class=line><span class=cl>rsync -aAX /data/ /backup/data/
+</span></span><span class=line><span class=cl><span class=c1># -A = preserve ACLs, -X = preserve extended attributes</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Copy ACLs from one file to another</span>
+</span></span><span class=line><span class=cl>getfacl source-file <span class=p>|</span> setfacl --set-file<span class=o>=</span>- target-file
+</span></span></code></pre></td></tr></table></div></div><h2 id=filesystem-requirements>Filesystem Requirements</h2><p>Not all filesystems support all ACL types. Plan your storage accordingly.</p><table><thead><tr><th>Filesystem</th><th>POSIX ACL</th><th>NFSv4 ACL</th><th>RichACL</th></tr></thead><tbody><tr><td>ext4</td><td>Yes (<code>acl</code> mount option, default)</td><td>No</td><td>Experimental (patch)</td></tr><tr><td>XFS</td><td>Yes (default)</td><td>No</td><td>No</td></tr><tr><td>btrfs</td><td>Yes (default)</td><td>Yes (experimental)</td><td>No</td></tr><tr><td>ZFS</td><td>Yes</td><td>Yes</td><td>No</td></tr><tr><td>NFSv3</td><td>Via server ACLs</td><td>No</td><td>No</td></tr><tr><td>NFSv4</td><td>Via mapping</td><td>Yes (native)</td><td>No</td></tr><tr><td>CIFS/SMB</td><td>Via mapping</td><td>Via mapping</td><td>No</td></tr></tbody></table><p>For ext4, ensure the <code>acl</code> mount option is enabled (it is the default on modern distributions):</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Check current mount options</span>
+</span></span><span class=line><span class=cl>mount <span class=p>|</span> grep <span class=s2>&#34;on / &#34;</span>
+</span></span><span class=line><span class=cl><span class=c1># Look for &#39;acl&#39; in the options</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Enable ACL on an ext4 filesystem (if not default)</span>
+</span></span><span class=line><span class=cl>tune2fs -o acl /dev/sda1
+</span></span><span class=line><span class=cl><span class=c1># Or via fstab:</span>
+</span></span><span class=line><span class=cl><span class=c1># /dev/sda1  /data  ext4  defaults,acl  0  2</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=security-best-practices-for-acl-management>Security Best Practices for ACL Management</h2><ul><li><strong>Regular ACL audits</strong> — run <code>find /data -name '*.txt' -exec getfacl {} \; | grep -v "^#"</code> to audit extended ACLs across your filesystem</li><li><strong>Avoid overly permissive masks</strong> — the POSIX ACL mask limits all named entries; a mask of <code>rwx</code> effectively removes the mask&rsquo;s protective function</li><li><strong>Use default ACLs for directories</strong> — always set default ACLs on shared directories to ensure new files inherit appropriate permissions</li><li><strong>Document ACL policies</strong> — maintain documentation of which users and groups have access to which directories, especially in multi-team environments</li><li><strong>Test before deploying</strong> — use <code>setfacl -m</code> with <code>--test</code> flag (where available) or test on a non-production directory first</li><li><strong>Monitor ACL changes</strong> — use <code>auditd</code> rules to log <code>setfacl</code> and <code>chmod</code> executions: <code>-a always,exit -F arch=b64 -S setxattr -F exe=/usr/bin/setfacl</code></li></ul><h2 id=related-guides>Related Guides</h2><p>For filesystem auditing and compliance, see our <a href=../2026-05-16-self-hosted-linux-audit-framework-auditd-goaudit-auditbeat-guide/>Linux audit framework with auditd guide</a>.
+If you manage container security, check our <a href=../2026-05-22-linux-container-capabilities-management-capsh-bubblewrap-native-docker-guide/>container capabilities management guide</a>.
+For server security auditing tools, our <a href=../2026-04-26-lynis-vs-openscap-vs-goss-self-hosted-server-security-auditing-guide-2026/>Lynis vs OpenSCAP vs Goss comparison</a> covers compliance scanning.</p><h2 id=frequently-asked-questions>Frequently Asked Questions</h2><h3 id=does-the-posix-acl-mask-affect-the-file-owner>Does the POSIX ACL mask affect the file owner?</h3><p>No. The mask only limits permissions for named users, named groups, and the owning group. The file owner&rsquo;s permissions are always evaluated directly, bypassing the mask. This is a common point of confusion — the mask appears as the &ldquo;group&rdquo; permission in <code>ls -l</code> output.</p><h3 id=can-i-use-acls-on-nfs-mounts>Can I use ACLs on NFS mounts?</h3><p>Yes, but the behavior depends on the NFS version. NFSv3 maps ACLs to standard Unix permissions, losing the extended entries. NFSv4.2 supports full ACL preservation across the network. For best results, use NFSv4.2 or later when sharing directories with complex ACLs.</p><h3 id=what-happens-to-acls-when-i-copy-a-file>What happens to ACLs when I copy a file?</h3><p>Standard <code>cp</code> does NOT preserve ACLs. Use <code>cp --preserve=all</code> or <code>cp -a</code> to retain ACLs during copy. For cross-filesystem copies, <code>rsync -aAX</code> is the most reliable option — it preserves ownership, permissions, ACLs, and extended attributes.</p><h3 id=how-do-i-check-if-a-filesystem-supports-acls>How do I check if a filesystem supports ACLs?</h3><p>Run <code>tune2fs -l /dev/sda1 | grep "Default mount options"</code> for ext4, or check mount options with <code>mount | grep acl</code>. For XFS, ACLs are always enabled. For btrfs, check with <code>btrfs filesystem show</code>. Most modern Linux distributions enable ACLs by default on all supported filesystems.</p><h3 id=can-acls-replace-group-based-permissions>Can ACLs replace group-based permissions?</h3><p>ACLs complement, not replace, group-based permissions. For simple scenarios (all team members need the same access), standard group permissions are simpler and more maintainable. Use ACLs when you need exceptions to the group rule — specific users with elevated or restricted access that do not fit the group model.</p><h3 id=do-acls-impact-filesystem-performance>Do ACLs impact filesystem performance?</h3><p>The performance impact of POSIX ACLs is minimal — typically less than 1% overhead for metadata operations. NFSv4 ACLs have slightly higher overhead due to the larger ACL structures, but this is negligible for most workloads. The primary performance consideration is the number of ACL entries per file — directories with hundreds of named user entries may see slower <code>ls</code> and <code>stat</code> operations.</p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted File Access Control Lists: POSIX ACL vs NFSv4 ACL vs RichACL","description":"Compare three Linux ACL implementations: POSIX ACL, NFSv4 ACL, and RichACL. Covers configuration, tools, filesystem support, and security best practices.","datePublished":"2026-05-22","dateModified":"2026-05-22","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20File%20Access%20Control%20Lists%3a%20POSIX%20ACL%20vs%20NFSv4%20ACL%20vs%20RichACL&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-22-self-hosted-linux-file-access-control-lists-posix-nfs4-richacl-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-22-self-hosted-linux-file-access-control-lists-posix-nfs4-richacl-guide%2f&t=Self-Hosted%20File%20Access%20Control%20Lists%3a%20POSIX%20ACL%20vs%20NFSv4%20ACL%20vs%20RichACL" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/linux/ class=tag-link>Linux</a>
+<a href=/tags/security/ class=tag-link>Security</a>
+<a href=/tags/filesystem/ class=tag-link>Filesystem</a>
+<a href=/tags/access-control/ class=tag-link>Access-Control</a>
+<a href=/tags/comparison/ class=tag-link>Comparison</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-05-17-self-hosted-kubernetes-rbac-auditing-rakkess-vs-kubiscan-vs-rbac-manager-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Kubernetes</span></div><h3 class=post-title>Self-Hosted Kubernetes RBAC Auditing: rakkess vs KubiScan vs rbac-manager (2026)</h3><div class=post-excerpt>Role-Based Access Control (RBAC) is the foundation of Kubernetes security. But as clusters grow in size and complexity, …</div><div class=post-footer><span class=post-date>May 17, 2026</span></div></a><a href=/posts/2026-05-16-self-hosted-linux-mac-selinux-apparmor-smack-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Security</span></div><h3 class=post-title>Self-Hosted Linux Mandatory Access Control: SELinux vs AppArmor vs SMACK (2026)</h3><div class=post-excerpt>Mandatory Access Control (MAC) is the most powerful security mechanism available on Linux. Unlike Discretionary Access …</div><div class=post-footer><span class=post-date>May 16, 2026</span></div></a><a href=/posts/2026-05-12-self-hosted-encrypted-filesystems-gocryptfs-encfs-cryfs-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Comparison</span></div><h3 class=post-title>Self-Hosted Encrypted Filesystems: gocryptfs vs encfs vs cryfs — Data Protection Guide 2026</h3><div class=post-excerpt>Protecting sensitive data at rest is a fundamental requirement for any self-hosted infrastructure. Whether you are …</div><div class=post-footer><span class=post-date>May 12, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>

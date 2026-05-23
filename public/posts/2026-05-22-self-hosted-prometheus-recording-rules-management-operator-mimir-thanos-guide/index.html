@@ -1,0 +1,281 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted Prometheus Recording Rules Management: Operator vs Mimir vs Thanos | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-05-22-self-hosted-prometheus-recording-rules-management-operator-mimir-thanos-guide/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted Prometheus Recording Rules Management: Operator vs Mimir vs Thanos"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-05-22-self-hosted-prometheus-recording-rules-management-operator-mimir-thanos-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-05-22T00:00:00Z"><meta property="article:modified_time" content="2026-05-22T00:00:00Z"><meta property="article:tag" content="prometheus"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted Prometheus Recording Rules Management: Operator vs Mimir vs Thanos"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted Prometheus Recording Rules Management: Operator vs Mimir vs Thanos","description":"\u003cp\u003ePrometheus recording rules precompute frequently needed or computationally expensive expressions and save the result as a new set of time series. For large-scale monitoring setups, recording rules are essential — they reduce query load, speed up dashboards, and enable complex aggregations without real-time computation.\u003c\/p\u003e","datePublished":"2026-05-22T00:00:00Z","dateModified":"2026-05-22T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-05-22-self-hosted-prometheus-recording-rules-management-operator-mimir-thanos-guide\/"},"keywords":["prometheus","monitoring","observability","kubernetes","comparison"],"articleSection":"prometheus","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted Prometheus Recording Rules Management: Operator vs Mimir vs Thanos","item":"https:\/\/www.pistack.xyz\/posts\/2026-05-22-self-hosted-prometheus-recording-rules-management-operator-mimir-thanos-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Prometheus</span>
+<span class="tag tag-purple">Monitoring</span>
+<span class="tag tag-purple">Observability</span></div><h1>Self-Hosted Prometheus Recording Rules Management: Operator vs Mimir vs Thanos</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>May 22, 2026</span>
+<span>7 min read</span>
+<span>Updated May 22, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#why-recording-rules-matter-for-self-hosted-monitoring>Why Recording Rules Matter for Self-Hosted Monitoring</a></li><li><a href=#architecture-comparison>Architecture Comparison</a><ul><li><a href=#prometheus-operator-kubernetes-native-rule-management>Prometheus Operator: Kubernetes-Native Rule Management</a></li><li><a href=#grafana-mimir-horizontally-scalable-rules>Grafana Mimir: Horizontally Scalable Rules</a></li><li><a href=#thanos-ruler-multi-cluster-rule-evaluation>Thanos Ruler: Multi-Cluster Rule Evaluation</a></li></ul></li><li><a href=#docker-compose-deployments>Docker Compose Deployments</a><ul><li><a href=#prometheus-operator-via-kube-prometheus-stack>Prometheus Operator (via kube-prometheus-stack)</a></li><li><a href=#grafana-mimir>Grafana Mimir</a></li><li><a href=#thanos-ruler-with-local-prometheus>Thanos Ruler with Local Prometheus</a></li></ul></li><li><a href=#rule-validation-and-cicd-integration>Rule Validation and CI/CD Integration</a><ul><li><a href=#prometheus-operator-admission-validation>Prometheus Operator: Admission Validation</a></li><li><a href=#mimir-mimirtool-rule-check>Mimir: mimirtool Rule Check</a></li><li><a href=#thanos-rule-file-validation>Thanos: Rule File Validation</a></li></ul></li><li><a href=#choosing-the-right-tool>Choosing the Right Tool</a><ul><li><a href=#choose-prometheus-operator-if>Choose Prometheus Operator if:</a></li><li><a href=#choose-grafana-mimir-if>Choose Grafana Mimir if:</a></li><li><a href=#choose-thanos-ruler-if>Choose Thanos Ruler if:</a></li></ul></li><li><a href=#related-guides>Related Guides</a></li><li><a href=#frequently-asked-questions>Frequently Asked Questions</a><ul><li><a href=#how-often-should-recording-rules-be-evaluated>How often should recording rules be evaluated?</a></li><li><a href=#can-recording-rules-reference-other-recording-rules>Can recording rules reference other recording rules?</a></li><li><a href=#how-do-i-migrate-recording-rules-between-tools>How do I migrate recording rules between tools?</a></li><li><a href=#what-happens-if-a-recording-rule-fails-to-evaluate>What happens if a recording rule fails to evaluate?</a></li><li><a href=#how-many-recording-rules-can-i-have>How many recording rules can I have?</a></li><li><a href=#do-recording-rules-increase-storage-usage>Do recording rules increase storage usage?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><p>Prometheus recording rules precompute frequently needed or computationally expensive expressions and save the result as a new set of time series. For large-scale monitoring setups, recording rules are essential — they reduce query load, speed up dashboards, and enable complex aggregations without real-time computation.</p><p>But managing recording rules across multiple Prometheus instances, environments, and teams quickly becomes challenging. This guide compares three approaches to Prometheus recording rules management: <strong>Prometheus Operator</strong> (Kubernetes-native), <strong>Grafana Mimir</strong> (horizontal scaling), and <strong>Thanos Ruler</strong> (multi-cluster federation).</p><h2 id=why-recording-rules-matter-for-self-hosted-monitoring>Why Recording Rules Matter for Self-Hosted Monitoring</h2><p>Without recording rules, every dashboard panel computes its PromQL expressions from scratch. For a monitoring stack with 50+ dashboards querying 10,000+ time series, this creates:</p><ul><li><strong>High query latency</strong> — complex expressions take seconds to evaluate</li><li><strong>Increased CPU usage</strong> — Prometheus repeatedly computes the same aggregations</li><li><strong>Dashboard timeouts</strong> — Grafana panels fail to load during peak query load</li><li><strong>Scaling bottlenecks</strong> — single Prometheus instance becomes a query bottleneck</li></ul><p>Recording rules solve this by computing expressions on a schedule (typically every 1-5 minutes) and storing the results. Dashboards then query the precomputed series, reducing both latency and computational load.</p><h2 id=architecture-comparison>Architecture Comparison</h2><p>Each tool approaches recording rules from a different architectural angle.</p><table><thead><tr><th>Feature</th><th>Prometheus Operator</th><th>Grafana Mimir</th><th>Thanos Ruler</th></tr></thead><tbody><tr><td><strong>Type</strong></td><td>Kubernetes Operator</td><td>Distributed TSDB</td><td>Sidecar/Ruler</td></tr><tr><td><strong>Rule Storage</strong></td><td>PrometheusRule CRD</td><td>YAML files + object store</td><td>YAML files + object store</td></tr><tr><td><strong>Evaluation Engine</strong></td><td>Prometheus server</td><td>Mimir ruler component</td><td>Thanos ruler component</td></tr><tr><td><strong>Multi-Tenant</strong></td><td>Via namespaces</td><td>Native (tenant header)</td><td>Via external labels</td></tr><tr><td><strong>High Availability</strong></td><td>Prometheus replicas</td><td>Native replication</td><td>Ruler HA pairs</td></tr><tr><td><strong>Rule Validation</strong></td><td>Admission webhook</td><td><code>mimirtool rule check</code></td><td><code>thanos rule validate</code></td></tr><tr><td><strong>Object Store</strong></td><td>N/A (local TSDB)</td><td>S3, GCS, Azure, Swift</td><td>S3, GCS, Azure, Swift</td></tr><tr><td><strong>Long-Term Storage</strong></td><td>Via Thanos sidecar</td><td>Native (compactor)</td><td>Native (compactor)</td></tr><tr><td><strong>Alert Integration</strong></td><td>Prometheus Alertmanager</td><td>Mimir ruler (built-in)</td><td>Thanos ruler (built-in)</td></tr><tr><td><strong>GitHub Stars</strong></td><td>9,900+</td><td>5,100+</td><td>14,000+</td></tr><tr><td><strong>License</strong></td><td>Apache 2.0</td><td>AGPLv3</td><td>Apache 2.0</td></tr></tbody></table><h3 id=prometheus-operator-kubernetes-native-rule-management>Prometheus Operator: Kubernetes-Native Rule Management</h3><p>The Prometheus Operator introduces the <code>PrometheusRule</code> Custom Resource Definition (CRD), which stores recording rules as Kubernetes resources. This integrates seamlessly with GitOps workflows — rules are version-controlled alongside your cluster configuration.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>monitoring.coreos.com/v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>PrometheusRule</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>node-recording-rules</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>monitoring</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>labels</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>prometheus</span><span class=p>:</span><span class=w> </span><span class=l>main</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>role</span><span class=p>:</span><span class=w> </span><span class=l>recording-rules</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>groups</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>node.rules</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>interval</span><span class=p>:</span><span class=w> </span><span class=l>1m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>rules</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>record</span><span class=p>:</span><span class=w> </span><span class=l>node:cpu_utilization:avg5m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>expr</span><span class=p>:</span><span class=w> </span><span class=m>1</span><span class=w> </span>- <span class=l>avg(rate(node_cpu_seconds_total{mode=&#34;idle&#34;}[5m])) by (instance)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>record</span><span class=p>:</span><span class=w> </span><span class=l>node:memory_utilization:ratio</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>expr</span><span class=p>:</span><span class=w> </span><span class=m>1</span><span class=w> </span>- <span class=l>(node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=nt>record</span><span class=p>:</span><span class=w> </span><span class=l>node:disk_utilization:ratio</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>expr</span><span class=p>:</span><span class=w> </span><span class=m>1</span><span class=w> </span>- <span class=l>(node_filesystem_avail_bytes{mountpoint=&#34;/&#34;} / node_filesystem_size_bytes{mountpoint=&#34;/&#34;})</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>The Operator automatically discovers <code>PrometheusRule</code> resources across namespaces and merges them into the Prometheus configuration. This eliminates manual config file management and enables team-level rule ownership through namespace isolation.</p><h3 id=grafana-mimir-horizontally-scalable-rules>Grafana Mimir: Horizontally Scalable Rules</h3><p>Mimir&rsquo;s ruler component evaluates recording rules in a horizontally scalable manner. Rules are stored as YAML files and uploaded via <code>mimirtool</code> or the Mimir API. The ruler distributes rule groups across multiple ruler instances, providing both parallelism and high availability.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># recording-rules.yaml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>groups</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>api_latency.rules</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>interval</span><span class=p>:</span><span class=w> </span><span class=l>30s</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>rules</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>record</span><span class=p>:</span><span class=w> </span><span class=l>job:http_request_duration_seconds:p99_5m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>expr</span><span class=p>:</span><span class=w> </span><span class=l>histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (job, le))</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>record</span><span class=p>:</span><span class=w> </span><span class=l>job:http_request_duration_seconds:p95_5m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>expr</span><span class=p>:</span><span class=w> </span><span class=l>histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (job, le))</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>record</span><span class=p>:</span><span class=w> </span><span class=l>job:http_requests:rate5m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>expr</span><span class=p>:</span><span class=w> </span><span class=l>sum(rate(http_requests_total[5m])) by (job, method, status_code)</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Upload rules with mimirtool:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>mimirtool rules load recording-rules.yaml --address<span class=o>=</span>https://mimir.example.com --id<span class=o>=</span>team-backend --key<span class=o>=</span>secret-key
+</span></span></code></pre></td></tr></table></div></div><p>Mimir&rsquo;s multi-tenant architecture means each team can manage their own recording rules without interfering with others. The <code>--id</code> and <code>--key</code> flags specify the tenant for rule storage.</p><h3 id=thanos-ruler-multi-cluster-rule-evaluation>Thanos Ruler: Multi-Cluster Rule Evaluation</h3><p>Thanos Ruler evaluates recording rules across multiple Prometheus instances and stores results in an object store. This is ideal for multi-cluster setups where you need aggregated metrics from several independent Prometheus servers.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># thanos-rule.yaml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>groups</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>cluster_aggregation.rules</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>interval</span><span class=p>:</span><span class=w> </span><span class=l>2m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>rules</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>record</span><span class=p>:</span><span class=w> </span><span class=l>cluster:node_cpu:ratio_rate5m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>expr</span><span class=p>:</span><span class=w> </span><span class=l>avg(rate(node_cpu_seconds_total{mode!=&#34;idle&#34;}[5m])) by (cluster)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>record</span><span class=p>:</span><span class=w> </span><span class=l>cluster:pod_memory:working_set_bytes</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>expr</span><span class=p>:</span><span class=w> </span><span class=l>sum(container_memory_working_set_bytes{pod!=&#34;&#34;}) by (cluster, namespace)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=nt>record</span><span class=p>:</span><span class=w> </span><span class=l>cluster:http_requests:rate5m</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>expr</span><span class=p>:</span><span class=w> </span><span class=l>sum(rate(http_requests_total[5m])) by (cluster, job)</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Run Thanos Ruler with object store configuration:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>thanos rule   --data-dir<span class=o>=</span>/data/thanos/ruler   --rule-file<span class=o>=</span>/etc/thanos/rules/*.yaml   --alert.querier-address<span class=o>=</span>query.example.com:10901   --objstore.config-file<span class=o>=</span>/etc/thanos/objstore.yaml   --label<span class=o>=</span><span class=s2>&#34;replica=1&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=docker-compose-deployments>Docker Compose Deployments</h2><h3 id=prometheus-operator-via-kube-prometheus-stack>Prometheus Operator (via kube-prometheus-stack)</h3><p>While the Prometheus Operator runs on Kubernetes, you can test it locally with kind or k3s:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># k3s setup for Prometheus Operator testing</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>helm.cattle.io/v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>HelmChart</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>kube-prometheus-stack</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>namespace</span><span class=p>:</span><span class=w> </span><span class=l>kube-system</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>chart</span><span class=p>:</span><span class=w> </span><span class=l>kube-prometheus-stack</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>repo</span><span class=p>:</span><span class=w> </span><span class=l>https://prometheus-community.github.io/helm-charts</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>targetNamespace</span><span class=p>:</span><span class=w> </span><span class=l>monitoring</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>valuesContent</span><span class=p>:</span><span class=w> </span><span class=p>|-</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>    prometheus:
+</span></span></span><span class=line><span class=cl><span class=sd>      prometheusSpec:
+</span></span></span><span class=line><span class=cl><span class=sd>        ruleSelectorNilUsesHelmValues: false
+</span></span></span><span class=line><span class=cl><span class=sd>        ruleNamespaceSelector: {}</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=grafana-mimir>Grafana Mimir</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose-mimir.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>mimir</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>grafana/mimir:2.13.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;-target=all&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;-config.file=/etc/mimir/mimir.yaml&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;8080:8080&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./mimir-config.yaml:/etc/mimir/mimir.yaml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>mimir-data:/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>deploy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>resources</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>limits</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>memory</span><span class=p>:</span><span class=w> </span><span class=l>2G</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>grafana</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>grafana/grafana:11.0.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;3000:3000&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>GF_SECURITY_ADMIN_PASSWORD</span><span class=p>:</span><span class=w> </span><span class=l>admin</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>mimir</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>mimir-data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=thanos-ruler-with-local-prometheus>Thanos Ruler with Local Prometheus</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose-thanos.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>thanos-ruler</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>quay.io/thanos/thanos:v0.36.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;rule&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;--data-dir=/data&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;--rule-file=/rules/*.yaml&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;--objstore.config-file=/config/objstore.yaml&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;--grpc-address=0.0.0.0:10901&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;--http-address=0.0.0.0:10902&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;10902:10902&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./rules:/rules</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./objstore.yaml:/config/objstore.yaml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>thanos-data:/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>prometheus</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>prom/prometheus:v2.53.0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;9090:9090&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./prometheus.yml:/etc/prometheus/prometheus.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>prom-data:/prometheus</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>thanos-data</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>prom-data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=rule-validation-and-cicd-integration>Rule Validation and CI/CD Integration</h2><p>Validating recording rules before deployment prevents broken queries from reaching production.</p><h3 id=prometheus-operator-admission-validation>Prometheus Operator: Admission Validation</h3><p>The Operator includes a validating admission webhook that checks rule syntax before accepting <code>PrometheusRule</code> resources:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Check if webhook is active</span>
+</span></span><span class=line><span class=cl>kubectl get validatingwebhookconfigurations prometheus-admission
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Test rule validation</span>
+</span></span><span class=line><span class=cl>kubectl apply -f broken-rule.yaml
+</span></span><span class=line><span class=cl><span class=c1># Error: spec.groups[0].rules[0].expr: invalid PromQL expression</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=mimir-mimirtool-rule-check>Mimir: mimirtool Rule Check</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Validate rules before uploading</span>
+</span></span><span class=line><span class=cl>mimirtool rule check recording-rules.yaml
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Dry-run upload (shows what would change)</span>
+</span></span><span class=line><span class=cl>mimirtool rules diff recording-rules.yaml --address<span class=o>=</span>https://mimir.example.com
+</span></span></code></pre></td></tr></table></div></div><h3 id=thanos-rule-file-validation>Thanos: Rule File Validation</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Validate rule files locally</span>
+</span></span><span class=line><span class=cl>thanos rule validate --rule-file<span class=o>=</span>./rules/*.yaml
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Check rule evaluation with test data</span>
+</span></span><span class=line><span class=cl>thanos rule validate --rule-file<span class=o>=</span>./rules/*.yaml --test-files<span class=o>=</span>./tests/*.yaml
+</span></span></code></pre></td></tr></table></div></div><h2 id=choosing-the-right-tool>Choosing the Right Tool</h2><h3 id=choose-prometheus-operator-if>Choose Prometheus Operator if:</h3><ul><li>You run Prometheus on Kubernetes</li><li>You want GitOps-friendly rule management (rules as CRDs)</li><li>Your team prefers namespace-based rule isolation</li><li>You already use kube-prometheus-stack</li></ul><h3 id=choose-grafana-mimir-if>Choose Grafana Mimir if:</h3><ul><li>You need horizontal scaling for rule evaluation</li><li>Multi-tenant rule management is required</li><li>You want long-term storage built into the same system</li><li>You manage rules across many teams or departments</li></ul><h3 id=choose-thanos-ruler-if>Choose Thanos Ruler if:</h3><ul><li>You have multiple independent Prometheus clusters</li><li>You need cross-cluster rule aggregation</li><li>You already use Thanos for query federation</li><li>You want to keep existing Prometheus instances unchanged</li></ul><h2 id=related-guides>Related Guides</h2><p>For broader monitoring tool comparisons, see our <a href=../2026-04-25-hertzbeat-vs-prometheus-vs-netdata-self-hosted-monitoring-guide/>Hertzbeat vs Prometheus vs Netdata guide</a>.
+If you need observability beyond metrics, check our <a href=../2026-04-20-openobserve-vs-quickwit-vs-siglens-self-hosted-observability-guide-2026/>OpenObserve vs Quickwit vs Siglens comparison</a>.
+For alert routing on top of these rules, our <a href=../2026-05-07-prometheus-alertmanager-vs-ntfy-vs-gotify-self-hosted-alert-routing-guide/>Prometheus Alertmanager vs ntfy vs Gotify guide</a> covers notification management.</p><h2 id=frequently-asked-questions>Frequently Asked Questions</h2><h3 id=how-often-should-recording-rules-be-evaluated>How often should recording rules be evaluated?</h3><p>For most use cases, a 1-minute or 5-minute interval is sufficient. High-frequency rules (30s) are useful for real-time dashboards but increase computational load. Choose intervals based on your dashboard refresh needs — if dashboards refresh every 30 seconds, a 1-minute rule interval is adequate.</p><h3 id=can-recording-rules-reference-other-recording-rules>Can recording rules reference other recording rules?</h3><p>Yes, but be careful about evaluation order. If Rule B references Rule A&rsquo;s output, Rule A must be evaluated first. Prometheus evaluates rules in the order they appear in the configuration file. Group related rules together and order groups by dependency.</p><h3 id=how-do-i-migrate-recording-rules-between-tools>How do I migrate recording rules between tools?</h3><p>PromQL expressions are compatible across all three tools. The migration effort involves converting the rule format: <code>PrometheusRule</code> CRD to YAML files for Mimir/Thanos, or vice versa. The expressions themselves remain unchanged. Use <code>mimirtool rules sync</code> to migrate from Prometheus to Mimir.</p><h3 id=what-happens-if-a-recording-rule-fails-to-evaluate>What happens if a recording rule fails to evaluate?</h3><p>Failed rule evaluations produce errors in the Prometheus/Mimir/Thanos logs but do not stop other rules from running. The output time series simply won&rsquo;t be updated until the next successful evaluation. Monitor rule evaluation errors via the <code>prometheus_rule_evaluation_failures_total</code> metric.</p><h3 id=how-many-recording-rules-can-i-have>How many recording rules can I have?</h3><p>There is no hard limit, but each rule adds computational overhead. A typical production setup has 50-200 recording rules. Monitor the <code>prometheus_rule_group_duration_seconds</code> metric to ensure rules complete within their evaluation interval. If rules consistently take longer than the interval, consider reducing the rule count or increasing the interval.</p><h3 id=do-recording-rules-increase-storage-usage>Do recording rules increase storage usage?</h3><p>Yes — each recording rule creates new time series. However, the storage cost is usually offset by the reduced cardinality. For example, a rule that aggregates 1,000 per-instance metrics into 10 per-job metrics actually reduces storage by 99%. Plan for approximately 10-20% additional storage for a typical recording rule set.</p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted Prometheus Recording Rules Management: Operator vs Mimir vs Thanos","description":"Compare three approaches to managing Prometheus recording rules: Prometheus Operator, Grafana Mimir, and Thanos Ruler. Covers deployment, validation, and CI/CD.","datePublished":"2026-05-22","dateModified":"2026-05-22","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20Prometheus%20Recording%20Rules%20Management%3a%20Operator%20vs%20Mimir%20vs%20Thanos&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-22-self-hosted-prometheus-recording-rules-management-operator-mimir-thanos-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-22-self-hosted-prometheus-recording-rules-management-operator-mimir-thanos-guide%2f&t=Self-Hosted%20Prometheus%20Recording%20Rules%20Management%3a%20Operator%20vs%20Mimir%20vs%20Thanos" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/prometheus/ class=tag-link>Prometheus</a>
+<a href=/tags/monitoring/ class=tag-link>Monitoring</a>
+<a href=/tags/observability/ class=tag-link>Observability</a>
+<a href=/tags/kubernetes/ class=tag-link>Kubernetes</a>
+<a href=/tags/comparison/ class=tag-link>Comparison</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-04-30-k8s-monitoring-operators-kube-prometheus-victoriametrics-opentelemetry-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Comparison</span></div><h3 class=post-title>Kubernetes Monitoring Operators: kube-prometheus-stack vs VictoriaMetrics vs OpenTelemetry</h3><div class=post-excerpt>Monitoring a Kubernetes cluster requires collecting metrics from nodes, pods, containers, and the control plane, then …</div><div class=post-footer><span class=post-date>Apr 30, 2026</span></div></a><a href=/posts/2026-04-27-coroot-vs-signoz-vs-hyperdx-self-hosted-observability-guide-2026/ class=post-card><div class=post-tags><span class="tag tag-purple">Comparison</span></div><h3 class=post-title>Coroot vs SigNoz vs HyperDX: Self-Hosted Observability Platforms 2026</h3><div class=post-excerpt>Commercial observability platforms like Datadog, New Relic, and Dynatrace charge per host, per ingested gigabyte, and …</div><div class=post-footer><span class=post-date>Apr 27, 2026</span></div></a><a href=/posts/2026-05-17-self-hosted-kubernetes-cost-management-opencost-vs-goldilocks-vs-kubecost-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Kubernetes</span></div><h3 class=post-title>Self-Hosted Kubernetes Cost Management: OpenCost vs Goldilocks vs Kubecost (2026)</h3><div class=post-excerpt>As Kubernetes adoption grows, managing cluster costs becomes increasingly critical. Without visibility into resource …</div><div class=post-footer><span class=post-date>May 17, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>
