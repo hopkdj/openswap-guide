@@ -1,0 +1,363 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted DNS Resolver Configuration Management: resolvconf vs openresolv vs systemd-resolved | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-05-25-self-hosted-dns-resolver-config-management-resolvconf-vs-openresolv-vs-systemd-resolved-guide/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted DNS Resolver Configuration Management: resolvconf vs openresolv vs systemd-resolved"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-05-25-self-hosted-dns-resolver-config-management-resolvconf-vs-openresolv-vs-systemd-resolved-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-05-25T00:00:00Z"><meta property="article:modified_time" content="2026-05-25T00:00:00Z"><meta property="article:tag" content="dns"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted DNS Resolver Configuration Management: resolvconf vs openresolv vs systemd-resolved"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted DNS Resolver Configuration Management: resolvconf vs openresolv vs systemd-resolved","description":"\u003cp\u003eThe \u003ccode\u003e\/etc\/resolv.conf\u003c\/code\u003e file is one of the most critical configuration files on any Linux server. It determines which DNS servers your system queries, which search domains are used for short hostname resolution, and how DNS queries are routed. Yet managing this file correctly — especially when multiple network interfaces, VPNs, containers, and virtual machines each want to modify DNS settings — is a persistent challenge in self-hosted infrastructure.\u003c\/p\u003e","datePublished":"2026-05-25T00:00:00Z","dateModified":"2026-05-25T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-05-25-self-hosted-dns-resolver-config-management-resolvconf-vs-openresolv-vs-systemd-resolved-guide\/"},"keywords":["dns","networking","linux","systemd","resolver"],"articleSection":"dns","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted DNS Resolver Configuration Management: resolvconf vs openresolv vs systemd-resolved","item":"https:\/\/www.pistack.xyz\/posts\/2026-05-25-self-hosted-dns-resolver-config-management-resolvconf-vs-openresolv-vs-systemd-resolved-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Dns</span>
+<span class="tag tag-purple">Networking</span>
+<span class="tag tag-purple">Linux</span></div><h1>Self-Hosted DNS Resolver Configuration Management: resolvconf vs openresolv vs systemd-resolved</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>May 25, 2026</span>
+<span>9 min read</span>
+<span>Updated May 25, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#the-resolvconf-problem>The resolv.conf Problem</a></li><li><a href=#resolvconf-the-original-implementation>resolvconf: The Original Implementation</a><ul><li><a href=#resolvconf-architecture>resolvconf Architecture</a></li><li><a href=#resolvconf-configuration>resolvconf Configuration</a></li><li><a href=#resolvconf-hook-system>resolvconf Hook System</a></li><li><a href=#docker-compose-with-resolvconf>Docker Compose with resolvconf</a></li></ul></li><li><a href=#openresolv-the-modern-posix-implementation>openresolv: The Modern POSIX Implementation</a><ul><li><a href=#openresolv-configuration>openresolv Configuration</a></li><li><a href=#openresolv-subscribers>openresolv Subscribers</a></li><li><a href=#openresolv-with-dnsmasq-integration>openresolv with dnsmasq Integration</a></li><li><a href=#docker-compose-with-openresolv>Docker Compose with openresolv</a></li></ul></li><li><a href=#systemd-resolved-the-integrated-solution>systemd-resolved: The Integrated Solution</a><ul><li><a href=#systemd-resolved-configuration>systemd-resolved Configuration</a></li><li><a href=#per-interface-dns-configuration>Per-Interface DNS Configuration</a></li><li><a href=#resolvconf-with-systemd-resolved>resolv.conf with systemd-resolved</a></li><li><a href=#docker-integration-with-systemd-resolved>Docker Integration with systemd-resolved</a></li></ul></li><li><a href=#comparison-table>Comparison Table</a></li><li><a href=#choosing-the-right-dns-resolver-manager>Choosing the Right DNS Resolver Manager</a></li><li><a href=#security-best-practices-for-dns-resolver-configuration>Security Best Practices for DNS Resolver Configuration</a></li><li><a href=#why-self-host-dns-resolver-configuration-management>Why Self-Host DNS Resolver Configuration Management?</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#what-is-the-difference-between-resolvconf-and-openresolv>What is the difference between resolvconf and openresolv?</a></li><li><a href=#why-does-systemd-resolved-use-1270053>Why does systemd-resolved use 127.0.0.53?</a></li><li><a href=#how-do-i-configure-dns-over-tls-with-openresolv>How do I configure DNS-over-TLS with openresolv?</a></li><li><a href=#can-i-use-systemd-resolved-without-systemd-networkd>Can I use systemd-resolved without systemd-networkd?</a></li><li><a href=#how-do-i-troubleshoot-dns-resolution-with-systemd-resolved>How do I troubleshoot DNS resolution with systemd-resolved?</a></li><li><a href=#what-happens-when-resolvconf-has-conflicting-dns-configurations-from-multiple-interfaces>What happens when resolvconf has conflicting DNS configurations from multiple interfaces?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><p>The <code>/etc/resolv.conf</code> file is one of the most critical configuration files on any Linux server. It determines which DNS servers your system queries, which search domains are used for short hostname resolution, and how DNS queries are routed. Yet managing this file correctly — especially when multiple network interfaces, VPNs, containers, and virtual machines each want to modify DNS settings — is a persistent challenge in self-hosted infrastructure.</p><p>This guide compares three approaches to DNS resolver configuration management: <strong>resolvconf</strong> (the original Debian implementation), <strong>openresolv</strong> (the modern POSIX-compatible replacement), and <strong>systemd-resolved</strong> (the integrated systemd solution). We cover installation, configuration, hook integration, and deployment patterns for each.</p><h2 id=the-resolvconf-problem>The resolv.conf Problem</h2><p>On a simple server with a single network interface and static DNS, <code>/etc/resolv.conf</code> is straightforward:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>nameserver 8.8.8.8
+</span></span><span class=line><span class=cl>nameserver 8.8.4.4
+</span></span><span class=line><span class=cl>search example.com
+</span></span></code></pre></td></tr></table></div></div><p>But in real-world self-hosted environments, multiple components compete to write to this file:</p><ul><li><strong>DHCP clients</strong> — write DNS servers obtained from DHCP leases</li><li><strong>VPNs</strong> — add internal DNS servers when the tunnel connects</li><li><strong>Containers</strong> — Docker writes its own resolv.conf entries for container networking</li><li><strong>Local DNS caches</strong> — dnsmasq, unbound, or systemd-resolved want to be the first nameserver</li><li><strong>Network managers</strong> — NetworkManager, systemd-networkd, and connman each have their own DNS handling</li></ul><p>Without a management framework, these components overwrite each other&rsquo;s changes, leading to broken DNS resolution, missing search domains, or queries going to the wrong server.</p><h2 id=resolvconf-the-original-implementation>resolvconf: The Original Implementation</h2><p>resolvconf was created by Thomas Hood for Debian to solve the multiple-writer problem. It provides a framework where network services register their DNS requirements, and resolvconf computes the optimal <code>/etc/resolv.conf</code> content.</p><h3 id=resolvconf-architecture>resolvconf Architecture</h3><p>resolvconf works via a nameserver information registry. Services write DNS data to named pipes in <code>/etc/resolvconf/resolv.conf.d/</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Add DNS configuration from a DHCP client</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;nameserver 192.168.1.1
+</span></span></span><span class=line><span class=cl><span class=s2>search example.com&#34;</span> <span class=p>|</span> resolvconf -a eth0.dhcp
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Add DNS configuration from a VPN</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;nameserver 10.0.0.53
+</span></span></span><span class=line><span class=cl><span class=s2>search internal.example.com&#34;</span> <span class=p>|</span> resolvconf -a tun0.vpn
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Remove DNS configuration when interface goes down</span>
+</span></span><span class=line><span class=cl>resolvconf -d eth0.dhcp
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># View current configuration</span>
+</span></span><span class=line><span class=cl>resolvconf -l
+</span></span></code></pre></td></tr></table></div></div><h3 id=resolvconf-configuration>resolvconf Configuration</h3><p>The main configuration file <code>/etc/resolvconf.conf</code> controls behavior:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># /etc/resolvconf.conf</span>
+</span></span><span class=line><span class=cl><span class=c1># Enable name server caching</span>
+</span></span><span class=line><span class=cl><span class=nv>name_server_cache</span><span class=o>=</span>yes
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Maximum number of name servers to write</span>
+</span></span><span class=line><span class=cl><span class=nv>max_name_servers</span><span class=o>=</span><span class=m>3</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Search domain configuration</span>
+</span></span><span class=line><span class=cl><span class=nv>search_domains</span><span class=o>=</span><span class=s2>&#34;example.com internal.example.com&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Never include these nameservers</span>
+</span></span><span class=line><span class=cl><span class=nv>exclude_name_servers</span><span class=o>=</span><span class=s2>&#34;127.0.0.1&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Run update hook after changes</span>
+</span></span><span class=line><span class=cl><span class=nv>update_hook</span><span class=o>=</span><span class=s2>&#34;/usr/local/sbin/resolvconf-update-hook&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=resolvconf-hook-system>resolvconf Hook System</h3><p>One of resolvconf&rsquo;s strengths is its hook system. When <code>/etc/resolv.conf</code> changes, resolvconf can trigger actions:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># /etc/resolvconf/update.d/restart-services</span>
+</span></span><span class=line><span class=cl><span class=c1>#!/bin/sh</span>
+</span></span><span class=line><span class=cl><span class=c1># Restart services that depend on DNS</span>
+</span></span><span class=line><span class=cl>systemctl reload unbound
+</span></span><span class=line><span class=cl>systemctl reload nginx
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-compose-with-resolvconf>Docker Compose with resolvconf</h3><p>For containers that need to participate in the resolvconf-managed DNS:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>dns-register</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>alpine:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>network_mode</span><span class=p>:</span><span class=w> </span><span class=l>host</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/sbin/resolvconf:/sbin/resolvconf</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>INTERFACE=docker0</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>NAMESERVER=172.17.0.1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      sh -c &#34;echo &#39;nameserver $$NAMESERVER&#39; | /sbin/resolvconf -a docker0.container &amp;&amp;
+</span></span></span><span class=line><span class=cl><span class=sd>             trap &#39;/sbin/resolvconf -d docker0.container&#39; EXIT &amp;&amp;
+</span></span></span><span class=line><span class=cl><span class=sd>             sleep infinity&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=openresolv-the-modern-posix-implementation>openresolv: The Modern POSIX Implementation</h2><p>openresolv, written by Roy Marples (also the author of dhcpcd), is a clean-room reimplementation of resolvconf with a simpler design and better POSIX compatibility. It is the default resolvconf implementation on many modern distributions including Alpine Linux, Arch Linux, and Gentoo.</p><h3 id=openresolv-configuration>openresolv Configuration</h3><p>Configuration is in <code>/etc/resolvconf.conf</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># /etc/resolvconf.conf</span>
+</span></span><span class=line><span class=cl><span class=c1># Write to this file</span>
+</span></span><span class=line><span class=cl><span class=nv>RESOLVCONF</span><span class=o>=</span>yes
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Generate resolv.conf</span>
+</span></span><span class=line><span class=cl><span class=nv>RESOLV_CONF</span><span class=o>=</span><span class=s2>&#34;/etc/resolv.conf&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Helper programs</span>
+</span></span><span class=line><span class=cl><span class=nv>LIBC_RESOLVER</span><span class=o>=</span><span class=s2>&#34;yes&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Subscribers: programs that consume DNS info</span>
+</span></span><span class=line><span class=cl><span class=nv>SUBSCRIBERS</span><span class=o>=</span><span class=s2>&#34;unbound dnsmasq&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Unbound subscriber config</span>
+</span></span><span class=line><span class=cl><span class=nv>unbound_conf</span><span class=o>=</span><span class=s2>&#34;/etc/unbound/resolvconf.conf&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Maximum name servers</span>
+</span></span><span class=line><span class=cl><span class=nv>name_servers_max</span><span class=o>=</span><span class=m>3</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Search domain order</span>
+</span></span><span class=line><span class=cl><span class=nv>search_domains</span><span class=o>=</span><span class=s2>&#34;example.com&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Private search domains (only for specific interfaces)</span>
+</span></span><span class=line><span class=cl><span class=nv>private_search_domains</span><span class=o>=</span><span class=s2>&#34;internal.example.com&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=openresolv-subscribers>openresolv Subscribers</h3><p>openresolv uses a subscriber model — services register to receive DNS updates:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># List registered subscribers</span>
+</span></span><span class=line><span class=cl>resolvconf --subscribers
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Add DNS info for an interface</span>
+</span></span><span class=line><span class=cl>resolvconf -a eth0 <span class=s>&lt;&lt;EOF
+</span></span></span><span class=line><span class=cl><span class=s>nameserver 192.168.1.1
+</span></span></span><span class=line><span class=cl><span class=s>search example.com
+</span></span></span><span class=line><span class=cl><span class=s>EOF</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Remove interface DNS info</span>
+</span></span><span class=line><span class=cl>resolvconf -d eth0
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># List all registered interfaces</span>
+</span></span><span class=line><span class=cl>resolvconf -l
+</span></span></code></pre></td></tr></table></div></div><h3 id=openresolv-with-dnsmasq-integration>openresolv with dnsmasq Integration</h3><p>A common pattern is using openresolv to feed DNS server information to a local dnsmasq cache:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># /etc/resolvconf.conf</span>
+</span></span><span class=line><span class=cl><span class=nv>SUBSCRIBERS</span><span class=o>=</span><span class=s2>&#34;dnsmasq&#34;</span>
+</span></span><span class=line><span class=cl><span class=nv>dnsmasq_conf</span><span class=o>=</span><span class=s2>&#34;/etc/dnsmasq-resolvconf.conf&#34;</span>
+</span></span><span class=line><span class=cl><span class=nv>dnsmasq_service</span><span class=o>=</span><span class=s2>&#34;dnsmasq&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Then /etc/resolv.conf points to local dnsmasq</span>
+</span></span><span class=line><span class=cl><span class=c1># nameserver 127.0.0.1</span>
+</span></span></code></pre></td></tr></table></div></div><p>The dnsmasq subscriber writes upstream DNS servers to <code>/etc/dnsmasq-resolvconf.conf</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl># Generated by openresolv
+</span></span><span class=line><span class=cl>server=192.168.1.1
+</span></span><span class=line><span class=cl>server=8.8.8.8
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-compose-with-openresolv>Docker Compose with openresolv</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>dnsmasq-local</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>jpillora/dnsmasq</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>network_mode</span><span class=p>:</span><span class=w> </span><span class=l>host</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/etc/dnsmasq.conf:/etc/dnsmasq.conf:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/etc/dnsmasq-resolvconf.conf:/etc/dnsmasq-resolvconf.conf</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>openresolv-registrar</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>alpine:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>network_mode</span><span class=p>:</span><span class=w> </span><span class=l>host</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/usr/sbin/resolvconf:/usr/sbin/resolvconf</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/etc/resolvconf.conf:/etc/resolvconf.conf</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      sh -c &#34;/usr/sbin/resolvconf -a docker0 &lt;&lt;&#39;EOF&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=l>nameserver 172.17.0.1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=l>search docker.internal</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=l>EOF</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=l>sleep infinity&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=systemd-resolved-the-integrated-solution>systemd-resolved: The Integrated Solution</h2><p>systemd-resolved is a network name resolution manager included in systemd. It provides a local DNS stub resolver on 127.0.0.53, DNSSEC validation, DNS-over-TLS support, and per-link DNS configuration.</p><h3 id=systemd-resolved-configuration>systemd-resolved Configuration</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=c1># /etc/systemd/resolved.conf</span>
+</span></span><span class=line><span class=cl><span class=k>[Resolve]</span>
+</span></span><span class=line><span class=cl><span class=c1># Global DNS servers (fallback)</span>
+</span></span><span class=line><span class=cl><span class=na>DNS</span><span class=o>=</span><span class=s>8.8.8.8 1.1.1.1</span>
+</span></span><span class=line><span class=cl><span class=na>FallbackDNS</span><span class=o>=</span><span class=s>9.9.9.9 8.8.4.4</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Default search domain</span>
+</span></span><span class=line><span class=cl><span class=na>Domains</span><span class=o>=</span><span class=s>~.</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># DNSSEC validation</span>
+</span></span><span class=line><span class=cl><span class=na>DNSSEC</span><span class=o>=</span><span class=s>allow-downgrade</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># DNS-over-TLS</span>
+</span></span><span class=line><span class=cl><span class=na>DNSOverTLS</span><span class=o>=</span><span class=s>opportunistic</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Cache size</span>
+</span></span><span class=line><span class=cl><span class=na>Cache</span><span class=o>=</span><span class=s>yes</span>
+</span></span><span class=line><span class=cl><span class=na>DNSStubListener</span><span class=o>=</span><span class=s>yes</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=per-interface-dns-configuration>Per-Interface DNS Configuration</h3><p>systemd-resolved&rsquo;s key advantage is per-link DNS configuration through systemd-networkd:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=c1># /etc/systemd/network/20-eth0.network</span>
+</span></span><span class=line><span class=cl><span class=k>[Match]</span>
+</span></span><span class=line><span class=cl><span class=na>Name</span><span class=o>=</span><span class=s>eth0</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>[Network]</span>
+</span></span><span class=line><span class=cl><span class=na>DHCP</span><span class=o>=</span><span class=s>yes</span>
+</span></span><span class=line><span class=cl><span class=na>DNS</span><span class=o>=</span><span class=s>192.168.1.1</span>
+</span></span><span class=line><span class=cl><span class=na>Domains</span><span class=o>=</span><span class=s>example.com</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>[DHCP]</span>
+</span></span><span class=line><span class=cl><span class=na>UseDNS</span><span class=o>=</span><span class=s>yes</span>
+</span></span><span class=line><span class=cl><span class=na>UseDomains</span><span class=o>=</span><span class=s>yes</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=resolvconf-with-systemd-resolved>resolv.conf with systemd-resolved</h3><p>When systemd-resolved is active, <code>/etc/resolv.conf</code> should be a symlink to the stub resolver:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Create the symlink</span>
+</span></span><span class=line><span class=cl>ln -sf /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Or use the full resolv.conf with all configured servers</span>
+</span></span><span class=line><span class=cl>ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Check resolution status</span>
+</span></span><span class=line><span class=cl>resolvectl status
+</span></span><span class=line><span class=cl>resolvectl query example.com
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-integration-with-systemd-resolved>Docker Integration with systemd-resolved</h3><p>Docker containers inherit DNS from the host&rsquo;s resolv.conf. When systemd-resolved manages <code>/etc/resolv.conf</code> via the stub resolver (127.0.0.53), containers cannot reach it. The workaround is to use the full resolv.conf symlink:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>web</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>nginx:alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>dns</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=m>192.168.1.1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=m>8.8.8.8</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>dns_search</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>example.com</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;80:80&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=comparison-table>Comparison Table</h2><table><thead><tr><th>Feature</th><th>resolvconf</th><th>openresolv</th><th>systemd-resolved</th></tr></thead><tbody><tr><td><strong>Origin</strong></td><td>Debian (Thomas Hood)</td><td>Roy Marples (dhcpcd author)</td><td>systemd project</td></tr><tr><td><strong>Package Size</strong></td><td>~50 KB</td><td>~30 KB</td><td>Part of systemd</td></tr><tr><td><strong>POSIX Compliance</strong></td><td>Partial</td><td>Full</td><td>N/A (systemd-specific)</td></tr><tr><td><strong>DNSSEC</strong></td><td>No</td><td>No</td><td>Built-in</td></tr><tr><td><strong>DNS-over-TLS</strong></td><td>No</td><td>No</td><td>Built-in (opportunistic/full)</td></tr><tr><td><strong>Per-Link DNS</strong></td><td>Via interface tags</td><td>Via interface tags</td><td>Native (per .network file)</td></tr><tr><td><strong>Local Stub Resolver</strong></td><td>No</td><td>No</td><td>Yes (127.0.0.53)</td></tr><tr><td><strong>Subscriber Model</strong></td><td>Hook scripts</td><td>Named subscribers</td><td>Integrated with networkd</td></tr><tr><td><strong>Caching</strong></td><td>No</td><td>No</td><td>Built-in LRU cache</td></tr><tr><td><strong>mDNS/LLMNR</strong></td><td>No</td><td>No</td><td>Built-in support</td></tr><tr><td><strong>Default On</strong></td><td>Debian 9-11, Ubuntu 16.04</td><td>Alpine, Arch, Gentoo</td><td>Ubuntu 18.04+, Fedora, RHEL 9</td></tr><tr><td><strong>VPN Integration</strong></td><td>Good (resolvconf -a/-d)</td><td>Good (resolvconf -a/-d)</td><td>Via resolved&rsquo;s per-link config</td></tr></tbody></table><h2 id=choosing-the-right-dns-resolver-manager>Choosing the Right DNS Resolver Manager</h2><p><strong>Use resolvconf when:</strong></p><ul><li>You are on Debian/Ubuntu and want the traditional, well-tested approach</li><li>Your scripts and hooks already depend on the resolvconf interface</li><li>You need compatibility with legacy network management tools</li></ul><p><strong>Use openresolv when:</strong></p><ul><li>You want a cleaner, simpler implementation with fewer dependencies</li><li>You are on Alpine Linux, Arch Linux, or Gentoo</li><li>You need the subscriber model for dnsmasq/unbound integration</li><li>You prefer POSIX compliance and clean design</li></ul><p><strong>Use systemd-resolved when:</strong></p><ul><li>Your system runs systemd (most modern Linux distributions)</li><li>You want DNSSEC validation and DNS-over-TLS without additional packages</li><li>You use systemd-networkd for network configuration</li><li>You need per-interface DNS configuration with automatic failover</li><li>You want built-in DNS caching and mDNS/LLMNR support</li></ul><h2 id=security-best-practices-for-dns-resolver-configuration>Security Best Practices for DNS Resolver Configuration</h2><ul><li><strong>DNSSEC validation</strong> — Enable DNSSEC to prevent DNS spoofing attacks. systemd-resolved provides this natively; for resolvconf/openresolv, integrate with unbound or dnsmasq with DNSSEC enabled.</li><li><strong>DNS-over-TLS</strong> — Encrypt DNS queries between your server and upstream resolvers. systemd-resolved supports this natively. For openresolv, configure stubby or dnsmasq as a TLS-capable local resolver.</li><li><strong>Restrict resolv.conf writes</strong> — Use file permissions (<code>chmod 644 /etc/resolv.conf</code>) and the immutable flag (<code>chattr +i</code>) only for static configurations — not when using a management framework.</li><li><strong>Monitor DNS changes</strong> — Use <code>inotifywait -m /etc/resolv.conf</code> to detect unauthorized modifications to the resolver configuration.</li></ul><h2 id=why-self-host-dns-resolver-configuration-management>Why Self-Host DNS Resolver Configuration Management?</h2><p>In self-hosted infrastructure, DNS resolution is foundational. Every service lookup, every package repository fetch, every container pull, and every inter-service communication depends on correct DNS configuration. When multiple network services — DHCP clients, VPNs, local caches, and container runtimes — all compete to modify <code>/etc/resolv.conf</code>, a management framework prevents configuration conflicts and ensures consistent resolution behavior.</p><p>For organizations running internal DNS infrastructure, the resolver management layer is the bridge between upstream authoritative DNS servers and local service discovery. Proper configuration ensures that internal domains resolve correctly while external queries use trusted upstream resolvers.</p><p>For related reading on DNS infrastructure, see our <a href=../2026-05-30-self-hosted-dns-resolver-management-unbound-knot-resolver-powerdns-recursor-guide/>DNS resolver server comparison</a> for the server-side perspective, and our <a href=../2026-04-21-self-hosted-dns-firewall-rpz-unbound-powerdns-bind9-knot-guide-2026/>DNS firewall guide</a> for DNS-level security filtering.</p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted DNS Resolver Configuration Management: resolvconf vs openresolv vs systemd-resolved","description":"Manage /etc/resolv.conf on self-hosted servers with resolvconf, openresolv, or systemd-resolved. DNS resolver configuration, hooks, and deployment.","datePublished":"2026-05-25","dateModified":"2026-05-25","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script><h2 id=faq>FAQ</h2><h3 id=what-is-the-difference-between-resolvconf-and-openresolv>What is the difference between resolvconf and openresolv?</h3><p>resolvconf is the original Debian implementation by Thomas Hood. openresolv is a clean-room reimplementation by Roy Marples with simpler configuration, better POSIX compatibility, and a subscriber model for services like dnsmasq and unbound. Both use the same command-line interface (<code>resolvconf -a</code> and <code>resolvconf -d</code>), making them largely drop-in replacements for each other.</p><h3 id=why-does-systemd-resolved-use-1270053>Why does systemd-resolved use 127.0.0.53?</h3><p>systemd-resolved runs a local DNS stub resolver at 127.0.0.53:53. This address is a special systemd-reserved address that allows <code>/etc/resolv.conf</code> to point to the local resolver while systemd-resolved forwards queries to the actual configured upstream DNS servers. This enables features like DNSSEC validation, DNS-over-TLS, and per-link DNS configuration transparently.</p><h3 id=how-do-i-configure-dns-over-tls-with-openresolv>How do I configure DNS-over-TLS with openresolv?</h3><p>openresolv itself does not support DNS-over-TLS. Instead, configure a local DNS resolver like stubby or dnsmasq with TLS support, then have openresolv feed upstream server information to it. Set <code>/etc/resolv.conf</code> to point to <code>127.0.0.1</code> (the local resolver), and configure the resolver&rsquo;s subscriber hook in <code>/etc/resolvconf.conf</code>.</p><h3 id=can-i-use-systemd-resolved-without-systemd-networkd>Can I use systemd-resolved without systemd-networkd?</h3><p>Yes. systemd-resolved works independently of systemd-networkd. You can configure DNS servers in <code>/etc/systemd/resolved.conf</code> and use any network manager (NetworkManager, dhcpcd, etc.) to manage interfaces. However, the per-link DNS configuration feature requires systemd-networkd or NetworkManager with resolved integration.</p><h3 id=how-do-i-troubleshoot-dns-resolution-with-systemd-resolved>How do I troubleshoot DNS resolution with systemd-resolved?</h3><p>Use <code>resolvectl status</code> to see the current DNS configuration per interface, <code>resolvectl query example.com</code> to test resolution, and <code>journalctl -u systemd-resolved -f</code> for real-time logs. The <code>resolvectl statistics</code> command shows cache hit rates and query counts.</p><h3 id=what-happens-when-resolvconf-has-conflicting-dns-configurations-from-multiple-interfaces>What happens when resolvconf has conflicting DNS configurations from multiple interfaces?</h3><p>resolvconf and openresolv both use an interface ordering system. Each interface&rsquo;s DNS configuration is tagged with a metric (interface order), and the resulting <code>/etc/resolv.conf</code> combines all nameservers with higher-priority interfaces listed first. Search domains from all interfaces are merged. Use <code>resolvconf -l</code> to see all registered configurations.</p></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20DNS%20Resolver%20Configuration%20Management%3a%20resolvconf%20vs%20openresolv%20vs%20systemd-resolved&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-25-self-hosted-dns-resolver-config-management-resolvconf-vs-openresolv-vs-systemd-resolved-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-25-self-hosted-dns-resolver-config-management-resolvconf-vs-openresolv-vs-systemd-resolved-guide%2f&t=Self-Hosted%20DNS%20Resolver%20Configuration%20Management%3a%20resolvconf%20vs%20openresolv%20vs%20systemd-resolved" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/dns/ class=tag-link>Dns</a>
+<a href=/tags/networking/ class=tag-link>Networking</a>
+<a href=/tags/linux/ class=tag-link>Linux</a>
+<a href=/tags/systemd/ class=tag-link>Systemd</a>
+<a href=/tags/resolver/ class=tag-link>Resolver</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-05-25-self-hosted-dhcp-client-management-dhclient-vs-dhcpcd-vs-systemd-networkd-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Dhcp</span></div><h3 class=post-title>Self-Hosted DHCP Client Management: dhclient vs dhcpcd vs systemd-networkd</h3><div class=post-excerpt>DHCP clients are the often-overlooked counterpart to DHCP servers. While server management gets plenty of attention, the …</div><div class=post-footer><span class=post-date>May 25, 2026</span></div></a><a href=/posts/2026-05-25-self-hosted-linux-init-systems-openrc-s6-runit-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted Linux Init Systems: OpenRC vs s6 vs runit for Server Management (2026)</h3><div class=post-excerpt>The init system is the first process started by the Linux kernel (PID 1) and is responsible for booting the system, …</div><div class=post-footer><span class=post-date>May 25, 2026</span></div></a><a href=/posts/2026-05-24-self-hosted-linux-bridge-vlan-management-bridge-utils-iproute2-netplan-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted Linux Bridge and VLAN Management: bridge-utils vs iproute2 vs netplan (2026)</h3><div class=post-excerpt>Network bridges and VLANs are foundational building blocks for self-hosted infrastructure. Whether you are setting up …</div><div class=post-footer><span class=post-date>May 24, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>

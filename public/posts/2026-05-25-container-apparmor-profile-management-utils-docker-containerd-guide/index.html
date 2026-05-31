@@ -1,0 +1,438 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted Container AppArmor Profile Management: AppArmor Utils vs Docker AppArmor vs Containerd AppArmor | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-05-25-container-apparmor-profile-management-utils-docker-containerd-guide/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted Container AppArmor Profile Management: AppArmor Utils vs Docker AppArmor vs Containerd AppArmor"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-05-25-container-apparmor-profile-management-utils-docker-containerd-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-05-25T00:00:00Z"><meta property="article:modified_time" content="2026-05-25T00:00:00Z"><meta property="article:tag" content="container-security"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted Container AppArmor Profile Management: AppArmor Utils vs Docker AppArmor vs Containerd AppArmor"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted Container AppArmor Profile Management: AppArmor Utils vs Docker AppArmor vs Containerd AppArmor","description":"\u003cp\u003eContainer runtimes provide process isolation through namespaces and cgroups, but these mechanisms alone do not restrict what a container process can do on the host kernel. AppArmor (Application Armor) is a Linux Security Module (LSM) that enforces mandatory access control policies, restricting container processes to only the system resources they explicitly need.\u003c\/p\u003e","datePublished":"2026-05-25T00:00:00Z","dateModified":"2026-05-25T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-05-25-container-apparmor-profile-management-utils-docker-containerd-guide\/"},"keywords":["container-security","apparmor","linux-security","docker","containerd","mandatory-access-control"],"articleSection":"container-security","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted Container AppArmor Profile Management: AppArmor Utils vs Docker AppArmor vs Containerd AppArmor","item":"https:\/\/www.pistack.xyz\/posts\/2026-05-25-container-apparmor-profile-management-utils-docker-containerd-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Container-Security</span>
+<span class="tag tag-purple">Apparmor</span>
+<span class="tag tag-purple">Linux-Security</span></div><h1>Self-Hosted Container AppArmor Profile Management: AppArmor Utils vs Docker AppArmor vs Containerd AppArmor</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>May 25, 2026</span>
+<span>9 min read</span>
+<span>Updated May 25, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#understanding-apparmor-for-containers>Understanding AppArmor for Containers</a></li><li><a href=#apparmor-utils-standalone-profile-management>AppArmor Utils: Standalone Profile Management</a><ul><li><a href=#installation>Installation</a></li><li><a href=#generating-profiles-with-aa-genprof>Generating Profiles with aa-genprof</a></li><li><a href=#writing-custom-apparmor-profiles>Writing Custom AppArmor Profiles</a></li><li><a href=#managing-profile-states>Managing Profile States</a></li></ul></li><li><a href=#docker-apparmor-integration>Docker AppArmor Integration</a><ul><li><a href=#default-docker-apparmor-profile>Default Docker AppArmor Profile</a></li><li><a href=#applying-custom-apparmor-profiles-to-docker-containers>Applying Custom AppArmor Profiles to Docker Containers</a></li><li><a href=#docker-compose-with-apparmor>Docker Compose with AppArmor</a></li><li><a href=#generating-docker-specific-profiles>Generating Docker-Specific Profiles</a></li></ul></li><li><a href=#containerd-apparmor-support>Containerd AppArmor Support</a><ul><li><a href=#configuring-default-apparmor-in-containerd>Configuring Default AppArmor in containerd</a></li><li><a href=#applying-apparmor-profiles-via-cri>Applying AppArmor Profiles via CRI</a></li><li><a href=#kubernetes-apparmor-integration>Kubernetes AppArmor Integration</a></li></ul></li><li><a href=#container-apparmor-profile-for-database-services>Container AppArmor Profile for Database Services</a></li><li><a href=#docker-compose-full-stack-with-apparmor>Docker Compose Full Stack with AppArmor</a></li><li><a href=#choosing-the-right-apparmor-management-approach>Choosing the Right AppArmor Management Approach</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#what-is-apparmor-and-why-should-i-use-it-with-containers>What is AppArmor and why should I use it with containers?</a></li><li><a href=#how-does-apparmor-differ-from-seccomp-for-container-security>How does AppArmor differ from seccomp for container security?</a></li><li><a href=#can-i-use-apparmor-profiles-with-docker-compose>Can I use AppArmor profiles with Docker Compose?</a></li><li><a href=#how-do-i-create-an-apparmor-profile-for-my-application>How do I create an AppArmor profile for my application?</a></li><li><a href=#what-happens-if-an-apparmor-profile-blocks-a-legitimate-container-operation>What happens if an AppArmor profile blocks a legitimate container operation?</a></li><li><a href=#are-apparmor-profiles-shared-across-containers>Are AppArmor profiles shared across containers?</a></li><li><a href=#how-do-i-verify-apparmor-is-active-on-my-system>How do I verify AppArmor is active on my system?</a></li><li><a href=#why-self-host-container-security>Why Self-Host Container Security?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><p>Container runtimes provide process isolation through namespaces and cgroups, but these mechanisms alone do not restrict what a container process can do on the host kernel. AppArmor (Application Armor) is a Linux Security Module (LSM) that enforces mandatory access control policies, restricting container processes to only the system resources they explicitly need.</p><p>This guide compares three approaches to managing AppArmor profiles for containers: standalone AppArmor utilities (<code>apparmor-utils</code>), Docker&rsquo;s built-in AppArmor integration, and containerd&rsquo;s native AppArmor profile support. We cover profile creation, deployment, and best practices for securing containerized workloads in self-hosted environments.</p><h2 id=understanding-apparmor-for-containers>Understanding AppArmor for Containers</h2><p>AppArmor works by attaching security profiles to processes via the Linux Security Module (LSM) framework. Each profile defines which files, network ports, and capabilities a process can access. For containers, AppArmor profiles are applied when the container runtime starts the container process.</p><p>Without AppArmor, a root process inside a container can potentially:</p><ul><li>Access sensitive host files through mount namespaces</li><li>Load kernel modules if capabilities are not properly restricted</li><li>Access raw sockets or perform network operations beyond what the container needs</li><li>Modify system-wide settings via procfs or sysfs</li></ul><p>AppArmor profiles restrict these operations at the kernel level, providing defense-in-depth beyond container runtime security settings.</p><table><thead><tr><th>Feature</th><th>AppArmor Utils</th><th>Docker AppArmor</th><th>Containerd AppArmor</th></tr></thead><tbody><tr><td>Package</td><td>apparmor-utils</td><td>docker-ce (built-in)</td><td>containerd (built-in)</td></tr><tr><td>Profile Location</td><td>/etc/apparmor.d/</td><td>/etc/apparmor.d/ (or inline)</td><td>/etc/apparmor.d/ (or inline)</td></tr><tr><td>Profile Syntax</td><td>AppArmor DSL</td><td>AppArmor DSL</td><td>AppArmor DSL</td></tr><tr><td>Management CLI</td><td>aa-genprof, aa-enforce, aa-complain</td><td>docker run &ndash;security-opt</td><td>containerd CRI config</td></tr><tr><td>Default Profile</td><td>No (manual)</td><td>docker-default (included)</td><td>cri-default (CRI)</td></tr><tr><td>Custom Profiles</td><td>Yes</td><td>Yes</td><td>Yes</td></tr><tr><td>Profile Enforcement</td><td>Kernel LSM</td><td>Runtime-applied at container start</td><td>Runtime-applied at container start</td></tr><tr><td>Profile Switching</td><td>aa-enforce/aa-complain</td><td>Container restart required</td><td>Container restart required</td></tr><tr><td>Kubernetes Support</td><td>Manual</td><td>Via runtime config</td><td>Native (via CRI)</td></tr><tr><td>Best For</td><td>Host-level security</td><td>Docker environments</td><td>Kubernetes/containerd environments</td></tr></tbody></table><h2 id=apparmor-utils-standalone-profile-management>AppArmor Utils: Standalone Profile Management</h2><p><code>apparmor-utils</code> provides command-line tools for creating, managing, and enforcing AppArmor profiles. This approach is ideal for host-level container security management.</p><h3 id=installation>Installation</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Debian/Ubuntu</span>
+</span></span><span class=line><span class=cl>apt-get update <span class=o>&amp;&amp;</span> apt-get install -y apparmor apparmor-utils
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Verify AppArmor is active</span>
+</span></span><span class=line><span class=cl>aa-status
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Check kernel module</span>
+</span></span><span class=line><span class=cl>systemctl status apparmor
+</span></span></code></pre></td></tr></table></div></div><h3 id=generating-profiles-with-aa-genprof>Generating Profiles with aa-genprof</h3><p><code>aa-genprof</code> interactively generates profiles by monitoring an application&rsquo;s behavior:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Start profiling a container runtime</span>
+</span></span><span class=line><span class=cl>aa-genprof /usr/bin/containerd-shim
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Or profile a specific application</span>
+</span></span><span class=line><span class=cl>aa-genprof /usr/sbin/nginx
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># The tool monitors the application and prompts for each access request</span>
+</span></span><span class=line><span class=cl><span class=c1># Answer Allow/Deny for each operation, then save the profile</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=writing-custom-apparmor-profiles>Writing Custom AppArmor Profiles</h3><p>Create a profile in <code>/etc/apparmor.d/</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>cat &gt; /etc/apparmor.d/docker-restricted <span class=s>&lt;&lt; &#39;EOF&#39;
+</span></span></span><span class=line><span class=cl><span class=s>#include &lt;tunables/global&gt;
+</span></span></span><span class=line><span class=cl><span class=s>
+</span></span></span><span class=line><span class=cl><span class=s>profile docker-restricted flags=(attach_disconnected) {
+</span></span></span><span class=line><span class=cl><span class=s>  #include &lt;abstractions/base&gt;
+</span></span></span><span class=line><span class=cl><span class=s>  #include &lt;abstractions/nameservice&gt;
+</span></span></span><span class=line><span class=cl><span class=s>
+</span></span></span><span class=line><span class=cl><span class=s>  # Allow reading standard library files
+</span></span></span><span class=line><span class=cl><span class=s>  /lib/** mr,
+</span></span></span><span class=line><span class=cl><span class=s>  /usr/lib/** mr,
+</span></span></span><span class=line><span class=cl><span class=s>
+</span></span></span><span class=line><span class=cl><span class=s>  # Allow network access (TCP/UDP)
+</span></span></span><span class=line><span class=cl><span class=s>  network inet tcp,
+</span></span></span><span class=line><span class=cl><span class=s>  network inet udp,
+</span></span></span><span class=line><span class=cl><span class=s>  network inet6 tcp,
+</span></span></span><span class=line><span class=cl><span class=s>  network inet6 udp,
+</span></span></span><span class=line><span class=cl><span class=s>
+</span></span></span><span class=line><span class=cl><span class=s>  # Restrict file system access
+</span></span></span><span class=line><span class=cl><span class=s>  deny /etc/shadow r,
+</span></span></span><span class=line><span class=cl><span class=s>  deny /etc/gshadow r,
+</span></span></span><span class=line><span class=cl><span class=s>  deny /etc/passwd w,
+</span></span></span><span class=line><span class=cl><span class=s>  deny /proc/sys/** w,
+</span></span></span><span class=line><span class=cl><span class=s>  deny /sys/** w,
+</span></span></span><span class=line><span class=cl><span class=s>
+</span></span></span><span class=line><span class=cl><span class=s>  # Allow working directory
+</span></span></span><span class=line><span class=cl><span class=s>  /var/lib/docker/containers/** rw,
+</span></span></span><span class=line><span class=cl><span class=s>
+</span></span></span><span class=line><span class=cl><span class=s>  # Deny kernel module loading
+</span></span></span><span class=line><span class=cl><span class=s>  deny capability sys_module,
+</span></span></span><span class=line><span class=cl><span class=s>  deny capability sys_admin,
+</span></span></span><span class=line><span class=cl><span class=s>}
+</span></span></span><span class=line><span class=cl><span class=s>EOF</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Load and enforce the profile</span>
+</span></span><span class=line><span class=cl>apparmor_parser -r /etc/apparmor.d/docker-restricted
+</span></span><span class=line><span class=cl>aa-enforce docker-restricted
+</span></span></code></pre></td></tr></table></div></div><h3 id=managing-profile-states>Managing Profile States</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># List all loaded profiles</span>
+</span></span><span class=line><span class=cl>aa-status
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Switch a profile to complain mode (log violations, don&#39;t block)</span>
+</span></span><span class=line><span class=cl>aa-complain docker-restricted
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Switch to enforce mode (block and log violations)</span>
+</span></span><span class=line><span class=cl>aa-enforce docker-restricted
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Disable a profile</span>
+</span></span><span class=line><span class=cl>aa-disable docker-restricted
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Remove a profile</span>
+</span></span><span class=line><span class=cl>apparmor_parser -R /etc/apparmor.d/docker-restricted
+</span></span></code></pre></td></tr></table></div></div><h2 id=docker-apparmor-integration>Docker AppArmor Integration</h2><p>Docker includes a default AppArmor profile (<code>docker-default</code>) that provides a reasonable baseline for container security. Custom profiles can be applied per-container.</p><h3 id=default-docker-apparmor-profile>Default Docker AppArmor Profile</h3><p>Docker ships with a default profile that:</p><ul><li>Allows basic system calls required by most containers</li><li>Blocks access to <code>/proc/sys</code>, <code>/sys/fs</code>, and other sensitive paths</li><li>Restricts kernel module loading</li><li>Allows network access (TCP/UDP)</li><li>Denies raw socket access</li></ul><p>To check the default profile:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># View Docker&#39;s default AppArmor profile</span>
+</span></span><span class=line><span class=cl>docker info <span class=p>|</span> grep -i apparmor
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Or inspect the profile file</span>
+</span></span><span class=line><span class=cl>cat /etc/apparmor.d/docker
+</span></span></code></pre></td></tr></table></div></div><h3 id=applying-custom-apparmor-profiles-to-docker-containers>Applying Custom AppArmor Profiles to Docker Containers</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Run a container with a custom AppArmor profile</span>
+</span></span><span class=line><span class=cl>docker run --security-opt <span class=s2>&#34;apparmor=docker-restricted&#34;</span>   --name my-app   -d nginx:latest
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Run with no AppArmor profile (not recommended)</span>
+</span></span><span class=line><span class=cl>docker run --security-opt <span class=s2>&#34;apparmor=unconfined&#34;</span>   --name my-debug   -d ubuntu:latest
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Verify AppArmor profile is applied</span>
+</span></span><span class=line><span class=cl>docker inspect my-app --format <span class=s1>&#39;{{.AppArmorProfile}}&#39;</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-compose-with-apparmor>Docker Compose with AppArmor</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>web-app</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>nginx:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>security_opt</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>apparmor=docker-restricted</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;80:80&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>database</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>postgres:16</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>security_opt</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>apparmor=database-restricted</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>pgdata:/var/lib/postgresql/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>pgdata</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=generating-docker-specific-profiles>Generating Docker-Specific Profiles</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Use aa-logprof to refine a profile based on actual container activity</span>
+</span></span><span class=line><span class=cl>aa-logprof
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># This analyzes AppArmor log entries and suggests profile updates</span>
+</span></span><span class=line><span class=cl><span class=c1># Review each suggestion and accept or deny</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=containerd-apparmor-support>Containerd AppArmor Support</h2><p>containerd supports AppArmor profiles through its CRI (Container Runtime Interface) implementation. This is the primary mechanism for applying AppArmor in Kubernetes environments.</p><h3 id=configuring-default-apparmor-in-containerd>Configuring Default AppArmor in containerd</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Edit containerd configuration</span>
+</span></span><span class=line><span class=cl>cat &gt; /etc/containerd/config.toml <span class=s>&lt;&lt; &#39;EOF&#39;
+</span></span></span><span class=line><span class=cl><span class=s>version = 2
+</span></span></span><span class=line><span class=cl><span class=s>
+</span></span></span><span class=line><span class=cl><span class=s>[plugins.&#34;io.containerd.grpc.v1.cri&#34;.containerd]
+</span></span></span><span class=line><span class=cl><span class=s>  default_runtime_name = &#34;runc&#34;
+</span></span></span><span class=line><span class=cl><span class=s>
+</span></span></span><span class=line><span class=cl><span class=s>[plugins.&#34;io.containerd.grpc.v1.cri&#34;]
+</span></span></span><span class=line><span class=cl><span class=s>  # Set default AppArmor profile for all containers
+</span></span></span><span class=line><span class=cl><span class=s>  apparmor_profile = &#34;cri-default&#34;
+</span></span></span><span class=line><span class=cl><span class=s>EOF</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Restart containerd</span>
+</span></span><span class=line><span class=cl>systemctl restart containerd
+</span></span></code></pre></td></tr></table></div></div><h3 id=applying-apparmor-profiles-via-cri>Applying AppArmor Profiles via CRI</h3><p>When using containerd directly (not through Kubernetes):</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Use ctr with AppArmor profile</span>
+</span></span><span class=line><span class=cl>ctr run --with-ns<span class=o>=</span><span class=s2>&#34;network:/var/run/netns/myns&#34;</span>   --apparmor-profile<span class=o>=</span>cri-default   docker.io/library/nginx:latest my-nginx
+</span></span></code></pre></td></tr></table></div></div><h3 id=kubernetes-apparmor-integration>Kubernetes AppArmor Integration</h3><p>Kubernetes supports AppArmor through annotations:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>apiVersion</span><span class=p>:</span><span class=w> </span><span class=l>v1</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>kind</span><span class=p>:</span><span class=w> </span><span class=l>Pod</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>metadata</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>secured-pod</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>annotations</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=c># Apply AppArmor profile to all containers in the pod</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container.apparmor.security.beta.kubernetes.io/web</span><span class=p>:</span><span class=w> </span><span class=l>runtime/default</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container.apparmor.security.beta.kubernetes.io/sidecar</span><span class=p>:</span><span class=w> </span><span class=l>localhost/custom-profile</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>spec</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>containers</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>web</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>nginx:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span>- <span class=nt>name</span><span class=p>:</span><span class=w> </span><span class=l>sidecar</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>busybox:latest</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>The <code>runtime/default</code> annotation applies the container runtime&rsquo;s default profile (containerd&rsquo;s <code>cri-default</code> or Docker&rsquo;s <code>docker-default</code>). The <code>localhost/profile-name</code> annotation applies a custom profile from <code>/etc/apparmor.d/</code>.</p><h2 id=container-apparmor-profile-for-database-services>Container AppArmor Profile for Database Services</h2><p>Here&rsquo;s a production-ready AppArmor profile for a database container:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>cat &gt; /etc/apparmor.d/database-restricted <span class=s>&lt;&lt; &#39;EOF&#39;
+</span></span></span><span class=line><span class=cl><span class=s>#include &lt;tunables/global&gt;
+</span></span></span><span class=line><span class=cl><span class=s>
+</span></span></span><span class=line><span class=cl><span class=s>profile database-restricted flags=(attach_disconnected) {
+</span></span></span><span class=line><span class=cl><span class=s>  #include &lt;abstractions/base&gt;
+</span></span></span><span class=line><span class=cl><span class=s>  #include &lt;abstractions/nameservice&gt;
+</span></span></span><span class=line><span class=cl><span class=s>  #include &lt;abstractions/openssl&gt;
+</span></span></span><span class=line><span class=cl><span class=s>
+</span></span></span><span class=line><span class=cl><span class=s>  # Database data directory
+</span></span></span><span class=line><span class=cl><span class=s>  /var/lib/postgresql/** rw,
+</span></span></span><span class=line><span class=cl><span class=s>  /var/lib/mysql/** rw,
+</span></span></span><span class=line><span class=cl><span class=s>
+</span></span></span><span class=line><span class=cl><span class=s>  # Configuration files (read-only)
+</span></span></span><span class=line><span class=cl><span class=s>  /etc/postgresql/** r,
+</span></span></span><span class=line><span class=cl><span class=s>  /etc/mysql/** r,
+</span></span></span><span class=line><span class=cl><span class=s>
+</span></span></span><span class=line><span class=cl><span class=s>  # Log files
+</span></span></span><span class=line><span class=cl><span class=s>  /var/log/postgresql/** rw,
+</span></span></span><span class=line><span class=cl><span class=s>  /var/log/mysql/** rw,
+</span></span></span><span class=line><span class=cl><span class=s>
+</span></span></span><span class=line><span class=cl><span class=s>  # Network access for database connections
+</span></span></span><span class=line><span class=cl><span class=s>  network inet tcp,
+</span></span></span><span class=line><span class=cl><span class=s>  network inet6 tcp,
+</span></span></span><span class=line><span class=cl><span class=s>
+</span></span></span><span class=line><span class=cl><span class=s>  # Deny dangerous capabilities
+</span></span></span><span class=line><span class=cl><span class=s>  deny capability sys_admin,
+</span></span></span><span class=line><span class=cl><span class=s>  deny capability sys_module,
+</span></span></span><span class=line><span class=cl><span class=s>  deny capability sys_rawio,
+</span></span></span><span class=line><span class=cl><span class=s>  deny capability sys_ptrace,
+</span></span></span><span class=line><span class=cl><span class=s>
+</span></span></span><span class=line><span class=cl><span class=s>  # Deny access to sensitive host paths
+</span></span></span><span class=line><span class=cl><span class=s>  deny /proc/sys/** w,
+</span></span></span><span class=line><span class=cl><span class=s>  deny /sys/** w,
+</span></span></span><span class=line><span class=cl><span class=s>  deny /dev/** rw,
+</span></span></span><span class=line><span class=cl><span class=s>  deny /etc/shadow r,
+</span></span></span><span class=line><span class=cl><span class=s>  deny /root/** r,
+</span></span></span><span class=line><span class=cl><span class=s>
+</span></span></span><span class=line><span class=cl><span class=s>  # Allow standard libraries
+</span></span></span><span class=line><span class=cl><span class=s>  /lib/** mr,
+</span></span></span><span class=line><span class=cl><span class=s>  /usr/lib/** mr,
+</span></span></span><span class=line><span class=cl><span class=s>}
+</span></span></span><span class=line><span class=cl><span class=s>EOF</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>apparmor_parser -r /etc/apparmor.d/database-restricted
+</span></span><span class=line><span class=cl>aa-enforce database-restricted
+</span></span></code></pre></td></tr></table></div></div><h2 id=docker-compose-full-stack-with-apparmor>Docker Compose Full Stack with AppArmor</h2><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>web</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>nginx:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>security_opt</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>apparmor=web-restricted</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;80:80&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;443:443&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>app</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>node:20-alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>security_opt</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>apparmor=app-restricted</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>working_dir</span><span class=p>:</span><span class=w> </span><span class=l>/app</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;node&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;server.js&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>db</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>postgres:16</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>security_opt</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>apparmor=database-restricted</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>pgdata:/var/lib/postgresql/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_PASSWORD</span><span class=p>:</span><span class=w> </span><span class=l>${DB_PASSWORD}</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>pgdata</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=choosing-the-right-apparmor-management-approach>Choosing the Right AppArmor Management Approach</h2><table><thead><tr><th>Scenario</th><th>Recommended Approach</th><th>Reason</th></tr></thead><tbody><tr><td>Docker-only environment</td><td>Docker built-in profiles</td><td>Seamless integration, default profile included</td></tr><tr><td>Kubernetes clusters</td><td>Containerd AppArmor via annotations</td><td>Native CRI support, per-pod granularity</td></tr><tr><td>Mixed runtime environment</td><td>AppArmor utils (standalone)</td><td>Runtime-agnostic, works with any container engine</td></tr><tr><td>Custom security requirements</td><td>Custom profiles + aa-genprof</td><td>Fine-grained control over each service</td></tr><tr><td>Compliance (PCI, HIPAA)</td><td>Custom enforced profiles</td><td>Audit-ready, verifiable security policies</td></tr></tbody></table><p>For broader container sandboxing, see our <a href=../2026-04-20-gvisor-vs-kata-containers-vs-firecracker-container-sandboxing-guide-2026/>container sandboxing comparison</a> covering gVisor, Kata, and Firecracker. For container security hardening beyond access control, our <a href=../2026-04-27-docker-bench-vs-trivy-vs-checkov-self-hosted-container-security-hardening-guide/>Docker Bench vs Trivy vs Checkov guide</a> covers automated security auditing. For seccomp-based syscall filtering, check our <a href=../2026-05-10-container-seccomp-profile-management-apparmor-firejail-guide/>seccomp profile management article</a>.</p><h2 id=faq>FAQ</h2><h3 id=what-is-apparmor-and-why-should-i-use-it-with-containers>What is AppArmor and why should I use it with containers?</h3><p>AppArmor is a Linux Security Module that provides mandatory access control (MAC). It restricts what files, network ports, and capabilities a process can access. While container runtimes provide namespace and cgroup isolation, AppArmor adds kernel-level enforcement that prevents container escape even if a process gains root privileges inside the container. It is defense-in-depth for containerized workloads.</p><h3 id=how-does-apparmor-differ-from-seccomp-for-container-security>How does AppArmor differ from seccomp for container security?</h3><p>AppArmor and seccomp serve different purposes. AppArmor controls <strong>what resources</strong> a process can access (files, network, capabilities). Seccomp controls <strong>which system calls</strong> a process can make. They are complementary: seccomp blocks dangerous syscalls (like <code>mount</code>, <code>ptrace</code>), while AppArmor restricts file and network access. Use both for comprehensive container security.</p><h3 id=can-i-use-apparmor-profiles-with-docker-compose>Can I use AppArmor profiles with Docker Compose?</h3><p>Yes. Add <code>security_opt: - apparmor=profile-name</code> to each service in your <code>docker-compose.yml</code>. The profile must be loaded on the host system before starting the containers. Docker automatically applies the profile when creating the container.</p><h3 id=how-do-i-create-an-apparmor-profile-for-my-application>How do I create an AppArmor profile for my application?</h3><p>Use <code>aa-genprof /path/to/binary</code> to start interactive profile generation. Run your application normally, and <code>aa-genprof</code> will monitor all access attempts. When the application tries to access a resource, <code>aa-genprof</code> prompts you to allow or deny the access. After completing the session, save the profile and switch to enforce mode.</p><h3 id=what-happens-if-an-apparmor-profile-blocks-a-legitimate-container-operation>What happens if an AppArmor profile blocks a legitimate container operation?</h3><p>Switch the profile to complain mode with <code>aa-complain profile-name</code>. In complain mode, violations are logged but not blocked. Review the logs with <code>aa-logprof</code> to identify which rules need adjustment. Once the profile is correct, switch back to enforce mode with <code>aa-enforce profile-name</code>.</p><h3 id=are-apparmor-profiles-shared-across-containers>Are AppArmor profiles shared across containers?</h3><p>Yes. AppArmor profiles are defined at the host level and can be applied to any container. Multiple containers can use the same profile, or each container can have its own profile. Profiles are loaded into the kernel once and reused.</p><h3 id=how-do-i-verify-apparmor-is-active-on-my-system>How do I verify AppArmor is active on my system?</h3><p>Run <code>aa-status</code> to see loaded profiles and their enforcement state. Check <code>cat /sys/kernel/security/lsm</code> to see if AppArmor is in the active LSM list. Also check <code>dmesg | grep apparmor</code> for kernel-level AppArmor messages.</p><h3 id=why-self-host-container-security>Why Self-Host Container Security?</h3><p>Self-hosted container environments require security controls that match or exceed managed cloud offerings. AppArmor provides enterprise-grade mandatory access control without additional infrastructure or licensing costs. Combined with seccomp profiles, read-only filesystems, and dropped capabilities, AppArmor forms a critical layer in container security hardening.</p><p>For organizations running self-hosted Kubernetes, AppArmor profiles complement Kubernetes Pod Security Standards by providing host-level enforcement that survives container restarts and runtime changes. For Docker-based deployments, AppArmor prevents container escape even if application vulnerabilities are exploited.</p><p>For Linux kernel security auditing, see our <a href=../2026-05-23-self-hosted-linux-kernel-security-auditing-kconfig-hardened-check-checksec-guide/>kernel security guide</a>. For Linux-level sandboxing frameworks, our <a href=../2026-05-24-self-hosted-linux-sandboxing-frameworks-landlock-firejail-bubblewrap-guide/>landlock and firejail comparison</a> covers alternative approaches.</p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted Container AppArmor Profile Management: AppArmor Utils vs Docker AppArmor vs Containerd AppArmor","description":"Compare three approaches to managing AppArmor profiles for containers: standalone apparmor-utils, Docker built-in integration, and containerd native support. Includes custom profiles and Docker Compose configs.","datePublished":"2026-05-25","dateModified":"2026-05-25","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20Container%20AppArmor%20Profile%20Management%3a%20AppArmor%20Utils%20vs%20Docker%20AppArmor%20vs%20Containerd%20AppArmor&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-25-container-apparmor-profile-management-utils-docker-containerd-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-25-container-apparmor-profile-management-utils-docker-containerd-guide%2f&t=Self-Hosted%20Container%20AppArmor%20Profile%20Management%3a%20AppArmor%20Utils%20vs%20Docker%20AppArmor%20vs%20Containerd%20AppArmor" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/container-security/ class=tag-link>Container-Security</a>
+<a href=/tags/apparmor/ class=tag-link>Apparmor</a>
+<a href=/tags/linux-security/ class=tag-link>Linux-Security</a>
+<a href=/tags/docker/ class=tag-link>Docker</a>
+<a href=/tags/containerd/ class=tag-link>Containerd</a>
+<a href=/tags/mandatory-access-control/ class=tag-link>Mandatory-Access-Control</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-05-09-rootless-container-runtimes-docker-podman-containerd-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Containers</span></div><h3 class=post-title>Rootless Container Runtimes: Docker vs Podman vs containerd (2026)</h3><div class=post-excerpt>Running containers as root has been the default for years, but it exposes your host to significant security risks. A …</div><div class=post-footer><span class=post-date>May 9, 2026</span></div></a><a href=/posts/docker-compose-vs-podman-compose-vs-nerdctl-container-compose-tools-2026/ class=post-card><div class=post-tags><span class="tag tag-purple">Comparison</span></div><h3 class=post-title>Docker Compose vs Podman Compose vs Nerdctl: Best Container Compose CLI 2026</h3><div class=post-excerpt>Why You Need a Compose CLI Alternative Docker Compose is the de facto standard for defining and running multi-container …</div><div class=post-footer><span class=post-date>Apr 28, 2026</span></div></a><a href=/posts/2026-05-25-container-image-diff-comparison-container-diff-skopeo-crane-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Containers</span></div><h3 class=post-title>Container Image Diff & Comparison — container-diff vs Skopeo vs Crane Guide (2026)</h3><div class=post-excerpt>When managing containerized applications across multiple environments, comparing Docker and OCI images is a routine …</div><div class=post-footer><span class=post-date>May 25, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>

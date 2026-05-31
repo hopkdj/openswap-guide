@@ -1,0 +1,320 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted Linux File Monitoring: fanotify vs inotify vs fsnotify | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-05-25-self-hosted-linux-file-monitoring-fanotify-vs-inotify-vs-fsnotify-guide/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted Linux File Monitoring: fanotify vs inotify vs fsnotify"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-05-25-self-hosted-linux-file-monitoring-fanotify-vs-inotify-vs-fsnotify-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-05-25T00:00:00Z"><meta property="article:modified_time" content="2026-05-25T00:00:00Z"><meta property="article:tag" content="linux"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted Linux File Monitoring: fanotify vs inotify vs fsnotify"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted Linux File Monitoring: fanotify vs inotify vs fsnotify","description":"\u003cp\u003eReal-time file system monitoring is essential for security auditing, configuration management, and application observability on Linux servers. Three primary kernel interfaces enable file event monitoring: \u003cstrong\u003efanotify\u003c\/strong\u003e, \u003cstrong\u003einotify\u003c\/strong\u003e, and the Go-native \u003cstrong\u003efsnotify\u003c\/strong\u003e library. This guide compares these monitoring approaches, their use cases, and how to deploy self-hosted file monitoring solutions.\u003c\/p\u003e","datePublished":"2026-05-25T00:00:00Z","dateModified":"2026-05-25T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-05-25-self-hosted-linux-file-monitoring-fanotify-vs-inotify-vs-fsnotify-guide\/"},"keywords":["linux","filesystem","monitoring","security","audit","system-administration"],"articleSection":"linux","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted Linux File Monitoring: fanotify vs inotify vs fsnotify","item":"https:\/\/www.pistack.xyz\/posts\/2026-05-25-self-hosted-linux-file-monitoring-fanotify-vs-inotify-vs-fsnotify-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Linux</span>
+<span class="tag tag-purple">Filesystem</span>
+<span class="tag tag-purple">Monitoring</span></div><h1>Self-Hosted Linux File Monitoring: fanotify vs inotify vs fsnotify</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>May 25, 2026</span>
+<span>9 min read</span>
+<span>Updated May 25, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#why-linux-file-system-monitoring-matters>Why Linux File System Monitoring Matters</a></li><li><a href=#fanotify-file-access-notification-system>fanotify: File Access Notification System</a><ul><li><a href=#key-features>Key Features</a></li><li><a href=#kernel-interface>Kernel Interface</a></li><li><a href=#user-space-tools>User-Space Tools</a></li><li><a href=#docker-deployment>Docker Deployment</a></li><li><a href=#when-to-use-fanotify>When to Use fanotify</a></li></ul></li><li><a href=#inotify-inode-based-file-notification>inotify: Inode-Based File Notification</a><ul><li><a href=#key-features-1>Key Features</a></li><li><a href=#user-space-tools-1>User-Space Tools</a></li><li><a href=#systemd-integration>SystemD Integration</a></li><li><a href=#docker-compose-for-inotify-based-monitoring>Docker Compose for inotify-Based Monitoring</a></li><li><a href=#when-to-use-inotify>When to Use inotify</a></li></ul></li><li><a href=#fsnotify-go-native-cross-platform-file-watching>fsnotify: Go-Native Cross-Platform File Watching</a><ul><li><a href=#key-features-2>Key Features</a></li><li><a href=#go-example>Go Example</a></li><li><a href=#when-to-use-fsnotify>When to Use fsnotify</a></li></ul></li><li><a href=#comparison-table>Comparison Table</a></li><li><a href=#choosing-the-right-approach>Choosing the Right Approach</a><ul><li><a href=#for-security-auditing>For Security Auditing</a></li><li><a href=#for-configuration-management>For Configuration Management</a></li><li><a href=#for-go-application-development>For Go Application Development</a></li><li><a href=#recommended-monitoring-architecture>Recommended Monitoring Architecture</a></li></ul></li><li><a href=#why-self-host-file-monitoring>Why Self-Host File Monitoring?</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#what-is-the-difference-between-fanotify-and-inotify>What is the difference between fanotify and inotify?</a></li><li><a href=#can-fanotify-monitor-all-files-on-a-system-without-impacting-performance>Can fanotify monitor all files on a system without impacting performance?</a></li><li><a href=#how-many-files-can-inotify-watch-simultaneously>How many files can inotify watch simultaneously?</a></li><li><a href=#does-fsnotify-work-on-linux-kernels-older-than-2613>Does fsnotify work on Linux kernels older than 2.6.13?</a></li><li><a href=#how-do-i-make-file-monitoring-survive-system-reboots>How do I make file monitoring survive system reboots?</a></li><li><a href=#can-i-use-these-tools-to-monitor-docker-container-file-systems>Can I use these tools to monitor Docker container file systems?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><p>Real-time file system monitoring is essential for security auditing, configuration management, and application observability on Linux servers. Three primary kernel interfaces enable file event monitoring: <strong>fanotify</strong>, <strong>inotify</strong>, and the Go-native <strong>fsnotify</strong> library. This guide compares these monitoring approaches, their use cases, and how to deploy self-hosted file monitoring solutions.</p><h2 id=why-linux-file-system-monitoring-matters>Why Linux File System Monitoring Matters</h2><p>Linux servers generate constant file system activity — configuration changes, log writes, application deployments, and potential unauthorized modifications. Without real-time monitoring, you discover problems only during periodic audits or when they cause visible failures.</p><p>File system monitoring enables:</p><ol><li><strong>Security auditing</strong> — Detect unauthorized file modifications, rootkit installations, and configuration drift</li><li><strong>Configuration management</strong> — Trigger automatic reloads when config files change</li><li><strong>Application observability</strong> — Monitor file access patterns for performance analysis</li><li><strong>Compliance tracking</strong> — Maintain audit trails for regulatory requirements</li></ol><p>For broader Linux security auditing, see our <a href=../2026-04-26-lynis-vs-openscap-vs-goss-self-hosted-server-security-auditing-guide/>server security comparison</a> and <a href=../self-hosted-file-integrity-monitoring-aide-ossec-tripwire-gu/>file integrity monitoring guide</a>.</p><h2 id=fanotify-file-access-notification-system>fanotify: File Access Notification System</h2><p><strong>fanotify</strong> (file access notification) is a modern Linux kernel interface introduced in kernel 2.6.37 that provides file system event monitoring at the file level (not directory level like inotify). It is designed for security and anti-virus applications that need to monitor file access across the entire file system.</p><h3 id=key-features>Key Features</h3><ul><li><strong>File-level monitoring</strong> — Monitor individual files, not just directories</li><li><strong>Filesystem-wide events</strong> — Watch all files on a mounted filesystem, not just specific paths</li><li><strong>Permission decisions</strong> — Block or allow file operations in real time (FAN_RESPONSE)</li><li><strong>File descriptor access</strong> — Receive an open file descriptor with each event for content inspection</li><li><strong>Fan groups</strong> — Create multiple independent monitoring groups with different rules</li><li><strong>Mark types</strong> — Support for mount marks, filesystem marks, and directory marks</li></ul><h3 id=kernel-interface>Kernel Interface</h3><p>fanotify is accessed via the <code>fanotify_init()</code> and <code>fanotify_mark()</code> system calls:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=line><span class=cl><span class=cp>#include</span> <span class=cpf>&lt;sys/fanotify.h&gt;</span><span class=cp>
+</span></span></span><span class=line><span class=cl><span class=cp></span>
+</span></span><span class=line><span class=cl><span class=kt>int</span> <span class=n>fd</span> <span class=o>=</span> <span class=nf>fanotify_init</span><span class=p>(</span><span class=n>FAN_CLOEXEC</span> <span class=o>|</span> <span class=n>FAN_CLASS_CONTENT</span><span class=p>,</span> <span class=n>O_RDONLY</span><span class=p>);</span>
+</span></span><span class=line><span class=cl><span class=nf>fanotify_mark</span><span class=p>(</span><span class=n>fd</span><span class=p>,</span> <span class=n>FAN_MARK_ADD</span> <span class=o>|</span> <span class=n>FAN_MARK_MOUNT</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>              <span class=n>FAN_OPEN</span> <span class=o>|</span> <span class=n>FAN_MODIFY</span> <span class=o>|</span> <span class=n>FAN_CLOSE_WRITE</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>              <span class=n>AT_FDCWD</span><span class=p>,</span> <span class=s>&#34;/&#34;</span><span class=p>);</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=user-space-tools>User-Space Tools</h3><p>Several user-space tools leverage fanotify for practical file monitoring:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># fatrace — file access trace (uses fanotify internally)</span>
+</span></span><span class=line><span class=cl>sudo apt install fatrace
+</span></span><span class=line><span class=cl>sudo fatrace -f CWO  <span class=c1># Monitor Close-Write and Open events</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># SystemD Path units (uses inotify/fanotify)</span>
+</span></span><span class=line><span class=cl><span class=c1># /etc/systemd/system/config-watch.path</span>
+</span></span><span class=line><span class=cl><span class=o>[</span>Path<span class=o>]</span>
+</span></span><span class=line><span class=cl><span class=nv>PathChanged</span><span class=o>=</span>/etc/myapp/config.yaml
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=o>[</span>Install<span class=o>]</span>
+</span></span><span class=line><span class=cl><span class=nv>WantedBy</span><span class=o>=</span>multi-user.target
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-deployment>Docker Deployment</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>fatrace-monitor</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>alpine:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>privileged</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/:/host:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/var/run/fatrace.sock:/var/run/fatrace.sock</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>entrypoint</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;/bin/sh&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;-c&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=p>|</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>        apk add --no-cache fatrace
+</span></span></span><span class=line><span class=cl><span class=sd>        fatrace -f CWO --mount=/host &gt; /var/log/fatrace.log</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>fanotify-audit</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>alpine:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>privileged</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/etc:/host-etc:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/var/log/audit:/var/log/audit</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>entrypoint</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;/bin/sh&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;-c&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=p>|</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>        apk add --no-cache inotify-tools
+</span></span></span><span class=line><span class=cl><span class=sd>        inotifywait -m -r -e modify,create,delete /host-etc \
+</span></span></span><span class=line><span class=cl><span class=sd>          --format &#39;%T %w %f %e&#39; --timefmt &#39;%Y-%m-%d %H:%M:%S&#39; \
+</span></span></span><span class=line><span class=cl><span class=sd>          &gt;&gt; /var/log/audit/config-changes.log</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=when-to-use-fanotify>When to Use fanotify</h3><ul><li><strong>System-wide file access monitoring</strong> — Track all file opens, reads, and writes</li><li><strong>Security and anti-virus scanning</strong> — Inspect files before they are executed</li><li><strong>File operation blocking</strong> — Prevent unauthorized file modifications in real time</li><li><strong>Mount-level monitoring</strong> — Watch entire filesystems without enumerating directories</li></ul><h2 id=inotify-inode-based-file-notification>inotify: Inode-Based File Notification</h2><p><strong>inotify</strong> (inode notify) is the original Linux file notification interface, available since kernel 2.6.13. It monitors specific directories and files for events like modifications, creations, deletions, and attribute changes.</p><h3 id=key-features-1>Key Features</h3><ul><li><strong>Directory-level monitoring</strong> — Watch specific directories and their contents</li><li><strong>Granular event types</strong> — Access, modify, create, delete, move, close, open, and attribute changes</li><li><strong>Recursive watching</strong> — Monitor directory trees (with limitations)</li><li><strong>Well-established ecosystem</strong> — Widely supported by user-space tools and libraries</li><li><strong>Resource limits</strong> — Controlled via <code>fs.inotify.max_user_watches</code> sysctl</li></ul><h3 id=user-space-tools-1>User-Space Tools</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># inotifywait — wait for file events</span>
+</span></span><span class=line><span class=cl>sudo apt install inotify-tools
+</span></span><span class=line><span class=cl>inotifywait -m -r -e modify,create,delete /etc/nginx/ <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --format <span class=s1>&#39;%T %w %f %e&#39;</span> --timefmt <span class=s1>&#39;%Y-%m-%d %H:%M:%S&#39;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># incron — inotify-based cron</span>
+</span></span><span class=line><span class=cl>sudo apt install incron
+</span></span><span class=line><span class=cl><span class=c1># Add to incrontab:</span>
+</span></span><span class=line><span class=cl><span class=c1># /etc/nginx/nginx.conf IN_MODIFY /usr/sbin/nginx -t &amp;&amp; /usr/sbin/nginx -s reload</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># systemd.path — systemd&#39;s file monitoring</span>
+</span></span><span class=line><span class=cl>systemctl start config-watch.path
+</span></span><span class=line><span class=cl>systemctl <span class=nb>enable</span> config-watch.path
+</span></span></code></pre></td></tr></table></div></div><h3 id=systemd-integration>SystemD Integration</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=c1># /etc/systemd/system/app-reload.path</span>
+</span></span><span class=line><span class=cl><span class=k>[Unit]</span>
+</span></span><span class=line><span class=cl><span class=na>Description</span><span class=o>=</span><span class=s>Watch application config for changes</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>[Path]</span>
+</span></span><span class=line><span class=cl><span class=na>PathChanged</span><span class=o>=</span><span class=s>/opt/myapp/config.yaml</span>
+</span></span><span class=line><span class=cl><span class=na>PathModified</span><span class=o>=</span><span class=s>/opt/myapp/config.yaml</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>[Install]</span>
+</span></span><span class=line><span class=cl><span class=na>WantedBy</span><span class=o>=</span><span class=s>multi-user.target</span>
+</span></span></code></pre></td></tr></table></div></div><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=c1># /etc/systemd/system/app-reload.service</span>
+</span></span><span class=line><span class=cl><span class=k>[Unit]</span>
+</span></span><span class=line><span class=cl><span class=na>Description</span><span class=o>=</span><span class=s>Reload application when config changes</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>[Service]</span>
+</span></span><span class=line><span class=cl><span class=na>Type</span><span class=o>=</span><span class=s>oneshot</span>
+</span></span><span class=line><span class=cl><span class=na>ExecStart</span><span class=o>=</span><span class=s>/opt/myapp/bin/reload-config</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-compose-for-inotify-based-monitoring>Docker Compose for inotify-Based Monitoring</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>config-watcher</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>alpine:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./configs:/etc/myapp:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/var/log/myapp:/var/log/myapp</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>entrypoint</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;/bin/sh&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;-c&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=p>|</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>        apk add --no-cache inotify-tools
+</span></span></span><span class=line><span class=cl><span class=sd>        inotifywait -m -e modify,create,delete /etc/myapp \
+</span></span></span><span class=line><span class=cl><span class=sd>          --format &#39;%T %e %f&#39; --timefmt &#39;%F %T&#39; \
+</span></span></span><span class=line><span class=cl><span class=sd>          &gt;&gt; /var/log/myapp/config-audit.log</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>auto-reloader</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>alpine:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./configs:/etc/myapp:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>entrypoint</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;/bin/sh&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;-c&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=p>|</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>        apk add --no-cache inotify-tools
+</span></span></span><span class=line><span class=cl><span class=sd>        while inotifywait -e modify /etc/myapp/config.yaml; do
+</span></span></span><span class=line><span class=cl><span class=sd>          echo &#34;Config changed at $(date)&#34;
+</span></span></span><span class=line><span class=cl><span class=sd>          # Trigger application reload
+</span></span></span><span class=line><span class=cl><span class=sd>        done</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=when-to-use-inotify>When to Use inotify</h3><ul><li><strong>Directory-specific monitoring</strong> — Watch known configuration directories</li><li><strong>Application config reloads</strong> — Trigger service restarts when configs change</li><li><strong>Build system integration</strong> — Rebuild or reprocess when source files change</li><li><strong>Limited resource environments</strong> — Lower overhead than fanotify for targeted monitoring</li></ul><h2 id=fsnotify-go-native-cross-platform-file-watching>fsnotify: Go-Native Cross-Platform File Watching</h2><p><strong>fsnotify</strong> (github.com/fsnotify/fsnotify) is the de facto standard Go library for cross-platform file system notification. It wraps inotify on Linux, FSEvents on macOS, and ReadDirectoryChangesW on Windows, providing a unified API.</p><h3 id=key-features-2>Key Features</h3><ul><li><strong>Cross-platform</strong> — Single API works on Linux, macOS, Windows, and BSD</li><li><strong>Go-native</strong> — No CGo dependencies, pure Go implementation</li><li><strong>Event channel API</strong> — Events delivered via Go channels for concurrent processing</li><li><strong>Recursive watching</strong> — Add watchers for subdirectories dynamically</li><li><strong>Widely adopted</strong> — Used by Hugo, Docker, Kubernetes, and many other Go projects</li></ul><h3 id=go-example>Go Example</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-go data-lang=go><span class=line><span class=cl><span class=kn>package</span> <span class=nx>main</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=p>(</span>
+</span></span><span class=line><span class=cl>    <span class=s>&#34;log&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=s>&#34;github.com/fsnotify/fsnotify&#34;</span>
+</span></span><span class=line><span class=cl><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kd>func</span> <span class=nf>main</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nx>watcher</span><span class=p>,</span> <span class=nx>err</span> <span class=o>:=</span> <span class=nx>fsnotify</span><span class=p>.</span><span class=nf>NewWatcher</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>    <span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=nx>log</span><span class=p>.</span><span class=nf>Fatal</span><span class=p>(</span><span class=nx>err</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=k>defer</span> <span class=nx>watcher</span><span class=p>.</span><span class=nf>Close</span><span class=p>()</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>// Add directory to watch</span>
+</span></span><span class=line><span class=cl>    <span class=nx>err</span> <span class=p>=</span> <span class=nx>watcher</span><span class=p>.</span><span class=nf>Add</span><span class=p>(</span><span class=s>&#34;/etc/myapp&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=k>if</span> <span class=nx>err</span> <span class=o>!=</span> <span class=kc>nil</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=nx>log</span><span class=p>.</span><span class=nf>Fatal</span><span class=p>(</span><span class=nx>err</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>    <span class=c1>// Process events</span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=k>select</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>        <span class=k>case</span> <span class=nx>event</span><span class=p>,</span> <span class=nx>ok</span> <span class=o>:=</span> <span class=o>&lt;-</span><span class=nx>watcher</span><span class=p>.</span><span class=nx>Events</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>            <span class=k>if</span> <span class=p>!</span><span class=nx>ok</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>                <span class=k>return</span>
+</span></span><span class=line><span class=cl>            <span class=p>}</span>
+</span></span><span class=line><span class=cl>            <span class=k>if</span> <span class=nx>event</span><span class=p>.</span><span class=nx>Op</span><span class=o>&amp;</span><span class=nx>fsnotify</span><span class=p>.</span><span class=nx>Write</span> <span class=o>==</span> <span class=nx>fsnotify</span><span class=p>.</span><span class=nx>Write</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>                <span class=nx>log</span><span class=p>.</span><span class=nf>Printf</span><span class=p>(</span><span class=s>&#34;Modified: %s&#34;</span><span class=p>,</span> <span class=nx>event</span><span class=p>.</span><span class=nx>Name</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>            <span class=p>}</span>
+</span></span><span class=line><span class=cl>            <span class=k>if</span> <span class=nx>event</span><span class=p>.</span><span class=nx>Op</span><span class=o>&amp;</span><span class=nx>fsnotify</span><span class=p>.</span><span class=nx>Create</span> <span class=o>==</span> <span class=nx>fsnotify</span><span class=p>.</span><span class=nx>Create</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>                <span class=nx>log</span><span class=p>.</span><span class=nf>Printf</span><span class=p>(</span><span class=s>&#34;Created: %s&#34;</span><span class=p>,</span> <span class=nx>event</span><span class=p>.</span><span class=nx>Name</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>            <span class=p>}</span>
+</span></span><span class=line><span class=cl>        <span class=k>case</span> <span class=nx>err</span><span class=p>,</span> <span class=nx>ok</span> <span class=o>:=</span> <span class=o>&lt;-</span><span class=nx>watcher</span><span class=p>.</span><span class=nx>Errors</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>            <span class=k>if</span> <span class=p>!</span><span class=nx>ok</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>                <span class=k>return</span>
+</span></span><span class=line><span class=cl>            <span class=p>}</span>
+</span></span><span class=line><span class=cl>            <span class=nx>log</span><span class=p>.</span><span class=nf>Printf</span><span class=p>(</span><span class=s>&#34;Error: %v&#34;</span><span class=p>,</span> <span class=nx>err</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>        <span class=p>}</span>
+</span></span><span class=line><span class=cl>    <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=when-to-use-fsnotify>When to Use fsnotify</h3><ul><li><strong>Go application development</strong> — Native file watching in Go services</li><li><strong>Cross-platform tools</strong> — Single codebase for Linux, macOS, and Windows</li><li><strong>Build tools and dev servers</strong> — Hugo uses fsnotify for live reload</li><li><strong>Lightweight monitoring</strong> — Simple event processing without kernel-level features</li></ul><h2 id=comparison-table>Comparison Table</h2><table><thead><tr><th>Feature</th><th>fanotify</th><th>inotify</th><th>fsnotify</th></tr></thead><tbody><tr><td><strong>Kernel Interface</strong></td><td>fanotify (2.6.37+)</td><td>inotify (2.6.13+)</td><td>Wraps inotify (Linux)</td></tr><tr><td><strong>Monitoring Scope</strong></td><td>Filesystem-wide</td><td>Directory-specific</td><td>Directory-specific</td></tr><tr><td><strong>File Descriptor Access</strong></td><td>Yes (open fd with events)</td><td>No</td><td>No</td></tr><tr><td><strong>Permission Blocking</strong></td><td>Yes (FAN_RESPONSE)</td><td>No</td><td>No</td></tr><tr><td><strong>Cross-Platform</strong></td><td>Linux only</td><td>Linux only</td><td>Linux, macOS, Windows, BSD</td></tr><tr><td><strong>Recursive Watching</strong></td><td>Yes (filesystem mark)</td><td>Manual per-directory</td><td>Manual per-directory</td></tr><tr><td><strong>Resource Limits</strong></td><td>No hard limit</td><td>max_user_watches sysctl</td><td>Limited by inotify</td></tr><tr><td><strong>Security Use Cases</strong></td><td>Anti-virus, auditing</td><td>Config monitoring</td><td>App-level watching</td></tr><tr><td><strong>Language Support</strong></td><td>C, Python wrappers</td><td>C, CLI tools, Python</td><td>Go</td></tr><tr><td><strong>Best For</strong></td><td>System-wide security</td><td>Config reloads, auditing</td><td>Go applications, dev tools</td></tr></tbody></table><h2 id=choosing-the-right-approach>Choosing the Right Approach</h2><h3 id=for-security-auditing>For Security Auditing</h3><p>Use <strong>fanotify</strong> for comprehensive file access monitoring across the entire filesystem. Its file descriptor access and permission blocking capabilities make it suitable for security-sensitive environments.</p><h3 id=for-configuration-management>For Configuration Management</h3><p>Use <strong>inotify</strong> (via inotify-tools or systemd.path) for monitoring specific configuration directories. It is lightweight, well-understood, and integrates cleanly with system services.</p><h3 id=for-go-application-development>For Go Application Development</h3><p>Use <strong>fsnotify</strong> for cross-platform file watching in Go applications. Its channel-based API integrates naturally with Go&rsquo;s concurrency model.</p><h3 id=recommended-monitoring-architecture>Recommended Monitoring Architecture</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-gdscript3 data-lang=gdscript3><span class=line><span class=cl><span class=n>fanotify</span> <span class=p>(</span><span class=n>filesystem</span><span class=o>-</span><span class=n>wide</span> <span class=n>security</span><span class=p>)</span> <span class=err>→</span> <span class=n>Log</span> <span class=n>to</span> <span class=n>audit</span> <span class=n>system</span>
+</span></span><span class=line><span class=cl>     <span class=o>+</span>
+</span></span><span class=line><span class=cl><span class=n>inotify</span> <span class=p>(</span><span class=n>config</span> <span class=n>directory</span> <span class=n>monitoring</span><span class=p>)</span> <span class=err>→</span> <span class=n>Trigger</span> <span class=n>service</span> <span class=n>reloads</span>
+</span></span><span class=line><span class=cl>     <span class=o>+</span>
+</span></span><span class=line><span class=cl><span class=n>fsnotify</span> <span class=p>(</span><span class=n>application</span><span class=o>-</span><span class=n>level</span> <span class=n>watching</span><span class=p>)</span> <span class=err>→</span> <span class=n>In</span><span class=o>-</span><span class=n>app</span> <span class=n>file</span> <span class=n>processing</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=why-self-host-file-monitoring>Why Self-Host File Monitoring?</h2><p>Running file monitoring on your own Linux servers ensures complete visibility into file system activity, avoids sending sensitive file paths to external services, and integrates directly with local security tools. For compliance-driven environments, self-hosted monitoring keeps audit trails under your control and enables real-time response to unauthorized changes.</p><p>For Linux system administration tooling, our <a href=../2026-05-25-linux-iptables-rule-persistence-management-netfilter-firewalld-guide/>systemd timer management guide</a> covers scheduling periodic file integrity checks. Teams managing Linux security should also review our <a href=../2026-05-24-self-hosted-selinux-management-tools-semanage-setools-audit2allow-guide/>SELinux management comparison</a> for mandatory access control enforcement.</p><h2 id=faq>FAQ</h2><h3 id=what-is-the-difference-between-fanotify-and-inotify>What is the difference between fanotify and inotify?</h3><p>fanotify monitors at the file level across entire filesystems and can provide open file descriptors with events, enabling content inspection and permission decisions. inotify monitors specific directories and files, providing event notifications without file access. fanotify is designed for security applications; inotify is designed for application-level file watching.</p><h3 id=can-fanotify-monitor-all-files-on-a-system-without-impacting-performance>Can fanotify monitor all files on a system without impacting performance?</h3><p>fanotify&rsquo;s filesystem-wide monitoring does introduce overhead proportional to file access volume. For high-throughput systems, filtering events (e.g., only monitoring specific file types or excluding high-churn directories like /tmp) is recommended. The FAN_REPORT_FID flag reduces overhead by reporting file handles instead of paths.</p><h3 id=how-many-files-can-inotify-watch-simultaneously>How many files can inotify watch simultaneously?</h3><p>The default limit is typically 8,192 watches, controlled by <code>fs.inotify.max_user_watches</code>. For monitoring large directory trees, increase this value: <code>sysctl fs.inotify.max_user_watches=524288</code>. Each watch consumes approximately 1KB of kernel memory.</p><h3 id=does-fsnotify-work-on-linux-kernels-older-than-2613>Does fsnotify work on Linux kernels older than 2.6.13?</h3><p>No. fsnotify wraps inotify on Linux, which requires kernel 2.6.13 or later. All modern Linux distributions ship with kernels far newer than this (5.x or 6.x series), so compatibility is not a concern for current systems.</p><h3 id=how-do-i-make-file-monitoring-survive-system-reboots>How do I make file monitoring survive system reboots?</h3><p>For inotify-based monitoring, use systemd.path units which are managed by systemd and automatically restart on boot. For fanotify tools, create a systemd service unit with <code>Restart=always</code>. For fsnotify-based Go applications, run them as systemd services or in Docker containers with restart policies.</p><h3 id=can-i-use-these-tools-to-monitor-docker-container-file-systems>Can I use these tools to monitor Docker container file systems?</h3><p>Yes, but with caveats. inotify and fanotify work on the host filesystem, so you can monitor Docker volume mount points. For monitoring inside containers, install inotify-tools within the container image. Note that overlay filesystems may have limitations with inotify event delivery for some operations.</p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted Linux File Monitoring: fanotify vs inotify vs fsnotify","description":"Compare fanotify, inotify, and fsnotify for Linux file system monitoring — security auditing, configuration management, and real-time file event tracking.","datePublished":"2026-05-25","dateModified":"2026-05-25","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20Linux%20File%20Monitoring%3a%20fanotify%20vs%20inotify%20vs%20fsnotify&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-25-self-hosted-linux-file-monitoring-fanotify-vs-inotify-vs-fsnotify-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-25-self-hosted-linux-file-monitoring-fanotify-vs-inotify-vs-fsnotify-guide%2f&t=Self-Hosted%20Linux%20File%20Monitoring%3a%20fanotify%20vs%20inotify%20vs%20fsnotify" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/linux/ class=tag-link>Linux</a>
+<a href=/tags/filesystem/ class=tag-link>Filesystem</a>
+<a href=/tags/monitoring/ class=tag-link>Monitoring</a>
+<a href=/tags/security/ class=tag-link>Security</a>
+<a href=/tags/audit/ class=tag-link>Audit</a>
+<a href=/tags/system-administration/ class=tag-link>System-Administration</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-05-24-self-hosted-linux-filesystem-event-monitoring-systemd-path-vs-inotifywait-vs-incron-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted Linux Filesystem Event Monitoring: systemd.path vs inotifywait vs incron (2026)</h3><div class=post-excerpt>Monitoring filesystem events on Linux servers is essential for automation workflows — triggering actions when files …</div><div class=post-footer><span class=post-date>May 24, 2026</span></div></a><a href=/posts/2026-05-16-self-hosted-linux-audit-framework-auditd-goaudit-auditbeat-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Security</span></div><h3 class=post-title>Self-Hosted Linux Audit Framework: auditd vs GoAudit vs Auditbeat (2026)</h3><div class=post-excerpt>The Linux Audit Framework is the kernel-level subsystem that records security-relevant events on your system. Every file …</div><div class=post-footer><span class=post-date>May 16, 2026</span></div></a><a href=/posts/2026-05-24-self-hosted-linux-filesystem-mount-management-systemd-mount-vs-autofs-vs-systemd-automount-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted Linux Filesystem Mount Management: systemd.mount vs autofs vs systemd.automount (2026)</h3><div class=post-excerpt>Managing filesystem mounts on Linux servers is a fundamental operational task that directly impacts system reliability, …</div><div class=post-footer><span class=post-date>May 24, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>

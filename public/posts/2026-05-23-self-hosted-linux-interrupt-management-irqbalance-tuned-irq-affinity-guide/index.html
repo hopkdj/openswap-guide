@@ -1,0 +1,258 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted Linux Interrupt Management: irqbalance vs tuned vs Manual IRQ Affinity | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-05-23-self-hosted-linux-interrupt-management-irqbalance-tuned-irq-affinity-guide/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted Linux Interrupt Management: irqbalance vs tuned vs Manual IRQ Affinity"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-05-23-self-hosted-linux-interrupt-management-irqbalance-tuned-irq-affinity-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-05-23T00:00:00Z"><meta property="article:modified_time" content="2026-05-23T00:00:00Z"><meta property="article:tag" content="linux"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted Linux Interrupt Management: irqbalance vs tuned vs Manual IRQ Affinity"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted Linux Interrupt Management: irqbalance vs tuned vs Manual IRQ Affinity","description":"\u003cp\u003eHardware interrupts are the backbone of Linux system responsiveness — every network packet, disk I\/O operation, and USB event triggers an interrupt request (IRQ) that the CPU must handle. On busy servers with high-throughput network interfaces, NVMe storage arrays, or multi-GPU configurations, unbalanced interrupt distribution can create CPU hotspots, increase latency, and degrade overall system performance. This guide compares three approaches to Linux interrupt management: \u003cstrong\u003eirqbalance\u003c\/strong\u003e (automatic daemon), \u003cstrong\u003etuned\u003c\/strong\u003e (profile-based tuning), and \u003cstrong\u003emanual IRQ affinity configuration\u003c\/strong\u003e (fine-grained control via \u003ccode\u003e\/proc\/irq\u003c\/code\u003e).\u003c\/p\u003e","datePublished":"2026-05-23T00:00:00Z","dateModified":"2026-05-23T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-05-23-self-hosted-linux-interrupt-management-irqbalance-tuned-irq-affinity-guide\/"},"keywords":["linux","system-administration","performance","interrupt-management"],"articleSection":"linux","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted Linux Interrupt Management: irqbalance vs tuned vs Manual IRQ Affinity","item":"https:\/\/www.pistack.xyz\/posts\/2026-05-23-self-hosted-linux-interrupt-management-irqbalance-tuned-irq-affinity-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Linux</span>
+<span class="tag tag-purple">System-Administration</span>
+<span class="tag tag-purple">Performance</span></div><h1>Self-Hosted Linux Interrupt Management: irqbalance vs tuned vs Manual IRQ Affinity</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>May 23, 2026</span>
+<span>8 min read</span>
+<span>Updated May 23, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#understanding-linux-interrupt-handling>Understanding Linux Interrupt Handling</a></li><li><a href=#irqbalance--automatic-interrupt-distribution>irqbalance — Automatic Interrupt Distribution</a><ul><li><a href=#installation-and-configuration>Installation and Configuration</a></li><li><a href=#docker-compose-for-interrupt-monitoring>Docker Compose for Interrupt Monitoring</a></li><li><a href=#when-irqbalance-falls-short>When irqbalance Falls Short</a></li></ul></li><li><a href=#tuned--profile-based-system-tuning>tuned — Profile-Based System Tuning</a><ul><li><a href=#installation-and-configuration-1>Installation and Configuration</a></li><li><a href=#creating-a-custom-profile-for-irq-management>Creating a Custom Profile for IRQ Management</a></li><li><a href=#docker-compose-for-tuned-monitoring>Docker Compose for tuned Monitoring</a></li></ul></li><li><a href=#manual-irq-affinity--fine-grained-control>Manual IRQ Affinity — Fine-Grained Control</a><ul><li><a href=#finding-irq-numbers>Finding IRQ Numbers</a></li><li><a href=#setting-irq-affinity>Setting IRQ Affinity</a></li><li><a href=#persistent-configuration-via-systemd>Persistent Configuration via systemd</a></li></ul></li><li><a href=#why-self-host-and-manage-interrupts-locally>Why Self-Host and Manage Interrupts Locally?</a></li><li><a href=#choosing-the-right-interrupt-management-strategy>Choosing the Right Interrupt Management Strategy</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#what-is-irq-affinity-in-linux>What is IRQ affinity in Linux?</a></li><li><a href=#does-irqbalance-work-on-numa-systems>Does irqbalance work on NUMA systems?</a></li><li><a href=#can-i-use-irqbalance-and-tuned-together>Can I use irqbalance and tuned together?</a></li><li><a href=#how-do-i-verify-irq-affinity-is-working-correctly>How do I verify IRQ affinity is working correctly?</a></li><li><a href=#what-happens-to-irq-affinity-after-a-reboot>What happens to IRQ affinity after a reboot?</a></li><li><a href=#should-i-disable-irqbalance-on-a-production-server>Should I disable irqbalance on a production server?</a></li><li><a href=#what-is-the-difference-between-msi-and-legacy-interrupts>What is the difference between MSI and legacy interrupts?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><p>Hardware interrupts are the backbone of Linux system responsiveness — every network packet, disk I/O operation, and USB event triggers an interrupt request (IRQ) that the CPU must handle. On busy servers with high-throughput network interfaces, NVMe storage arrays, or multi-GPU configurations, unbalanced interrupt distribution can create CPU hotspots, increase latency, and degrade overall system performance. This guide compares three approaches to Linux interrupt management: <strong>irqbalance</strong> (automatic daemon), <strong>tuned</strong> (profile-based tuning), and <strong>manual IRQ affinity configuration</strong> (fine-grained control via <code>/proc/irq</code>).</p><h2 id=understanding-linux-interrupt-handling>Understanding Linux Interrupt Handling</h2><p>When a hardware device needs CPU attention, it signals an interrupt request. The Linux kernel routes each IRQ to a specific CPU core via the <strong>IRQ affinity mask</strong> — a bitmask stored in <code>/proc/irq/&lt;IRQ_NUMBER>/smp_affinity</code>. By default, the kernel distributes interrupts across all available CPUs, but this naive distribution rarely matches workload patterns.</p><p>Consider a high-frequency trading server with a 100GbE network interface card (NIC). If the NIC interrupts land on CPU cores also running the trading application event loop, context switches increase and packet processing latency spikes. Proper interrupt management isolates these workloads, ensuring interrupts are handled on dedicated cores while application threads run undisturbed on others.</p><p>The three primary tools for managing this are:</p><table><thead><tr><th>Feature</th><th>irqbalance</th><th>tuned</th><th>Manual IRQ Affinity</th></tr></thead><tbody><tr><td><strong>Approach</strong></td><td>Automatic daemon</td><td>Profile-based</td><td>Manual configuration</td></tr><tr><td><strong>Setup Complexity</strong></td><td>Low (install and run)</td><td>Medium (select profile)</td><td>High (per-IRQ configuration)</td></tr><tr><td><strong>Dynamic Rebalancing</strong></td><td>Yes</td><td>No (static profile)</td><td>No</td></tr><tr><td><strong>NUMA Awareness</strong></td><td>Yes</td><td>Yes</td><td>Manual</td></tr><tr><td><strong>Fine-Grained Control</strong></td><td>Limited</td><td>Limited</td><td>Full</td></tr><tr><td><strong>Persistence</strong></td><td>Service-based</td><td>Profile-based</td><td>Requires script</td></tr><tr><td><strong>Best For</strong></td><td>General servers</td><td>Red Hat systems</td><td>Performance-critical workloads</td></tr><tr><td><strong>GitHub Stars</strong></td><td>666</td><td>1,208</td><td>N/A (kernel feature)</td></tr><tr><td><strong>Last Updated</strong></td><td>2026-04-27</td><td>2026-05-14</td><td>Kernel mainline</td></tr></tbody></table><h2 id=irqbalance--automatic-interrupt-distribution>irqbalance — Automatic Interrupt Distribution</h2><p><strong>irqbalance</strong> is the default interrupt balancer on most Linux distributions. It runs as a daemon, periodically scanning <code>/proc/interrupts</code> and redistributing IRQ affinity masks to balance load across CPUs. It considers NUMA topology, CPU idle states, and interrupt frequency when making decisions.</p><h3 id=installation-and-configuration>Installation and Configuration</h3><p>On Debian/Ubuntu:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>sudo apt update
+</span></span><span class=line><span class=cl>sudo apt install -y irqbalance
+</span></span><span class=line><span class=cl>sudo systemctl <span class=nb>enable</span> --now irqbalance
+</span></span></code></pre></td></tr></table></div></div><p>On RHEL/CentOS/Fedora:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>sudo dnf install -y irqbalance
+</span></span><span class=line><span class=cl>sudo systemctl <span class=nb>enable</span> --now irqbalance
+</span></span></code></pre></td></tr></table></div></div><p>The main configuration file is <code>/etc/sysconfig/irqbalance</code> (RHEL) or <code>/etc/default/irqbalance</code> (Debian):</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># /etc/sysconfig/irqbalance</span>
+</span></span><span class=line><span class=cl><span class=c1># Enable irqbalance</span>
+</span></span><span class=line><span class=cl><span class=nv>ENABLED</span><span class=o>=</span><span class=s2>&#34;1&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># IRQs to ignore (comma-separated IRQ numbers)</span>
+</span></span><span class=line><span class=cl><span class=c1># IRQBALANCE_BANNED_IRQS=&#34;16,17,18&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># CPUs to exclude from balancing (hex bitmask)</span>
+</span></span><span class=line><span class=cl><span class=c1># IRQBALANCE_BANNED_CPUS=0x00000003</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Run in one-shot mode (balance once, then exit)</span>
+</span></span><span class=line><span class=cl><span class=c1># IRQBALANCE_ONESHOT=&#34;0&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-compose-for-interrupt-monitoring>Docker Compose for Interrupt Monitoring</h3><p>While irqbalance runs directly on the host, you can monitor its effectiveness from a containerized dashboard:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>irq-monitor</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>alpine:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>irq-monitor</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>pid</span><span class=p>:</span><span class=w> </span><span class=l>host</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/proc/interrupts:/host/proc/interrupts:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/proc/irq:/host/proc/irq:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      sh -c &#34;while true; do
+</span></span></span><span class=line><span class=cl><span class=sd>        cat /host/proc/interrupts | tail -n +2 | awk &#39;{sum=0; for(i=2;i&lt;=NF;i++) sum+=$i; printf &#34;%-30s %d\n&#34;, $NF, sum}&#39;
+</span></span></span><span class=line><span class=cl><span class=sd>        sleep 5
+</span></span></span><span class=line><span class=cl><span class=sd>      done&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=when-irqbalance-falls-short>When irqbalance Falls Short</h3><p>irqbalance works well for general-purpose servers but has limitations:</p><ul><li><strong>No application awareness</strong>: It does not know which CPUs run your database or web server threads</li><li><strong>Rebalancing latency</strong>: It runs every 10 seconds by default, missing burst interrupt patterns</li><li><strong>Limited NUMA optimization</strong>: While NUMA-aware, it may not optimize for your specific workload topology</li></ul><h2 id=tuned--profile-based-system-tuning>tuned — Profile-Based System Tuning</h2><p><strong>tuned</strong> is Red Hat system tuning daemon that applies predefined or custom profiles covering CPU governor, disk scheduler, network settings, and IRQ affinity simultaneously. Unlike irqbalance, tuned applies static configurations based on workload profiles rather than dynamically rebalancing.</p><h3 id=installation-and-configuration-1>Installation and Configuration</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># RHEL/CentOS/Fedora</span>
+</span></span><span class=line><span class=cl>sudo dnf install -y tuned
+</span></span><span class=line><span class=cl>sudo systemctl <span class=nb>enable</span> --now tuned
+</span></span></code></pre></td></tr></table></div></div><p>tuned includes several built-in profiles that affect interrupt handling:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># List available profiles</span>
+</span></span><span class=line><span class=cl>tuned-adm list
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Active profile</span>
+</span></span><span class=line><span class=cl>tuned-adm active
+</span></span><span class=line><span class=cl><span class=c1># Current active profile: throughput-performance</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Available interrupt-related profiles:</span>
+</span></span><span class=line><span class=cl><span class=c1># - throughput-performance: Server throughput, IRQ balancing enabled</span>
+</span></span><span class=line><span class=cl><span class=c1># - latency-performance: Low latency, IRQ pinned to specific cores</span>
+</span></span><span class=line><span class=cl><span class=c1># - network-throughput: Network optimization with IRQ affinity</span>
+</span></span><span class=line><span class=cl><span class=c1># - virtual-host: VM host optimization with IRQ distribution</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=creating-a-custom-profile-for-irq-management>Creating a Custom Profile for IRQ Management</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=c1># /etc/tuned/my-server-profile/tuned.conf</span>
+</span></span><span class=line><span class=cl><span class=k>[main]</span>
+</span></span><span class=line><span class=cl><span class=na>summary</span><span class=o>=</span><span class=s>Custom server profile with optimized IRQ affinity</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>[cpu]</span>
+</span></span><span class=line><span class=cl><span class=na>force_latency</span><span class=o>=</span><span class=s>cstate1:nohz</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>[scheduler]</span>
+</span></span><span class=line><span class=cl><span class=na>group.balanced</span><span class=o>=</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>[irqbalance]</span>
+</span></span><span class=line><span class=cl><span class=na>enabled</span><span class=o>=</span><span class=s>true</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Pin specific IRQs to specific CPUs</span>
+</span></span><span class=line><span class=cl><span class=k>[irqaffinity]</span>
+</span></span><span class=line><span class=cl><span class=c1># Pin eth0 IRQs (IRQ 32) to CPU 0-3</span>
+</span></span><span class=line><span class=cl><span class=na>32</span><span class=o>=</span><span class=s>0-3</span>
+</span></span><span class=line><span class=cl><span class=c1># Pin NVMe IRQs (IRQ 48-55) to CPU 4-7</span>
+</span></span><span class=line><span class=cl><span class=na>48-55</span><span class=o>=</span><span class=s>4-7</span>
+</span></span></code></pre></td></tr></table></div></div><p>Activate the profile:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>sudo tuned-adm profile my-server-profile
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-compose-for-tuned-monitoring>Docker Compose for tuned Monitoring</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>tuned-exporter</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>prom/node-exporter:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>tuned-exporter</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>pid</span><span class=p>:</span><span class=w> </span><span class=l>host</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/proc:/host/proc:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/sys:/host/sys:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s1>&#39;--path.procfs=/host/proc&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s1>&#39;--path.sysfs=/host/sys&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s1>&#39;--collector.interrupts&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;9100:9100&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=manual-irq-affinity--fine-grained-control>Manual IRQ Affinity — Fine-Grained Control</h2><p>Manual IRQ affinity configuration provides the highest level of control. You directly write CPU affinity bitmasks to <code>/proc/irq/&lt;IRQ>/smp_affinity</code>, giving you precise placement of each interrupt source.</p><h3 id=finding-irq-numbers>Finding IRQ Numbers</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># List all IRQs and their current CPU assignments</span>
+</span></span><span class=line><span class=cl>cat /proc/interrupts <span class=p>|</span> head -20
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Find NIC IRQs</span>
+</span></span><span class=line><span class=cl>cat /proc/interrupts <span class=p>|</span> grep -i eth0
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Find NVMe IRQs</span>
+</span></span><span class=line><span class=cl>cat /proc/interrupts <span class=p>|</span> grep -i nvme
+</span></span></code></pre></td></tr></table></div></div><p>Example output:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>           CPU0       CPU1       CPU2       CPU3
+</span></span><span class=line><span class=cl> 16:      45123      12345      67890      11111   PCI-MSI   eth0
+</span></span><span class=line><span class=cl> 32:      89012      23456      34567      45678   PCI-MSI   nvme0
+</span></span></code></pre></td></tr></table></div></div><h3 id=setting-irq-affinity>Setting IRQ Affinity</h3><p>CPU affinity is specified as a hexadecimal bitmask. CPU 0 = 0x1, CPU 1 = 0x2, CPU 2 = 0x4, CPUs 0-3 = 0xF:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Pin IRQ 16 (eth0) to CPUs 0 and 1 (hex: 0x3)</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=m>3</span> <span class=p>|</span> sudo tee /proc/irq/16/smp_affinity
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Pin IRQ 32 (nvme0) to CPUs 2 and 3 (hex: 0xC)</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> C <span class=p>|</span> sudo tee /proc/irq/32/smp_affinity
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Pin multiple IRQs (48-55) to CPUs 4-7 (hex: 0xF0)</span>
+</span></span><span class=line><span class=cl><span class=k>for</span> irq in <span class=k>$(</span>seq <span class=m>48</span> 55<span class=k>)</span><span class=p>;</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>  <span class=nb>echo</span> F0 <span class=p>|</span> sudo tee /proc/irq/<span class=nv>$irq</span>/smp_affinity
+</span></span><span class=line><span class=cl><span class=k>done</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=persistent-configuration-via-systemd>Persistent Configuration via systemd</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=c1># /etc/systemd/system/irq-affinity.service</span>
+</span></span><span class=line><span class=cl><span class=k>[Unit]</span>
+</span></span><span class=line><span class=cl><span class=na>Description</span><span class=o>=</span><span class=s>Set IRQ Affinity</span>
+</span></span><span class=line><span class=cl><span class=na>After</span><span class=o>=</span><span class=s>network.target</span>
+</span></span><span class=line><span class=cl><span class=na>Before</span><span class=o>=</span><span class=s>multi-user.target</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>[Service]</span>
+</span></span><span class=line><span class=cl><span class=na>Type</span><span class=o>=</span><span class=s>oneshot</span>
+</span></span><span class=line><span class=cl><span class=na>ExecStart</span><span class=o>=</span><span class=s>/bin/bash -c &#39;echo 3 &gt; /proc/irq/16/smp_affinity&#39;</span>
+</span></span><span class=line><span class=cl><span class=na>ExecStart</span><span class=o>=</span><span class=s>/bin/bash -c &#39;echo C &gt; /proc/irq/32/smp_affinity&#39;</span>
+</span></span><span class=line><span class=cl><span class=na>RemainAfterExit</span><span class=o>=</span><span class=s>yes</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>[Install]</span>
+</span></span><span class=line><span class=cl><span class=na>WantedBy</span><span class=o>=</span><span class=s>multi-user.target</span>
+</span></span></code></pre></td></tr></table></div></div><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>sudo systemctl daemon-reload
+</span></span><span class=line><span class=cl>sudo systemctl <span class=nb>enable</span> irq-affinity.service
+</span></span><span class=line><span class=cl>sudo systemctl start irq-affinity.service
+</span></span></code></pre></td></tr></table></div></div><h2 id=why-self-host-and-manage-interrupts-locally>Why Self-Host and Manage Interrupts Locally?</h2><p>Managing interrupt affinity on your own infrastructure provides benefits that cloud instances cannot match. When you control bare-metal servers, you have direct access to <code>/proc/irq</code> and can tune interrupt distribution to your exact workload patterns.</p><p>For high-throughput database servers, isolating storage IRQs to dedicated CPU cores eliminates interrupt-induced latency spikes in query processing. Network-intensive applications like load balancers and reverse proxies benefit from pinning NIC interrupts to cores adjacent to the application threads in the CPU topology.</p><p>For related Linux performance tuning, see our <a href=../2026-05-22-self-hosted-linux-io-scheduler-bfq-mq-deadline-kyber-guide/>Linux I/O Schedulers comparison</a> and <a href=../2026-05-22-self-hosted-linux-cpu-governor-management-auto-cpufreq-cpupower-tuned-guide/>CPU Governor management guide</a>. For NUMA-aware memory management, check our <a href=../2026-05-22-self-hosted-linux-hugepages-management-libhugetlbfs-numactl-tuned-guide/>HugePages guide</a>.</p><h2 id=choosing-the-right-interrupt-management-strategy>Choosing the Right Interrupt Management Strategy</h2><table><thead><tr><th>Scenario</th><th>Recommended Tool</th></tr></thead><tbody><tr><td>General-purpose web server</td><td>irqbalance (default)</td></tr><tr><td>Red Hat Enterprise Linux</td><td>tuned with throughput-performance profile</td></tr><tr><td>High-frequency trading</td><td>Manual IRQ affinity (pin NIC IRQs)</td></tr><tr><td>Database server (NVMe storage)</td><td>Manual IRQ affinity plus tuned profile</td></tr><tr><td>Virtualization host</td><td>tuned with virtual-host profile</td></tr><tr><td>Mixed workload</td><td>irqbalance with banned IRQs for critical devices</td></tr></tbody></table><h2 id=faq>FAQ</h2><h3 id=what-is-irq-affinity-in-linux>What is IRQ affinity in Linux?</h3><p>IRQ (Interrupt Request) affinity is a Linux kernel feature that controls which CPU cores handle hardware interrupts from specific devices. Each IRQ has an affinity mask stored in <code>/proc/irq/&lt;number>/smp_affinity</code> that specifies the allowed CPU cores. Proper IRQ affinity prevents interrupt storms on single cores and reduces latency for latency-sensitive applications.</p><h3 id=does-irqbalance-work-on-numa-systems>Does irqbalance work on NUMA systems?</h3><p>Yes, irqbalance is NUMA-aware by default. It considers the NUMA topology when distributing interrupts, preferring to assign device IRQs to CPU cores on the same NUMA node as the device PCIe slot. This minimizes cross-NUMA memory access latency. You can verify NUMA awareness by checking irqbalance logs: <code>journalctl -u irqbalance | grep -i numa</code>.</p><h3 id=can-i-use-irqbalance-and-tuned-together>Can I use irqbalance and tuned together?</h3><p>Yes, they serve different purposes. irqbalance handles dynamic interrupt redistribution, while tuned manages broader system tuning profiles (CPU governor, disk scheduler, kernel parameters). You can run irqbalance inside a tuned profile. However, some tuned profiles (like <code>latency-performance</code>) may disable irqbalance in favor of static IRQ pinning — check the profile <code>irqbalance</code> section in <code>/usr/lib/tuned/&lt;profile>/tuned.conf</code>.</p><h3 id=how-do-i-verify-irq-affinity-is-working-correctly>How do I verify IRQ affinity is working correctly?</h3><p>Use <code>cat /proc/interrupts</code> to see interrupt counts per CPU. If one CPU shows significantly higher counts for a specific IRQ than others, the affinity mask may not be set correctly. You can also use <code>grep . /proc/irq/*/smp_affinity</code> to see all current affinity masks. For real-time monitoring, <code>watch -n 1 cat /proc/interrupts</code> shows how counts change over time.</p><h3 id=what-happens-to-irq-affinity-after-a-reboot>What happens to IRQ affinity after a reboot?</h3><p>Manual IRQ affinity settings in <code>/proc/irq</code> are lost on reboot. To persist them, use a systemd service (as shown above), a tuned profile, or add the configuration to <code>/etc/rc.local</code>. irqbalance and tuned settings persist automatically through their respective systemd services.</p><h3 id=should-i-disable-irqbalance-on-a-production-server>Should I disable irqbalance on a production server?</h3><p>Not necessarily. irqbalance works well for most workloads. Disable it only if you need fine-grained manual control over specific IRQs (e.g., pinning NIC interrupts for a low-latency trading application). If you disable it, you must manually configure IRQ affinity for all devices, or use tuned profiles that handle IRQ placement automatically.</p><h3 id=what-is-the-difference-between-msi-and-legacy-interrupts>What is the difference between MSI and legacy interrupts?</h3><p>MSI (Message Signaled Interrupts) and MSI-X are modern interrupt mechanisms where devices write to a specific memory address to signal interrupts, rather than using dedicated physical interrupt lines. MSI-X supports more vectors per device (up to 2048) and allows per-queue interrupt assignment. Check if your device uses MSI: <code>lspci -vvv | grep -i "msi"</code>. Modern NICs and NVMe controllers use MSI-X by default.</p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted Linux Interrupt Management: irqbalance vs tuned vs Manual IRQ Affinity","description":"Compare irqbalance, tuned, and manual IRQ affinity configuration for Linux interrupt management. Learn automatic vs profile-based vs fine-grained interrupt distribution for server performance optimization.","datePublished":"2026-05-23","dateModified":"2026-05-23","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20Linux%20Interrupt%20Management%3a%20irqbalance%20vs%20tuned%20vs%20Manual%20IRQ%20Affinity&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-23-self-hosted-linux-interrupt-management-irqbalance-tuned-irq-affinity-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-23-self-hosted-linux-interrupt-management-irqbalance-tuned-irq-affinity-guide%2f&t=Self-Hosted%20Linux%20Interrupt%20Management%3a%20irqbalance%20vs%20tuned%20vs%20Manual%20IRQ%20Affinity" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/linux/ class=tag-link>Linux</a>
+<a href=/tags/system-administration/ class=tag-link>System-Administration</a>
+<a href=/tags/performance/ class=tag-link>Performance</a>
+<a href=/tags/interrupt-management/ class=tag-link>Interrupt-Management</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-05-23-self-hosted-linux-cpu-affinity-management-taskset-numactl-cset-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted Linux CPU Affinity Management: taskset vs numactl vs cset</h3><div class=post-excerpt>CPU affinity controls which processor cores execute specific processes on a Linux system. On multi-core servers running …</div><div class=post-footer><span class=post-date>May 23, 2026</span></div></a><a href=/posts/2026-05-23-self-hosted-linux-io-priority-management-ionice-cgroup-iopriority-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted Linux I/O Priority Management: ionice vs cgroup io.weight vs ioprio_set</h3><div class=post-excerpt>I/O priority determines which processes get preferential access to disk bandwidth when multiple processes compete for …</div><div class=post-footer><span class=post-date>May 23, 2026</span></div></a><a href=/posts/2026-05-23-linux-open-file-inspection-lsof-fuser-proc-pid-fd-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Linux Open File Inspection: lsof vs fuser vs /proc/PID/fd — Self-Hosted Process File Monitoring</h3><div class=post-excerpt>When a Linux server runs out of disk space due to deleted-but-still-open files, or when you need to figure out which …</div><div class=post-footer><span class=post-date>May 23, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>

@@ -1,0 +1,355 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted Container Log Rotation Management: Docker JSON-File vs Logrotate vs Fluent Bit | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-05-25-self-hosted-container-log-rotation-management-docker-vs-logrotate-vs-fluent-bit-guide/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted Container Log Rotation Management: Docker JSON-File vs Logrotate vs Fluent Bit"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-05-25-self-hosted-container-log-rotation-management-docker-vs-logrotate-vs-fluent-bit-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-05-25T00:00:00Z"><meta property="article:modified_time" content="2026-05-25T00:00:00Z"><meta property="article:tag" content="containers"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted Container Log Rotation Management: Docker JSON-File vs Logrotate vs Fluent Bit"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted Container Log Rotation Management: Docker JSON-File vs Logrotate vs Fluent Bit","description":"\u003cp\u003eContainer logs grow without bounds unless actively managed. A single busy web server container can generate gigabytes of log data per day through stdout\/stderr output, access logs, and application debug messages. Without proper rotation policies, container logs consume all available disk space, causing container crashes, host instability, and data loss.\u003c\/p\u003e","datePublished":"2026-05-25T00:00:00Z","dateModified":"2026-05-25T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-05-25-self-hosted-container-log-rotation-management-docker-vs-logrotate-vs-fluent-bit-guide\/"},"keywords":["containers","docker","logging","log-management","self-hosted"],"articleSection":"containers","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted Container Log Rotation Management: Docker JSON-File vs Logrotate vs Fluent Bit","item":"https:\/\/www.pistack.xyz\/posts\/2026-05-25-self-hosted-container-log-rotation-management-docker-vs-logrotate-vs-fluent-bit-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Containers</span>
+<span class="tag tag-purple">Docker</span>
+<span class="tag tag-purple">Logging</span></div><h1>Self-Hosted Container Log Rotation Management: Docker JSON-File vs Logrotate vs Fluent Bit</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>May 25, 2026</span>
+<span>9 min read</span>
+<span>Updated May 25, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#the-container-log-problem>The Container Log Problem</a></li><li><a href=#docker-json-file-log-driver-rotation>Docker JSON-File Log Driver Rotation</a><ul><li><a href=#per-container-configuration>Per-Container Configuration</a></li><li><a href=#docker-compose-configuration>Docker Compose Configuration</a></li><li><a href=#docker-daemon-wide-default-configuration>Docker Daemon-Wide Default Configuration</a></li><li><a href=#verifying-log-rotation>Verifying Log Rotation</a></li></ul></li><li><a href=#logrotate-for-container-logs>Logrotate for Container Logs</a><ul><li><a href=#logrotate-configuration-for-docker-logs>Logrotate Configuration for Docker Logs</a></li><li><a href=#logrotate-for-custom-application-logs>Logrotate for Custom Application Logs</a></li><li><a href=#logrotate-with-docker-compose-volumes>Logrotate with Docker Compose Volumes</a></li><li><a href=#running-logrotate-in-a-container>Running Logrotate in a Container</a></li></ul></li><li><a href=#fluent-bit-log-forwarding-with-rotation>Fluent Bit Log Forwarding with Rotation</a><ul><li><a href=#fluent-bit-docker-compose-deployment>Fluent Bit Docker Compose Deployment</a></li><li><a href=#fluent-bit-configuration>Fluent Bit Configuration</a></li><li><a href=#fluent-bit-output-to-loki>Fluent Bit Output to Loki</a></li><li><a href=#fluent-bit-output-to-file-with-rotation>Fluent Bit Output to File with Rotation</a></li></ul></li><li><a href=#comparison-table>Comparison Table</a></li><li><a href=#choosing-the-right-log-rotation-approach>Choosing the Right Log Rotation Approach</a></li><li><a href=#security-considerations-for-container-logs>Security Considerations for Container Logs</a></li><li><a href=#why-self-host-container-log-rotation>Why Self-Host Container Log Rotation?</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#how-do-i-set-default-log-rotation-for-all-docker-containers>How do I set default log rotation for all Docker containers?</a></li><li><a href=#what-is-the-difference-between-dockers-built-in-rotation-and-logrotate>What is the difference between Docker&rsquo;s built-in rotation and logrotate?</a></li><li><a href=#can-i-use-fluent-bit-with-dockers-json-file-log-driver>Can I use Fluent Bit with Docker&rsquo;s JSON-file log driver?</a></li><li><a href=#how-much-disk-space-should-i-allocate-for-container-logs>How much disk space should I allocate for container logs?</a></li><li><a href=#do-i-need-fluent-bit-if-i-only-have-one-docker-host>Do I need Fluent Bit if I only have one Docker host?</a></li><li><a href=#how-do-i-prevent-container-logs-from-filling-the-disk-during-a-log-storm>How do I prevent container logs from filling the disk during a log storm?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><p>Container logs grow without bounds unless actively managed. A single busy web server container can generate gigabytes of log data per day through stdout/stderr output, access logs, and application debug messages. Without proper rotation policies, container logs consume all available disk space, causing container crashes, host instability, and data loss.</p><p>This guide compares three approaches to container log rotation: <strong>Docker&rsquo;s built-in JSON-file log driver rotation</strong> (the simplest approach), <strong>logrotate with container log files</strong> (the traditional Unix approach adapted for containers), and <strong>Fluent Bit log forwarding with rotation</strong> (the modern log aggregation approach). We cover configuration, deployment patterns, and trade-offs for each.</p><h2 id=the-container-log-problem>The Container Log Problem</h2><p>Docker stores container logs as JSON files on the host filesystem by default:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-gdscript3 data-lang=gdscript3><span class=line><span class=cl><span class=o>/</span><span class=k>var</span><span class=o>/</span><span class=n>lib</span><span class=o>/</span><span class=n>docker</span><span class=o>/</span><span class=n>containers</span><span class=o>/&lt;</span><span class=n>container</span><span class=o>-</span><span class=n>id</span><span class=o>&gt;/&lt;</span><span class=n>container</span><span class=o>-</span><span class=n>id</span><span class=o>&gt;-</span><span class=n>json</span><span class=o>.</span><span class=n>log</span>
+</span></span></code></pre></td></tr></table></div></div><p>Each log entry is a JSON object with timestamp, stream (stdout/stderr), and log content. Without rotation limits, this file grows indefinitely. A container writing 1 MB/minute produces 1.4 GB per day and 43 GB per month.</p><p>The consequences of unmanaged container logs include:</p><ul><li><strong>Disk exhaustion</strong> — <code>/var/lib/docker</code> fills up, causing all containers to fail</li><li><strong>Performance degradation</strong> — large log files slow down <code>docker logs</code> commands</li><li><strong>Backup overhead</strong> — large files increase backup times and storage costs</li><li><strong>Compliance risk</strong> — unrotated logs may contain sensitive data beyond retention requirements</li></ul><h2 id=docker-json-file-log-driver-rotation>Docker JSON-File Log Driver Rotation</h2><p>Docker&rsquo;s default JSON-file log driver includes built-in rotation via <code>max-size</code> and <code>max-file</code> options. This is the simplest approach — no additional software required.</p><h3 id=per-container-configuration>Per-Container Configuration</h3><p>Set log rotation options when starting a container:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>docker run -d   --log-driver json-file   --log-opt max-size<span class=o>=</span>10m   --log-opt max-file<span class=o>=</span><span class=m>3</span>   --name myapp   nginx:alpine
+</span></span></code></pre></td></tr></table></div></div><p>This configuration keeps at most 3 rotated files of 10 MB each, limiting total log storage to 30 MB per container.</p><h3 id=docker-compose-configuration>Docker Compose Configuration</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>web</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>nginx:alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>logging</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>json-file</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>options</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>max-size</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;10m&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>max-file</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;80:80&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>api</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>node:18-alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>logging</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>json-file</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>options</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>max-size</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;50m&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>max-file</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;5&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=docker-daemon-wide-default-configuration>Docker Daemon-Wide Default Configuration</h3><p>Set global defaults in <code>/etc/docker/daemon.json</code> so all containers inherit rotation policies:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;log-driver&#34;</span><span class=p>:</span> <span class=s2>&#34;json-file&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;log-opts&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;max-size&#34;</span><span class=p>:</span> <span class=s2>&#34;10m&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;max-file&#34;</span><span class=p>:</span> <span class=s2>&#34;3&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>After updating <code>daemon.json</code>, restart the Docker daemon:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>systemctl restart docker
+</span></span></code></pre></td></tr></table></div></div><p>Note: This only affects new containers. Existing containers retain their original log configuration.</p><h3 id=verifying-log-rotation>Verifying Log Rotation</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Check log driver and options for a running container</span>
+</span></span><span class=line><span class=cl>docker inspect --format<span class=o>=</span><span class=s1>&#39;{{.HostConfig.LogConfig}}&#39;</span> myapp
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Check actual log file sizes</span>
+</span></span><span class=line><span class=cl>du -sh /var/lib/docker/containers/*/*-json.log <span class=p>|</span> sort -rh <span class=p>|</span> head -10
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Manually rotate a container&#39;s logs</span>
+</span></span><span class=line><span class=cl>docker logs --details myapp  <span class=c1># View logs</span>
+</span></span><span class=line><span class=cl>ls -la /var/lib/docker/containers/*/  <span class=c1># Check rotation files (.1, .2, etc.)</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=logrotate-for-container-logs>Logrotate for Container Logs</h2><p>logrotate is the standard Unix log rotation utility. While Docker&rsquo;s built-in rotation handles the JSON-file driver, logrotate becomes necessary when using the <code>local</code> log driver or when logs are written to custom paths.</p><h3 id=logrotate-configuration-for-docker-logs>Logrotate Configuration for Docker Logs</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># /etc/logrotate.d/docker-containers</span>
+</span></span><span class=line><span class=cl>/var/lib/docker/containers/*/*-json.log <span class=o>{</span>
+</span></span><span class=line><span class=cl>    daily
+</span></span><span class=line><span class=cl>    rotate <span class=m>7</span>
+</span></span><span class=line><span class=cl>    size 50M
+</span></span><span class=line><span class=cl>    compress
+</span></span><span class=line><span class=cl>    delaycompress
+</span></span><span class=line><span class=cl>    missingok
+</span></span><span class=line><span class=cl>    notifempty
+</span></span><span class=line><span class=cl>    copytruncate
+</span></span><span class=line><span class=cl>    maxage <span class=m>30</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=logrotate-for-custom-application-logs>Logrotate for Custom Application Logs</h3><p>When containers mount host directories for application logs:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># /etc/logrotate.d/app-logs</span>
+</span></span><span class=line><span class=cl>/opt/containers/*/logs/*.log <span class=o>{</span>
+</span></span><span class=line><span class=cl>    daily
+</span></span><span class=line><span class=cl>    rotate <span class=m>14</span>
+</span></span><span class=line><span class=cl>    size 100M
+</span></span><span class=line><span class=cl>    compress
+</span></span><span class=line><span class=cl>    delaycompress
+</span></span><span class=line><span class=cl>    missingok
+</span></span><span class=line><span class=cl>    notifempty
+</span></span><span class=line><span class=cl>    create <span class=m>0644</span> root root
+</span></span><span class=line><span class=cl>    sharedscripts
+</span></span><span class=line><span class=cl>    postrotate
+</span></span><span class=line><span class=cl>        <span class=c1># Signal container to reopen log files</span>
+</span></span><span class=line><span class=cl>        docker <span class=nb>kill</span> --signal<span class=o>=</span>USR1 myapp 2&gt;/dev/null <span class=o>||</span> <span class=nb>true</span>
+</span></span><span class=line><span class=cl>    endscript
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=logrotate-with-docker-compose-volumes>Logrotate with Docker Compose Volumes</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>app</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>myapp:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/opt/containers/app/logs:/var/log/myapp</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>logging</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>local</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>options</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>max-size</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;10m&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>max-file</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;5&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>The <code>local</code> log driver uses a binary format that is more space-efficient than JSON-file and works well with logrotate.</p><h3 id=running-logrotate-in-a-container>Running Logrotate in a Container</h3><p>For container-native log rotation, run logrotate as a sidecar:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>logrotator</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>blacklabelops/logrotate</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/var/lib/docker/containers:/var/lib/docker/containers</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./logrotate.conf:/etc/logrotate.d/docker:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>LOGROTATE_SCHEDULE=daily</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>LOGROTATE_SIZE=50M</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>LOGROTATE_ROTATE=7</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=fluent-bit-log-forwarding-with-rotation>Fluent Bit Log Forwarding with Rotation</h2><p>Fluent Bit is a lightweight log processor and forwarder that consumes container logs, processes them (parsing, filtering, enriching), and forwards them to destination systems (Loki, Elasticsearch, S3). It handles log rotation implicitly by consuming and forwarding logs in real-time.</p><h3 id=fluent-bit-docker-compose-deployment>Fluent Bit Docker Compose Deployment</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>fluent-bit</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>cr.fluentbit.io/fluent/fluent-bit:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/var/lib/docker/containers:/var/lib/docker/containers:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/var/run/docker.sock:/var/run/docker.sock:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./parsers.conf:/fluent-bit/etc/parsers.conf:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>network_mode</span><span class=p>:</span><span class=w> </span><span class=l>host</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>web</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>nginx:alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>logging</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>fluentd</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>options</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>fluentd-address</span><span class=p>:</span><span class=w> </span><span class=l>localhost:24224</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>tag</span><span class=p>:</span><span class=w> </span><span class=l>web.access</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;80:80&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=fluent-bit-configuration>Fluent Bit Configuration</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=c1># fluent-bit.conf</span>
+</span></span><span class=line><span class=cl><span class=k>[SERVICE]</span>
+</span></span><span class=line><span class=cl>    <span class=na>Flush        5</span>
+</span></span><span class=line><span class=cl>    <span class=na>Daemon       off</span>
+</span></span><span class=line><span class=cl>    <span class=na>Log_Level    info</span>
+</span></span><span class=line><span class=cl>    <span class=na>Parsers_File parsers.conf</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>[INPUT]</span>
+</span></span><span class=line><span class=cl>    <span class=na>Name             forward</span>
+</span></span><span class=line><span class=cl>    <span class=na>Listen           0.0.0.0</span>
+</span></span><span class=line><span class=cl>    <span class=na>Port             24224</span>
+</span></span><span class=line><span class=cl>    <span class=na>Buffer_Chunk_Size 1M</span>
+</span></span><span class=line><span class=cl>    <span class=na>Buffer_Max_Size  6M</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>[INPUT]</span>
+</span></span><span class=line><span class=cl>    <span class=na>Name             tail</span>
+</span></span><span class=line><span class=cl>    <span class=na>Path             /var/lib/docker/containers/*/*-json.log</span>
+</span></span><span class=line><span class=cl>    <span class=na>Parser           docker</span>
+</span></span><span class=line><span class=cl>    <span class=na>Tag              docker.*</span>
+</span></span><span class=line><span class=cl>    <span class=na>Refresh_Interval 5</span>
+</span></span><span class=line><span class=cl>    <span class=na>Rotate_Wait      30</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>[FILTER]</span>
+</span></span><span class=line><span class=cl>    <span class=na>Name             parser</span>
+</span></span><span class=line><span class=cl>    <span class=na>Match            docker.*</span>
+</span></span><span class=line><span class=cl>    <span class=na>Key_Name         log</span>
+</span></span><span class=line><span class=cl>    <span class=na>Parser           json</span>
+</span></span><span class=line><span class=cl>    <span class=na>Reserve_Data     On</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>[OUTPUT]</span>
+</span></span><span class=line><span class=cl>    <span class=na>Name             file</span>
+</span></span><span class=line><span class=cl>    <span class=na>Match            *</span>
+</span></span><span class=line><span class=cl>    <span class=na>Path             /var/log/fluent-bit</span>
+</span></span><span class=line><span class=cl>    <span class=na>File             container-logs</span>
+</span></span><span class=line><span class=cl>    <span class=na>Append           true</span>
+</span></span><span class=line><span class=cl>    <span class=na>Format           json</span>
+</span></span><span class=line><span class=cl>    <span class=c1># Built-in rotation</span>
+</span></span><span class=line><span class=cl>    <span class=na>Rotate           7</span>
+</span></span><span class=line><span class=cl>    <span class=na>Rotate_Size      50M</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=fluent-bit-output-to-loki>Fluent Bit Output to Loki</h3><p>For Grafana Loki integration:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=k>[OUTPUT]</span>
+</span></span><span class=line><span class=cl>    <span class=na>Name          loki</span>
+</span></span><span class=line><span class=cl>    <span class=na>Match         *</span>
+</span></span><span class=line><span class=cl>    <span class=na>Url           http://loki:3100/loki/api/v1/push</span>
+</span></span><span class=line><span class=cl>    <span class=na>Labels        job</span><span class=o>=</span><span class=s>container-logs,host=${HOSTNAME}
+</span></span></span><span class=line><span class=cl><span class=s>    LabelKeys     container_name,com.docker.compose.service
+</span></span></span><span class=line><span class=cl><span class=s>    RemoveKeys    stream
+</span></span></span><span class=line><span class=cl><span class=s>    Auto_Kubernetes_Labels false</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=fluent-bit-output-to-file-with-rotation>Fluent Bit Output to File with Rotation</h3><p>Fluent Bit&rsquo;s file output includes built-in rotation:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=k>[OUTPUT]</span>
+</span></span><span class=line><span class=cl>    <span class=na>Name          file</span>
+</span></span><span class=line><span class=cl>    <span class=na>Match         *</span>
+</span></span><span class=line><span class=cl>    <span class=na>Path          /var/log/containers</span>
+</span></span><span class=line><span class=cl>    <span class=na>File          logs</span>
+</span></span><span class=line><span class=cl>    <span class=na>Format        json</span>
+</span></span><span class=line><span class=cl>    <span class=na>Rotate        14</span>
+</span></span><span class=line><span class=cl>    <span class=na>Rotate_Size   100M</span>
+</span></span></code></pre></td></tr></table></div></div><p>This keeps 14 rotated files of up to 100 MB each — equivalent to 1.4 GB total.</p><h2 id=comparison-table>Comparison Table</h2><table><thead><tr><th>Feature</th><th>Docker JSON-File Rotation</th><th>logrotate</th><th>Fluent Bit</th></tr></thead><tbody><tr><td><strong>Setup Complexity</strong></td><td>Minimal (daemon.json)</td><td>Moderate (config files)</td><td>Higher (pipeline config)</td></tr><tr><td><strong>Disk Space Control</strong></td><td>max-size + max-file</td><td>size/rotate directives</td><td>Rotate + external forwarding</td></tr><tr><td><strong>Log Format</strong></td><td>JSON (parsed)</td><td>Original format</td><td>Transformed/parsed</td></tr><tr><td><strong>Real-time Forwarding</strong></td><td>No</td><td>No</td><td>Yes (native)</td></tr><tr><td><strong>Log Parsing</strong></td><td>Via <code>docker logs</code> only</td><td>No</td><td>Yes (parsers, regex, Lua)</td></tr><tr><td><strong>Centralized Storage</strong></td><td>Local only</td><td>Local only</td><td>Loki, ES, S3, etc.</td></tr><tr><td><strong>Resource Usage</strong></td><td>Lowest</td><td>Low</td><td>Low-Moderate</td></tr><tr><td><strong>Container Awareness</strong></td><td>Per-container options</td><td>Path-based (manual tagging)</td><td>Auto container metadata</td></tr><tr><td><strong>Compression</strong></td><td>No</td><td>gzip built-in</td><td>gzip at destination</td></tr><tr><td><strong>Retention Policy</strong></td><td>File count only</td><td>Time + size + count</td><td>Flexible (per output)</td></tr><tr><td><strong>Multi-host</strong></td><td>No</td><td>No</td><td>Yes (agent per host)</td></tr><tr><td><strong>Best For</strong></td><td>Single-host, simple setups</td><td>Unix admins, custom paths</td><td>Log aggregation pipelines</td></tr></tbody></table><h2 id=choosing-the-right-log-rotation-approach>Choosing the Right Log Rotation Approach</h2><p><strong>Use Docker JSON-File rotation when:</strong></p><ul><li>You run a single Docker host with a small number of containers</li><li>You only need basic disk space protection</li><li>You view logs via <code>docker logs</code> and do not need centralized storage</li><li>You want zero additional dependencies</li></ul><p><strong>Use logrotate when:</strong></p><ul><li>Your containers write logs to mounted host directories</li><li>You need time-based retention (e.g., &ldquo;keep 30 days of logs&rdquo;)</li><li>You want compressed archived logs for compliance or auditing</li><li>You manage both container and non-container log files with a unified rotation policy</li></ul><p><strong>Use Fluent Bit when:</strong></p><ul><li>You run multiple Docker hosts and need centralized log aggregation</li><li>You want to parse, filter, and enrich container logs before storage</li><li>You need integration with Grafana Loki, Elasticsearch, or cloud storage</li><li>You require real-time log streaming and alerting capabilities</li><li>You want to reduce local disk usage by forwarding logs immediately</li></ul><h2 id=security-considerations-for-container-logs>Security Considerations for Container Logs</h2><ul><li><strong>Sensitive data</strong> — Container logs may contain passwords, tokens, or personal data. Configure rotation with compression and set retention periods that comply with data governance requirements.</li><li><strong>Log file permissions</strong> — Ensure <code>/var/lib/docker/containers/</code> is only readable by root or the docker group: <code>chmod 750 /var/lib/docker/containers/</code></li><li><strong>Log injection attacks</strong> — When forwarding logs to aggregation systems, sanitize log content to prevent injection attacks in downstream log viewers or alerting systems.</li><li><strong>Audit trail</strong> — Keep rotation logs (<code>/var/lib/logrotate/status</code>) to verify that rotation is occurring as expected and detect silent failures.</li></ul><h2 id=why-self-host-container-log-rotation>Why Self-Host Container Log Rotation?</h2><p>Self-hosted container infrastructure requires deliberate log management because cloud platforms handle this transparently. On AWS ECS or Google Cloud Run, log rotation, forwarding, and retention are managed by the platform. When you run Docker on your own servers, you are responsible for preventing disk exhaustion, maintaining log accessibility, and meeting retention requirements.</p><p>Proper container log rotation is the foundation of reliable self-hosted operations. Without it, a single misbehaving container logging in a tight loop can take down your entire server by filling the disk. With it, you maintain operational visibility while keeping storage costs predictable.</p><p>For related reading on container logging infrastructure, see our <a href=../2026-05-25-self-hosted-container-logging-drivers-journald-vs-fluentd-vs-syslog-vs-gelf-guide/>container logging drivers guide</a> for the driver-level perspective, and our <a href=../2026-04-18-rsyslog-vs-syslog-ng-vs-vector-self-hosted-syslog-log-aggregation-guide-2026/>log aggregation comparison</a> for the aggregation pipeline side.</p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted Container Log Rotation Management: Docker JSON-File vs Logrotate vs Fluent Bit","description":"Prevent disk exhaustion from container logs. Compare Docker built-in rotation, logrotate, and Fluent Bit for container log management on self-hosted infrastructure.","datePublished":"2026-05-25","dateModified":"2026-05-25","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script><h2 id=faq>FAQ</h2><h3 id=how-do-i-set-default-log-rotation-for-all-docker-containers>How do I set default log rotation for all Docker containers?</h3><p>Edit <code>/etc/docker/daemon.json</code> and add the <code>log-opts</code> section with <code>max-size</code> and <code>max-file</code> values. After restarting the Docker daemon with <code>systemctl restart docker</code>, all new containers will inherit these settings. Existing containers are not affected — they must be recreated to pick up the new defaults.</p><h3 id=what-is-the-difference-between-dockers-built-in-rotation-and-logrotate>What is the difference between Docker&rsquo;s built-in rotation and logrotate?</h3><p>Docker&rsquo;s built-in rotation (via <code>max-size</code> and <code>max-file</code>) only works with the JSON-file and local log drivers. It renames the current log file and creates a new one when the size limit is reached. logrotate is a general-purpose log rotation tool that can rotate any log file, including those outside Docker&rsquo;s management, and supports compression, time-based rotation, and custom post-rotation scripts.</p><h3 id=can-i-use-fluent-bit-with-dockers-json-file-log-driver>Can I use Fluent Bit with Docker&rsquo;s JSON-file log driver?</h3><p>Yes. Fluent Bit&rsquo;s <code>tail</code> input plugin reads Docker&rsquo;s JSON log files directly from <code>/var/lib/docker/containers/*/*-json.log</code>. Alternatively, use the <code>fluentd</code> log driver in Docker to stream logs to Fluent Bit in real-time, which avoids disk I/O entirely.</p><h3 id=how-much-disk-space-should-i-allocate-for-container-logs>How much disk space should I allocate for container logs?</h3><p>A general guideline: allocate 10-50 MB per container for <code>max-size</code>, with 3-5 rotated files. For a host running 20 containers with 10 MB max-size and 3 files, total log storage is 600 MB. Adjust based on log volume — high-traffic web servers may need 50-100 MB per container.</p><h3 id=do-i-need-fluent-bit-if-i-only-have-one-docker-host>Do I need Fluent Bit if I only have one Docker host?</h3><p>Not necessarily. For a single Docker host with fewer than 10 containers, Docker&rsquo;s built-in JSON-file rotation is usually sufficient. Add Fluent Bit when you need centralized log aggregation across multiple hosts, log parsing and enrichment, or integration with monitoring dashboards like Grafana.</p><h3 id=how-do-i-prevent-container-logs-from-filling-the-disk-during-a-log-storm>How do I prevent container logs from filling the disk during a log storm?</h3><p>Set conservative <code>max-size</code> limits (e.g., 10 MB) and enable monitoring alerts for <code>/var/lib/docker</code> disk usage. Use the <code>local</code> log driver with rotation as a fallback, or configure Fluent Bit with the <code>throttle</code> filter to limit log ingestion rates during abnormal conditions. Also consider using Docker&rsquo;s <code>--log-opt max-file=1</code> as a hard limit to ensure only one rotated file exists.</p></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20Container%20Log%20Rotation%20Management%3a%20Docker%20JSON-File%20vs%20Logrotate%20vs%20Fluent%20Bit&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-25-self-hosted-container-log-rotation-management-docker-vs-logrotate-vs-fluent-bit-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-25-self-hosted-container-log-rotation-management-docker-vs-logrotate-vs-fluent-bit-guide%2f&t=Self-Hosted%20Container%20Log%20Rotation%20Management%3a%20Docker%20JSON-File%20vs%20Logrotate%20vs%20Fluent%20Bit" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/containers/ class=tag-link>Containers</a>
+<a href=/tags/docker/ class=tag-link>Docker</a>
+<a href=/tags/logging/ class=tag-link>Logging</a>
+<a href=/tags/log-management/ class=tag-link>Log-Management</a>
+<a href=/tags/self-hosted/ class=tag-link>Self-Hosted</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-05-23-self-hosted-container-registry-management-harbor-distribution-zot/ class=post-card><div class=post-tags><span class="tag tag-purple">Containers</span></div><h3 class=post-title>Self-Hosted Container Registry Management: Harbor vs Distribution vs Zot 2026</h3><div class=post-excerpt>Container registries store and distribute Docker and OCI images for your infrastructure. As teams push more images, …</div><div class=post-footer><span class=post-date>May 23, 2026</span></div></a><a href=/posts/2026-05-22-container-registry-garbage-collection-harbor-distribution-zot-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Docker</span></div><h3 class=post-title>Self-Hosted Container Registry Garbage Collection: Harbor vs Distribution vs Zot (2026)</h3><div class=post-excerpt>Container registries accumulate unused image layers over time. Every build pushes new layers; old layers from deleted …</div><div class=post-footer><span class=post-date>May 22, 2026</span></div></a><a href=/posts/2026-05-11-container-base-images-alpine-distroless-debian-slim-comparison/ class=post-card><div class=post-tags><span class="tag tag-purple">Comparison</span></div><h3 class=post-title>Self-Hosted Container Base Images: Alpine vs Distroless vs Debian Slim 2026</h3><div class=post-excerpt>Choosing the right container base image is one of the most consequential decisions in your Docker infrastructure. The …</div><div class=post-footer><span class=post-date>May 11, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>

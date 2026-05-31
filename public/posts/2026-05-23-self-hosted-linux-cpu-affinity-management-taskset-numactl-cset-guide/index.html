@@ -1,0 +1,274 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted Linux CPU Affinity Management: taskset vs numactl vs cset | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-05-23-self-hosted-linux-cpu-affinity-management-taskset-numactl-cset-guide/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted Linux CPU Affinity Management: taskset vs numactl vs cset"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-05-23-self-hosted-linux-cpu-affinity-management-taskset-numactl-cset-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-05-23T00:00:00Z"><meta property="article:modified_time" content="2026-05-23T00:00:00Z"><meta property="article:tag" content="linux"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted Linux CPU Affinity Management: taskset vs numactl vs cset"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted Linux CPU Affinity Management: taskset vs numactl vs cset","description":"\u003cp\u003eCPU affinity controls which processor cores execute specific processes on a Linux system. On multi-core servers running database engines, web servers, or real-time applications, improper CPU affinity can cause cache thrashing, NUMA penalties, and unpredictable latency. This guide compares three tools for managing CPU affinity on self-hosted Linux servers: \u003cstrong\u003etaskset\u003c\/strong\u003e (process-level pinning), \u003cstrong\u003enumactl\u003c\/strong\u003e (NUMA-aware placement), and \u003cstrong\u003ecset\u003c\/strong\u003e (advanced CPU set management with shielding).\u003c\/p\u003e","datePublished":"2026-05-23T00:00:00Z","dateModified":"2026-05-23T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-05-23-self-hosted-linux-cpu-affinity-management-taskset-numactl-cset-guide\/"},"keywords":["linux","system-administration","performance","cpu-affinity"],"articleSection":"linux","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted Linux CPU Affinity Management: taskset vs numactl vs cset","item":"https:\/\/www.pistack.xyz\/posts\/2026-05-23-self-hosted-linux-cpu-affinity-management-taskset-numactl-cset-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Linux</span>
+<span class="tag tag-purple">System-Administration</span>
+<span class="tag tag-purple">Performance</span></div><h1>Self-Hosted Linux CPU Affinity Management: taskset vs numactl vs cset</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>May 23, 2026</span>
+<span>8 min read</span>
+<span>Updated May 23, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#what-is-cpu-affinity-and-why-does-it-matter>What Is CPU Affinity and Why Does It Matter?</a></li><li><a href=#taskset--simple-process-level-cpu-pinning>taskset — Simple Process-Level CPU Pinning</a><ul><li><a href=#installation>Installation</a></li><li><a href=#basic-usage>Basic Usage</a></li><li><a href=#hexadecimal-cpu-masks>Hexadecimal CPU Masks</a></li><li><a href=#docker-compose-with-taskset>Docker Compose with taskset</a></li></ul></li><li><a href=#numactl--numa-aware-process-placement>numactl — NUMA-Aware Process Placement</a><ul><li><a href=#installation-1>Installation</a></li><li><a href=#checking-numa-topology>Checking NUMA Topology</a></li><li><a href=#running-processes-with-numa-policy>Running Processes with NUMA Policy</a></li><li><a href=#docker-compose-with-numactl>Docker Compose with numactl</a></li></ul></li><li><a href=#cset--advanced-cpu-set-management-with-shielding>cset — Advanced CPU Set Management with Shielding</a><ul><li><a href=#installation-2>Installation</a></li><li><a href=#creating-cpu-shields>Creating CPU Shields</a></li><li><a href=#docker-integration-with-cset>Docker Integration with cset</a></li><li><a href=#cset-vs-taskset-key-differences>cset vs taskset: Key Differences</a></li></ul></li><li><a href=#why-self-host-and-manage-cpu-affinity-locally>Why Self-Host and Manage CPU Affinity Locally?</a></li><li><a href=#choosing-the-right-cpu-affinity-tool>Choosing the Right CPU Affinity Tool</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#what-is-the-difference-between-taskset-and-numactl>What is the difference between taskset and numactl?</a></li><li><a href=#does-cpu-affinity-persist-after-a-process-restart>Does CPU affinity persist after a process restart?</a></li><li><a href=#can-i-pin-containers-to-specific-cpus>Can I pin containers to specific CPUs?</a></li><li><a href=#what-is-cpu-shielding-and-why-is-it-useful>What is CPU shielding and why is it useful?</a></li><li><a href=#how-do-i-verify-cpu-affinity-is-working>How do I verify CPU affinity is working?</a></li><li><a href=#does-cpu-affinity-affect-power-consumption>Does CPU affinity affect power consumption?</a></li><li><a href=#can-i-use-taskset-and-numactl-together>Can I use taskset and numactl together?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><p>CPU affinity controls which processor cores execute specific processes on a Linux system. On multi-core servers running database engines, web servers, or real-time applications, improper CPU affinity can cause cache thrashing, NUMA penalties, and unpredictable latency. This guide compares three tools for managing CPU affinity on self-hosted Linux servers: <strong>taskset</strong> (process-level pinning), <strong>numactl</strong> (NUMA-aware placement), and <strong>cset</strong> (advanced CPU set management with shielding).</p><h2 id=what-is-cpu-affinity-and-why-does-it-matter>What Is CPU Affinity and Why Does It Matter?</h2><p>Linux schedules processes across all available CPU cores by default. This works well for general workloads but causes problems for performance-sensitive applications:</p><ul><li><strong>Cache locality</strong>: When a process migrates between cores, its L1/L2 cache state is lost, causing cache misses on the new core</li><li><strong>NUMA penalties</strong>: Accessing memory from a remote NUMA node adds 40-100ns latency per access</li><li><strong>Context switch overhead</strong>: Migrating processes between cores requires TLB flushes and cache invalidation</li></ul><p>Proper CPU affinity pinning keeps critical processes on dedicated cores, maintaining cache warmth and eliminating cross-NUMA memory access penalties.</p><table><thead><tr><th>Feature</th><th>taskset</th><th>numactl</th><th>cset</th></tr></thead><tbody><tr><td><strong>Granularity</strong></td><td>Per-process</td><td>Per-process + NUMA</td><td>CPU set-based</td></tr><tr><td><strong>NUMA Awareness</strong></td><td>No</td><td>Yes</td><td>Yes</td></tr><tr><td><strong>Shielding</strong></td><td>No</td><td>No</td><td>Yes (kthread migration)</td></tr><tr><td><strong>Ease of Use</strong></td><td>Simple (single command)</td><td>Simple (single command)</td><td>Moderate (setup required)</td></tr><tr><td><strong>Persistence</strong></td><td>Per-launch</td><td>Per-launch</td><td>Persistent sets</td></tr><tr><td><strong>Container Support</strong></td><td>Manual</td><td>Manual</td><td>cset shield with Docker</td></tr><tr><td><strong>GitHub Repo</strong></td><td>util-linux (3,154 stars)</td><td>numactl (496 stars)</td><td>cpuset (133 stars)</td></tr><tr><td><strong>Last Updated</strong></td><td>2026-05-20</td><td>2026-02-24</td><td>2025-04-08</td></tr></tbody></table><h2 id=taskset--simple-process-level-cpu-pinning>taskset — Simple Process-Level CPU Pinning</h2><p><strong>taskset</strong> is part of the util-linux package and provides the simplest way to set or retrieve CPU affinity for running processes. It accepts CPU masks in hexadecimal or list format.</p><h3 id=installation>Installation</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Debian/Ubuntu (usually pre-installed)</span>
+</span></span><span class=line><span class=cl>sudo apt install -y util-linux
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># RHEL/CentOS/Fedora (usually pre-installed)</span>
+</span></span><span class=line><span class=cl>sudo dnf install -y util-linux
+</span></span></code></pre></td></tr></table></div></div><h3 id=basic-usage>Basic Usage</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Launch a process on CPU 0 only</span>
+</span></span><span class=line><span class=cl>taskset -c <span class=m>0</span> nginx
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Launch on CPUs 0-3</span>
+</span></span><span class=line><span class=cl>taskset -c 0-3 ./database-server
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Launch on specific non-contiguous CPUs</span>
+</span></span><span class=line><span class=cl>taskset -c 0,2,4,6 ./realtime-app
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Change affinity of a running process (PID 1234)</span>
+</span></span><span class=line><span class=cl>taskset -cp 0-3 <span class=m>1234</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Check current affinity</span>
+</span></span><span class=line><span class=cl>taskset -p <span class=m>1234</span>
+</span></span><span class=line><span class=cl><span class=c1># Output: pid 1234 current affinity mask: f</span>
+</span></span><span class=line><span class=cl><span class=c1># Output: pid 1234 new affinity mask: f</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=hexadecimal-cpu-masks>Hexadecimal CPU Masks</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># CPU 0 only: 0x1</span>
+</span></span><span class=line><span class=cl>taskset 0x1 nginx
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># CPUs 0-3: 0xF</span>
+</span></span><span class=line><span class=cl>taskset 0xF ./app
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># CPUs 4-7: 0xF0</span>
+</span></span><span class=line><span class=cl>taskset 0xF0 ./worker
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># CPUs 0 and 8 (16-bit mask): 0x0101</span>
+</span></span><span class=line><span class=cl>taskset 0x0101 ./service
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-compose-with-taskset>Docker Compose with taskset</h3><p>You can integrate taskset into container startup commands:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>webapp</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>nginx:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      sh -c &#34;taskset -c 0-3 nginx -g &#39;daemon off;&#39;&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>deploy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>resources</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>limits</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>cpus</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;4.0&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=numactl--numa-aware-process-placement>numactl — NUMA-Aware Process Placement</h2><p><strong>numactl</strong> controls NUMA policy for processes, allowing you to specify which NUMA node a process runs on AND where its memory is allocated. This is critical for multi-socket servers where cross-node memory access significantly impacts performance.</p><h3 id=installation-1>Installation</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Debian/Ubuntu</span>
+</span></span><span class=line><span class=cl>sudo apt install -y numactl
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># RHEL/CentOS/Fedora</span>
+</span></span><span class=line><span class=cl>sudo dnf install -y numactl
+</span></span></code></pre></td></tr></table></div></div><h3 id=checking-numa-topology>Checking NUMA Topology</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Show NUMA topology</span>
+</span></span><span class=line><span class=cl>numactl --hardware
+</span></span><span class=line><span class=cl><span class=c1># Output:</span>
+</span></span><span class=line><span class=cl><span class=c1># available: 2 nodes (0-1)</span>
+</span></span><span class=line><span class=cl><span class=c1># node 0 cpus: 0 1 2 3 4 5 6 7</span>
+</span></span><span class=line><span class=cl><span class=c1># node 0 size: 32768 MB</span>
+</span></span><span class=line><span class=cl><span class=c1># node 0 free: 28456 MB</span>
+</span></span><span class=line><span class=cl><span class=c1># node 1 cpus: 8 9 10 11 12 13 14 15</span>
+</span></span><span class=line><span class=cl><span class=c1># node 1 size: 32768 MB</span>
+</span></span><span class=line><span class=cl><span class=c1># node 1 free: 30123 MB</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Show current NUMA policy</span>
+</span></span><span class=line><span class=cl>numactl --show
+</span></span></code></pre></td></tr></table></div></div><h3 id=running-processes-with-numa-policy>Running Processes with NUMA Policy</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Run on NUMA node 0 (CPUs 0-7, local memory)</span>
+</span></span><span class=line><span class=cl>numactl --cpunodebind<span class=o>=</span><span class=m>0</span> --membind<span class=o>=</span><span class=m>0</span> ./database-server
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Run on specific CPUs with local memory allocation</span>
+</span></span><span class=line><span class=cl>numactl --cpubind<span class=o>=</span>0-3 --membind<span class=o>=</span><span class=m>0</span> ./web-server
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Preferred node (falls back if node is full)</span>
+</span></span><span class=line><span class=cl>numactl --preferred<span class=o>=</span><span class=m>0</span> ./application
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Interleave memory across all NUMA nodes</span>
+</span></span><span class=line><span class=cl>numactl --interleave<span class=o>=</span>all ./memory-intensive-app
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Run on CPUs 8-15 with memory on node 1</span>
+</span></span><span class=line><span class=cl>numactl --cpunodebind<span class=o>=</span><span class=m>1</span> --membind<span class=o>=</span><span class=m>1</span> ./analytics-engine
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-compose-with-numactl>Docker Compose with numactl</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>database</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>postgres:16</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      sh -c &#34;numactl --cpunodebind=0 --membind=0 postgres&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_PASSWORD</span><span class=p>:</span><span class=w> </span><span class=l>secret</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>deploy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>resources</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>limits</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>cpus</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;8.0&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>memory</span><span class=p>:</span><span class=w> </span><span class=l>16G</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=cset--advanced-cpu-set-management-with-shielding>cset — Advanced CPU Set Management with Shielding</h2><p><strong>cset</strong> (CPU set) is a Python-based tool that provides high-level CPU set management. Its key feature is <strong>shielding</strong> — it moves all kernel threads and non-critical processes off designated CPU cores, creating a clean environment for performance-critical workloads.</p><h3 id=installation-2>Installation</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Debian/Ubuntu</span>
+</span></span><span class=line><span class=cl>sudo apt install -y cpuset
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># RHEL/CentOS/Fedora</span>
+</span></span><span class=line><span class=cl>sudo dnf install -y cpuset
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Or install from GitHub</span>
+</span></span><span class=line><span class=cl>git clone https://github.com/SUSE/cpuset.git
+</span></span><span class=line><span class=cl><span class=nb>cd</span> cpuset
+</span></span><span class=line><span class=cl>sudo make install
+</span></span></code></pre></td></tr></table></div></div><h3 id=creating-cpu-shields>Creating CPU Shields</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Create a shield with CPUs 4-7 (isolated from system processes)</span>
+</span></span><span class=line><span class=cl>sudo cset shield --cpu<span class=o>=</span>4-7 --kthread<span class=o>=</span>on
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># The kthread=on flag also moves kernel threads off the shield</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Run a process inside the shield</span>
+</span></span><span class=line><span class=cl>sudo cset shield --exec -- ./performance-critical-app
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Run with specific NUMA policy inside the shield</span>
+</span></span><span class=line><span class=cl>sudo cset shield --exec -- numactl --membind<span class=o>=</span><span class=m>1</span> ./database
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Check shield status</span>
+</span></span><span class=line><span class=cl>sudo cset shield --status
+</span></span><span class=line><span class=cl><span class=c1># Output:</span>
+</span></span><span class=line><span class=cl><span class=c1># cset: &#34;system&#34; cpuset of CPUSPEC(0-3) with 45 tasks</span>
+</span></span><span class=line><span class=cl><span class=c1># cset: &#34;shield&#34; cpuset of CPUSPEC(4-7) with 3 tasks</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Destroy the shield (returns CPUs to system)</span>
+</span></span><span class=line><span class=cl>sudo cset shield --reset
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-integration-with-cset>Docker Integration with cset</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>trading-engine</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>trading-app:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>entrypoint</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;cset&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;shield&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;--exec&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;--&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;./trading-engine&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;--realtime&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>deploy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>resources</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>limits</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=nt>cpus</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;4.0&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=cset-vs-taskset-key-differences>cset vs taskset: Key Differences</h3><p>While taskset pins individual processes to specific CPUs, cset creates isolated CPU sets where:</p><ul><li>Kernel threads are automatically migrated away from shielded cores</li><li>System daemons are excluded from the shield</li><li>Multiple processes can run inside the shield without individual pinning</li><li>Memory policy can be combined with CPU shielding</li></ul><h2 id=why-self-host-and-manage-cpu-affinity-locally>Why Self-Host and Manage CPU Affinity Locally?</h2><p>Managing CPU affinity on your own bare-metal or dedicated servers gives you control over process placement that cloud instances often restrict. Virtual machines in cloud environments typically have their vCPU scheduling managed by the hypervisor, making fine-grained affinity settings less effective.</p><p>For database servers, pinning the database process to specific CPU cores ensures consistent cache behavior and eliminates scheduler-induced latency variance. For real-time applications (trading systems, audio processing, industrial control), CPU shielding prevents background tasks from causing timing jitter on critical cores.</p><p>For related performance optimization, see our <a href=../2026-05-22-self-hosted-linux-io-scheduler-bfq-mq-deadline-kyber-guide/>Linux I/O Schedulers guide</a> for disk I/O tuning and <a href=../2026-05-22-self-hosted-linux-hugepages-management-libhugetlbfs-numactl-tuned-guide/>Linux HugePages management</a> for NUMA-aware memory optimization. Our <a href=../2026-05-23-self-hosted-linux-interrupt-management-irqbalance-tuned-irq-affinity-guide/>interrupt management guide</a> covers the complementary topic of hardware interrupt placement.</p><h2 id=choosing-the-right-cpu-affinity-tool>Choosing the Right CPU Affinity Tool</h2><table><thead><tr><th>Scenario</th><th>Recommended Tool</th></tr></thead><tbody><tr><td>Simple process pinning</td><td>taskset</td></tr><tr><td>Multi-socket server with NUMA</td><td>numactl</td></tr><tr><td>Real-time/low-latency workloads</td><td>cset shield</td></tr><tr><td>Database server on NUMA hardware</td><td>numactl with &ndash;cpunodebind and &ndash;membind</td></tr><tr><td>Container orchestration</td><td>taskset in container entrypoint</td></tr><tr><td>Kernel thread isolation</td><td>cset shield with &ndash;kthread=on</td></tr></tbody></table><h2 id=faq>FAQ</h2><h3 id=what-is-the-difference-between-taskset-and-numactl>What is the difference between taskset and numactl?</h3><p>taskset controls which CPU cores a process runs on but has no awareness of NUMA topology. numactl controls both CPU placement AND memory allocation across NUMA nodes. On a single-socket system, taskset is sufficient. On multi-socket servers, numactl is essential to avoid cross-NUMA memory access penalties.</p><h3 id=does-cpu-affinity-persist-after-a-process-restart>Does CPU affinity persist after a process restart?</h3><p>No. CPU affinity set via taskset or numactl applies only to the launched process. If the process crashes and restarts, it returns to the default scheduler behavior. To persist affinity settings, use a systemd service unit with <code>CPUAffinity=</code> or <code>NUMAPolicy=</code> directives, or wrap the process launch in a startup script.</p><h3 id=can-i-pin-containers-to-specific-cpus>Can I pin containers to specific CPUs?</h3><p>Yes. Docker supports CPU pinning via <code>--cpuset-cpus</code> flag: <code>docker run --cpuset-cpus="0-3" myimage</code>. In Docker Compose, use <code>deploy.resources.limits.cpus</code> combined with a taskset wrapper in the entrypoint. Kubernetes uses <code>resources.limits.cpu</code> and node affinity for broader placement control.</p><h3 id=what-is-cpu-shielding-and-why-is-it-useful>What is CPU shielding and why is it useful?</h3><p>CPU shielding (provided by cset) moves all non-essential processes and kernel threads off designated CPU cores, creating an isolated environment for performance-critical workloads. This eliminates cache pollution from background tasks and prevents kernel thread interrupts on shielded cores. It is especially useful for real-time trading, audio processing, and industrial control systems.</p><h3 id=how-do-i-verify-cpu-affinity-is-working>How do I verify CPU affinity is working?</h3><p>Use <code>taskset -cp &lt;PID></code> to check a running process affinity. Use <code>numactl --show</code> inside the process to verify NUMA policy. For cset shields, use <code>cset shield --status</code> to see which processes are running inside the shield. The <code>/proc/&lt;PID>/status</code> file also shows <code>Cpus_allowed_list</code> for any process.</p><h3 id=does-cpu-affinity-affect-power-consumption>Does CPU affinity affect power consumption?</h3><p>Yes. Pinning processes to fewer cores can allow unused cores to enter deep sleep states (C-states), reducing power consumption. However, concentrating load on fewer cores may increase their frequency (turbo boost), potentially increasing per-core power draw. The net effect depends on your workload and CPU architecture.</p><h3 id=can-i-use-taskset-and-numactl-together>Can I use taskset and numactl together?</h3><p>Yes, but it is redundant. numactl includes CPU placement functionality (<code>--cpubind</code>), so you do not need taskset when using numactl. Use <code>numactl --cpubind=0-3 --membind=0 ./app</code> instead of chaining taskset and numactl together.</p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted Linux CPU Affinity Management: taskset vs numactl vs cset","description":"Compare taskset, numactl, and cset for Linux CPU affinity management. Learn process pinning, NUMA-aware placement, and CPU shielding for server performance optimization.","datePublished":"2026-05-23","dateModified":"2026-05-23","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20Linux%20CPU%20Affinity%20Management%3a%20taskset%20vs%20numactl%20vs%20cset&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-23-self-hosted-linux-cpu-affinity-management-taskset-numactl-cset-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-23-self-hosted-linux-cpu-affinity-management-taskset-numactl-cset-guide%2f&t=Self-Hosted%20Linux%20CPU%20Affinity%20Management%3a%20taskset%20vs%20numactl%20vs%20cset" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/linux/ class=tag-link>Linux</a>
+<a href=/tags/system-administration/ class=tag-link>System-Administration</a>
+<a href=/tags/performance/ class=tag-link>Performance</a>
+<a href=/tags/cpu-affinity/ class=tag-link>Cpu-Affinity</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-05-23-self-hosted-linux-io-priority-management-ionice-cgroup-iopriority-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted Linux I/O Priority Management: ionice vs cgroup io.weight vs ioprio_set</h3><div class=post-excerpt>I/O priority determines which processes get preferential access to disk bandwidth when multiple processes compete for …</div><div class=post-footer><span class=post-date>May 23, 2026</span></div></a><a href=/posts/2026-05-23-self-hosted-linux-interrupt-management-irqbalance-tuned-irq-affinity-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted Linux Interrupt Management: irqbalance vs tuned vs Manual IRQ Affinity</h3><div class=post-excerpt>Hardware interrupts are the backbone of Linux system responsiveness — every network packet, disk I/O operation, and USB …</div><div class=post-footer><span class=post-date>May 23, 2026</span></div></a><a href=/posts/2026-05-23-linux-open-file-inspection-lsof-fuser-proc-pid-fd-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Linux Open File Inspection: lsof vs fuser vs /proc/PID/fd — Self-Hosted Process File Monitoring</h3><div class=post-excerpt>When a Linux server runs out of disk space due to deleted-but-still-open files, or when you need to figure out which …</div><div class=post-footer><span class=post-date>May 23, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>

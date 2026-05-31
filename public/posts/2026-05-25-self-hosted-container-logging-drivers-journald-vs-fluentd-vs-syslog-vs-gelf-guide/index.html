@@ -1,0 +1,300 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted Container Logging Drivers: journald vs fluentd vs syslog vs GELF | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-05-25-self-hosted-container-logging-drivers-journald-vs-fluentd-vs-syslog-vs-gelf-guide/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted Container Logging Drivers: journald vs fluentd vs syslog vs GELF"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-05-25-self-hosted-container-logging-drivers-journald-vs-fluentd-vs-syslog-vs-gelf-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-05-25T00:00:00Z"><meta property="article:modified_time" content="2026-05-25T00:00:00Z"><meta property="article:tag" content="docker"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted Container Logging Drivers: journald vs fluentd vs syslog vs GELF"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted Container Logging Drivers: journald vs fluentd vs syslog vs GELF","description":"\u003cp\u003eEvery Docker container generates stdout and stderr output — application logs, error traces, health check results, and debug information. By default, Docker stores these logs using the \u003ccode\u003ejson-file\u003c\/code\u003e driver, writing JSON-formatted entries to disk on the host. While this works for small deployments, production environments quickly outgrow this approach. Log files grow unbounded, querying requires parsing raw JSON, and there is no centralized view across multiple containers or hosts.\u003c\/p\u003e","datePublished":"2026-05-25T00:00:00Z","dateModified":"2026-05-25T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-05-25-self-hosted-container-logging-drivers-journald-vs-fluentd-vs-syslog-vs-gelf-guide\/"},"keywords":["docker","container-infrastructure","logging","observability"],"articleSection":"docker","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted Container Logging Drivers: journald vs fluentd vs syslog vs GELF","item":"https:\/\/www.pistack.xyz\/posts\/2026-05-25-self-hosted-container-logging-drivers-journald-vs-fluentd-vs-syslog-vs-gelf-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Docker</span>
+<span class="tag tag-purple">Container-Infrastructure</span>
+<span class="tag tag-purple">Logging</span></div><h1>Self-Hosted Container Logging Drivers: journald vs fluentd vs syslog vs GELF</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>May 25, 2026</span>
+<span>10 min read</span>
+<span>Updated May 25, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#overview-of-container-logging-drivers>Overview of Container Logging Drivers</a><ul><li><a href=#journald-driver>journald Driver</a></li><li><a href=#fluentd-driver>fluentd Driver</a></li><li><a href=#syslog-driver>syslog Driver</a></li><li><a href=#gelf-driver>GELF Driver</a></li></ul></li><li><a href=#comparison-table>Comparison Table</a></li><li><a href=#configuration-examples>Configuration Examples</a><ul><li><a href=#journald-driver-configuration>journald Driver Configuration</a></li><li><a href=#fluentd-driver-configuration>fluentd Driver Configuration</a></li><li><a href=#syslog-driver-configuration>syslog Driver Configuration</a></li><li><a href=#gelf-driver-configuration>GELF Driver Configuration</a></li></ul></li><li><a href=#performance-and-reliability-considerations>Performance and Reliability Considerations</a><ul><li><a href=#log-delivery-guarantees>Log Delivery Guarantees</a></li><li><a href=#buffer-and-backpressure>Buffer and Backpressure</a></li><li><a href=#resource-overhead>Resource Overhead</a></li></ul></li><li><a href=#choosing-the-right-logging-driver>Choosing the Right Logging Driver</a></li><li><a href=#why-self-host-container-logging>Why Self-Host Container Logging?</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#can-i-change-the-logging-driver-for-a-running-container>Can I change the logging driver for a running container?</a></li><li><a href=#what-happens-to-logs-if-the-logging-drivers-destination-is-unavailable>What happens to logs if the logging driver&rsquo;s destination is unavailable?</a></li><li><a href=#is-the-json-file-driver-ever-appropriate-for-production>Is the json-file driver ever appropriate for production?</a></li><li><a href=#how-do-i-configure-global-default-logging-drivers>How do I configure global default logging drivers?</a></li><li><a href=#does-the-fluentd-driver-require-fluentd-to-be-running-before-containers-start>Does the fluentd driver require Fluentd to be running before containers start?</a></li><li><a href=#which-logging-driver-has-the-lowest-performance-overhead>Which logging driver has the lowest performance overhead?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><p>Every Docker container generates stdout and stderr output — application logs, error traces, health check results, and debug information. By default, Docker stores these logs using the <code>json-file</code> driver, writing JSON-formatted entries to disk on the host. While this works for small deployments, production environments quickly outgrow this approach. Log files grow unbounded, querying requires parsing raw JSON, and there is no centralized view across multiple containers or hosts.</p><p>Docker&rsquo;s logging driver architecture solves this by routing container output to external logging systems at the daemon level. Instead of writing to local files, logs are forwarded directly to centralized logging infrastructure in real-time. This guide compares the four most practical logging drivers for self-hosted environments: <strong>journald</strong>, <strong>fluentd</strong>, <strong>syslog</strong>, and <strong>GELF</strong> — examining their architectures, performance characteristics, and deployment patterns.</p><h2 id=overview-of-container-logging-drivers>Overview of Container Logging Drivers</h2><p>Docker logging drivers are plugins that intercept container stdout/stderr and forward the output to a destination. They operate at the Docker daemon level, meaning configuration applies per-container or globally, and logs bypass the host filesystem entirely.</p><h3 id=journald-driver>journald Driver</h3><p>The <strong>journald</strong> driver sends container logs directly to the systemd journal via the systemd-journald service. This integrates container output with the host&rsquo;s existing log management infrastructure, allowing administrators to use <code>journalctl</code> for unified log querying across system services and containers.</p><table><thead><tr><th>Attribute</th><th>Value</th></tr></thead><tbody><tr><td>Type</td><td>Local (systemd journal)</td></tr><tr><td>Structured logging</td><td>Yes (via journal fields)</td></tr><tr><td>Default availability</td><td>systemd-based Linux distros</td></tr><tr><td>Log rotation</td><td>Via journald configuration</td></tr><tr><td>Query interface</td><td>journalctl</td></tr></tbody></table><h3 id=fluentd-driver>fluentd Driver</h3><p>The <strong>fluentd</strong> driver forwards container logs to a Fluentd daemon over TCP. Fluentd is a unified logging layer that accepts logs from multiple sources, transforms them, and routes them to various backends (Elasticsearch, S3, PostgreSQL, etc.). This driver enables sophisticated log processing pipelines.</p><table><thead><tr><th>Attribute</th><th>Value</th></tr></thead><tbody><tr><td>Type</td><td>Remote (TCP to Fluentd)</td></tr><tr><td>Structured logging</td><td>Yes (JSON tags)</td></tr><tr><td>Default availability</td><td>Requires Fluentd daemon</td></tr><tr><td>Log rotation</td><td>Handled by downstream</td></tr><tr><td>Query interface</td><td>Depends on downstream storage</td></tr></tbody></table><h3 id=syslog-driver>syslog Driver</h3><p>The <strong>syslog</strong> driver sends container logs to a syslog daemon (rsyslog, syslog-ng) over TCP or UDP. This is the most traditional approach, leveraging decades of syslog infrastructure for log collection, filtering, and forwarding.</p><table><thead><tr><th>Attribute</th><th>Value</th></tr></thead><tbody><tr><td>Type</td><td>Remote (TCP/UDP to syslog)</td></tr><tr><td>Structured logging</td><td>Partial (RFC 5424 supports structured data)</td></tr><tr><td>Default availability</td><td>Nearly universal</td></tr><tr><td>Log rotation</td><td>Via logrotate</td></tr><tr><td>Query interface</td><td>Depends on syslog configuration</td></tr></tbody></table><h3 id=gelf-driver>GELF Driver</h3><p>The <strong>GELF</strong> (Graylog Extended Log Format) driver sends structured log messages directly to a Graylog server or any GELF-compatible receiver over UDP or TCP. GELF was designed specifically for modern log management, supporting structured fields, compression, and chunking.</p><table><thead><tr><th>Attribute</th><th>Value</th></tr></thead><tbody><tr><td>Type</td><td>Remote (UDP/TCP to GELF receiver)</td></tr><tr><td>Structured logging</td><td>Yes (native GELF format)</td></tr><tr><td>Default availability</td><td>Requires GELF receiver (Graylog, etc.)</td></tr><tr><td>Log rotation</td><td>Handled by downstream</td></tr><tr><td>Query interface</td><td>Graylog web UI</td></tr></tbody></table><h2 id=comparison-table>Comparison Table</h2><table><thead><tr><th>Feature</th><th>journald</th><th>fluentd</th><th>syslog</th><th>GELF</th></tr></thead><tbody><tr><td><strong>Transport</strong></td><td>Local (socket)</td><td>TCP</td><td>TCP/UDP</td><td>UDP/TCP</td></tr><tr><td><strong>Structured fields</strong></td><td>Full (key-value pairs)</td><td>Full (JSON)</td><td>Partial (RFC 5424)</td><td>Full (GELF spec)</td></tr><tr><td><strong>Built-in rotation</strong></td><td>Yes (journald config)</td><td>No (downstream)</td><td>No (logrotate)</td><td>No (downstream)</td></tr><tr><td><strong>Compression</strong></td><td>Via journald (xz/lz4)</td><td>Via Fluentd plugins</td><td>No</td><td>Yes (GELF chunking)</td></tr><tr><td><strong>Tagging/metadata</strong></td><td>Container name, ID, image</td><td>Docker labels as tags</td><td>Facility-based</td><td>Custom GELF fields</td></tr><tr><td><strong>Performance impact</strong></td><td>Low (local write)</td><td>Medium (TCP overhead)</td><td>Low (UDP) to Medium (TCP)</td><td>Low (UDP) to Medium (TCP)</td></tr><tr><td><strong>Setup complexity</strong></td><td>Low (built-in)</td><td>High (Fluentd config)</td><td>Low (rsyslog config)</td><td>Medium (Graylog setup)</td></tr><tr><td><strong>Log buffering</strong></td><td>Yes (journald)</td><td>Yes (Fluentd buffer)</td><td>No (best-effort UDP)</td><td>No (best-effort UDP)</td></tr><tr><td><strong>TLS support</strong></td><td>N/A (local)</td><td>Yes</td><td>Yes</td><td>Yes</td></tr><tr><td><strong>Backpressure handling</strong></td><td>Yes (journald rate limit)</td><td>Yes (Fluentd retry)</td><td>No</td><td>No</td></tr><tr><td><strong>Log query interface</strong></td><td>journalctl</td><td>Fluentd plugins</td><td>grep/awk or downstream</td><td>Graylog web UI</td></tr><tr><td><strong>Docker label propagation</strong></td><td>Yes (as journal fields)</td><td>Yes (as log tags)</td><td>Limited</td><td>Yes (as GELF fields)</td></tr><tr><td><strong>Multi-host aggregation</strong></td><td>No (local only)</td><td>Yes</td><td>Yes</td><td>Yes</td></tr></tbody></table><h2 id=configuration-examples>Configuration Examples</h2><h3 id=journald-driver-configuration>journald Driver Configuration</h3><p>The journald driver requires minimal setup — it is available by default on systemd-based systems:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose.yml with journald logging</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>webapp</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>nginx:alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>logging</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>journald</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>options</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>tag</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;webapp-{{.Name}}&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>database</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>postgres:16-alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>logging</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>journald</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>options</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>tag</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;db-{{.Name}}&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Query container logs with journalctl:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># View all container logs</span>
+</span></span><span class=line><span class=cl>journalctl <span class=nv>CONTAINER_NAME</span><span class=o>=</span>webapp
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># View logs for a specific container</span>
+</span></span><span class=line><span class=cl>journalctl <span class=nv>_SYSTEMD_UNIT</span><span class=o>=</span>docker.service <span class=nv>CONTAINER_TAG</span><span class=o>=</span>webapp-my-container
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Follow logs in real-time</span>
+</span></span><span class=line><span class=cl>journalctl -f <span class=nv>CONTAINER_NAME</span><span class=o>=</span>database
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># View logs from the last hour</span>
+</span></span><span class=line><span class=cl>journalctl --since <span class=s2>&#34;1 hour ago&#34;</span> <span class=nv>CONTAINER_NAME</span><span class=o>=</span>webapp
+</span></span></code></pre></td></tr></table></div></div><p>Configure journald storage limits in <code>/etc/systemd/journald.conf</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=k>[Journal]</span>
+</span></span><span class=line><span class=cl><span class=na>Storage</span><span class=o>=</span><span class=s>persistent</span>
+</span></span><span class=line><span class=cl><span class=na>SystemMaxUse</span><span class=o>=</span><span class=s>2G</span>
+</span></span><span class=line><span class=cl><span class=na>SystemMaxFileSize</span><span class=o>=</span><span class=s>100M</span>
+</span></span><span class=line><span class=cl><span class=na>MaxRetentionSec</span><span class=o>=</span><span class=s>30day</span>
+</span></span><span class=line><span class=cl><span class=na>Compress</span><span class=o>=</span><span class=s>yes</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=fluentd-driver-configuration>fluentd Driver Configuration</h3><p>Requires a running Fluentd daemon. Here is the complete setup:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose.yml with fluentd logging</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>fluentd</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>fluent/fluentd:v1.16-debian</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>logging-fluentd</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./fluent.conf:/fluentd/etc/fluent.conf</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;24224:24224&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;24224:24224/udp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>webapp</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>nginx:alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>logging</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>fluentd</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>options</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>fluentd-address</span><span class=p>:</span><span class=w> </span><span class=l>localhost:24224</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>tag</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;docker.webapp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>fluentd-async</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;true&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>fluentd-sub-second-precision</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;true&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Fluentd configuration (<code>fluent.conf</code>):</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-xml data-lang=xml><span class=line><span class=cl><span class=nt>&lt;source&gt;</span>
+</span></span><span class=line><span class=cl>  @type forward
+</span></span><span class=line><span class=cl>  port 24224
+</span></span><span class=line><span class=cl>  bind 0.0.0.0
+</span></span><span class=line><span class=cl><span class=nt>&lt;/source&gt;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nt>&lt;match</span> <span class=err>docker.**</span><span class=nt>&gt;</span>
+</span></span><span class=line><span class=cl>  @type file
+</span></span><span class=line><span class=cl>  path /fluentd/logs/container
+</span></span><span class=line><span class=cl>  append true
+</span></span><span class=line><span class=cl>  <span class=nt>&lt;format&gt;</span>
+</span></span><span class=line><span class=cl>    @type json
+</span></span><span class=line><span class=cl>  <span class=nt>&lt;/format&gt;</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&lt;buffer</span> <span class=err>time</span><span class=nt>&gt;</span>
+</span></span><span class=line><span class=cl>    timekey 1d
+</span></span><span class=line><span class=cl>    timekey_wait 10m
+</span></span><span class=line><span class=cl>    flush_interval 30s
+</span></span><span class=line><span class=cl>  <span class=nt>&lt;/buffer&gt;</span>
+</span></span><span class=line><span class=cl><span class=nt>&lt;/match&gt;</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=syslog-driver-configuration>syslog Driver Configuration</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose.yml with syslog logging</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>webapp</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>nginx:alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>logging</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>syslog</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>options</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>syslog-address</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;tcp://192.168.1.100:514&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>syslog-facility</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;local0&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>tag</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;docker-webapp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>syslog-format</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;rfc5424&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>database</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>postgres:16-alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>logging</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>syslog</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>options</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>syslog-address</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;tcp://192.168.1.100:514&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>syslog-facility</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;local1&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>tag</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;docker-db&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>syslog-format</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;rfc5424&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>rsyslog configuration to receive and separate Docker logs (<code>/etc/rsyslog.d/docker.conf</code>):</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Create separate log files per container tag</span>
+</span></span><span class=line><span class=cl>:programname, contains, <span class=s2>&#34;docker-webapp&#34;</span> /var/log/docker/webapp.log
+</span></span><span class=line><span class=cl>:programname, contains, <span class=s2>&#34;docker-db&#34;</span> /var/log/docker/database.log
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Stop processing after matching</span>
+</span></span><span class=line><span class=cl><span class=p>&amp;</span> stop
+</span></span></code></pre></td></tr></table></div></div><h3 id=gelf-driver-configuration>GELF Driver Configuration</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose.yml with GELF logging</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>webapp</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>nginx:alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>logging</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>gelf</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>options</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>gelf-address</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;udp://192.168.1.100:12201&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>tag</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;docker-webapp&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>env</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;ENVIRONMENT,APP_NAME&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>labels</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;com.docker.compose.service&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>api</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>node:20-alpine</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>logging</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>gelf</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>options</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>gelf-address</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;tcp://192.168.1.100:12201&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>gelf-compression-type</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;gzip&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>tag</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;docker-api&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=performance-and-reliability-considerations>Performance and Reliability Considerations</h2><h3 id=log-delivery-guarantees>Log Delivery Guarantees</h3><p>The transport protocol determines reliability. TCP-based drivers (fluentd, syslog-TCP, GELF-TCP) provide delivery guarantees — if the receiver is temporarily unavailable, the Docker daemon buffers logs and retries. UDP-based drivers (syslog-UDP, GELF-UDP) are fire-and-forget: if the receiver is down, logs are lost. journald provides local persistence via the journal, ensuring no log loss unless the journal is corrupted or the disk fails.</p><h3 id=buffer-and-backpressure>Buffer and Backpressure</h3><p>When logging pipelines cannot keep up with log volume, backpressure occurs. fluentd handles this best with configurable buffer queues, retry logic, and overflow policies. journald applies rate limiting (configurable via <code>RateLimitIntervalSec</code> and <code>RateLimitBurst</code>), silently dropping excess logs rather than blocking the container. syslog and GELF have no built-in backpressure — UDP drivers silently drop messages, and TCP drivers block the container&rsquo;s stdout write, potentially causing application hangs.</p><h3 id=resource-overhead>Resource Overhead</h3><p>journald has the lowest overhead since it writes locally via a Unix socket. fluentd introduces the most overhead due to TCP connection management, serialization, and the Fluentd process itself. syslog and GELF fall in between, with UDP variants being lightweight and TCP variants adding connection management costs.</p><h2 id=choosing-the-right-logging-driver>Choosing the Right Logging Driver</h2><ul><li><p><strong>Use journald</strong> when running on systemd-based single hosts and want unified log management with <code>journalctl</code>. It requires zero additional infrastructure and provides the simplest setup.</p></li><li><p><strong>Use fluentd</strong> when you need sophisticated log processing pipelines — parsing, transformation, routing to multiple backends, and buffering. It is the most capable option for complex logging architectures.</p></li><li><p><strong>Use syslog</strong> when you have existing syslog infrastructure (rsyslog, syslog-ng, central log server) and want to integrate container logs without deploying new systems. UDP syslog is lightweight for high-volume, low-priority logging.</p></li><li><p><strong>Use GELF</strong> when running Graylog or a GELF-compatible log platform. It provides the best structured logging support out of the box with native field extraction, compression, and web-based querying.</p></li></ul><p>For most self-hosted multi-container deployments, a common pattern is journald for local debugging and development, combined with fluentd or GELF for production log aggregation across multiple hosts.</p><h2 id=why-self-host-container-logging>Why Self-Host Container Logging?</h2><p>Self-hosting your container logging infrastructure ensures complete data ownership and eliminates the operational risk of shipping logs to third-party services. When logs contain sensitive application data, error traces with internal paths, or user information, external log aggregation creates compliance and privacy concerns.</p><ul><li><p><strong>Data sovereignty</strong>: Logs never leave your infrastructure. You control retention policies, access controls, and deletion schedules without depending on external compliance certifications.</p></li><li><p><strong>Cost predictability</strong>: Commercial log management services (Datadog, Splunk, Sumo Logic) charge per gigabyte ingested. Self-hosted logging with journald, rsyslog, or Graylog has fixed infrastructure costs regardless of log volume.</p></li><li><p><strong>Custom processing</strong>: Self-hosted pipelines allow custom log parsing, redaction of sensitive fields, and integration with internal monitoring systems that commercial services cannot accommodate.</p></li></ul><p>For centralized log collection, see our <a href=../2026-04-20-elk-stack-vs-loki-vs-graylog-self-hosted-log-management/>Graylog vs Loki vs Elasticsearch guide</a>.
+For log forwarding infrastructure, check our <a href=../2026-05-09-self-hosted-log-forwarding-fluent-bit-vector-otel-collector-guide/>Fluent Bit vs Vector vs OTEL Collector comparison</a>.
+For audit log integrity, our <a href=../2026-04-25-self-hosted-log-integrity-tamper-evident-audit-logging-guide/>tamper-evident audit logging guide</a> covers it.</p><h2 id=faq>FAQ</h2><h3 id=can-i-change-the-logging-driver-for-a-running-container>Can I change the logging driver for a running container?</h3><p>No. Docker logging drivers are configured at container creation time and cannot be changed while the container is running. To switch drivers, you must stop and remove the container, then recreate it with the new logging configuration. Docker Compose makes this straightforward — update the <code>logging</code> section in <code>docker-compose.yml</code> and run <code>docker compose up -d</code>.</p><h3 id=what-happens-to-logs-if-the-logging-drivers-destination-is-unavailable>What happens to logs if the logging driver&rsquo;s destination is unavailable?</h3><p>The behavior depends on the driver and transport. journald stores logs locally, so unavailability is not a concern. fluentd buffers logs in memory and retries delivery; if the buffer fills, it can be configured to either drop old logs or block the container (the latter risks application hangs). UDP-based syslog and GELF silently drop logs when the receiver is unavailable. TCP-based variants block the container&rsquo;s stdout write, potentially causing the application to hang until the connection is restored.</p><h3 id=is-the-json-file-driver-ever-appropriate-for-production>Is the json-file driver ever appropriate for production?</h3><p>The json-file driver can be appropriate for single-container deployments or development environments where log volume is low and centralized aggregation is not needed. However, you must configure log rotation to prevent unbounded disk growth. Add <code>max-size</code> and <code>max-file</code> options to limit total log storage:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>logging</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>json-file</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>options</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>max-size</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;50m&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>max-file</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;5&#34;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>For any multi-container or multi-host production environment, a remote logging driver is strongly recommended.</p><h3 id=how-do-i-configure-global-default-logging-drivers>How do I configure global default logging drivers?</h3><p>Set the default logging driver in Docker&rsquo;s daemon configuration (<code>/etc/docker/daemon.json</code>):</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-json data-lang=json><span class=line><span class=cl><span class=p>{</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;log-driver&#34;</span><span class=p>:</span> <span class=s2>&#34;journald&#34;</span><span class=p>,</span>
+</span></span><span class=line><span class=cl>  <span class=nt>&#34;log-opts&#34;</span><span class=p>:</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=nt>&#34;tag&#34;</span><span class=p>:</span> <span class=s2>&#34;{{.Name}}&#34;</span>
+</span></span><span class=line><span class=cl>  <span class=p>}</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>Restart the Docker daemon after changing this configuration. New containers will use the default driver, while existing containers retain their original configuration.</p><h3 id=does-the-fluentd-driver-require-fluentd-to-be-running-before-containers-start>Does the fluentd driver require Fluentd to be running before containers start?</h3><p>Yes. If the Fluentd daemon is not running when containers start, the fluentd driver will fail to connect and containers may fail to start. The <code>fluentd-async-connect</code> option can mitigate this by allowing containers to start even if Fluentd is temporarily unavailable, buffering logs locally until the connection is established.</p><h3 id=which-logging-driver-has-the-lowest-performance-overhead>Which logging driver has the lowest performance overhead?</h3><p>journald has the lowest overhead for single-host deployments since it writes directly to the local journal via a Unix socket with minimal serialization. For multi-host aggregation, GELF over UDP has the lowest network overhead due to its binary format and optional compression. However, UDP GELF provides no delivery guarantees, making it unsuitable for compliance-sensitive environments where log completeness is required.</p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted Container Logging Drivers: journald vs fluentd vs syslog vs GELF","description":"Compare Docker container logging drivers - journald, fluentd, syslog, and GELF. Configuration examples, performance analysis, and Docker Compose deployment guides.","datePublished":"2026-05-25","dateModified":"2026-05-25","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20Container%20Logging%20Drivers%3a%20journald%20vs%20fluentd%20vs%20syslog%20vs%20GELF&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-25-self-hosted-container-logging-drivers-journald-vs-fluentd-vs-syslog-vs-gelf-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-25-self-hosted-container-logging-drivers-journald-vs-fluentd-vs-syslog-vs-gelf-guide%2f&t=Self-Hosted%20Container%20Logging%20Drivers%3a%20journald%20vs%20fluentd%20vs%20syslog%20vs%20GELF" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/docker/ class=tag-link>Docker</a>
+<a href=/tags/container-infrastructure/ class=tag-link>Container-Infrastructure</a>
+<a href=/tags/logging/ class=tag-link>Logging</a>
+<a href=/tags/observability/ class=tag-link>Observability</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-05-09-self-hosted-log-forwarding-fluent-bit-vector-otel-collector-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Logging</span></div><h3 class=post-title>Self-Hosted Log Forwarding: Fluent Bit vs Vector vs OpenTelemetry Collector (2026)</h3><div class=post-excerpt>In any self-hosted infrastructure, logs are generated everywhere — web servers, databases, container runtimes, …</div><div class=post-footer><span class=post-date>May 9, 2026</span></div></a><a href=/posts/2026-05-25-self-hosted-container-image-inspection-dive-vs-skopeo-vs-crane-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Docker</span></div><h3 class=post-title>Self-Hosted Container Image Inspection Tools: Dive vs Skopeo vs crane</h3><div class=post-excerpt>Container images are the fundamental building blocks of self-hosted infrastructure. Every Dockerfile produces an image …</div><div class=post-footer><span class=post-date>May 25, 2026</span></div></a><a href=/posts/2026-05-25-self-hosted-container-log-rotation-management-docker-vs-logrotate-vs-fluent-bit-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Containers</span></div><h3 class=post-title>Self-Hosted Container Log Rotation Management: Docker JSON-File vs Logrotate vs Fluent Bit</h3><div class=post-excerpt>Container logs grow without bounds unless actively managed. A single busy web server container can generate gigabytes of …</div><div class=post-footer><span class=post-date>May 25, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>

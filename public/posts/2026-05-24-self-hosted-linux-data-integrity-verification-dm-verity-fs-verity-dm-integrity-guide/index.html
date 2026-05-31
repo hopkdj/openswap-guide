@@ -1,0 +1,243 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted Linux Data Integrity Verification — dm-verity vs fs-verity vs dm-integrity | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-05-24-self-hosted-linux-data-integrity-verification-dm-verity-fs-verity-dm-integrity-guide/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted Linux Data Integrity Verification — dm-verity vs fs-verity vs dm-integrity"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-05-24-self-hosted-linux-data-integrity-verification-dm-verity-fs-verity-dm-integrity-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-05-24T00:00:00Z"><meta property="article:modified_time" content="2026-05-24T00:00:00Z"><meta property="article:tag" content="linux-storage"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted Linux Data Integrity Verification — dm-verity vs fs-verity vs dm-integrity"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted Linux Data Integrity Verification — dm-verity vs fs-verity vs dm-integrity","description":"\u003cp\u003eData integrity verification ensures that stored data has not been tampered with or corrupted. Linux provides three complementary integrity mechanisms: \u003cstrong\u003edm-verity\u003c\/strong\u003e (block-device verification), \u003cstrong\u003efs-verity\u003c\/strong\u003e (file-level verification), and \u003cstrong\u003edm-integrity\u003c\/strong\u003e (sector-level integrity with authentication). This guide compares their architectures, use cases, and deployment patterns for self-hosted servers.\u003c\/p\u003e","datePublished":"2026-05-24T00:00:00Z","dateModified":"2026-05-24T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-05-24-self-hosted-linux-data-integrity-verification-dm-verity-fs-verity-dm-integrity-guide\/"},"keywords":["linux-storage","data-integrity","dm-verity","fs-verity","security"],"articleSection":"linux-storage","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted Linux Data Integrity Verification — dm-verity vs fs-verity vs dm-integrity","item":"https:\/\/www.pistack.xyz\/posts\/2026-05-24-self-hosted-linux-data-integrity-verification-dm-verity-fs-verity-dm-integrity-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Linux-Storage</span>
+<span class="tag tag-purple">Data-Integrity</span>
+<span class="tag tag-purple">Dm-Verity</span></div><h1>Self-Hosted Linux Data Integrity Verification — dm-verity vs fs-verity vs dm-integrity</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>May 24, 2026</span>
+<span>8 min read</span>
+<span>Updated May 24, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#what-is-data-integrity-verification>What Is Data Integrity Verification?</a></li><li><a href=#dm-verity-block-device-verification>dm-verity: Block Device Verification</a><ul><li><a href=#key-features>Key Features</a></li><li><a href=#how-dm-verity-works>How dm-verity Works</a></li><li><a href=#creating-a-dm-verity-volume>Creating a dm-verity Volume</a></li><li><a href=#docker-compose-with-dm-verity>Docker Compose with dm-verity</a></li></ul></li><li><a href=#fs-verity-file-level-integrity>fs-verity: File-Level Integrity</a><ul><li><a href=#key-features-1>Key Features</a></li><li><a href=#enabling-fs-verity>Enabling fs-verity</a></li><li><a href=#using-fs-verity-with-ima-integrity-measurement-architecture>Using fs-verity with IMA (Integrity Measurement Architecture)</a></li><li><a href=#docker-compose-with-fs-verity>Docker Compose with fs-verity</a></li></ul></li><li><a href=#dm-integrity-sector-level-authenticated-integrity>dm-integrity: Sector-Level Authenticated Integrity</a><ul><li><a href=#key-features-2>Key Features</a></li><li><a href=#creating-a-dm-integrity-volume>Creating a dm-integrity Volume</a></li><li><a href=#docker-compose-with-dm-integrity>Docker Compose with dm-integrity</a></li></ul></li><li><a href=#comparison-dm-verity-vs-fs-verity-vs-dm-integrity>Comparison: dm-verity vs fs-verity vs dm-integrity</a></li><li><a href=#choosing-the-right-integrity-mechanism>Choosing the Right Integrity Mechanism</a><ul><li><a href=#use-dm-verity-when>Use dm-verity When:</a></li><li><a href=#use-fs-verity-when>Use fs-verity When:</a></li><li><a href=#use-dm-integrity-when>Use dm-integrity When:</a></li></ul></li><li><a href=#why-self-host-data-integrity-verification>Why Self-Host Data Integrity Verification?</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#what-is-the-difference-between-dm-verity-and-fs-verity>What is the difference between dm-verity and fs-verity?</a></li><li><a href=#can-i-use-dm-verity-with-a-read-write-filesystem>Can I use dm-verity with a read-write filesystem?</a></li><li><a href=#does-fs-verity-work-with-docker-containers>Does fs-verity work with Docker containers?</a></li><li><a href=#what-is-the-performance-overhead-of-integrity-verification>What is the performance overhead of integrity verification?</a></li><li><a href=#can-i-combine-dm-verity-with-dm-crypt-for-encrypted-integrity>Can I combine dm-verity with dm-crypt for encrypted integrity?</a></li><li><a href=#how-do-i-detect-tampering-with-the-root-hash>How do I detect tampering with the root hash?</a></li><li><a href=#is-dm-integrity-a-replacement-for-backups>Is dm-integrity a replacement for backups?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><p>Data integrity verification ensures that stored data has not been tampered with or corrupted. Linux provides three complementary integrity mechanisms: <strong>dm-verity</strong> (block-device verification), <strong>fs-verity</strong> (file-level verification), and <strong>dm-integrity</strong> (sector-level integrity with authentication). This guide compares their architectures, use cases, and deployment patterns for self-hosted servers.</p><h2 id=what-is-data-integrity-verification>What Is Data Integrity Verification?</h2><p>Data integrity verification answers a critical question: <strong>has this data changed since I wrote it?</strong> For self-hosted servers, this protects against:</p><ul><li><strong>Silent corruption</strong> — Disk bit rot, memory errors, filesystem bugs</li><li><strong>Tampering</strong> — Unauthorized modifications by attackers or malware</li><li><strong>Supply chain attacks</strong> — Compromised packages or binaries</li><li><strong>Hardware failures</strong> — Bad sectors, failing controllers, corrupted writes</li></ul><p>Unlike backup verification (which checks backup completeness), integrity verification continuously validates live data against cryptographic hashes computed at write time.</p><h2 id=dm-verity-block-device-verification>dm-verity: Block Device Verification</h2><p><strong>GitHub</strong>: kernel source (built into Linux 3.7+) | <strong>Stars</strong>: N/A (in-tree)</p><p>dm-verity (Device Mapper Verity) provides read-only block device integrity verification. It constructs a Merkle tree of hash values for every block on the device, storing the root hash separately. On every read, the kernel verifies the block&rsquo;s hash chain up to the trusted root.</p><h3 id=key-features>Key Features</h3><ul><li><strong>Block-level verification</strong> — Every 4K block is cryptographically verified</li><li><strong>Merkle tree structure</strong> — Efficient verification with logarithmic overhead</li><li><strong>Read-only enforcement</strong> — Verity devices are inherently read-only</li><li><strong>No false positives</strong> — Hardware errors that corrupt data will be detected</li></ul><h3 id=how-dm-verity-works>How dm-verity Works</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>Root Hash (trusted)
+</span></span><span class=line><span class=cl>    |
+</span></span><span class=line><span class=cl>    +-- Hash Block Level 2
+</span></span><span class=line><span class=cl>    |       |
+</span></span><span class=line><span class=cl>    |       +-- Hash Block Level 1
+</span></span><span class=line><span class=cl>    |               |
+</span></span><span class=line><span class=cl>    |               +-- Data Blocks (4K each)
+</span></span></code></pre></td></tr></table></div></div><p>When reading block N:</p><ol><li>Read the data block</li><li>Compute its SHA-256 hash</li><li>Compare with the stored hash at level 1</li><li>Continue up the tree until reaching the trusted root hash</li><li>If any hash mismatches, return I/O error</li></ol><h3 id=creating-a-dm-verity-volume>Creating a dm-verity Volume</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># 1. Create a backing device (disk image or partition)</span>
+</span></span><span class=line><span class=cl>dd <span class=k>if</span><span class=o>=</span>/dev/zero <span class=nv>of</span><span class=o>=</span>backing.img <span class=nv>bs</span><span class=o>=</span>1M <span class=nv>count</span><span class=o>=</span><span class=m>512</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># 2. Write data to the backing device</span>
+</span></span><span class=line><span class=cl>mkfs.ext4 backing.img
+</span></span><span class=line><span class=cl>mount -o loop backing.img /mnt/data
+</span></span><span class=line><span class=cl>cp -r /usr/bin/* /mnt/data/
+</span></span><span class=line><span class=cl>umount /mnt/data
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># 3. Build the verity hash tree</span>
+</span></span><span class=line><span class=cl>veritysetup format backing.img hash.img
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># 4. Activate the verified device</span>
+</span></span><span class=line><span class=cl>veritysetup create vroot backing.img hash.img   &lt;root-hash&gt;   --hash-algorithm<span class=o>=</span>sha256   --data-block-size<span class=o>=</span><span class=m>4096</span>   --hash-block-size<span class=o>=</span><span class=m>4096</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># 5. Mount the verified read-only filesystem</span>
+</span></span><span class=line><span class=cl>mount -o ro /dev/mapper/vroot /mnt/verified
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-compose-with-dm-verity>Docker Compose with dm-verity</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>verified-service</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>alpine:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/dev/mapper/vroot:/verified-data:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>security_opt</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>seccomp:unconfined</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      sh -c &#34;
+</span></span></span><span class=line><span class=cl><span class=sd>        # Only read from verified data
+</span></span></span><span class=line><span class=cl><span class=sd>        cp /verified-data/config /app/config &amp;&amp;
+</span></span></span><span class=line><span class=cl><span class=sd>        exec /app/server
+</span></span></span><span class=line><span class=cl><span class=sd>      &#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>devices</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/dev/mapper/vroot:/dev/mapper/vroot:r</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>read_only</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>tmpfs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/tmp</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/var/run</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=fs-verity-file-level-integrity>fs-verity: File-Level Integrity</h2><p><strong>GitHub</strong>: kernel source (built into Linux 5.4+) | <strong>Stars</strong>: N/A (in-tree)</p><p>fs-verity provides per-file integrity verification for ext4, f2fs, and btrfs filesystems. Unlike dm-verity (which verifies entire block devices), fs-verity verifies individual files. Each file has its own Merkle tree and root hash stored as an extended attribute.</p><h3 id=key-features-1>Key Features</h3><ul><li><strong>Per-file verification</strong> — Each file has independent integrity metadata</li><li><strong>Kernel-enforced</strong> — Verification happens in the VFS layer</li><li><strong>Supports large files</strong> — Merkle tree scales to multi-GB files</li><li><strong>Multiple hash algorithms</strong> — SHA-256, SHA-512, and others</li></ul><h3 id=enabling-fs-verity>Enabling fs-verity</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Check if filesystem supports fs-verity</span>
+</span></span><span class=line><span class=cl>tune2fs -l /dev/sda1 <span class=p>|</span> grep -i verity
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Enable fs-verity on a file</span>
+</span></span><span class=line><span class=cl>fsverity <span class=nb>enable</span> /usr/bin/my-application
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Verify a file&#39;s integrity</span>
+</span></span><span class=line><span class=cl>fsverity measure /usr/bin/my-application
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Output: sha256:abc123def456...  /usr/bin/my-application</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=using-fs-verity-with-ima-integrity-measurement-architecture>Using fs-verity with IMA (Integrity Measurement Architecture)</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Enable IMA appraisal with fs-verity</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;appraise_tcb&#34;</span> &gt; /sys/kernel/security/ima/policy
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># All fs-verity files will be appraised on access</span>
+</span></span><span class=line><span class=cl><span class=c1># Accessing a modified file will be denied</span>
+</span></span><span class=line><span class=cl>cat /usr/bin/my-application  <span class=c1># Returns EACCES if hash mismatches</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-compose-with-fs-verity>Docker Compose with fs-verity</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>fsverity-service</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>ubuntu:22.04</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./verified-binaries:/usr/local/bin:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>security_opt</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>apparmor:unconfined</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      sh -c &#34;
+</span></span></span><span class=line><span class=cl><span class=sd>        # Verify all binaries before use
+</span></span></span><span class=line><span class=cl><span class=sd>        for f in /usr/local/bin/*; do
+</span></span></span><span class=line><span class=cl><span class=sd>          fsverity measure &#34;\$f&#34; || exit 1
+</span></span></span><span class=line><span class=cl><span class=sd>        done
+</span></span></span><span class=line><span class=cl><span class=sd>        exec /usr/local/bin/server
+</span></span></span><span class=line><span class=cl><span class=sd>      &#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>read_only</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>tmpfs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/tmp</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/var/run</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=dm-integrity-sector-level-authenticated-integrity>dm-integrity: Sector-Level Authenticated Integrity</h2><p><strong>GitHub</strong>: kernel source (built into Linux 4.12+) | <strong>Stars</strong>: N/A (in-tree)</p><p>dm-integrity provides authenticated sector-level integrity with optional encryption. Unlike dm-verity (read-only verification), dm-integrity supports read-write devices with per-sector authentication tags (HMAC or MAC).</p><h3 id=key-features-2>Key Features</h3><ul><li><strong>Read-write support</strong> — Unlike dm-verity, supports writes with automatic tag updates</li><li><strong>Per-sector authentication</strong> — Each sector has a MAC/HMAC tag</li><li><strong>Optional encryption</strong> — Can be combined with dm-crypt for encrypted integrity</li><li><strong>Journal support</strong> — Ensures consistency after crashes</li></ul><h3 id=creating-a-dm-integrity-volume>Creating a dm-integrity Volume</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># 1. Create backing device</span>
+</span></span><span class=line><span class=cl>dd <span class=k>if</span><span class=o>=</span>/dev/zero <span class=nv>of</span><span class=o>=</span>integrity.img <span class=nv>bs</span><span class=o>=</span>1M <span class=nv>count</span><span class=o>=</span><span class=m>1024</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># 2. Set up dm-integrity</span>
+</span></span><span class=line><span class=cl>integritysetup format integrity.img
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># 3. Activate the integrity device</span>
+</span></span><span class=line><span class=cl>integritysetup create ivol integrity.img   --integrity-algorithm<span class=o>=</span>hmac-sha256   --integrity-key-file &lt;key-file&gt;   --journal-watermark<span class=o>=</span><span class=m>50</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># 4. Create filesystem on the integrity device</span>
+</span></span><span class=line><span class=cl>mkfs.ext4 /dev/mapper/ivol
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># 5. Mount normally (read-write)</span>
+</span></span><span class=line><span class=cl>mount /dev/mapper/ivol /mnt/integrity
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-compose-with-dm-integrity>Docker Compose with dm-integrity</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>integrity-service</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>ubuntu:22.04</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/dev/mapper/ivol:/integrity-data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>security_opt</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>seccomp:unconfined</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      sh -c &#34;
+</span></span></span><span class=line><span class=cl><span class=sd>        # Service reads and writes to integrity-protected storage
+</span></span></span><span class=line><span class=cl><span class=sd>        exec /app/database-server --data-dir /integrity-data
+</span></span></span><span class=line><span class=cl><span class=sd>      &#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>devices</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/dev/mapper/ivol:/dev/mapper/ivol:rw</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>read_only</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>tmpfs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/tmp</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/var/run</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=comparison-dm-verity-vs-fs-verity-vs-dm-integrity>Comparison: dm-verity vs fs-verity vs dm-integrity</h2><table><thead><tr><th>Feature</th><th>dm-verity</th><th>fs-verity</th><th>dm-integrity</th></tr></thead><tbody><tr><td><strong>Granularity</strong></td><td>Block device (4K blocks)</td><td>Per-file</td><td>Per-sector</td></tr><tr><td><strong>Read/Write</strong></td><td>Read-only</td><td>Read-only (verification)</td><td>Read-write</td></tr><tr><td><strong>Hash Storage</strong></td><td>Separate hash device</td><td>File extended attributes</td><td>Per-sector tags</td></tr><tr><td><strong>Tree Structure</strong></td><td>Merkle tree</td><td>Merkle tree</td><td>Linear tags</td></tr><tr><td><strong>Kernel Version</strong></td><td>3.7+</td><td>5.4+</td><td>4.12+</td></tr><tr><td><strong>Filesystem Support</strong></td><td>Any (block-level)</td><td>ext4, f2fs, btrfs</td><td>Any (block-level)</td></tr><tr><td><strong>Encryption</strong></td><td>No (combine with dm-crypt)</td><td>No</td><td>Optional (with dm-crypt)</td></tr><tr><td><strong>Performance Overhead</strong></td><td>~1-3% reads</td><td>~1-2% reads</td><td>~3-5% reads/writes</td></tr><tr><td><strong>Best For</strong></td><td>Verified boot images</td><td>Application binary verification</td><td>Authenticated storage</td></tr></tbody></table><h2 id=choosing-the-right-integrity-mechanism>Choosing the Right Integrity Mechanism</h2><h3 id=use-dm-verity-when>Use dm-verity When:</h3><ul><li>You need to verify <strong>entire filesystem images</strong> (container images, boot partitions)</li><li>The data is <strong>read-only</strong> (OS images, application binaries)</li><li>You want <strong>hardware-independent</strong> verification (works on any filesystem)</li></ul><h3 id=use-fs-verity-when>Use fs-verity When:</h3><ul><li>You need <strong>per-file</strong> integrity (individual binaries, configuration files)</li><li>The data is on a <strong>supported filesystem</strong> (ext4, f2fs, btrfs)</li><li>You want <strong>flexible granularity</strong> (verify some files, not others)</li></ul><h3 id=use-dm-integrity-when>Use dm-integrity When:</h3><ul><li>You need <strong>read-write</strong> integrity (databases, user data)</li><li>You need <strong>authenticated</strong> integrity (HMAC with a secret key)</li><li>You want to <strong>detect silent corruption</strong> in real-time</li></ul><h2 id=why-self-host-data-integrity-verification>Why Self-Host Data Integrity Verification?</h2><p>Self-hosted servers often store sensitive data — customer information, application state, financial records. Without integrity verification, silent data corruption or undetected tampering can have serious consequences:</p><p><strong>Regulatory compliance</strong> — Standards like PCI DSS and HIPAA require data integrity controls. dm-verity and fs-verity provide cryptographically verifiable integrity guarantees that satisfy audit requirements.</p><p><strong>Supply chain security</strong> — Verifying that deployed binaries match their expected hashes prevents supply chain attacks. fs-verity ensures that any modification to a verified binary is immediately detected at the kernel level.</p><p><strong>Hardware reliability</strong> — Consumer-grade storage (SSDs, HDDs) experiences bit rot and silent corruption. dm-integrity detects and reports these errors before they propagate to application data.</p><p><strong>Forensic integrity</strong> — For incident response, integrity-verified storage provides a trusted baseline. If dm-verity reports no errors, you can be confident the underlying data has not been modified.</p><p>For filesystem encryption, see our <a href=../2026-05-23-self-hosted-linux-native-filesystem-encryption-fscrypt-vs-ecryptfs-vs-dm-crypt/>Linux filesystem encryption guide</a>. For kernel sandboxing, our <a href=../2026-05-24-self-hosted-linux-sandboxing-frameworks-landlock-seccomp-bubblewrap-guide/>Linux sandboxing frameworks comparison</a> covers complementary security mechanisms.</p><h2 id=faq>FAQ</h2><h3 id=what-is-the-difference-between-dm-verity-and-fs-verity>What is the difference between dm-verity and fs-verity?</h3><p>dm-verity verifies entire block devices using a Merkle tree stored on a separate hash device. It operates at the block layer and works with any filesystem. fs-verity verifies individual files, storing the Merkle tree as an extended attribute within the file itself. fs-verity is more flexible (per-file control) but requires filesystem support (ext4, f2fs, btrfs).</p><h3 id=can-i-use-dm-verity-with-a-read-write-filesystem>Can I use dm-verity with a read-write filesystem?</h3><p>No. dm-verity devices are inherently read-only because any write would invalidate the Merkle tree. For read-write integrity, use dm-integrity instead, which supports writes with per-sector authentication tags that are updated automatically.</p><h3 id=does-fs-verity-work-with-docker-containers>Does fs-verity work with Docker containers?</h3><p>Yes, fs-verity works with Docker containers as long as the underlying filesystem supports it (ext4, f2fs, btrfs). The container&rsquo;s read-only layers can have fs-verity enabled, and the kernel will verify each file access. Note that overlayfs (Docker&rsquo;s default storage driver) does not currently support fs-verity on the overlay layer itself.</p><h3 id=what-is-the-performance-overhead-of-integrity-verification>What is the performance overhead of integrity verification?</h3><p>dm-verity adds approximately 1-3% overhead to read operations (hash verification per block). fs-verity adds 1-2% overhead for file reads. dm-integrity adds 3-5% overhead for both reads and writes (tag computation and verification). For most self-hosted workloads, this overhead is negligible compared to network or application latency.</p><h3 id=can-i-combine-dm-verity-with-dm-crypt-for-encrypted-integrity>Can I combine dm-verity with dm-crypt for encrypted integrity?</h3><p>Yes. You can stack dm-crypt on top of dm-verity (encrypt first, then verify) or dm-verity on top of dm-crypt (verify first, then decrypt). The recommended approach is dm-crypt on top of dm-verity — verify the encrypted data&rsquo;s integrity before decrypting, which prevents oracle attacks.</p><h3 id=how-do-i-detect-tampering-with-the-root-hash>How do I detect tampering with the root hash?</h3><p>The root hash is the trust anchor for dm-verity and fs-verity. Store it securely: in TPM hardware, on a read-only USB stick, or embedded in the bootloader (for verified boot). If the root hash itself is compromised, the entire verification chain is compromised.</p><h3 id=is-dm-integrity-a-replacement-for-backups>Is dm-integrity a replacement for backups?</h3><p>No. dm-integrity detects corruption and tampering but does not prevent data loss. If a sector is corrupted, dm-integrity will detect it and return an I/O error — but the original data is lost. Always combine integrity verification with regular backups for complete data protection.</p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted Linux Data Integrity Verification — dm-verity vs fs-verity vs dm-integrity","description":"Comprehensive comparison of Linux data integrity mechanisms: dm-verity (block verification), fs-verity (file verification), and dm-integrity (authenticated sector integrity) for self-hosted servers.","datePublished":"2026-05-24","dateModified":"2026-05-24","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20Linux%20Data%20Integrity%20Verification%20%e2%80%94%20dm-verity%20vs%20fs-verity%20vs%20dm-integrity&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-24-self-hosted-linux-data-integrity-verification-dm-verity-fs-verity-dm-integrity-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-24-self-hosted-linux-data-integrity-verification-dm-verity-fs-verity-dm-integrity-guide%2f&t=Self-Hosted%20Linux%20Data%20Integrity%20Verification%20%e2%80%94%20dm-verity%20vs%20fs-verity%20vs%20dm-integrity" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/linux-storage/ class=tag-link>Linux-Storage</a>
+<a href=/tags/data-integrity/ class=tag-link>Data-Integrity</a>
+<a href=/tags/dm-verity/ class=tag-link>Dm-Verity</a>
+<a href=/tags/fs-verity/ class=tag-link>Fs-Verity</a>
+<a href=/tags/security/ class=tag-link>Security</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-05-24-self-hosted-macsec-network-encryption-mac80211-strongswan-wpa-supplicant-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Networking</span></div><h3 class=post-title>Self-Hosted MACsec Network Encryption: mac80211 vs strongSwan vs wpa_supplicant</h3><div class=post-excerpt>MACsec (IEEE 802.1AE) provides layer 2 encryption for Ethernet networks, securing traffic between directly connected …</div><div class=post-footer><span class=post-date>May 24, 2026</span></div></a><a href=/posts/2026-05-23-self-hosted-dns-rebinding-protection-blocky-technitium-dnsmasq/ class=post-card><div class=post-tags><span class="tag tag-purple">Dns</span></div><h3 class=post-title>Self-Hosted DNS Rebinding Protection: Blocky vs Technitium DNS vs dnsmasq</h3><div class=post-excerpt>DNS rebinding attacks exploit the trust that web applications place in DNS responses. An attacker controls a domain that …</div><div class=post-footer><span class=post-date>May 23, 2026</span></div></a><a href=/posts/2026-05-23-linux-connection-tracking-conntrack-tools-vs-nftables-vs-iptables-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted Linux Connection Tracking: conntrack-tools vs nftables vs iptables</h3><div class=post-excerpt>Connection tracking is the foundation of stateful firewall operation on Linux. It enables the kernel to understand which …</div><div class=post-footer><span class=post-date>May 23, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>

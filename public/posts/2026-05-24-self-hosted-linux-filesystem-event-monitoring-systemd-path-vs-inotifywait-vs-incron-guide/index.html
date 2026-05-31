@@ -1,0 +1,429 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted Linux Filesystem Event Monitoring: systemd.path vs inotifywait vs incron (2026) | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-05-24-self-hosted-linux-filesystem-event-monitoring-systemd-path-vs-inotifywait-vs-incron-guide/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted Linux Filesystem Event Monitoring: systemd.path vs inotifywait vs incron (2026)"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-05-24-self-hosted-linux-filesystem-event-monitoring-systemd-path-vs-inotifywait-vs-incron-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-05-24T00:00:00Z"><meta property="article:modified_time" content="2026-05-24T00:00:00Z"><meta property="article:tag" content="linux"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted Linux Filesystem Event Monitoring: systemd.path vs inotifywait vs incron (2026)"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted Linux Filesystem Event Monitoring: systemd.path vs inotifywait vs incron (2026)","description":"\u003cp\u003eMonitoring filesystem events on Linux servers is essential for automation workflows — triggering actions when files arrive, detecting configuration changes, and reacting to directory updates. Three primary approaches handle this task: \u003cstrong\u003esystemd.path\u003c\/strong\u003e (native systemd path units), \u003cstrong\u003einotifywait\u003c\/strong\u003e (the inotify-tools CLI utility), and \u003cstrong\u003eincron\u003c\/strong\u003e (inotify-based cron daemon).\u003c\/p\u003e","datePublished":"2026-05-24T00:00:00Z","dateModified":"2026-05-24T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-05-24-self-hosted-linux-filesystem-event-monitoring-systemd-path-vs-inotifywait-vs-incron-guide\/"},"keywords":["linux","systemd","inotify","filesystem","automation","monitoring","system-administration"],"articleSection":"linux","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted Linux Filesystem Event Monitoring: systemd.path vs inotifywait vs incron (2026)","item":"https:\/\/www.pistack.xyz\/posts\/2026-05-24-self-hosted-linux-filesystem-event-monitoring-systemd-path-vs-inotifywait-vs-incron-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Linux</span>
+<span class="tag tag-purple">Systemd</span>
+<span class="tag tag-purple">Inotify</span></div><h1>Self-Hosted Linux Filesystem Event Monitoring: systemd.path vs inotifywait vs incron (2026)</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>May 24, 2026</span>
+<span>11 min read</span>
+<span>Updated May 24, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#the-filesystem-monitoring-problem>The Filesystem Monitoring Problem</a></li><li><a href=#systemdpath-native-path-unit-monitoring>systemd.path: Native Path Unit Monitoring</a><ul><li><a href=#key-features>Key Features</a></li><li><a href=#path-unit-configuration>Path Unit Configuration</a></li><li><a href=#corresponding-service-unit>Corresponding Service Unit</a></li><li><a href=#processing-script-example>Processing Script Example</a></li><li><a href=#enabling-and-managing>Enabling and Managing</a></li><li><a href=#pathexists-vs-pathchanged-vs-pathmodified>PathExists vs PathChanged vs PathModified</a></li><li><a href=#when-to-use-systemdpath>When to Use systemd.path</a></li></ul></li><li><a href=#inotifywait-the-flexible-cli-monitor>inotifywait: The Flexible CLI Monitor</a><ul><li><a href=#key-features-1>Key Features</a></li><li><a href=#docker-compose-integration>Docker Compose Integration</a></li><li><a href=#inotifywait-monitoring-script>inotifywait Monitoring Script</a></li><li><a href=#monitoring-configuration-reload>Monitoring Configuration Reload</a></li><li><a href=#event-types-reference>Event Types Reference</a></li><li><a href=#when-to-use-inotifywait>When to Use inotifywait</a></li></ul></li><li><a href=#incron-the-inotify-cron-daemon>incron: The Inotify Cron Daemon</a><ul><li><a href=#key-features-2>Key Features</a></li><li><a href=#incrontab-configuration>incrontab Configuration</a></li><li><a href=#enabling-incron>Enabling incron</a></li><li><a href=#sync-script-example>Sync Script Example</a></li><li><a href=#when-to-use-incron>When to Use incron</a></li></ul></li><li><a href=#head-to-head-comparison>Head-to-Head Comparison</a></li><li><a href=#common-use-cases-and-recommended-approach>Common Use Cases and Recommended Approach</a><ul><li><a href=#drop-directory-processing>Drop Directory Processing</a></li><li><a href=#configuration-change-detection>Configuration Change Detection</a></li><li><a href=#directory-synchronization>Directory Synchronization</a></li></ul></li><li><a href=#why-self-host-your-filesystem-monitoring>Why Self-Host Your Filesystem Monitoring?</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#which-filesystem-monitoring-method-should-i-choose>Which filesystem monitoring method should I choose?</a></li><li><a href=#can-systemdpath-monitor-multiple-paths>Can systemd.path monitor multiple paths?</a></li><li><a href=#does-inotifywait-support-recursive-directory-watching>Does inotifywait support recursive directory watching?</a></li><li><a href=#how-do-i-prevent-incron-from-firing-duplicate-commands>How do I prevent incron from firing duplicate commands?</a></li><li><a href=#can-i-monitor-network-filesystems-nfs-cifs-with-these-tools>Can I monitor network filesystems (NFS, CIFS) with these tools?</a></li></ul></li><li><a href=#frequently-asked-questions>Frequently Asked Questions</a><ul><li><a href=#what-happens-if-the-triggered-service-fails>What happens if the triggered service fails?</a></li><li><a href=#do-these-methods-survive-system-reboots>Do these methods survive system reboots?</a></li><li><a href=#how-much-cpu-does-filesystem-monitoring-consume>How much CPU does filesystem monitoring consume?</a></li></ul></li><li><a href=#choosing-the-right-filesystem-monitoring-tool>Choosing the Right Filesystem Monitoring Tool</a></li></ul></nav></div></details></aside><div class=post-content><p>Monitoring filesystem events on Linux servers is essential for automation workflows — triggering actions when files arrive, detecting configuration changes, and reacting to directory updates. Three primary approaches handle this task: <strong>systemd.path</strong> (native systemd path units), <strong>inotifywait</strong> (the inotify-tools CLI utility), and <strong>incron</strong> (inotify-based cron daemon).</p><p>Each method has different strengths in configuration complexity, event granularity, daemon requirements, and integration with existing system management. This guide compares all three with real configurations for common server automation scenarios.</p><h2 id=the-filesystem-monitoring-problem>The Filesystem Monitoring Problem</h2><p>Server automation often requires reacting to filesystem events:</p><ul><li>Process files dropped into an import directory</li><li>Reload configuration when files change</li><li>Trigger backups when specific directories are modified</li><li>Archive logs when they reach a certain size</li><li>Synchronize directories across servers</li></ul><p>The traditional approach — polling with cron — wastes resources and introduces latency. Event-driven monitoring reacts instantly and consumes minimal CPU.</p><h2 id=systemdpath-native-path-unit-monitoring>systemd.path: Native Path Unit Monitoring</h2><p>systemd.path units monitor files and directories using the kernel&rsquo;s inotify mechanism, all managed through systemd&rsquo;s unified unit system. When a path change is detected, systemd can activate a corresponding service unit.</p><h3 id=key-features>Key Features</h3><ul><li><strong>No separate daemon</strong> — managed entirely by systemd</li><li><strong>Unit-based lifecycle</strong> — start, stop, enable, disable like any systemd unit</li><li><strong>Multiple trigger types</strong> — PathExists, PathChanged, PathModified, DirectoryNotEmpty</li><li><strong>Service activation</strong> — automatically starts a paired service unit on event</li><li><strong>Dependency integration</strong> — full systemd dependency and ordering support</li><li><strong>Credential support</strong> — can pass credentials to triggered services</li></ul><h3 id=path-unit-configuration>Path Unit Configuration</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=c1># /etc/systemd/system/import-monitor.path</span>
+</span></span><span class=line><span class=cl><span class=k>[Unit]</span>
+</span></span><span class=line><span class=cl><span class=na>Description</span><span class=o>=</span><span class=s>Monitor /var/spool/import for new files</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>[Path]</span>
+</span></span><span class=line><span class=cl><span class=na>PathChanged</span><span class=o>=</span><span class=s>/var/spool/import</span>
+</span></span><span class=line><span class=cl><span class=na>DirectoryNotEmpty</span><span class=o>=</span><span class=s>/var/spool/import</span>
+</span></span><span class=line><span class=cl><span class=na>Unit</span><span class=o>=</span><span class=s>import-processor.service</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>[Install]</span>
+</span></span><span class=line><span class=cl><span class=na>WantedBy</span><span class=o>=</span><span class=s>multi-user.target</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=corresponding-service-unit>Corresponding Service Unit</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=c1># /etc/systemd/system/import-processor.service</span>
+</span></span><span class=line><span class=cl><span class=k>[Unit]</span>
+</span></span><span class=line><span class=cl><span class=na>Description</span><span class=o>=</span><span class=s>Process files from import directory</span>
+</span></span><span class=line><span class=cl><span class=na>After</span><span class=o>=</span><span class=s>network.target</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>[Service]</span>
+</span></span><span class=line><span class=cl><span class=na>Type</span><span class=o>=</span><span class=s>oneshot</span>
+</span></span><span class=line><span class=cl><span class=na>ExecStart</span><span class=o>=</span><span class=s>/usr/local/bin/process-imports.sh</span>
+</span></span><span class=line><span class=cl><span class=na>WorkingDirectory</span><span class=o>=</span><span class=s>/var/spool/import</span>
+</span></span><span class=line><span class=cl><span class=na>User</span><span class=o>=</span><span class=s>appuser</span>
+</span></span><span class=line><span class=cl><span class=na>Group</span><span class=o>=</span><span class=s>appgroup</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>[Install]</span>
+</span></span><span class=line><span class=cl><span class=na>WantedBy</span><span class=o>=</span><span class=s>multi-user.target</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=processing-script-example>Processing Script Example</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=cp>#!/bin/bash
+</span></span></span><span class=line><span class=cl><span class=cp></span><span class=c1># /usr/local/bin/process-imports.sh</span>
+</span></span><span class=line><span class=cl><span class=nb>set</span> -euo pipefail
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nv>IMPORT_DIR</span><span class=o>=</span><span class=s2>&#34;/var/spool/import&#34;</span>
+</span></span><span class=line><span class=cl><span class=nv>PROCESSED_DIR</span><span class=o>=</span><span class=s2>&#34;/var/spool/import/processed&#34;</span>
+</span></span><span class=line><span class=cl><span class=nv>LOG_FILE</span><span class=o>=</span><span class=s2>&#34;/var/log/import-processor.log&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>mkdir -p <span class=s2>&#34;</span><span class=nv>$PROCESSED_DIR</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>for</span> file in <span class=s2>&#34;</span><span class=nv>$IMPORT_DIR</span><span class=s2>&#34;</span>/*<span class=p>;</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>    <span class=o>[</span> -f <span class=s2>&#34;</span><span class=nv>$file</span><span class=s2>&#34;</span> <span class=o>]</span> <span class=o>||</span> <span class=k>continue</span>
+</span></span><span class=line><span class=cl>    <span class=nv>filename</span><span class=o>=</span><span class=k>$(</span>basename <span class=s2>&#34;</span><span class=nv>$file</span><span class=s2>&#34;</span><span class=k>)</span>
+</span></span><span class=line><span class=cl>    <span class=nb>echo</span> <span class=s2>&#34;</span><span class=k>$(</span>date <span class=s1>&#39;+%Y-%m-%d %H:%M:%S&#39;</span><span class=k>)</span><span class=s2> Processing: </span><span class=nv>$filename</span><span class=s2>&#34;</span> &gt;&gt; <span class=s2>&#34;</span><span class=nv>$LOG_FILE</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    <span class=c1># Process the file (example: convert CSV to JSON)</span>
+</span></span><span class=line><span class=cl>    <span class=k>if</span> <span class=o>[[</span> <span class=s2>&#34;</span><span class=nv>$file</span><span class=s2>&#34;</span> <span class=o>==</span> *.csv <span class=o>]]</span><span class=p>;</span> <span class=k>then</span>
+</span></span><span class=line><span class=cl>        python3 -c <span class=s2>&#34;
+</span></span></span><span class=line><span class=cl><span class=s2>import csv, json, sys
+</span></span></span><span class=line><span class=cl><span class=s2>with open(sys.argv[1]) as f:
+</span></span></span><span class=line><span class=cl><span class=s2>    reader = csv.DictReader(f)
+</span></span></span><span class=line><span class=cl><span class=s2>    data = list(reader)
+</span></span></span><span class=line><span class=cl><span class=s2>with open(sys.argv[2], &#39;w&#39;) as f:
+</span></span></span><span class=line><span class=cl><span class=s2>    json.dump(data, f, indent=2)
+</span></span></span><span class=line><span class=cl><span class=s2>&#34;</span> <span class=s2>&#34;</span><span class=nv>$file</span><span class=s2>&#34;</span> <span class=s2>&#34;</span><span class=si>${</span><span class=nv>PROCESSED_DIR</span><span class=si>}</span><span class=s2>/</span><span class=si>${</span><span class=nv>filename</span><span class=p>%.csv</span><span class=si>}</span><span class=s2>.json&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=k>fi</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    mv <span class=s2>&#34;</span><span class=nv>$file</span><span class=s2>&#34;</span> <span class=s2>&#34;</span><span class=nv>$PROCESSED_DIR</span><span class=s2>/&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=nb>echo</span> <span class=s2>&#34;</span><span class=k>$(</span>date <span class=s1>&#39;+%Y-%m-%d %H:%M:%S&#39;</span><span class=k>)</span><span class=s2> Done: </span><span class=nv>$filename</span><span class=s2>&#34;</span> &gt;&gt; <span class=s2>&#34;</span><span class=nv>$LOG_FILE</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl><span class=k>done</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=enabling-and-managing>Enabling and Managing</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Reload systemd configuration</span>
+</span></span><span class=line><span class=cl>systemctl daemon-reload
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Enable and start the path monitor</span>
+</span></span><span class=line><span class=cl>systemctl <span class=nb>enable</span> --now import-monitor.path
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Check monitor status</span>
+</span></span><span class=line><span class=cl>systemctl status import-monitor.path
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># View all path units</span>
+</span></span><span class=line><span class=cl>systemctl list-units --type<span class=o>=</span>path
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Manually trigger the service (for testing)</span>
+</span></span><span class=line><span class=cl>systemctl start import-processor.service
+</span></span></code></pre></td></tr></table></div></div><h3 id=pathexists-vs-pathchanged-vs-pathmodified>PathExists vs PathChanged vs PathModified</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=c1># Trigger when path first appears (file or directory)</span>
+</span></span><span class=line><span class=cl><span class=k>[Path]</span>
+</span></span><span class=line><span class=cl><span class=na>PathExists</span><span class=o>=</span><span class=s>/etc/myapp/config.yaml</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Trigger when path contents change (any inode change)</span>
+</span></span><span class=line><span class=cl><span class=k>[Path]</span>
+</span></span><span class=line><span class=cl><span class=na>PathChanged</span><span class=o>=</span><span class=s>/var/log/myapp/</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Trigger when file is written to (modification only)</span>
+</span></span><span class=line><span class=cl><span class=k>[Path]</span>
+</span></span><span class=line><span class=cl><span class=na>PathModified</span><span class=o>=</span><span class=s>/etc/myapp/data.json</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Trigger when directory becomes non-empty</span>
+</span></span><span class=line><span class=cl><span class=k>[Path]</span>
+</span></span><span class=line><span class=cl><span class=na>DirectoryNotEmpty</span><span class=o>=</span><span class=s>/var/spool/incoming/</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=when-to-use-systemdpath>When to Use systemd.path</h3><p>systemd.path is the best choice for simple file/directory monitoring that triggers systemd services. Its zero-daemon overhead and tight systemd integration make it ideal for server automation tasks.</p><p><strong>Best for</strong>: Drop-directory processing, configuration change detection, simple event-driven service activation.</p><p><strong>Limitations</strong>: Limited to activating systemd services — cannot run arbitrary inline commands. Less granular event types than raw inotify.</p><h2 id=inotifywait-the-flexible-cli-monitor>inotifywait: The Flexible CLI Monitor</h2><p>inotifywait (part of inotify-tools) provides a command-line interface to the Linux inotify subsystem. It watches files and directories and reports events in real time, making it ideal for scripting and pipeline integration.</p><h3 id=key-features-1>Key Features</h3><ul><li><strong>Real-time event streaming</strong> — outputs events as they occur</li><li><strong>Granular event types</strong> — create, modify, delete, move, access, open, close, and more</li><li><strong>Recursive monitoring</strong> — watch entire directory trees with <code>-r</code></li><li><strong>Format control</strong> — customizable output format with <code>--format</code></li><li><strong>Pipeline-friendly</strong> — designed to work with shell pipelines and loops</li><li><strong>No daemon required</strong> — run as a foreground process or background job</li></ul><h3 id=docker-compose-integration>Docker Compose Integration</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>file-monitor</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>alpine:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>file-monitor</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/data/watched:/data/watched</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./monitor.sh:/usr/local/bin/monitor.sh:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>entrypoint</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;/bin/sh&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;/usr/local/bin/monitor.sh&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=inotifywait-monitoring-script>inotifywait Monitoring Script</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=cp>#!/bin/bash
+</span></span></span><span class=line><span class=cl><span class=cp></span><span class=c1># /usr/local/bin/monitor.sh</span>
+</span></span><span class=line><span class=cl><span class=nv>WATCH_DIR</span><span class=o>=</span><span class=s2>&#34;/data/watched&#34;</span>
+</span></span><span class=line><span class=cl><span class=nv>LOG_FILE</span><span class=o>=</span><span class=s2>&#34;/var/log/file-monitor.log&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>inotifywait -m -r -e create,modify,delete,moved_to     --format <span class=s1>&#39;%T %e %w%f&#39;</span> --timefmt <span class=s1>&#39;%Y-%m-%d %H:%M:%S&#39;</span>     <span class=s2>&#34;</span><span class=nv>$WATCH_DIR</span><span class=s2>&#34;</span> <span class=p>|</span> <span class=k>while</span> <span class=nb>read</span> timestamp event filepath<span class=p>;</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    <span class=nb>echo</span> <span class=s2>&#34;</span><span class=nv>$timestamp</span><span class=s2> | </span><span class=nv>$event</span><span class=s2> | </span><span class=nv>$filepath</span><span class=s2>&#34;</span> &gt;&gt; <span class=s2>&#34;</span><span class=nv>$LOG_FILE</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    <span class=c1># React to specific events</span>
+</span></span><span class=line><span class=cl>    <span class=k>case</span> <span class=s2>&#34;</span><span class=nv>$event</span><span class=s2>&#34;</span> in
+</span></span><span class=line><span class=cl>        *CREATE*<span class=p>|</span>*MOVED_TO*<span class=o>)</span>
+</span></span><span class=line><span class=cl>            <span class=nb>echo</span> <span class=s2>&#34;New file detected: </span><span class=nv>$filepath</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl>            <span class=c1># Trigger processing</span>
+</span></span><span class=line><span class=cl>            /usr/local/bin/process-new-file.sh <span class=s2>&#34;</span><span class=nv>$filepath</span><span class=s2>&#34;</span> <span class=p>&amp;</span>
+</span></span><span class=line><span class=cl>            <span class=p>;;</span>
+</span></span><span class=line><span class=cl>        *MODIFY*<span class=o>)</span>
+</span></span><span class=line><span class=cl>            <span class=nb>echo</span> <span class=s2>&#34;File modified: </span><span class=nv>$filepath</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl>            <span class=p>;;</span>
+</span></span><span class=line><span class=cl>        *DELETE*<span class=o>)</span>
+</span></span><span class=line><span class=cl>            <span class=nb>echo</span> <span class=s2>&#34;File deleted: </span><span class=nv>$filepath</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl>            <span class=p>;;</span>
+</span></span><span class=line><span class=cl>    <span class=k>esac</span>
+</span></span><span class=line><span class=cl><span class=k>done</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=monitoring-configuration-reload>Monitoring Configuration Reload</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=cp>#!/bin/bash
+</span></span></span><span class=line><span class=cl><span class=cp></span><span class=c1># Watch a configuration directory and reload services on change</span>
+</span></span><span class=line><span class=cl><span class=nv>CONFIG_DIR</span><span class=o>=</span><span class=s2>&#34;/etc/myapp&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>inotifywait -m -e modify,delete,create     --format <span class=s1>&#39;%e %f&#39;</span>     <span class=s2>&#34;</span><span class=nv>$CONFIG_DIR</span><span class=s2>&#34;</span> <span class=p>|</span> <span class=k>while</span> <span class=nb>read</span> event filename<span class=p>;</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    <span class=c1># Skip temporary files and editor swap files</span>
+</span></span><span class=line><span class=cl>    <span class=o>[[</span> <span class=s2>&#34;</span><span class=nv>$filename</span><span class=s2>&#34;</span> <span class=o>==</span> *~* <span class=o>]]</span> <span class=o>&amp;&amp;</span> <span class=k>continue</span>
+</span></span><span class=line><span class=cl>    <span class=o>[[</span> <span class=s2>&#34;</span><span class=nv>$filename</span><span class=s2>&#34;</span> <span class=o>==</span> *.swp <span class=o>]]</span> <span class=o>&amp;&amp;</span> <span class=k>continue</span>
+</span></span><span class=line><span class=cl>    <span class=o>[[</span> <span class=s2>&#34;</span><span class=nv>$filename</span><span class=s2>&#34;</span> <span class=o>==</span> *.tmp <span class=o>]]</span> <span class=o>&amp;&amp;</span> <span class=k>continue</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    <span class=nb>echo</span> <span class=s2>&#34;Config change detected: </span><span class=nv>$event</span><span class=s2> on </span><span class=nv>$filename</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    <span class=c1># Debounce: wait for all writes to complete</span>
+</span></span><span class=line><span class=cl>    sleep <span class=m>2</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    <span class=c1># Reload the service</span>
+</span></span><span class=line><span class=cl>    systemctl reload myapp.service
+</span></span><span class=line><span class=cl>    <span class=nb>echo</span> <span class=s2>&#34;Service reloaded at </span><span class=k>$(</span>date<span class=k>)</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl><span class=k>done</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=event-types-reference>Event Types Reference</h3><table><thead><tr><th>Event</th><th>Description</th></tr></thead><tbody><tr><td><code>access</code></td><td>File was read</td></tr><tr><td><code>modify</code></td><td>File content was written to</td></tr><tr><td><code>attrib</code></td><td>File metadata changed (permissions, timestamps)</td></tr><tr><td><code>close_write</code></td><td>File opened for writing was closed</td></tr><tr><td><code>close_nowrite</code></td><td>File opened read-only was closed</td></tr><tr><td><code>create</code></td><td>File/directory created in watched directory</td></tr><tr><td><code>delete</code></td><td>File/directory deleted from watched directory</td></tr><tr><td><code>moved_from</code></td><td>File/directory moved out of watched directory</td></tr><tr><td><code>moved_to</code></td><td>File/directory moved into watched directory</td></tr><tr><td><code>isdir</code></td><td>Event occurred on a directory</td></tr></tbody></table><h3 id=when-to-use-inotifywait>When to Use inotifywait</h3><p>inotifywait is ideal for complex event handling that requires custom scripting logic, event filtering, or pipeline integration. Its real-time streaming model and granular event types give you fine-grained control over event reactions.</p><p><strong>Best for</strong>: Custom event processing pipelines, complex filtering logic, directory synchronization triggers, real-time log monitoring.</p><p><strong>Limitations</strong>: Requires a running process (daemon or background job). No built-in service management — you handle process lifecycle yourself. Recursive monitoring can miss newly created subdirectories.</p><h2 id=incron-the-inotify-cron-daemon>incron: The Inotify Cron Daemon</h2><p>incron (inotify cron) combines inotify event monitoring with cron-like syntax. You define watch rules in a table file, and the incron daemon triggers commands when matching events occur.</p><h3 id=key-features-2>Key Features</h3><ul><li><strong>Cron-like syntax</strong> — familiar table-based configuration</li><li><strong>Event-to-command mapping</strong> — each watch rule maps to a specific command</li><li><strong>User-level tables</strong> — each user has their own incrontab</li><li><strong>Daemon managed</strong> — incron runs as a background daemon</li><li><strong>Variable substitution</strong> — <code>$@</code> (watched path), <code>$#</code> (event file), <code>$%</code> (event mask)</li><li><strong>Lightweight</strong> — minimal resource overhead</li></ul><h3 id=incrontab-configuration>incrontab Configuration</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-gdscript3 data-lang=gdscript3><span class=line><span class=cl><span class=c1># incrontab -e (edit user&#39;s incrontab)</span>
+</span></span><span class=line><span class=cl><span class=c1># Syntax: &lt;path&gt; &lt;mask&gt; &lt;command&gt;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Process files dropped in import directory</span>
+</span></span><span class=line><span class=cl><span class=o>/</span><span class=k>var</span><span class=o>/</span><span class=n>spool</span><span class=o>/</span><span class=n>import</span> <span class=n>IN_CREATE</span><span class=p>,</span><span class=n>IN_MOVED_TO</span> <span class=o>/</span><span class=n>usr</span><span class=o>/</span><span class=n>local</span><span class=o>/</span><span class=n>bin</span><span class=o>/</span><span class=n>process</span><span class=o>-</span><span class=n>import</span><span class=o>.</span><span class=n>sh</span> <span class=o>$</span><span class=c1>#</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Reload Nginx when config changes</span>
+</span></span><span class=line><span class=cl><span class=o>/</span><span class=n>etc</span><span class=o>/</span><span class=n>nginx</span><span class=o>/</span><span class=n>nginx</span><span class=o>.</span><span class=n>conf</span> <span class=n>IN_MODIFY</span><span class=p>,</span><span class=n>IN_CLOSE_WRITE</span> <span class=o>/</span><span class=n>usr</span><span class=o>/</span><span class=n>sbin</span><span class=o>/</span><span class=n>nginx</span> <span class=o>-</span><span class=n>t</span> <span class=o>&amp;&amp;</span> <span class=o>/</span><span class=n>usr</span><span class=o>/</span><span class=n>sbin</span><span class=o>/</span><span class=n>nginx</span> <span class=o>-</span><span class=n>s</span> <span class=n>reload</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Archive logs when they exceed 100MB</span>
+</span></span><span class=line><span class=cl><span class=o>/</span><span class=k>var</span><span class=o>/</span><span class=nb>log</span><span class=o>/</span><span class=n>app</span><span class=o>/</span> <span class=n>IN_MODIFY</span> <span class=p>[</span> <span class=o>-</span><span class=n>f</span> <span class=o>/</span><span class=k>var</span><span class=o>/</span><span class=nb>log</span><span class=o>/</span><span class=n>app</span><span class=o>/</span><span class=n>app</span><span class=o>.</span><span class=n>log</span> <span class=p>]</span> <span class=o>&amp;&amp;</span> <span class=p>[</span> <span class=o>$</span><span class=p>(</span><span class=n>stat</span> <span class=o>-</span><span class=n>c</span><span class=o>%</span><span class=n>s</span> <span class=o>/</span><span class=k>var</span><span class=o>/</span><span class=nb>log</span><span class=o>/</span><span class=n>app</span><span class=o>/</span><span class=n>app</span><span class=o>.</span><span class=n>log</span><span class=p>)</span> <span class=o>-</span><span class=n>gt</span> <span class=mi>104857600</span> <span class=p>]</span> <span class=o>&amp;&amp;</span> <span class=o>/</span><span class=n>usr</span><span class=o>/</span><span class=n>local</span><span class=o>/</span><span class=n>bin</span><span class=o>/</span><span class=n>archive</span><span class=o>-</span><span class=nb>log</span><span class=o>.</span><span class=n>sh</span> <span class=o>$</span><span class=c1>#</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Sync directory on any change</span>
+</span></span><span class=line><span class=cl><span class=o>/</span><span class=n>data</span><span class=o>/</span><span class=n>shared</span> <span class=n>IN_CREATE</span><span class=p>,</span><span class=n>IN_MODIFY</span><span class=p>,</span><span class=n>IN_DELETE</span><span class=p>,</span><span class=n>IN_MOVED_FROM</span><span class=p>,</span><span class=n>IN_MOVED_TO</span> <span class=o>/</span><span class=n>usr</span><span class=o>/</span><span class=n>local</span><span class=o>/</span><span class=n>bin</span><span class=o>/</span><span class=n>sync</span><span class=o>-</span><span class=n>to</span><span class=o>-</span><span class=n>backup</span><span class=o>.</span><span class=n>sh</span> <span class=o>$</span><span class=err>@</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=enabling-incron>Enabling incron</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install incron (Debian/Ubuntu)</span>
+</span></span><span class=line><span class=cl>apt install incron
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Install incron (RHEL/CentOS)</span>
+</span></span><span class=line><span class=cl>yum install incron
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Allow users to use incron</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;root&#34;</span> &gt;&gt; /etc/incron.allow
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Enable and start the daemon</span>
+</span></span><span class=line><span class=cl>systemctl <span class=nb>enable</span> --now incrond
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Edit user&#39;s incrontab</span>
+</span></span><span class=line><span class=cl>incrontab -e
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># List current rules</span>
+</span></span><span class=line><span class=cl>incrontab -l
+</span></span></code></pre></td></tr></table></div></div><h3 id=sync-script-example>Sync Script Example</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=cp>#!/bin/bash
+</span></span></span><span class=line><span class=cl><span class=cp></span><span class=c1># /usr/local/bin/sync-to-backup.sh</span>
+</span></span><span class=line><span class=cl><span class=c1># Triggered by incron when files change in watched directory</span>
+</span></span><span class=line><span class=cl><span class=c1># Usage: sync-to-backup.sh &lt;watched_directory&gt;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nv>SOURCE_DIR</span><span class=o>=</span><span class=s2>&#34;</span><span class=nv>$1</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl><span class=nv>BACKUP_DIR</span><span class=o>=</span><span class=s2>&#34;/backup/shared&#34;</span>
+</span></span><span class=line><span class=cl><span class=nv>TIMESTAMP</span><span class=o>=</span><span class=k>$(</span>date <span class=s1>&#39;+%Y%m%d_%H%M%S&#39;</span><span class=k>)</span>
+</span></span><span class=line><span class=cl><span class=nv>LOG</span><span class=o>=</span><span class=s2>&#34;/var/log/sync-monitor.log&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;[</span><span class=nv>$TIMESTAMP</span><span class=s2>] Syncing </span><span class=nv>$SOURCE_DIR</span><span class=s2> to </span><span class=nv>$BACKUP_DIR</span><span class=s2>&#34;</span> &gt;&gt; <span class=s2>&#34;</span><span class=nv>$LOG</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>rsync -az --delete <span class=s2>&#34;</span><span class=nv>$SOURCE_DIR</span><span class=s2>/&#34;</span> <span class=s2>&#34;</span><span class=nv>$BACKUP_DIR</span><span class=s2>/&#34;</span>
+</span></span><span class=line><span class=cl><span class=nv>RESULT</span><span class=o>=</span><span class=nv>$?</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>if</span> <span class=o>[</span> <span class=nv>$RESULT</span> -eq <span class=m>0</span> <span class=o>]</span><span class=p>;</span> <span class=k>then</span>
+</span></span><span class=line><span class=cl>    <span class=nb>echo</span> <span class=s2>&#34;[</span><span class=nv>$TIMESTAMP</span><span class=s2>] Sync completed successfully&#34;</span> &gt;&gt; <span class=s2>&#34;</span><span class=nv>$LOG</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl><span class=k>else</span>
+</span></span><span class=line><span class=cl>    <span class=nb>echo</span> <span class=s2>&#34;[</span><span class=nv>$TIMESTAMP</span><span class=s2>] Sync failed with exit code </span><span class=nv>$RESULT</span><span class=s2>&#34;</span> &gt;&gt; <span class=s2>&#34;</span><span class=nv>$LOG</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl><span class=k>fi</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=when-to-use-incron>When to Use incron</h3><p>incron is the right choice when you want cron-like simplicity for filesystem events. Its table-based configuration is easy to manage, and the daemon handles all the complexity of inotify monitoring.</p><p><strong>Best for</strong>: Simple event-to-command mappings, directory synchronization triggers, configuration reload automation.</p><p><strong>Limitations</strong>: Less flexible than inotifywait for complex event processing. No built-in debouncing — rapid events can trigger duplicate commands. Debugging can be difficult since commands run silently in the background.</p><h2 id=head-to-head-comparison>Head-to-Head Comparison</h2><table><thead><tr><th>Feature</th><th>systemd.path</th><th>inotifywait</th><th>incron</th></tr></thead><tbody><tr><td><strong>Daemon Required</strong></td><td>No (systemd)</td><td>No (CLI process)</td><td>Yes (incrond)</td></tr><tr><td><strong>Configuration</strong></td><td>Unit files</td><td>Shell scripts</td><td>incrontab table</td></tr><tr><td><strong>Event Granularity</strong></td><td>4 types</td><td>15+ event types</td><td>8 event types</td></tr><tr><td><strong>Recursive Watch</strong></td><td>No (single path)</td><td>Yes (<code>-r</code> flag)</td><td>No (single path)</td></tr><tr><td><strong>Service Integration</strong></td><td>Full systemd</td><td>Manual</td><td>Manual</td></tr><tr><td><strong>Debouncing</strong></td><td>Built-in</td><td>Manual (sleep)</td><td>Manual</td></tr><tr><td><strong>User Permissions</strong></td><td>System-level</td><td>Any user</td><td>User tables</td></tr><tr><td><strong>Variable Access</strong></td><td>Via service env</td><td>Full shell access</td><td><code>$@</code>, <code>$#</code>, <code>$%</code></td></tr><tr><td><strong>Process Management</strong></td><td>systemd handles it</td><td>You manage it</td><td>incrond handles it</td></tr><tr><td><strong>Best For</strong></td><td>Simple service triggers</td><td>Complex pipelines</td><td>Cron-like rules</td></tr></tbody></table><h2 id=common-use-cases-and-recommended-approach>Common Use Cases and Recommended Approach</h2><h3 id=drop-directory-processing>Drop Directory Processing</h3><p>For processing files dropped into an import directory:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=c1># systemd.path — recommended for reliability</span>
+</span></span><span class=line><span class=cl><span class=k>[Path]</span>
+</span></span><span class=line><span class=cl><span class=na>DirectoryNotEmpty</span><span class=o>=</span><span class=s>/var/spool/import</span>
+</span></span><span class=line><span class=cl><span class=na>Unit</span><span class=o>=</span><span class=s>import-processor.service</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=configuration-change-detection>Configuration Change Detection</h3><p>For reloading services when config files change:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># inotifywait — recommended for debouncing control</span>
+</span></span><span class=line><span class=cl>inotifywait -m -e close_write /etc/myapp/*.conf <span class=p>|</span> <span class=k>while</span> read<span class=p>;</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>    sleep <span class=m>2</span>  <span class=c1># debounce</span>
+</span></span><span class=line><span class=cl>    systemctl reload myapp
+</span></span><span class=line><span class=cl><span class=k>done</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=directory-synchronization>Directory Synchronization</h3><p>For keeping directories in sync:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl># incron — recommended for simplicity
+</span></span><span class=line><span class=cl>/data/shared IN_CREATE,IN_MODIFY,IN_DELETE /usr/local/bin/sync.sh $@
+</span></span></code></pre></td></tr></table></div></div><h2 id=why-self-host-your-filesystem-monitoring>Why Self-Host Your Filesystem Monitoring?</h2><p>Self-hosting filesystem event monitoring gives you complete control over automation triggers, response timing, and error handling. Unlike cloud-based file monitoring services that introduce latency and dependency on external infrastructure, local event monitoring reacts instantly and works offline.</p><p>For teams managing self-hosted infrastructure — from homelab automation to enterprise server management — event-driven file monitoring eliminates the polling overhead of cron and enables real-time reactions to filesystem changes.</p><p>For systemd management tools, see our <a href=../2026-05-23-self-hosted-linux-temp-file-management-systemd-tmpfiles-tmpwatch-tmpreaper-guide/>systemd timer management guide</a>. For log monitoring, check our <a href=../2026-05-09-self-hosted-log-forwarding-fluent-bit-vector-otel-collector-guide/>log forwarding with Fluent Bit and Vector guide</a>. For Linux system administration, our <a href=../2026-05-22-self-hosted-linux-service-restart-detection-needrestart-checkrestart-debsums-guide/>Linux service restart detection guide</a> covers service lifecycle management.</p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted Linux Filesystem Event Monitoring: systemd.path vs inotifywait vs incron (2026)","description":"Compare systemd.path, inotifywait, and incron for Linux filesystem event monitoring and automation. Includes configuration examples and use case recommendations.","datePublished":"2026-05-24","dateModified":"2026-05-24","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script><h2 id=faq>FAQ</h2><h3 id=which-filesystem-monitoring-method-should-i-choose>Which filesystem monitoring method should I choose?</h3><p>Use <strong>systemd.path</strong> for simple directory monitoring that triggers systemd services — it requires no additional packages and integrates natively. Use <strong>inotifywait</strong> for complex event processing with custom scripting logic and granular event filtering. Use <strong>incron</strong> for cron-like event-to-command mappings where you prefer table-based configuration.</p><h3 id=can-systemdpath-monitor-multiple-paths>Can systemd.path monitor multiple paths?</h3><p>Yes. A single systemd.path unit can include multiple <code>PathChanged=</code>, <code>PathModified=</code>, <code>PathExists=</code>, and <code>DirectoryNotEmpty=</code> lines. All monitored paths trigger the same associated service unit.</p><h3 id=does-inotifywait-support-recursive-directory-watching>Does inotifywait support recursive directory watching?</h3><p>Yes, with the <code>-r</code> flag. However, inotifywait does not automatically watch newly created subdirectories during a recursive watch. For reliable recursive monitoring, consider using a polling fallback or restarting the watch when new directories appear.</p><h3 id=how-do-i-prevent-incron-from-firing-duplicate-commands>How do I prevent incron from firing duplicate commands?</h3><p>incron does not have built-in debouncing. To prevent duplicate triggers, use a lock file in your command script:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=nv>LOCKFILE</span><span class=o>=</span><span class=s2>&#34;/tmp/incron-sync.lock&#34;</span>
+</span></span><span class=line><span class=cl><span class=o>[</span> -f <span class=s2>&#34;</span><span class=nv>$LOCKFILE</span><span class=s2>&#34;</span> <span class=o>]</span> <span class=o>&amp;&amp;</span> <span class=nb>exit</span> <span class=m>0</span>
+</span></span><span class=line><span class=cl>touch <span class=s2>&#34;</span><span class=nv>$LOCKFILE</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl><span class=c1># Do work</span>
+</span></span><span class=line><span class=cl>rm -f <span class=s2>&#34;</span><span class=nv>$LOCKFILE</span><span class=s2>&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=can-i-monitor-network-filesystems-nfs-cifs-with-these-tools>Can I monitor network filesystems (NFS, CIFS) with these tools?</h3><p>inotify and therefore all three methods work best on local filesystems (ext4, XFS, Btrfs). NFS and CIFS may not support all inotify events reliably. For network filesystem monitoring, consider polling-based alternatives or filesystem-specific monitoring tools.</p><h2 id=frequently-asked-questions>Frequently Asked Questions</h2><h3 id=what-happens-if-the-triggered-service-fails>What happens if the triggered service fails?</h3><p>For systemd.path, the service failure is tracked by systemd and visible in <code>systemctl status</code>. For inotifywait, the background process handles errors according to your script logic. For incron, command failures are logged to syslog but not automatically retried.</p><h3 id=do-these-methods-survive-system-reboots>Do these methods survive system reboots?</h3><p>systemd.path and incron units/services are persistent — enabled units and incrontab entries survive reboots. inotifywait processes must be managed by systemd, supervisord, or another process manager to restart after reboot.</p><h3 id=how-much-cpu-does-filesystem-monitoring-consume>How much CPU does filesystem monitoring consume?</h3><p>All three methods use the kernel&rsquo;s inotify subsystem, which has near-zero CPU overhead when idle. CPU usage only increases when events occur and your processing logic runs. This is dramatically more efficient than polling-based approaches like <code>while true; do ls; sleep 1; done</code>.</p><h2 id=choosing-the-right-filesystem-monitoring-tool>Choosing the Right Filesystem Monitoring Tool</h2><p>The right choice depends on your operational requirements:</p><ul><li><strong>Use systemd.path</strong> for reliable, daemon-free monitoring that triggers systemd services — ideal for drop-directory processing and configuration reload automation.</li><li><strong>Use inotifywait</strong> when you need granular event types, recursive directory watching, or complex scripting logic with pipeline integration.</li><li><strong>Use incron</strong> for simple event-to-command mappings where cron-like table configuration is preferred over writing shell scripts or unit files.</li></ul><p>For most server automation tasks, systemd.path provides the best combination of simplicity and reliability. When you need more control over event processing, inotifywait gives you the flexibility to build any monitoring pipeline you need.</p></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20Linux%20Filesystem%20Event%20Monitoring%3a%20systemd.path%20vs%20inotifywait%20vs%20incron%20%282026%29&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-24-self-hosted-linux-filesystem-event-monitoring-systemd-path-vs-inotifywait-vs-incron-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-24-self-hosted-linux-filesystem-event-monitoring-systemd-path-vs-inotifywait-vs-incron-guide%2f&t=Self-Hosted%20Linux%20Filesystem%20Event%20Monitoring%3a%20systemd.path%20vs%20inotifywait%20vs%20incron%20%282026%29" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/linux/ class=tag-link>Linux</a>
+<a href=/tags/systemd/ class=tag-link>Systemd</a>
+<a href=/tags/inotify/ class=tag-link>Inotify</a>
+<a href=/tags/filesystem/ class=tag-link>Filesystem</a>
+<a href=/tags/automation/ class=tag-link>Automation</a>
+<a href=/tags/monitoring/ class=tag-link>Monitoring</a>
+<a href=/tags/system-administration/ class=tag-link>System-Administration</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-05-24-self-hosted-linux-filesystem-mount-management-systemd-mount-vs-autofs-vs-systemd-automount-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted Linux Filesystem Mount Management: systemd.mount vs autofs vs systemd.automount (2026)</h3><div class=post-excerpt>Managing filesystem mounts on Linux servers is a fundamental operational task that directly impacts system reliability, …</div><div class=post-footer><span class=post-date>May 24, 2026</span></div></a><a href=/posts/2026-05-24-self-hosted-linux-device-management-systemd-udevd-vs-eudev-vs-mdev-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted Linux Device Management: systemd-udevd vs eudev vs mdev (2026)</h3><div class=post-excerpt>Linux device management is the unsung hero of every self-hosted infrastructure. When you plug in a USB drive, insert a …</div><div class=post-footer><span class=post-date>May 24, 2026</span></div></a><a href=/posts/2026-05-24-self-hosted-linux-process-resource-limits-systemd-pam-limits-cgroup-v2-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted Linux Process Resource Limits: systemd vs pam_limits vs cgroup v2 (2026)</h3><div class=post-excerpt>Resource limits are a critical aspect of self-hosted server administration. Without proper limits, a single runaway …</div><div class=post-footer><span class=post-date>May 24, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>

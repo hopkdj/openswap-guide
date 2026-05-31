@@ -1,0 +1,402 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted Block I/O Latency Tracing: blktrace vs ioping vs iotop | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-05-24-self-hosted-block-io-latency-tracing-blktrace-vs-ioping-vs-iotop-guide/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted Block I/O Latency Tracing: blktrace vs ioping vs iotop"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-05-24-self-hosted-block-io-latency-tracing-blktrace-vs-ioping-vs-iotop-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-05-24T00:00:00Z"><meta property="article:modified_time" content="2026-05-24T00:00:00Z"><meta property="article:tag" content="linux"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted Block I/O Latency Tracing: blktrace vs ioping vs iotop"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted Block I\/O Latency Tracing: blktrace vs ioping vs iotop","description":"\u003cp\u003eWhen self-hosted storage infrastructure experiences performance degradation — slow database queries, delayed container pulls, or sluggish file server responses — the root cause often lies at the block device layer. Three tools dominate Linux block I\/O latency analysis: \u003cstrong\u003eblktrace\u003c\/strong\u003e, \u003cstrong\u003eioping\u003c\/strong\u003e, and \u003cstrong\u003eiotop\u003c\/strong\u003e. Each provides a different lens into storage performance, from kernel-level event tracing to real-time process I\/O monitoring.\u003c\/p\u003e","datePublished":"2026-05-24T00:00:00Z","dateModified":"2026-05-24T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-05-24-self-hosted-block-io-latency-tracing-blktrace-vs-ioping-vs-iotop-guide\/"},"keywords":["linux","storage","monitoring","performance","tracing"],"articleSection":"linux","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted Block I\/O Latency Tracing: blktrace vs ioping vs iotop","item":"https:\/\/www.pistack.xyz\/posts\/2026-05-24-self-hosted-block-io-latency-tracing-blktrace-vs-ioping-vs-iotop-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Linux</span>
+<span class="tag tag-purple">Storage</span>
+<span class="tag tag-purple">Monitoring</span></div><h1>Self-Hosted Block I/O Latency Tracing: blktrace vs ioping vs iotop</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>May 24, 2026</span>
+<span>11 min read</span>
+<span>Updated May 24, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#understanding-block-io-latency>Understanding Block I/O Latency</a></li><li><a href=#blktrace-kernel-level-block-io-tracing>blktrace: Kernel-Level Block I/O Tracing</a><ul><li><a href=#what-blktrace-captures>What blktrace Captures</a></li><li><a href=#installing-and-running-blktrace>Installing and Running blktrace</a></li><li><a href=#docker-compose-for-blktrace-analysis-stack>Docker Compose for blktrace Analysis Stack</a></li><li><a href=#blktrace-analysis-with-btt-block-trace-toolkit>blktrace Analysis with btt (Block Trace Toolkit)</a></li><li><a href=#blktrace-latency-metrics>blktrace Latency Metrics</a></li></ul></li><li><a href=#ioping-simple-io-latency-measurement>ioping: Simple I/O Latency Measurement</a><ul><li><a href=#key-features>Key Features</a></li><li><a href=#installing-and-running-ioping>Installing and Running ioping</a></li><li><a href=#ioping-output-example>ioping Output Example</a></li><li><a href=#docker-compose-for-continuous-ioping-monitoring>Docker Compose for Continuous ioping Monitoring</a></li><li><a href=#ioping-latency-benchmarks-by-storage-type>ioping Latency Benchmarks by Storage Type</a></li></ul></li><li><a href=#iotop-real-time-process-io-monitoring>iotop: Real-Time Process I/O Monitoring</a><ul><li><a href=#key-features-1>Key Features</a></li><li><a href=#installing-and-running-iotop>Installing and Running iotop</a></li><li><a href=#iotop-output>iotop Output</a></li><li><a href=#docker-compose-for-iotop-exporter>Docker Compose for iotop Exporter</a></li><li><a href=#iotop-vs-blktrace-when-to-use-each>iotop vs blktrace: When to Use Each</a></li></ul></li><li><a href=#comparison-blktrace-vs-ioping-vs-iotop>Comparison: blktrace vs ioping vs iotop</a></li><li><a href=#why-self-host-block-io-tracing>Why Self-Host Block I/O Tracing?</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#what-is-the-difference-between-blktrace-and-ioping>What is the difference between blktrace and ioping?</a></li><li><a href=#does-iotop-work-inside-docker-containers>Does iotop work inside Docker containers?</a></li><li><a href=#how-do-i-interpret-blktrace-d2c-latency-values>How do I interpret blktrace D2C latency values?</a></li><li><a href=#can-ioping-measure-write-latency-without-creating-actual-files>Can ioping measure write latency without creating actual files?</a></li><li><a href=#why-does-iotop-show-000-bs-for-some-processes-that-are-clearly-doing-io>Why does iotop show 0.00 B/s for some processes that are clearly doing I/O?</a></li><li><a href=#is-blktrace-safe-to-run-on-production-systems>Is blktrace safe to run on production systems?</a></li><li><a href=#how-do-i-correlate-blktrace-output-with-specific-application-processes>How do I correlate blktrace output with specific application processes?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><p>When self-hosted storage infrastructure experiences performance degradation — slow database queries, delayed container pulls, or sluggish file server responses — the root cause often lies at the block device layer. Three tools dominate Linux block I/O latency analysis: <strong>blktrace</strong>, <strong>ioping</strong>, and <strong>iotop</strong>. Each provides a different lens into storage performance, from kernel-level event tracing to real-time process I/O monitoring.</p><p>This guide compares all three tools with practical deployment examples, Docker configurations for monitoring stacks, and decision frameworks for choosing the right tool for your homelab or production environment.</p><h2 id=understanding-block-io-latency>Understanding Block I/O Latency</h2><p>Block I/O latency measures the time between when a read or write request reaches the storage device and when the operation completes. High latency can indicate:</p><ul><li><strong>Disk saturation</strong> — too many concurrent requests competing for limited IOPS</li><li><strong>Scheduler bottlenecks</strong> — suboptimal I/O scheduling algorithm for the workload</li><li><strong>Hardware issues</strong> — failing drives, degraded RAID arrays, or controller problems</li><li><strong>Queue depth exhaustion</strong> — storage device queue is full, requests are waiting</li><li><strong>Filesystem overhead</strong> — journal writes, metadata updates, or fragmentation</li></ul><p>Unlike application-level metrics, block I/O tracing captures the complete lifecycle of storage requests as they pass through the Linux kernel&rsquo;s block layer, providing visibility that filesystem and process-level tools cannot match.</p><h2 id=blktrace-kernel-level-block-io-tracing>blktrace: Kernel-Level Block I/O Tracing</h2><p>blktrace is the most powerful block I/O tracing tool available on Linux. It hooks directly into the kernel&rsquo;s block layer to capture every I/O event, including queue inserts, driver dispatches, completions, and remaps.</p><h3 id=what-blktrace-captures>What blktrace Captures</h3><p>blktrace records six event classes for each I/O request:</p><table><thead><tr><th>Event Class</th><th>Description</th></tr></thead><tbody><tr><td><strong>Q</strong> (Queue)</td><td>Request inserted into the block layer queue</td></tr><tr><td><strong>G</strong> (Get request)</td><td>Driver allocates a request structure</td></tr><tr><td><strong>I</strong> (Insert)</td><td>Request inserted into the device dispatch queue</td></tr><tr><td><strong>D</strong> (Issue)</td><td>Request sent to the device driver</td></tr><tr><td><strong>C</strong> (Complete)</td><td>Request completed by the device</td></tr><tr><td><strong>P</strong> (Plug)</td><td>Queue plugged (batching enabled)</td></tr></tbody></table><h3 id=installing-and-running-blktrace>Installing and Running blktrace</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install blktrace</span>
+</span></span><span class=line><span class=cl>sudo apt install blktrace -y
+</span></span><span class=line><span class=cl><span class=c1># or</span>
+</span></span><span class=line><span class=cl>sudo yum install blktrace -y
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Start tracing on /dev/sda</span>
+</span></span><span class=line><span class=cl>sudo blktrace -d /dev/sda -o /tmp/sda-trace
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Let it run for 30 seconds, then stop</span>
+</span></span><span class=line><span class=cl>sleep <span class=m>30</span>
+</span></span><span class=line><span class=cl>sudo pkill blktrace
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Parse the binary trace output into human-readable format</span>
+</span></span><span class=line><span class=cl>blkparse -i /tmp/sda-trace.blktrace.0 -d /tmp/sda-trace.txt
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Generate I/O latency histogram</span>
+</span></span><span class=line><span class=cl>blkparse -i /tmp/sda-trace.blktrace.0 -a issue,complete   <span class=p>|</span> awk <span class=s1>&#39;{print $12}&#39;</span> <span class=p>|</span> sort -n <span class=p>|</span> uniq -c <span class=p>|</span> head -20
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-compose-for-blktrace-analysis-stack>Docker Compose for blktrace Analysis Stack</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>blktrace-collector</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>ubuntu:22.04</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>blktrace-collector</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>privileged</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>pid</span><span class=p>:</span><span class=w> </span><span class=l>host</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/dev:/dev</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/sys:/sys</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/tmp/blktrace-data:/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      bash -c &#34;
+</span></span></span><span class=line><span class=cl><span class=sd>        blktrace -d /dev/sda -o /data/sda-trace &amp;
+</span></span></span><span class=line><span class=cl><span class=sd>        BTPID=$!
+</span></span></span><span class=line><span class=cl><span class=sd>        sleep 60
+</span></span></span><span class=line><span class=cl><span class=sd>        kill $BTPID
+</span></span></span><span class=line><span class=cl><span class=sd>        blkparse -i /data/sda-trace.blktrace.0 -d /data/sda-trace.txt
+</span></span></span><span class=line><span class=cl><span class=sd>        btt -i /data/sda-trace.blktrace.0 -o /data/sda-btt.txt
+</span></span></span><span class=line><span class=cl><span class=sd>      &#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;no&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>visualization</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>grafana/grafana:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>blktrace-grafana</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>always</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;3000:3000&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>grafana-data:/var/lib/grafana</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./grafana/provisioning:/etc/grafana/provisioning</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>GF_SECURITY_ADMIN_PASSWORD</span><span class=p>:</span><span class=w> </span><span class=l>admin</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>GF_USERS_ALLOW_SIGN_UP</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;false&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>grafana-data</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>local</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=blktrace-analysis-with-btt-block-trace-toolkit>blktrace Analysis with btt (Block Trace Toolkit)</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Generate comprehensive I/O statistics</span>
+</span></span><span class=line><span class=cl>btt -i /tmp/sda-trace.blktrace.0 -o /tmp/sda-analysis.txt
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Key output sections:</span>
+</span></span><span class=line><span class=cl><span class=c1># ──── Device Merge/Queue/Sector/IO Count Summary ────</span>
+</span></span><span class=line><span class=cl><span class=c1># ──── Q2Q (Queue-to-Queue latency) ────</span>
+</span></span><span class=line><span class=cl><span class=c1># ──── Q2D (Queue-to-Device latency) ────</span>
+</span></span><span class=line><span class=cl><span class=c1># ──── D2C (Device-to-Complete latency) ────</span>
+</span></span><span class=line><span class=cl><span class=c1># ──── I/O Latency Distribution ────</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=blktrace-latency-metrics>blktrace Latency Metrics</h3><table><thead><tr><th>Metric</th><th>Description</th><th>Normal Range</th><th>Warning</th></tr></thead><tbody><tr><td><strong>Q2Q</strong></td><td>Time between request queueings</td><td>&lt; 1ms</td><td>> 10ms</td></tr><tr><td><strong>Q2D</strong></td><td>Time in queue before device dispatch</td><td>&lt; 5ms</td><td>> 50ms</td></tr><tr><td><strong>D2C</strong></td><td>Device processing time</td><td>&lt; 5ms (SSD) / &lt; 10ms (HDD)</td><td>> 20ms / > 50ms</td></tr><tr><td><strong>I/O depth</strong></td><td>Concurrent requests in flight</td><td>1-32</td><td>> 256</td></tr></tbody></table><p>blktrace provides the deepest visibility into block I/O behavior but requires kernel-level access and produces large trace files. It&rsquo;s best suited for targeted troubleshooting rather than continuous monitoring.</p><h2 id=ioping-simple-io-latency-measurement>ioping: Simple I/O Latency Measurement</h2><p>ioping is a lightweight tool inspired by the <code>ping</code> command, designed specifically to measure storage latency in real-time. It sends read/write requests to a target and reports round-trip times, making it ideal for quick latency checks and continuous monitoring.</p><h3 id=key-features>Key Features</h3><ul><li><strong>Ping-like interface</strong> — familiar syntax for quick latency testing</li><li><strong>Multiple I/O patterns</strong> — sequential, random, cached, direct, write</li><li><strong>Real-time statistics</strong> — min/avg/max latency, IOPS, throughput</li><li><strong>No kernel modules required</strong> — works with standard Linux syscalls</li></ul><h3 id=installing-and-running-ioping>Installing and Running ioping</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install ioping</span>
+</span></span><span class=line><span class=cl>sudo apt install ioping -y
+</span></span><span class=line><span class=cl><span class=c1># or</span>
+</span></span><span class=line><span class=cl>sudo yum install ioping -y
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Measure latency with default settings (4K reads)</span>
+</span></span><span class=line><span class=cl>ioping -c <span class=m>10</span> /dev/sda
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Measure random read latency</span>
+</span></span><span class=line><span class=cl>ioping -R -c <span class=m>20</span> /dev/sda
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Measure sequential write latency</span>
+</span></span><span class=line><span class=cl>ioping -W -c <span class=m>20</span> /data/testfile
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Measure cached read latency</span>
+</span></span><span class=line><span class=cl>ioping -C -c <span class=m>10</span> /dev/sda
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Continuous monitoring with interval</span>
+</span></span><span class=line><span class=cl>ioping -i 0.5 /dev/sda
+</span></span></code></pre></td></tr></table></div></div><h3 id=ioping-output-example>ioping Output Example</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>4 KiB &lt;&lt;&lt; /dev/sda (block device 100 GiB): request=1 time=1.2 ms (warmup)
+</span></span><span class=line><span class=cl>4 KiB &lt;&lt;&lt; /dev/sda (block device 100 GiB): request=2 time=0.8 ms
+</span></span><span class=line><span class=cl>4 KiB &lt;&lt;&lt; /dev/sda (block device 100 GiB): request=3 time=1.1 ms
+</span></span><span class=line><span class=cl>4 KiB &lt;&lt;&lt; /dev/sda (block device 100 GiB): request=4 time=0.9 ms
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>--- /dev/sda (block device 100 GiB) ioping statistics ---
+</span></span><span class=line><span class=cl>10 requests completed in 9.2 s, 40 KiB read, 1 iops, 4.3 KiB/s
+</span></span><span class=line><span class=cl>generated 10 requests in 9.2 s
+</span></span><span class=line><span class=cl>min/avg/max/mdev = 0.8 ms / 1.0 ms / 1.5 ms / 0.2 ms
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-compose-for-continuous-ioping-monitoring>Docker Compose for Continuous ioping Monitoring</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>ioping-monitor</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>alpine:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>ioping-monitor</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>privileged</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/dev:/dev</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/data:/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      sh -c &#34;
+</span></span></span><span class=line><span class=cl><span class=sd>        apk add ioping &amp;&amp;
+</span></span></span><span class=line><span class=cl><span class=sd>        while true; do
+</span></span></span><span class=line><span class=cl><span class=sd>          ioping -c 5 -w 10 /dev/sda &gt;&gt; /data/ioping-log.txt
+</span></span></span><span class=line><span class=cl><span class=sd>          sleep 300
+</span></span></span><span class=line><span class=cl><span class=sd>        done
+</span></span></span><span class=line><span class=cl><span class=sd>      &#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>always</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>logging</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>json-file</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>options</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>max-size</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;10m&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>max-file</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>prometheus</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>prom/prometheus:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>prometheus</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>always</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;9090:9090&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./prometheus.yml:/etc/prometheus/prometheus.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>prometheus-data:/prometheus</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;--config.file=/etc/prometheus/prometheus.yml&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;--storage.tsdb.retention.time=30d&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>prometheus-data</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>local</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=ioping-latency-benchmarks-by-storage-type>ioping Latency Benchmarks by Storage Type</h3><table><thead><tr><th>Storage Type</th><th>Sequential Read</th><th>Random Read</th><th>Random Write</th></tr></thead><tbody><tr><td><strong>NVMe SSD</strong></td><td>0.05-0.15 ms</td><td>0.08-0.25 ms</td><td>0.10-0.35 ms</td></tr><tr><td><strong>SATA SSD</strong></td><td>0.10-0.30 ms</td><td>0.15-0.50 ms</td><td>0.20-0.80 ms</td></tr><tr><td><strong>HDD (7200 RPM)</strong></td><td>5-15 ms</td><td>8-20 ms</td><td>10-25 ms</td></tr><tr><td><strong>HDD RAID 10</strong></td><td>3-8 ms</td><td>5-12 ms</td><td>6-15 ms</td></tr><tr><td><strong>Network (NFS)</strong></td><td>1-5 ms</td><td>2-10 ms</td><td>3-15 ms</td></tr></tbody></table><p>ioping is the simplest tool for quick latency checks and continuous monitoring. Its ping-like interface makes it accessible to administrators who need fast answers without parsing complex trace output.</p><h2 id=iotop-real-time-process-io-monitoring>iotop: Real-Time Process I/O Monitoring</h2><p>iotop displays real-time I/O usage by process, similar to how <code>top</code> shows CPU usage. It identifies which processes are consuming the most disk bandwidth, making it essential for pinpointing the source of I/O contention.</p><h3 id=key-features-1>Key Features</h3><ul><li><strong>Per-process I/O accounting</strong> — see exactly which process is reading/writing</li><li><strong>Real-time display</strong> — updates every second by default</li><li><strong>Thread-level detail</strong> — can show individual thread I/O</li><li><strong>Cumulative counters</strong> — track total bytes read/written per process</li></ul><h3 id=installing-and-running-iotop>Installing and Running iotop</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install iotop</span>
+</span></span><span class=line><span class=cl>sudo apt install iotop -y
+</span></span><span class=line><span class=cl><span class=c1># or</span>
+</span></span><span class=line><span class=cl>sudo yum install iotop -y
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Run iotop (requires root for full process visibility)</span>
+</span></span><span class=line><span class=cl>sudo iotop
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Show only processes actually doing I/O</span>
+</span></span><span class=line><span class=cl>sudo iotop -o
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Show threads instead of processes</span>
+</span></span><span class=line><span class=cl>sudo iotop -t
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Batch mode for logging</span>
+</span></span><span class=line><span class=cl>sudo iotop -b -n <span class=m>5</span> -d <span class=m>2</span> &gt; /tmp/iotop-output.txt
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Cumulative mode (total I/O per process)</span>
+</span></span><span class=line><span class=cl>sudo iotop -a -o
+</span></span></code></pre></td></tr></table></div></div><h3 id=iotop-output>iotop Output</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>Total DISK READ: 125.43 M/s | Total DISK WRITE: 45.21 M/s
+</span></span><span class=line><span class=cl>Current DISK READ: 89.12 M/s | Current DISK WRITE: 32.15 M/s
+</span></span><span class=line><span class=cl>    TID  PRIO  USER     DISK READ  DISK WRITE  SWAPIN     IO&gt;    COMMAND
+</span></span><span class=line><span class=cl>   1234 be/4 mysql      45.23 M/s   12.34 M/s  0.00 %  89.12 % mysqld
+</span></span><span class=line><span class=cl>   5678 be/4 root       22.15 M/s    8.91 M/s  0.00 %  45.67 % docker-containerd
+</span></span><span class=line><span class=cl>   9012 be/4 postgres   15.67 M/s   18.45 M/s  0.00 %  34.21 % postgres: writer
+</span></span><span class=line><span class=cl>   3456 be/4 www-data    5.12 M/s    3.21 M/s  0.00 %  12.34 % nginx: worker
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-compose-for-iotop-exporter>Docker Compose for iotop Exporter</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>iotop-exporter</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>ubuntu:22.04</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>iotop-exporter</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>privileged</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>pid</span><span class=p>:</span><span class=w> </span><span class=l>host</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/proc:/host/proc:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/sys:/host/sys:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      bash -c &#34;
+</span></span></span><span class=line><span class=cl><span class=sd>        apt update &amp;&amp; apt install -y iotop
+</span></span></span><span class=line><span class=cl><span class=sd>        while true; do
+</span></span></span><span class=line><span class=cl><span class=sd>          iotop -b -n 1 -o &gt;&gt; /tmp/iotop-export.log
+</span></span></span><span class=line><span class=cl><span class=sd>          sleep 10
+</span></span></span><span class=line><span class=cl><span class=sd>        done
+</span></span></span><span class=line><span class=cl><span class=sd>      &#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>always</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>node-exporter</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>prom/node-exporter:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>node-exporter</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>always</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;9100:9100&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/proc:/host/proc:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/sys:/host/sys:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/:/rootfs:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;--path.procfs=/host/proc&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;--path.sysfs=/host/sys&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;--path.rootfs=/rootfs&#34;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=iotop-vs-blktrace-when-to-use-each>iotop vs blktrace: When to Use Each</h3><table><thead><tr><th>Scenario</th><th>Best Tool</th><th>Reason</th></tr></thead><tbody><tr><td><strong>Which process is hogging disk I/O?</strong></td><td>iotop</td><td>Shows per-process bandwidth</td></tr><tr><td><strong>What is the latency of individual requests?</strong></td><td>blktrace</td><td>Captures Q2D/D2C timing</td></tr><tr><td><strong>Is the disk saturated or just slow?</strong></td><td>ioping</td><td>Measures raw device latency</td></tr><tr><td><strong>Are I/O requests being merged?</strong></td><td>blktrace</td><td>Shows merge events</td></tr><tr><td><strong>Quick sanity check before deep dive?</strong></td><td>ioping</td><td>One command, instant results</td></tr><tr><td><strong>Long-term I/O monitoring?</strong></td><td>ioping + Prometheus</td><td>Continuous interval-based checks</td></tr></tbody></table><h2 id=comparison-blktrace-vs-ioping-vs-iotop>Comparison: blktrace vs ioping vs iotop</h2><table><thead><tr><th>Feature</th><th>blktrace</th><th>ioping</th><th>iotop</th></tr></thead><tbody><tr><td><strong>Event granularity</strong></td><td>Per-I/O event</td><td>Per-request latency</td><td>Per-process bandwidth</td></tr><tr><td><strong>Kernel access required</strong></td><td>Yes (block layer hooks)</td><td>No (standard syscalls)</td><td>Yes (proc accounting)</td></tr><tr><td><strong>Trace file size</strong></td><td>Large (GB/hour)</td><td>Minimal</td><td>Minimal</td></tr><tr><td><strong>Continuous monitoring</strong></td><td>Not ideal</td><td>Yes</td><td>Yes (batch mode)</td></tr><tr><td><strong>Latency percentiles</strong></td><td>Yes (full distribution)</td><td>Yes (min/avg/max)</td><td>No</td></tr><tr><td><strong>Process identification</strong></td><td>Partial (via btt)</td><td>No</td><td>Yes (primary function)</td></tr><tr><td><strong>I/O type breakdown</strong></td><td>Read/write/discard</td><td>Configurable</td><td>Read/write</td></tr><tr><td><strong>Learning curve</strong></td><td>Steep</td><td>Gentle</td><td>Gentle</td></tr><tr><td><strong>Production overhead</strong></td><td>Moderate (trace buffering)</td><td>Low</td><td>Low</td></tr></tbody></table><h2 id=why-self-host-block-io-tracing>Why Self-Host Block I/O Tracing?</h2><p>Monitoring block I/O latency is essential for any self-hosted infrastructure that depends on storage performance. Here&rsquo;s why local tracing tools matter:</p><ol><li><p><strong>Database performance</strong> — Database engines like PostgreSQL and MySQL are extremely sensitive to storage latency. A 10ms increase in average block latency can translate to a 2x increase in query response time under concurrent load. Tools like blktrace reveal whether latency spikes originate from the device, the scheduler, or filesystem journaling.</p></li><li><p><strong>Container storage optimization</strong> — Container workloads that perform frequent small reads (package managers, log rotators, config readers) are particularly sensitive to random read latency. ioping&rsquo;s random read mode identifies storage bottlenecks before they impact container startup times.</p></li><li><p><strong>RAID and LVM troubleshooting</strong> — When running software RAID or LVM volumes, I/O requests pass through multiple layers before reaching physical devices. blktrace can trace requests through the entire stack, identifying whether latency originates from the RAID rebuild, LVM snapshot, or underlying device.</p></li><li><p><strong>Capacity planning</strong> — Continuous ioping monitoring establishes baseline latency metrics for your storage infrastructure. When new workloads are added, comparing against baseline reveals whether the storage subsystem can handle additional load or needs expansion.</p></li><li><p><strong>Hardware validation</strong> — When deploying new SSDs or configuring RAID arrays, ioping provides quick benchmarks to verify that hardware delivers advertised performance. blktrace confirms that the I/O scheduler and queue depth are optimally configured for the workload type.</p></li></ol><p>For storage filesystem optimization, see our <a href=../2026-05-23-linux-software-raid-mdadm-vs-btrfs-vs-zfs-guide/>Linux software RAID comparison</a> and <a href=../2026-05-24-self-hosted-linux-data-integrity-verification-dm-verity-fs-verity-dm-integrity-guide/>Linux data integrity verification guide</a>.
+For I/O scheduler tuning, check our <a href=../2026-05-22-linux-io-schedulers-bfq-mq-deadline-kyber-guide/>Linux I/O schedulers deep dive</a>.</p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted Block I/O Latency Tracing: blktrace vs ioping vs iotop","description":"Compare blktrace, ioping, and iotop for self-hosted Linux block I/O latency analysis — kernel-level tracing, real-time monitoring, and per-process accounting.","datePublished":"2026-05-24","dateModified":"2026-05-24","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script><h2 id=faq>FAQ</h2><h3 id=what-is-the-difference-between-blktrace-and-ioping>What is the difference between blktrace and ioping?</h3><p>blktrace captures every I/O event at the kernel block layer level, providing detailed timing information for each phase of an I/O request (queue, dispatch, completion). ioping sends test I/O requests and measures round-trip latency, similar to how <code>ping</code> measures network latency. blktrace is for deep analysis; ioping is for quick checks.</p><h3 id=does-iotop-work-inside-docker-containers>Does iotop work inside Docker containers?</h3><p>iotop can run inside Docker containers if the container is started with <code>--privileged</code> flag or with <code>--cap-add SYS_ADMIN</code> and access to the host&rsquo;s <code>/proc</code> filesystem via <code>--pid=host</code>. Without these, iotop can only see I/O from processes within the container&rsquo;s PID namespace.</p><h3 id=how-do-i-interpret-blktrace-d2c-latency-values>How do I interpret blktrace D2C latency values?</h3><p>D2C (Device-to-Complete) latency measures the time from when a request is issued to the device driver until the device reports completion. For NVMe SSDs, D2C should typically be under 0.5ms. For SATA SSDs, under 1ms. For spinning disks, under 10ms. Higher values indicate device saturation, hardware issues, or queue depth exhaustion.</p><h3 id=can-ioping-measure-write-latency-without-creating-actual-files>Can ioping measure write latency without creating actual files?</h3><p>Yes, ioping supports write mode (<code>-W</code>) that measures write latency by writing to a temporary file and immediately deleting it. Use <code>ioping -W -c 10 /path/to/directory</code> to measure write latency. For raw device write testing, use <code>ioping -W /dev/sda</code> (requires root).</p><h3 id=why-does-iotop-show-000-bs-for-some-processes-that-are-clearly-doing-io>Why does iotop show 0.00 B/s for some processes that are clearly doing I/O?</h3><p>iotop relies on the kernel&rsquo;s task delay accounting subsystem. If delay accounting is disabled (<code>/proc/sys/kernel/task_delayacct</code> is 0), iotop cannot report accurate I/O statistics. Enable it with <code>echo 1 > /proc/sys/kernel/task_delayacct</code> or add <code>delayacct</code> to your kernel boot parameters.</p><h3 id=is-blktrace-safe-to-run-on-production-systems>Is blktrace safe to run on production systems?</h3><p>blktrace has minimal overhead when tracing moderate I/O workloads — typically 1-3% CPU overhead. However, trace files can grow very quickly (hundreds of MB per minute on busy systems). Always specify output directories with sufficient space and limit tracing duration. For production monitoring, prefer ioping with Prometheus integration instead of continuous blktrace.</p><h3 id=how-do-i-correlate-blktrace-output-with-specific-application-processes>How do I correlate blktrace output with specific application processes?</h3><p>Use the <strong>btt</strong> (Block Trace Toolkit) utility that comes with blktrace. Run <code>btt -i trace.blktrace.0</code> to get per-process I/O statistics. For more detailed correlation, combine blktrace with <code>strace</code> on the target application process, or use the <code>seekwatcher</code> tool to visualize blktrace output alongside application activity.</p></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20Block%20I%2fO%20Latency%20Tracing%3a%20blktrace%20vs%20ioping%20vs%20iotop&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-24-self-hosted-block-io-latency-tracing-blktrace-vs-ioping-vs-iotop-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-24-self-hosted-block-io-latency-tracing-blktrace-vs-ioping-vs-iotop-guide%2f&t=Self-Hosted%20Block%20I%2fO%20Latency%20Tracing%3a%20blktrace%20vs%20ioping%20vs%20iotop" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/linux/ class=tag-link>Linux</a>
+<a href=/tags/storage/ class=tag-link>Storage</a>
+<a href=/tags/monitoring/ class=tag-link>Monitoring</a>
+<a href=/tags/performance/ class=tag-link>Performance</a>
+<a href=/tags/tracing/ class=tag-link>Tracing</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-05-24-self-hosted-linux-storage-caching-dm-writecache-bcache-flashcache-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted Linux Storage Caching: dm-writecache vs bcache vs FlashCache</h3><div class=post-excerpt>Linux offers multiple block-level caching solutions that sit between fast storage (NVMe SSDs) and slow storage (HDDs) to …</div><div class=post-footer><span class=post-date>May 24, 2026</span></div></a><a href=/posts/2026-05-23-self-hosted-linux-io-uring-tool-ecosystem-liburing-fio-uring-bench-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted Linux io_uring Tool Ecosystem — liburing, fio, and uring-bench Guide</h3><div class=post-excerpt>Asynchronous I/O has been a longstanding challenge in Linux. Traditional select/poll/epoll handle network I/O well but …</div><div class=post-footer><span class=post-date>May 23, 2026</span></div></a><a href=/posts/2026-05-24-self-hosted-linux-filesystem-event-monitoring-systemd-path-vs-inotifywait-vs-incron-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted Linux Filesystem Event Monitoring: systemd.path vs inotifywait vs incron (2026)</h3><div class=post-excerpt>Monitoring filesystem events on Linux servers is essential for automation workflows — triggering actions when files …</div><div class=post-footer><span class=post-date>May 24, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>

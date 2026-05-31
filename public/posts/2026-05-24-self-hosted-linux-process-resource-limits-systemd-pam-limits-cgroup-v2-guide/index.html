@@ -1,0 +1,254 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted Linux Process Resource Limits: systemd vs pam_limits vs cgroup v2 (2026) | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-05-24-self-hosted-linux-process-resource-limits-systemd-pam-limits-cgroup-v2-guide/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted Linux Process Resource Limits: systemd vs pam_limits vs cgroup v2 (2026)"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-05-24-self-hosted-linux-process-resource-limits-systemd-pam-limits-cgroup-v2-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-05-24T00:00:00Z"><meta property="article:modified_time" content="2026-05-24T00:00:00Z"><meta property="article:tag" content="linux"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted Linux Process Resource Limits: systemd vs pam_limits vs cgroup v2 (2026)"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted Linux Process Resource Limits: systemd vs pam_limits vs cgroup v2 (2026)","description":"\u003cp\u003eResource limits are a critical aspect of self-hosted server administration. Without proper limits, a single runaway process can consume all CPU, exhaust memory, or open thousands of file descriptors — causing system-wide instability that affects every service on the server.\u003c\/p\u003e","datePublished":"2026-05-24T00:00:00Z","dateModified":"2026-05-24T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-05-24-self-hosted-linux-process-resource-limits-systemd-pam-limits-cgroup-v2-guide\/"},"keywords":["linux","cgroups","systemd","resource-limits","system-administration","performance"],"articleSection":"linux","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted Linux Process Resource Limits: systemd vs pam_limits vs cgroup v2 (2026)","item":"https:\/\/www.pistack.xyz\/posts\/2026-05-24-self-hosted-linux-process-resource-limits-systemd-pam-limits-cgroup-v2-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Linux</span>
+<span class="tag tag-purple">Cgroups</span>
+<span class="tag tag-purple">Systemd</span></div><h1>Self-Hosted Linux Process Resource Limits: systemd vs pam_limits vs cgroup v2 (2026)</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>May 24, 2026</span>
+<span>9 min read</span>
+<span>Updated May 24, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#why-process-resource-limits-matter>Why Process Resource Limits Matter</a></li><li><a href=#pam_limits-limitsconf>pam_limits (limits.conf)</a><ul><li><a href=#configuration>Configuration</a></li><li><a href=#limit-types>Limit Types</a></li><li><a href=#applying-and-verifying>Applying and Verifying</a></li><li><a href=#limitations-of-pam_limits>Limitations of pam_limits</a></li></ul></li><li><a href=#systemd-resource-controls>systemd Resource Controls</a><ul><li><a href=#configuration-in-unit-files>Configuration in Unit Files</a></li><li><a href=#key-systemd-resource-control-directives>Key systemd Resource Control Directives</a></li><li><a href=#monitoring-resource-usage>Monitoring Resource Usage</a></li></ul></li><li><a href=#cgroup-v2>cgroup v2</a><ul><li><a href=#understanding-the-cgroup-v2-hierarchy>Understanding the cgroup v2 Hierarchy</a></li><li><a href=#creating-and-configuring-cgroups>Creating and Configuring cgroups</a></li><li><a href=#monitoring-cgroup-usage>Monitoring cgroup Usage</a></li></ul></li><li><a href=#comparison-pam_limits-vs-systemd-vs-cgroup-v2>Comparison: pam_limits vs systemd vs cgroup v2</a></li><li><a href=#why-self-host-resource-limit-management>Why Self-Host Resource Limit Management?</a></li><li><a href=#best-practices-for-production>Best Practices for Production</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#what-is-the-difference-between-memorymax-and-memoryhigh-in-systemd>What is the difference between MemoryMax and MemoryHigh in systemd?</a></li><li><a href=#does-pam_limits-apply-to-systemd-services>Does pam_limits apply to systemd services?</a></li><li><a href=#can-i-set-cgroup-v2-limits-persistently-without-systemd>Can I set cgroup v2 limits persistently without systemd?</a></li><li><a href=#how-do-i-find-which-cgroup-a-process-belongs-to>How do I find which cgroup a process belongs to?</a></li><li><a href=#what-happens-when-a-service-exceeds-its-memorymax-limit>What happens when a service exceeds its MemoryMax limit?</a></li><li><a href=#is-cgroup-v2-enabled-by-default-on-my-distribution>Is cgroup v2 enabled by default on my distribution?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><p>Resource limits are a critical aspect of self-hosted server administration. Without proper limits, a single runaway process can consume all CPU, exhaust memory, or open thousands of file descriptors — causing system-wide instability that affects every service on the server.</p><p>This guide compares the three primary approaches to managing process resource limits on modern Linux systems: <strong>pam_limits</strong> (the traditional <code>/etc/security/limits.conf</code> approach), <strong>systemd resource controls</strong> (per-service limit configuration), and <strong>cgroup v2</strong> (the kernel-level unified resource management framework). We cover configuration patterns, enforcement mechanisms, and which approach fits your self-hosted infrastructure.</p><h2 id=why-process-resource-limits-matter>Why Process Resource Limits Matter</h2><p>Linux processes can request system resources without any default upper bound. A misconfigured application, memory leak, or fork bomb can quickly degrade or crash an entire server. Resource limits prevent this by enforcing ceilings on:</p><ul><li><strong>Memory</strong> — Maximum RAM usage (RSS, virtual memory, locked memory)</li><li><strong>CPU</strong> — CPU time quotas, scheduling priority, CPU affinity</li><li><strong>File descriptors</strong> — Maximum open files and sockets per process</li><li><strong>Processes</strong> — Maximum number of child processes (prevents fork bombs)</li><li><strong>Disk I/O</strong> — Read/write bandwidth and IOPS limits</li><li><strong>Network</strong> — Socket buffer sizes, connection limits</li></ul><p>Setting appropriate limits ensures that when one service misbehaves, the rest of the server continues operating normally.</p><h2 id=pam_limits-limitsconf>pam_limits (limits.conf)</h2><p>pam_limits is the traditional Linux resource limit system, implemented through the PAM (Pluggable Authentication Modules) framework. Limits are defined in <code>/etc/security/limits.conf</code> and apply to user sessions at login time.</p><h3 id=configuration>Configuration</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl># /etc/security/limits.conf
+</span></span><span class=line><span class=cl># Format: &lt;domain&gt; &lt;type&gt; &lt;item&gt; &lt;value&gt;
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># Hard and soft limits for all users
+</span></span><span class=line><span class=cl>*               soft    nofile          65536
+</span></span><span class=line><span class=cl>*               hard    nofile          1048576
+</span></span><span class=line><span class=cl>*               soft    nproc           4096
+</span></span><span class=line><span class=cl>*               hard    nproc           8192
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># Limits for specific users
+</span></span><span class=line><span class=cl>nginx           soft    nofile          100000
+</span></span><span class=line><span class=cl>nginx           hard    nofile          200000
+</span></span><span class=line><span class=cl>postgres        soft    memlock         unlimited
+</span></span><span class=line><span class=cl>postgres        hard    memlock         unlimited
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl># Group limits
+</span></span><span class=line><span class=cl>@database       hard    rss             8000000
+</span></span><span class=line><span class=cl>@web            soft    cpu             50000
+</span></span></code></pre></td></tr></table></div></div><h3 id=limit-types>Limit Types</h3><table><thead><tr><th>Limit Item</th><th>Description</th><th>Common Values</th></tr></thead><tbody><tr><td><code>nofile</code></td><td>Max open file descriptors</td><td>65536–1048576</td></tr><tr><td><code>nproc</code></td><td>Max processes per user</td><td>1024–65536</td></tr><tr><td><code>memlock</code></td><td>Max locked memory (KB)</td><td>unlimited for DBs</td></tr><tr><td><code>rss</code></td><td>Max resident set size (KB)</td><td>per-service tuning</td></tr><tr><td><code>cpu</code></td><td>Max CPU time (minutes)</td><td>for batch jobs</td></tr><tr><td><code>core</code></td><td>Max core file size</td><td>0 (disable) or unlimited</td></tr><tr><td><code>stack</code></td><td>Max stack size (KB)</td><td>8192–65536</td></tr></tbody></table><h3 id=applying-and-verifying>Applying and Verifying</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Check current limits for the shell</span>
+</span></span><span class=line><span class=cl><span class=nb>ulimit</span> -a
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Check specific limit</span>
+</span></span><span class=line><span class=cl><span class=nb>ulimit</span> -n    <span class=c1># file descriptors</span>
+</span></span><span class=line><span class=cl><span class=nb>ulimit</span> -u    <span class=c1># processes</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Verify for a specific process</span>
+</span></span><span class=line><span class=cl>cat /proc/&lt;pid&gt;/limits
+</span></span></code></pre></td></tr></table></div></div><h3 id=limitations-of-pam_limits>Limitations of pam_limits</h3><ul><li><strong>Only applies to login sessions</strong> — Services started via systemd, cron, or init scripts do not inherit pam_limits unless explicitly configured</li><li><strong>No per-service granularity</strong> — Limits are per-user, not per-service. All processes running as user <code>nginx</code> share the same limits</li><li><strong>Does not support CPU quotas</strong> — The <code>cpu</code> limit only caps total CPU time, not CPU percentage or scheduling shares</li><li><strong>No I/O bandwidth control</strong> — Cannot limit disk read/write rates</li></ul><h2 id=systemd-resource-controls>systemd Resource Controls</h2><p>systemd provides per-service resource limits through its unit file configuration. These limits are enforced at the service level, regardless of which user runs the service.</p><h3 id=configuration-in-unit-files>Configuration in Unit Files</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=c1># /etc/systemd/system/myapp.service</span>
+</span></span><span class=line><span class=cl><span class=k>[Service]</span>
+</span></span><span class=line><span class=cl><span class=c1># Memory limits</span>
+</span></span><span class=line><span class=cl><span class=na>MemoryMax</span><span class=o>=</span><span class=s>4G</span>
+</span></span><span class=line><span class=cl><span class=na>MemoryHigh</span><span class=o>=</span><span class=s>3G</span>
+</span></span><span class=line><span class=cl><span class=na>MemorySwapMax</span><span class=o>=</span><span class=s>1G</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># CPU limits</span>
+</span></span><span class=line><span class=cl><span class=na>CPUQuota</span><span class=o>=</span><span class=s>200%</span>
+</span></span><span class=line><span class=cl><span class=na>CPUWeight</span><span class=o>=</span><span class=s>100</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Process limits</span>
+</span></span><span class=line><span class=cl><span class=na>TasksMax</span><span class=o>=</span><span class=s>512</span>
+</span></span><span class=line><span class=cl><span class=na>LimitNOFILE</span><span class=o>=</span><span class=s>65536</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># I/O limits</span>
+</span></span><span class=line><span class=cl><span class=na>IOWeight</span><span class=o>=</span><span class=s>100</span>
+</span></span><span class=line><span class=cl><span class=na>IOReadBandwidthMax</span><span class=o>=</span><span class=s>/dev/sda 50M</span>
+</span></span><span class=line><span class=cl><span class=na>IOWriteBandwidthMax</span><span class=o>=</span><span class=s>/dev/sda 30M</span>
+</span></span></code></pre></td></tr></table></div></div><p>Apply changes:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Reload systemd configuration</span>
+</span></span><span class=line><span class=cl>sudo systemctl daemon-reload
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Restart the service with new limits</span>
+</span></span><span class=line><span class=cl>sudo systemctl restart myapp
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Set limits at runtime without editing unit files</span>
+</span></span><span class=line><span class=cl>sudo systemctl set-property myapp.service <span class=nv>MemoryMax</span><span class=o>=</span>2G
+</span></span><span class=line><span class=cl>sudo systemctl set-property myapp.service <span class=nv>CPUQuota</span><span class=o>=</span>150%
+</span></span></code></pre></td></tr></table></div></div><h3 id=key-systemd-resource-control-directives>Key systemd Resource Control Directives</h3><table><thead><tr><th>Directive</th><th>Description</th><th>Example</th></tr></thead><tbody><tr><td><code>MemoryMax</code></td><td>Hard memory limit (OOM killed if exceeded)</td><td><code>MemoryMax=4G</code></td></tr><tr><td><code>MemoryHigh</code></td><td>Soft memory limit (throttled before OOM)</td><td><code>MemoryHigh=3G</code></td></tr><tr><td><code>CPUQuota</code></td><td>Maximum CPU usage percentage</td><td><code>CPUQuota=200%</code> (2 cores)</td></tr><tr><td><code>CPUWeight</code></td><td>Relative CPU priority (1–10000)</td><td><code>CPUWeight=100</code></td></tr><tr><td><code>TasksMax</code></td><td>Maximum number of processes/threads</td><td><code>TasksMax=512</code></td></tr><tr><td><code>LimitNOFILE</code></td><td>Maximum open file descriptors</td><td><code>LimitNOFILE=65536</code></td></tr><tr><td><code>IOWeight</code></td><td>Relative I/O priority (1–10000)</td><td><code>IOWeight=100</code></td></tr><tr><td><code>IOReadBandwidthMax</code></td><td>Max read bandwidth per device</td><td><code>IOReadBandwidthMax=/dev/sda 50M</code></td></tr></tbody></table><h3 id=monitoring-resource-usage>Monitoring Resource Usage</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Show resource usage for a service</span>
+</span></span><span class=line><span class=cl>systemctl status myapp.service
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Detailed resource accounting</span>
+</span></span><span class=line><span class=cl>systemd-cgtop
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Memory usage breakdown</span>
+</span></span><span class=line><span class=cl>systemctl show myapp.service --property<span class=o>=</span>MemoryCurrent
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># CPU usage</span>
+</span></span><span class=line><span class=cl>systemctl show myapp.service --property<span class=o>=</span>CPUUsageNSec
+</span></span></code></pre></td></tr></table></div></div><h2 id=cgroup-v2>cgroup v2</h2><p>cgroup v2 (Control Groups version 2) is the kernel-level resource management framework that underlies both pam_limits and systemd. It provides a unified hierarchy for managing CPU, memory, I/O, and other resources across process groups.</p><h3 id=understanding-the-cgroup-v2-hierarchy>Understanding the cgroup v2 Hierarchy</h3><p>cgroup v2 uses a single unified hierarchy at <code>/sys/fs/cgroup/</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># View the cgroup tree</span>
+</span></span><span class=line><span class=cl>mount <span class=p>|</span> grep cgroup
+</span></span><span class=line><span class=cl>ls /sys/fs/cgroup/
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># View cgroup controllers available</span>
+</span></span><span class=line><span class=cl>cat /sys/fs/cgroup/cgroup.controllers
+</span></span><span class=line><span class=cl><span class=c1># Output: cpu cpuset io memory pids rdma</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=creating-and-configuring-cgroups>Creating and Configuring cgroups</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Create a cgroup for a specific workload</span>
+</span></span><span class=line><span class=cl>sudo mkdir /sys/fs/cgroup/myworkload
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Enable controllers for this cgroup</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;+cpu +memory +io +pids&#34;</span> <span class=p>|</span> sudo tee /sys/fs/cgroup/cgroup.subtree_control
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Set memory limit (hard limit)</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;4294967296&#34;</span> <span class=p>|</span> sudo tee /sys/fs/cgroup/myworkload/memory.max
+</span></span><span class=line><span class=cl><span class=c1># 4GB = 4 * 1024 * 1024 * 1024 = 4294967296 bytes</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Set memory pressure threshold (soft limit)</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;3221225472&#34;</span> <span class=p>|</span> sudo tee /sys/fs/cgroup/myworkload/memory.high
+</span></span><span class=line><span class=cl><span class=c1># 3GB soft limit</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Set CPU weight (1–10000, default 100)</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;200&#34;</span> <span class=p>|</span> sudo tee /sys/fs/cgroup/myworkload/cpu.weight
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Set max CPU bandwidth (period + quota in microseconds)</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;100000 200000&#34;</span> <span class=p>|</span> sudo tee /sys/fs/cgroup/myworkload/cpu.max
+</span></span><span class=line><span class=cl><span class=c1># 200ms quota per 100ms period = 200% CPU (2 cores)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Set I/O weight</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;254:0 500&#34;</span> <span class=p>|</span> sudo tee /sys/fs/cgroup/myworkload/io.weight
+</span></span><span class=line><span class=cl><span class=c1># Major:minor device weight</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Add processes to the cgroup</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> &lt;pid&gt; <span class=p>|</span> sudo tee /sys/fs/cgroup/myworkload/cgroup.procs
+</span></span></code></pre></td></tr></table></div></div><h3 id=monitoring-cgroup-usage>Monitoring cgroup Usage</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Memory usage</span>
+</span></span><span class=line><span class=cl>cat /sys/fs/cgroup/myworkload/memory.current
+</span></span><span class=line><span class=cl>cat /sys/fs/cgroup/myworkload/memory.events
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># CPU usage</span>
+</span></span><span class=line><span class=cl>cat /sys/fs/cgroup/myworkload/cpu.stat
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># I/O usage</span>
+</span></span><span class=line><span class=cl>cat /sys/fs/cgroup/myworkload/io.stat
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Process count</span>
+</span></span><span class=line><span class=cl>cat /sys/fs/cgroup/myworkload/pids.current
+</span></span></code></pre></td></tr></table></div></div><h2 id=comparison-pam_limits-vs-systemd-vs-cgroup-v2>Comparison: pam_limits vs systemd vs cgroup v2</h2><table><thead><tr><th>Feature</th><th>pam_limits</th><th>systemd Resource Controls</th><th>cgroup v2</th></tr></thead><tbody><tr><td><strong>Scope</strong></td><td>Per-user login sessions</td><td>Per-service units</td><td>Arbitrary process groups</td></tr><tr><td><strong>Configuration</strong></td><td><code>/etc/security/limits.conf</code></td><td>Unit files or <code>systemctl set-property</code></td><td><code>/sys/fs/cgroup/</code> filesystem</td></tr><tr><td><strong>Memory Limits</strong></td><td>RSS only (via <code>rlimit</code>)</td><td>Hard + soft (MemoryMax + MemoryHigh)</td><td>Hard + soft (memory.max + memory.high)</td></tr><tr><td><strong>CPU Limits</strong></td><td>Total time only</td><td>Quota + weight</td><td>Quota + weight + CPUSET</td></tr><tr><td><strong>I/O Limits</strong></td><td>None</td><td>Bandwidth + weight + IOPS</td><td>Bandwidth + weight + IOPS</td></tr><tr><td><strong>Process Limits</strong></td><td>Per-user nproc</td><td>TasksMax per service</td><td>pids.max per cgroup</td></tr><tr><td><strong>Runtime Changes</strong></td><td>No (requires re-login)</td><td>Yes (<code>systemctl set-property</code>)</td><td>Yes (write to cgroup files)</td></tr><tr><td><strong>Persistence</strong></td><td>File-based (limits.conf)</td><td>Unit file-based</td><td>Requires recreation after reboot</td></tr><tr><td><strong>Ease of Use</strong></td><td>Simple for basic limits</td><td>Excellent for services</td><td>Complex, requires scripting</td></tr><tr><td><strong>Granularity</strong></td><td>User-level</td><td>Service-level</td><td>Process group-level</td></tr></tbody></table><h2 id=why-self-host-resource-limit-management>Why Self-Host Resource Limit Management?</h2><p>For self-hosted infrastructure, resource limit management is the foundation of server stability. Without proper limits, a single misbehaving service can cascade into a full system outage.</p><p><strong>Preventing resource starvation.</strong> In a self-hosted environment where multiple services share the same hardware, resource limits ensure fair allocation. Your database gets guaranteed memory, your web server gets CPU quota, and your monitoring agent gets I/O bandwidth — even when one service experiences a spike. For related system resource management, see our <a href=../2026-05-27-self-hosted-linux-oom-prevention-earlyoom-systemd-oomd-psi-guide/>Linux OOM prevention guide</a> which covers what happens when memory limits are exceeded.</p><p><strong>Cost-effective multi-tenancy.</strong> Resource limits enable safe multi-tenant hosting on shared hardware. By capping each tenant&rsquo;s CPU, memory, and I/O, you can pack more services onto a single server without risking noisy neighbor problems. This eliminates the need for dedicated hardware per service.</p><p><strong>Operational predictability.</strong> With systemd resource controls or cgroup v2 limits in place, you can predict exactly how much of each resource a service will consume under load. This makes capacity planning straightforward — you know that a 16 GB server can safely host four services with 3 GB MemoryMax each, with 4 GB reserved for the OS.</p><p><strong>No vendor lock-in.</strong> Linux cgroups and systemd are open-source and built into every major distribution. Unlike container orchestration platforms that require specific runtimes, cgroup v2 works with any process — containers, VMs, or bare-metal applications. For related process isolation techniques, see our <a href=../2026-05-24-self-hosted-linux-pid-namespace-isolation-unshare-bubblewrap-nsenter-guide/>PID namespace isolation guide</a>.</p><h2 id=best-practices-for-production>Best Practices for Production</h2><ol><li><p><strong>Set MemoryHigh before MemoryMax</strong> — MemoryHigh acts as a soft limit that triggers memory reclaim and throttling before the OOM killer activates. Set it to ~75% of MemoryMax for graceful degradation:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=k>[Service]</span>
+</span></span><span class=line><span class=cl><span class=na>MemoryHigh</span><span class=o>=</span><span class=s>3G</span>
+</span></span><span class=line><span class=cl><span class=na>MemoryMax</span><span class=o>=</span><span class=s>4G</span>
+</span></span></code></pre></td></tr></table></div></div></li><li><p><strong>Use CPUWeight instead of CPUQuota for general services</strong> — CPUWeight allows services to burst beyond their allocation when CPU is idle, while CPUQuota enforces a hard ceiling. Use weight for services that benefit from burst capacity.</p></li><li><p><strong>Set TasksMax for all internet-facing services</strong> — Fork bombs and connection storms can create thousands of processes. Set a reasonable TasksMax:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=k>[Service]</span>
+</span></span><span class=line><span class=cl><span class=na>TasksMax</span><span class=o>=</span><span class=s>1024</span>
+</span></span></code></pre></td></tr></table></div></div></li><li><p><strong>Monitor resource usage before setting limits</strong> — Use <code>systemd-cgtop</code> and <code>systemctl show</code> to understand current usage patterns before capping resources. Setting limits too low will cause service degradation.</p></li><li><p><strong>Test limit changes in staging</strong> — Always verify that new resource limits do not break application functionality. Test on a staging server with production-like load before deploying to production.</p></li></ol><h2 id=faq>FAQ</h2><h3 id=what-is-the-difference-between-memorymax-and-memoryhigh-in-systemd>What is the difference between MemoryMax and MemoryHigh in systemd?</h3><p>MemoryMax is a hard limit — if the service exceeds it, the kernel OOM killer terminates the process immediately. MemoryHigh is a soft limit — when exceeded, the kernel aggressively reclaims memory from the cgroup and throttles allocation, but does not kill the process. Use MemoryHigh as a warning threshold and MemoryMax as a safety ceiling.</p><h3 id=does-pam_limits-apply-to-systemd-services>Does pam_limits apply to systemd services?</h3><p>By default, no. systemd services do not go through the PAM login stack, so <code>/etc/security/limits.conf</code> does not affect them. However, you can enable PAM for systemd services by setting <code>PAMName=login</code> in the <code>[Service]</code> section of a unit file, though this is rarely recommended. Use systemd&rsquo;s native resource controls instead.</p><h3 id=can-i-set-cgroup-v2-limits-persistently-without-systemd>Can I set cgroup v2 limits persistently without systemd?</h3><p>Not directly. cgroup v2 hierarchy is recreated at each boot. For persistent cgroup configuration without systemd, you need a startup script that creates cgroups and sets limits, or use a tool like <code>cgmanager</code> or <code>libcgroup</code>&rsquo;s <code>cgconfig</code> service.</p><h3 id=how-do-i-find-which-cgroup-a-process-belongs-to>How do I find which cgroup a process belongs to?</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>cat /proc/&lt;pid&gt;/cgroup
+</span></span></code></pre></td></tr></table></div></div><p>This shows the cgroup path for each controller. In cgroup v2, all controllers share a single hierarchy, so there will be one path.</p><h3 id=what-happens-when-a-service-exceeds-its-memorymax-limit>What happens when a service exceeds its MemoryMax limit?</h3><p>The kernel&rsquo;s OOM killer terminates the offending process within that cgroup. systemd will restart the service according to its <code>Restart=</code> directive. Check <code>journalctl -u myapp.service</code> for OOM kill messages. To prevent restart storms, consider also setting <code>MemoryHigh</code> to trigger graceful memory reclaim before hitting the hard limit.</p><h3 id=is-cgroup-v2-enabled-by-default-on-my-distribution>Is cgroup v2 enabled by default on my distribution?</h3><p>Most modern distributions enable cgroup v2 by default: Ubuntu 22.04+, Fedora 31+, Debian 11+, RHEL 9+. Check with <code>stat -fc %T /sys/fs/cgroup/</code> — if it returns <code>cgroup2fs</code>, cgroup v2 is active. If it returns <code>tmpfs</code>, cgroup v1 is in use.</p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted Linux Process Resource Limits: systemd vs pam_limits vs cgroup v2 (2026)","description":"Comprehensive comparison of pam_limits, systemd resource controls, and cgroup v2 for managing Linux process resource limits. Includes configuration examples, monitoring tools, and production best practices.","datePublished":"2026-05-24","dateModified":"2026-05-24","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20Linux%20Process%20Resource%20Limits%3a%20systemd%20vs%20pam_limits%20vs%20cgroup%20v2%20%282026%29&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-24-self-hosted-linux-process-resource-limits-systemd-pam-limits-cgroup-v2-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-24-self-hosted-linux-process-resource-limits-systemd-pam-limits-cgroup-v2-guide%2f&t=Self-Hosted%20Linux%20Process%20Resource%20Limits%3a%20systemd%20vs%20pam_limits%20vs%20cgroup%20v2%20%282026%29" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/linux/ class=tag-link>Linux</a>
+<a href=/tags/cgroups/ class=tag-link>Cgroups</a>
+<a href=/tags/systemd/ class=tag-link>Systemd</a>
+<a href=/tags/resource-limits/ class=tag-link>Resource-Limits</a>
+<a href=/tags/system-administration/ class=tag-link>System-Administration</a>
+<a href=/tags/performance/ class=tag-link>Performance</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-05-24-self-hosted-linux-device-management-systemd-udevd-vs-eudev-vs-mdev-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted Linux Device Management: systemd-udevd vs eudev vs mdev (2026)</h3><div class=post-excerpt>Linux device management is the unsung hero of every self-hosted infrastructure. When you plug in a USB drive, insert a …</div><div class=post-footer><span class=post-date>May 24, 2026</span></div></a><a href=/posts/2026-05-24-self-hosted-linux-filesystem-event-monitoring-systemd-path-vs-inotifywait-vs-incron-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted Linux Filesystem Event Monitoring: systemd.path vs inotifywait vs incron (2026)</h3><div class=post-excerpt>Monitoring filesystem events on Linux servers is essential for automation workflows — triggering actions when files …</div><div class=post-footer><span class=post-date>May 24, 2026</span></div></a><a href=/posts/2026-05-24-self-hosted-linux-filesystem-mount-management-systemd-mount-vs-autofs-vs-systemd-automount-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted Linux Filesystem Mount Management: systemd.mount vs autofs vs systemd.automount (2026)</h3><div class=post-excerpt>Managing filesystem mounts on Linux servers is a fundamental operational task that directly impacts system reliability, …</div><div class=post-footer><span class=post-date>May 24, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>

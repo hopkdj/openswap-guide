@@ -1,0 +1,284 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted Linux I/O Priority Management: ionice vs cgroup io.weight vs ioprio_set | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-05-23-self-hosted-linux-io-priority-management-ionice-cgroup-iopriority-guide/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted Linux I/O Priority Management: ionice vs cgroup io.weight vs ioprio_set"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-05-23-self-hosted-linux-io-priority-management-ionice-cgroup-iopriority-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-05-23T00:00:00Z"><meta property="article:modified_time" content="2026-05-23T00:00:00Z"><meta property="article:tag" content="linux"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted Linux I/O Priority Management: ionice vs cgroup io.weight vs ioprio_set"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted Linux I\/O Priority Management: ionice vs cgroup io.weight vs ioprio_set","description":"\u003cp\u003eI\/O priority determines which processes get preferential access to disk bandwidth when multiple processes compete for storage throughput. On busy database servers running simultaneous backup jobs, log writes, and query workloads, unmanaged I\/O priority can cause critical operations to stall behind bulk data transfers. This guide compares three approaches to Linux I\/O priority management: \u003cstrong\u003eionice\u003c\/strong\u003e (per-process scheduling class), \u003cstrong\u003ecgroup v2 io.weight\u003c\/strong\u003e (hierarchical I\/O bandwidth allocation), and \u003cstrong\u003eioprio_set\u003c\/strong\u003e (programmatic syscall-based control).\u003c\/p\u003e","datePublished":"2026-05-23T00:00:00Z","dateModified":"2026-05-23T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-05-23-self-hosted-linux-io-priority-management-ionice-cgroup-iopriority-guide\/"},"keywords":["linux","system-administration","performance","io-priority"],"articleSection":"linux","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted Linux I\/O Priority Management: ionice vs cgroup io.weight vs ioprio_set","item":"https:\/\/www.pistack.xyz\/posts\/2026-05-23-self-hosted-linux-io-priority-management-ionice-cgroup-iopriority-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Linux</span>
+<span class="tag tag-purple">System-Administration</span>
+<span class="tag tag-purple">Performance</span></div><h1>Self-Hosted Linux I/O Priority Management: ionice vs cgroup io.weight vs ioprio_set</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>May 23, 2026</span>
+<span>8 min read</span>
+<span>Updated May 23, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#understanding-linux-io-scheduling-priority>Understanding Linux I/O Scheduling Priority</a></li><li><a href=#ionice--per-process-io-priority>ionice — Per-Process I/O Priority</a><ul><li><a href=#installation>Installation</a></li><li><a href=#basic-usage>Basic Usage</a></li><li><a href=#common-io-priority-patterns>Common I/O Priority Patterns</a></li><li><a href=#docker-compose-with-ionice>Docker Compose with ionice</a></li></ul></li><li><a href=#cgroup-v2-ioweight--hierarchical-io-bandwidth-allocation>cgroup v2 io.weight — Hierarchical I/O Bandwidth Allocation</a><ul><li><a href=#setting-up-cgroup-v2-io-control>Setting Up cgroup v2 I/O Control</a></li><li><a href=#ioweight-vs-iomax>io.weight vs io.max</a></li><li><a href=#docker-native-cgroup-io-control>Docker Native cgroup I/O Control</a></li><li><a href=#systemd-service-io-weight>Systemd Service I/O Weight</a></li></ul></li><li><a href=#ioprio_set--programmatic-io-priority-control>ioprio_set — Programmatic I/O Priority Control</a><ul><li><a href=#using-ioprio_set-from-c>Using ioprio_set from C</a></li><li><a href=#using-ioprio_set-from-python>Using ioprio_set from Python</a></li><li><a href=#when-to-use-ioprio_set-directly>When to Use ioprio_set Directly</a></li></ul></li><li><a href=#why-self-host-and-manage-io-priority-locally>Why Self-Host and Manage I/O Priority Locally?</a></li><li><a href=#choosing-the-right-io-priority-tool>Choosing the Right I/O Priority Tool</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#what-is-the-difference-between-ionice-and-ioprio_set>What is the difference between ionice and ioprio_set?</a></li><li><a href=#does-cgroup-v2-ioweight-work-with-all-io-schedulers>Does cgroup v2 io.weight work with all I/O schedulers?</a></li><li><a href=#can-i-set-io-priority-for-kernel-threads>Can I set I/O priority for kernel threads?</a></li><li><a href=#what-happens-to-io-priority-when-a-process-forks>What happens to I/O priority when a process forks?</a></li><li><a href=#how-do-i-check-the-current-io-scheduler>How do I check the current I/O scheduler?</a></li><li><a href=#should-i-use-ionice-or-cgroup-v2-for-container-environments>Should I use ionice or cgroup v2 for container environments?</a></li><li><a href=#does-io-priority-affect-ssd-and-nvme-performance>Does I/O priority affect SSD and NVMe performance?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><p>I/O priority determines which processes get preferential access to disk bandwidth when multiple processes compete for storage throughput. On busy database servers running simultaneous backup jobs, log writes, and query workloads, unmanaged I/O priority can cause critical operations to stall behind bulk data transfers. This guide compares three approaches to Linux I/O priority management: <strong>ionice</strong> (per-process scheduling class), <strong>cgroup v2 io.weight</strong> (hierarchical I/O bandwidth allocation), and <strong>ioprio_set</strong> (programmatic syscall-based control).</p><h2 id=understanding-linux-io-scheduling-priority>Understanding Linux I/O Scheduling Priority</h2><p>Linux uses the Completely Fair Queuing (CFQ) I/O scheduler (or its modern successors like BFQ and mq-deadline) to manage disk access. Each process is assigned an I/O scheduling class and priority level that determines its position in the disk request queue.</p><p>There are three I/O scheduling classes:</p><table><thead><tr><th>Class</th><th>Value</th><th>Description</th></tr></thead><tbody><tr><td><strong>Idle</strong></td><td>3</td><td>Only gets I/O time when no other process needs it</td></tr><tr><td><strong>Best Effort</strong></td><td>2</td><td>Default class, priority levels 0-7</td></tr><tr><td><strong>Real Time</strong></td><td>1</td><td>Highest priority, gets I/O before Best Effort processes</td></tr></tbody></table><table><thead><tr><th>Feature</th><th>ionice</th><th>cgroup v2 io.weight</th><th>ioprio_set syscall</th></tr></thead><tbody><tr><td><strong>Granularity</strong></td><td>Per-process</td><td>Per-cgroup hierarchy</td><td>Per-thread</td></tr><tr><td><strong>Scheduling</strong></td><td>Class + priority level</td><td>Weighted proportional</td><td>Class + priority level</td></tr><tr><td><strong>Persistence</strong></td><td>Per-launch</td><td>Persistent via cgroup config</td><td>Per-call</td></tr><tr><td><strong>Container Support</strong></td><td>Manual per-process</td><td>Native Docker/K8s support</td><td>Programmatic</td></tr><tr><td><strong>Hierarchical Control</strong></td><td>No</td><td>Yes</td><td>No</td></tr><tr><td><strong>BFQ Compatible</strong></td><td>Yes</td><td>Yes (io.weight)</td><td>Yes</td></tr><tr><td><strong>Setup Complexity</strong></td><td>Low</td><td>Medium</td><td>High (requires coding)</td></tr><tr><td><strong>Kernel Version</strong></td><td>2.6.13+</td><td>5.0+ (cgroup v2)</td><td>2.6.13+</td></tr></tbody></table><h2 id=ionice--per-process-io-priority>ionice — Per-Process I/O Priority</h2><p><strong>ionice</strong> sets or retrieves the I/O scheduling class and priority for processes. It is part of the util-linux package and works with any I/O scheduler that supports priority levels.</p><h3 id=installation>Installation</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Debian/Ubuntu (usually pre-installed)</span>
+</span></span><span class=line><span class=cl>sudo apt install -y util-linux
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># RHEL/CentOS/Fedora (usually pre-installed)</span>
+</span></span><span class=line><span class=cl>sudo dnf install -y util-linux
+</span></span></code></pre></td></tr></table></div></div><h3 id=basic-usage>Basic Usage</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Set Real Time priority (highest) for a process</span>
+</span></span><span class=line><span class=cl>sudo ionice -c <span class=m>1</span> ./database-backup
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Set Best Effort priority 0 (highest within class)</span>
+</span></span><span class=line><span class=cl>sudo ionice -c <span class=m>2</span> -n <span class=m>0</span> ./critical-app
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Set Best Effort priority 7 (lowest within class)</span>
+</span></span><span class=line><span class=cl>sudo ionice -c <span class=m>2</span> -n <span class=m>7</span> ./log-compression
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Set Idle class (only runs when disk is idle)</span>
+</span></span><span class=line><span class=cl>sudo ionice -c <span class=m>3</span> ./batch-report
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Change priority of running process (PID 1234)</span>
+</span></span><span class=line><span class=cl>sudo ionice -c <span class=m>2</span> -n <span class=m>0</span> -p <span class=m>1234</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Check current I/O priority</span>
+</span></span><span class=line><span class=cl>ionice -p <span class=m>1234</span>
+</span></span><span class=line><span class=cl><span class=c1># Output: idle</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=common-io-priority-patterns>Common I/O Priority Patterns</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Database queries: Real Time priority</span>
+</span></span><span class=line><span class=cl>sudo ionice -c <span class=m>1</span> ./postgres
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Backup jobs: Best Effort, low priority</span>
+</span></span><span class=line><span class=cl>sudo ionice -c <span class=m>2</span> -n <span class=m>6</span> ./pg_dump
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Log rotation: Idle class</span>
+</span></span><span class=line><span class=cl>sudo ionice -c <span class=m>3</span> ./logrotate
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Bulk data import: Best Effort, medium priority</span>
+</span></span><span class=line><span class=cl>sudo ionice -c <span class=m>2</span> -n <span class=m>4</span> ./data-importer
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-compose-with-ionice>Docker Compose with ionice</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>backup</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>postgres:16</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>entrypoint</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;ionice&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;-c&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;2&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;-n&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;6&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;pg_dump&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;-U&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;postgres&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;mydb&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./backups:/backups</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;no&#34;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=cgroup-v2-ioweight--hierarchical-io-bandwidth-allocation>cgroup v2 io.weight — Hierarchical I/O Bandwidth Allocation</h2><p><strong>cgroup v2</strong> introduces <code>io.weight</code> for proportional I/O bandwidth distribution across process groups. Unlike ionice which sets absolute priority levels, io.weight allocates I/O bandwidth proportionally based on weight values (1 to 10000, default 100).</p><h3 id=setting-up-cgroup-v2-io-control>Setting Up cgroup v2 I/O Control</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Verify cgroup v2 is enabled</span>
+</span></span><span class=line><span class=cl>stat -fc %T /sys/fs/cgroup/
+</span></span><span class=line><span class=cl><span class=c1># Output: cgroup2fs</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Create a cgroup for high-priority I/O</span>
+</span></span><span class=line><span class=cl>sudo mkdir /sys/fs/cgroup/high-io
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;1000&#34;</span> <span class=p>|</span> sudo tee /sys/fs/cgroup/high-io/io.weight
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Create a cgroup for low-priority I/O</span>
+</span></span><span class=line><span class=cl>sudo mkdir /sys/fs/cgroup/low-io
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;10&#34;</span> <span class=p>|</span> sudo tee /sys/fs/cgroup/low-io/io.weight
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Move a process to high-priority cgroup</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;1234&#34;</span> <span class=p>|</span> sudo tee /sys/fs/cgroup/high-io/cgroup.procs
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Move a process to low-priority cgroup</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;5678&#34;</span> <span class=p>|</span> sudo tee /sys/fs/cgroup/low-io/cgroup.procs
+</span></span></code></pre></td></tr></table></div></div><h3 id=ioweight-vs-iomax>io.weight vs io.max</h3><p>cgroup v2 provides two complementary I/O controls:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># io.weight: Proportional bandwidth (1-10000, default 100)</span>
+</span></span><span class=line><span class=cl><span class=c1># Higher weight = more bandwidth share during contention</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;500&#34;</span> <span class=p>|</span> sudo tee /sys/fs/cgroup/database/io.weight
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># io.max: Absolute I/O limits (max bytes/sec and max IOPS)</span>
+</span></span><span class=line><span class=cl><span class=c1># Format: MAJOR:MINOR rbps=BYTES wbps=BYTES riops=N wiops=N</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;8:0 rbps=104857600 wbps=52428800&#34;</span> <span class=p>|</span> sudo tee /sys/fs/cgroup/backup/io.max
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-native-cgroup-io-control>Docker Native cgroup I/O Control</h3><p>Docker supports cgroup v2 I/O limits natively:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>database</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>postgres:16</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>deploy</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>resources</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=nt>limits</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=c># Device-specific I/O limits (Docker 20.10+)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>          </span><span class=c># Note: requires cgroup v2 and device-mapper storage driver</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=c># Or use systemd delegate for io.weight:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>CGROUP_IO_WEIGHT=500</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=systemd-service-io-weight>Systemd Service I/O Weight</h3><p>systemd integrates with cgroup v2 for per-service I/O weighting:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=c1># /etc/systemd/system/postgresql.service.d/override.conf</span>
+</span></span><span class=line><span class=cl><span class=k>[Service]</span>
+</span></span><span class=line><span class=cl><span class=c1># I/O weight (1-10000, default 100)</span>
+</span></span><span class=line><span class=cl><span class=na>IOWeight</span><span class=o>=</span><span class=s>500</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Device-specific weight</span>
+</span></span><span class=line><span class=cl><span class=na>IODeviceWeight</span><span class=o>=</span><span class=s>/dev/sda 800</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Absolute I/O limits</span>
+</span></span><span class=line><span class=cl><span class=na>IOReadBandwidthMax</span><span class=o>=</span><span class=s>/dev/sda 100M</span>
+</span></span><span class=line><span class=cl><span class=na>IOWriteBandwidthMax</span><span class=o>=</span><span class=s>/dev/sda 50M</span>
+</span></span></code></pre></td></tr></table></div></div><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>sudo systemctl daemon-reload
+</span></span><span class=line><span class=cl>sudo systemctl restart postgresql
+</span></span></code></pre></td></tr></table></div></div><h2 id=ioprio_set--programmatic-io-priority-control>ioprio_set — Programmatic I/O Priority Control</h2><p>The <strong>ioprio_set</strong> syscall provides programmatic control over I/O priority from within applications. It is the underlying mechanism that ionice uses, but calling it directly from code gives you dynamic priority adjustment based on runtime conditions.</p><h3 id=using-ioprio_set-from-c>Using ioprio_set from C</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-c data-lang=c><span class=line><span class=cl><span class=cp>#include</span> <span class=cpf>&lt;stdio.h&gt;</span><span class=cp>
+</span></span></span><span class=line><span class=cl><span class=cp>#include</span> <span class=cpf>&lt;unistd.h&gt;</span><span class=cp>
+</span></span></span><span class=line><span class=cl><span class=cp>#include</span> <span class=cpf>&lt;sys/syscall.h&gt;</span><span class=cp>
+</span></span></span><span class=line><span class=cl><span class=cp>#include</span> <span class=cpf>&lt;linux/ioprio.h&gt;</span><span class=cp>
+</span></span></span><span class=line><span class=cl><span class=cp></span>
+</span></span><span class=line><span class=cl><span class=c1>// ioprio_set(class, classdata, pid)
+</span></span></span><span class=line><span class=cl><span class=c1>// class: 1=RT, 2=BE, 3=IDLE
+</span></span></span><span class=line><span class=cl><span class=c1>// classdata: 0-7 priority within class
+</span></span></span><span class=line><span class=cl><span class=c1></span>
+</span></span><span class=line><span class=cl><span class=kt>int</span> <span class=nf>set_io_priority</span><span class=p>(</span><span class=kt>int</span> <span class=n>pid</span><span class=p>,</span> <span class=kt>int</span> <span class=n>class</span><span class=p>,</span> <span class=kt>int</span> <span class=n>priority</span><span class=p>)</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=nf>syscall</span><span class=p>(</span><span class=n>SYS_ioprio_set</span><span class=p>,</span> <span class=mi>1</span><span class=p>,</span> <span class=n>pid</span><span class=p>,</span> <span class=p>(</span><span class=n>class</span> <span class=o>&lt;&lt;</span> <span class=mi>13</span><span class=p>)</span> <span class=o>|</span> <span class=n>priority</span><span class=p>);</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=kt>int</span> <span class=nf>main</span><span class=p>()</span> <span class=p>{</span>
+</span></span><span class=line><span class=cl>    <span class=c1>// Set Real Time priority for current process
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=nf>set_io_priority</span><span class=p>(</span><span class=mi>0</span><span class=p>,</span> <span class=mi>1</span><span class=p>,</span> <span class=mi>0</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    <span class=c1>// Set Best Effort priority 3 for PID 1234
+</span></span></span><span class=line><span class=cl><span class=c1></span>    <span class=nf>set_io_priority</span><span class=p>(</span><span class=mi>1234</span><span class=p>,</span> <span class=mi>2</span><span class=p>,</span> <span class=mi>3</span><span class=p>);</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=mi>0</span><span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=p>}</span>
+</span></span></code></pre></td></tr></table></div></div><p>Compile and run:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>gcc -o io-priority io-priority.c
+</span></span><span class=line><span class=cl>sudo ./io-priority
+</span></span></code></pre></td></tr></table></div></div><h3 id=using-ioprio_set-from-python>Using ioprio_set from Python</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=kn>import</span> <span class=nn>ctypes</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>os</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>libc</span> <span class=o>=</span> <span class=n>ctypes</span><span class=o>.</span><span class=n>CDLL</span><span class=p>(</span><span class=s2>&#34;libc.so.6&#34;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># ioprio_set syscall number</span>
+</span></span><span class=line><span class=cl><span class=n>SYS_ioprio_set</span> <span class=o>=</span> <span class=mi>251</span>  <span class=c1># x86_64</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>set_io_priority</span><span class=p>(</span><span class=n>pid</span><span class=p>,</span> <span class=n>ioclass</span><span class=p>,</span> <span class=n>priority</span><span class=p>):</span>
+</span></span><span class=line><span class=cl>    <span class=s2>&#34;&#34;&#34;Set I/O priority using ioprio_set syscall.&#34;&#34;&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=n>ioprio</span> <span class=o>=</span> <span class=p>(</span><span class=n>ioclass</span> <span class=o>&lt;&lt;</span> <span class=mi>13</span><span class=p>)</span> <span class=o>|</span> <span class=n>priority</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=n>libc</span><span class=o>.</span><span class=n>syscall</span><span class=p>(</span><span class=n>SYS_ioprio_set</span><span class=p>,</span> <span class=mi>1</span><span class=p>,</span> <span class=n>pid</span><span class=p>,</span> <span class=n>ioprio</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Set Best Effort priority 0 for current process</span>
+</span></span><span class=line><span class=cl><span class=n>set_io_priority</span><span class=p>(</span><span class=mi>0</span><span class=p>,</span> <span class=mi>2</span><span class=p>,</span> <span class=mi>0</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Set Idle class for PID 1234</span>
+</span></span><span class=line><span class=cl><span class=n>set_io_priority</span><span class=p>(</span><span class=mi>1234</span><span class=p>,</span> <span class=mi>3</span><span class=p>,</span> <span class=mi>0</span><span class=p>)</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=when-to-use-ioprio_set-directly>When to Use ioprio_set Directly</h3><p>Direct syscall access is useful when:</p><ul><li>Your application needs to adjust I/O priority dynamically based on workload phase</li><li>You are building a custom I/O scheduler or resource manager</li><li>You need per-thread I/O priority (ionice works per-process only)</li><li>You are developing a database engine with adaptive I/O scheduling</li></ul><h2 id=why-self-host-and-manage-io-priority-locally>Why Self-Host and Manage I/O Priority Locally?</h2><p>Managing I/O priority on your own servers gives you fine-grained control over disk bandwidth allocation that shared cloud storage cannot provide. Cloud block storage typically uses QoS tiers (standard, premium, ultra) that apply uniformly to all processes on the instance.</p><p>On bare-metal servers with local NVMe or SAS storage, I/O priority management ensures that critical database writes are never delayed by bulk backup operations. Log-intensive applications benefit from assigning low I/O priority to log compression and archival tasks, keeping disk bandwidth available for active transaction processing.</p><p>For related storage optimization, see our <a href=../2026-05-22-self-hosted-linux-io-scheduler-bfq-mq-deadline-kyber-guide/>Linux I/O Schedulers comparison</a> for disk scheduler selection and <a href=../2026-05-29-self-hosted-linux-compressed-swap-management-zram-generator-systemd-swap-zramd-guide/>Linux Compressed Swap guide</a> for memory-I/O tradeoff management. Our <a href=../2026-05-22-self-hosted-linux-performance-profiling-perf-bcc-tools-sysstat-guide/>Linux Performance Profiling guide</a> covers I/O bottleneck identification tools.</p><h2 id=choosing-the-right-io-priority-tool>Choosing the Right I/O Priority Tool</h2><table><thead><tr><th>Scenario</th><th>Recommended Tool</th></tr></thead><tbody><tr><td>Simple per-process priority</td><td>ionice</td></tr><tr><td>Container orchestration</td><td>cgroup v2 io.weight</td></tr><tr><td>Dynamic runtime adjustment</td><td>ioprio_set syscall</td></tr><tr><td>Systemd service management</td><td>IOWeight in service unit</td></tr><tr><td>Database vs backup separation</td><td>ionice (database RT, backup Idle)</td></tr><tr><td>Multi-tenant server</td><td>cgroup v2 io.weight per tenant</td></tr><tr><td>Custom application logic</td><td>ioprio_set from application code</td></tr></tbody></table><h2 id=faq>FAQ</h2><h3 id=what-is-the-difference-between-ionice-and-ioprio_set>What is the difference between ionice and ioprio_set?</h3><p>ionice is a command-line wrapper around the ioprio_set syscall. ionice sets I/O priority for a process at launch or for an existing process by PID. ioprio_set is the underlying Linux syscall that can be called from any programming language, enabling dynamic priority changes from within running applications based on workload conditions.</p><h3 id=does-cgroup-v2-ioweight-work-with-all-io-schedulers>Does cgroup v2 io.weight work with all I/O schedulers?</h3><p>cgroup v2 io.weight works with the BFQ and mq-deadline I/O schedulers. It does not work with the <code>none</code> scheduler (typically used for NVMe devices that handle their own scheduling). To check your current scheduler: <code>cat /sys/block/sda/queue/scheduler</code>. If your device uses the <code>none</code> scheduler, use <code>io.max</code> for absolute limits instead of <code>io.weight</code>.</p><h3 id=can-i-set-io-priority-for-kernel-threads>Can I set I/O priority for kernel threads?</h3><p>Yes, but with limitations. ionice can set priority for kernel threads using the <code>-p</code> flag with the kernel thread PID. However, many kernel threads ignore user-set I/O priority and use their own internal scheduling. For cgroup v2, moving kernel threads to a specific cgroup (via <code>cgroup.procs</code>) applies the cgroup I/O policy to them.</p><h3 id=what-happens-to-io-priority-when-a-process-forks>What happens to I/O priority when a process forks?</h3><p>Child processes inherit the I/O priority of their parent. If you launch a process with <code>ionice -c 1 ./parent</code>, any child processes spawned by <code>./parent</code> will also have Real Time I/O priority. To override this, the child must explicitly set its own priority or be moved to a different cgroup.</p><h3 id=how-do-i-check-the-current-io-scheduler>How do I check the current I/O scheduler?</h3><p>Run <code>cat /sys/block/&lt;device>/queue/scheduler</code>. The active scheduler is shown in brackets: <code>[mq-deadline] none</code>. Common schedulers include <code>mq-deadline</code> (multi-queue deadline), <code>bfq</code> (Budget Fair Queuing), <code>kyber</code> (low-latency), and <code>none</code> (no scheduler, device handles ordering).</p><h3 id=should-i-use-ionice-or-cgroup-v2-for-container-environments>Should I use ionice or cgroup v2 for container environments?</h3><p>Use cgroup v2 io.weight for container environments. Docker and Kubernetes natively support cgroup resource controls, making it easier to set I/O limits and weights per container. ionice requires manual configuration inside each container or wrapping container entrypoint commands, which is less maintainable at scale.</p><h3 id=does-io-priority-affect-ssd-and-nvme-performance>Does I/O priority affect SSD and NVMe performance?</h3><p>Yes, but the impact differs from spinning disks. On SSDs and NVMe drives, I/O priority affects queue ordering rather than mechanical seek optimization. Higher priority requests are processed first in the device queue, reducing latency for critical operations. However, NVMe devices with many parallel queues may show less dramatic priority differentiation than traditional SATA SSDs.</p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted Linux I/O Priority Management: ionice vs cgroup io.weight vs ioprio_set","description":"Compare ionice, cgroup v2 io.weight, and ioprio_set syscall for Linux I/O priority management. Learn per-process scheduling, hierarchical bandwidth allocation, and programmatic I/O control.","datePublished":"2026-05-23","dateModified":"2026-05-23","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20Linux%20I%2fO%20Priority%20Management%3a%20ionice%20vs%20cgroup%20io.weight%20vs%20ioprio_set&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-23-self-hosted-linux-io-priority-management-ionice-cgroup-iopriority-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-23-self-hosted-linux-io-priority-management-ionice-cgroup-iopriority-guide%2f&t=Self-Hosted%20Linux%20I%2fO%20Priority%20Management%3a%20ionice%20vs%20cgroup%20io.weight%20vs%20ioprio_set" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/linux/ class=tag-link>Linux</a>
+<a href=/tags/system-administration/ class=tag-link>System-Administration</a>
+<a href=/tags/performance/ class=tag-link>Performance</a>
+<a href=/tags/io-priority/ class=tag-link>Io-Priority</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-05-23-self-hosted-linux-cpu-affinity-management-taskset-numactl-cset-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted Linux CPU Affinity Management: taskset vs numactl vs cset</h3><div class=post-excerpt>CPU affinity controls which processor cores execute specific processes on a Linux system. On multi-core servers running …</div><div class=post-footer><span class=post-date>May 23, 2026</span></div></a><a href=/posts/2026-05-23-self-hosted-linux-interrupt-management-irqbalance-tuned-irq-affinity-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted Linux Interrupt Management: irqbalance vs tuned vs Manual IRQ Affinity</h3><div class=post-excerpt>Hardware interrupts are the backbone of Linux system responsiveness — every network packet, disk I/O operation, and USB …</div><div class=post-footer><span class=post-date>May 23, 2026</span></div></a><a href=/posts/2026-05-23-linux-open-file-inspection-lsof-fuser-proc-pid-fd-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Linux Open File Inspection: lsof vs fuser vs /proc/PID/fd — Self-Hosted Process File Monitoring</h3><div class=post-excerpt>When a Linux server runs out of disk space due to deleted-but-still-open files, or when you need to figure out which …</div><div class=post-footer><span class=post-date>May 23, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>

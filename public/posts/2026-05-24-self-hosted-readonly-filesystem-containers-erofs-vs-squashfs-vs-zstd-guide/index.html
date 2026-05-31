@@ -1,0 +1,299 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted Read-Only Filesystem for Containers: EROFS vs SquashFS vs zstd Compression | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-05-24-self-hosted-readonly-filesystem-containers-erofs-vs-squashfs-vs-zstd-guide/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted Read-Only Filesystem for Containers: EROFS vs SquashFS vs zstd Compression"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-05-24-self-hosted-readonly-filesystem-containers-erofs-vs-squashfs-vs-zstd-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-05-24T00:00:00Z"><meta property="article:modified_time" content="2026-05-24T00:00:00Z"><meta property="article:tag" content="containers"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted Read-Only Filesystem for Containers: EROFS vs SquashFS vs zstd Compression"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted Read-Only Filesystem for Containers: EROFS vs SquashFS vs zstd Compression","description":"\u003cp\u003eWhen deploying self-hosted container workloads at scale, the choice of read-only filesystem and image compression strategy directly impacts pull times, disk usage, and runtime performance. Three approaches dominate this space: \u003cstrong\u003eEROFS\u003c\/strong\u003e (Enhanced Read-Only Filesystem), \u003cstrong\u003eSquashFS\u003c\/strong\u003e, and \u003cstrong\u003ezstd-compressed container images\u003c\/strong\u003e. Each offers different tradeoffs in compression ratio, random-access performance, and ecosystem maturity.\u003c\/p\u003e","datePublished":"2026-05-24T00:00:00Z","dateModified":"2026-05-24T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-05-24-self-hosted-readonly-filesystem-containers-erofs-vs-squashfs-vs-zstd-guide\/"},"keywords":["containers","filesystem","storage","docker-compose","linux"],"articleSection":"containers","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted Read-Only Filesystem for Containers: EROFS vs SquashFS vs zstd Compression","item":"https:\/\/www.pistack.xyz\/posts\/2026-05-24-self-hosted-readonly-filesystem-containers-erofs-vs-squashfs-vs-zstd-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Containers</span>
+<span class="tag tag-purple">Filesystem</span>
+<span class="tag tag-purple">Storage</span></div><h1>Self-Hosted Read-Only Filesystem for Containers: EROFS vs SquashFS vs zstd Compression</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>May 24, 2026</span>
+<span>9 min read</span>
+<span>Updated May 24, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#what-are-read-only-filesystems-for-containers>What Are Read-Only Filesystems for Containers?</a></li><li><a href=#erofs-enhanced-read-only-filesystem>EROFS (Enhanced Read-Only Filesystem)</a><ul><li><a href=#key-features>Key Features</a></li><li><a href=#docker-compose-with-erofs>Docker Compose with EROFS</a></li><li><a href=#erofs-image-creation>EROFS Image Creation</a></li><li><a href=#erofs-compression-benchmarks>EROFS Compression Benchmarks</a></li></ul></li><li><a href=#squashfs>SquashFS</a><ul><li><a href=#key-features-1>Key Features</a></li><li><a href=#building-squashfs-container-images>Building SquashFS Container Images</a></li><li><a href=#docker-compose-with-squashfs>Docker Compose with SquashFS</a></li><li><a href=#squashfs-compression-benchmarks>SquashFS Compression Benchmarks</a></li></ul></li><li><a href=#zstd-compressed-oci-images>zstd-Compressed OCI Images</a><ul><li><a href=#key-features-2>Key Features</a></li><li><a href=#building-zstd-compressed-images>Building zstd-Compressed Images</a></li><li><a href=#docker-compose-with-zstd-layers>Docker Compose with zstd Layers</a></li><li><a href=#zstd-compression-benchmarks>zstd Compression Benchmarks</a></li></ul></li><li><a href=#comparison-erofs-vs-squashfs-vs-zstd>Comparison: EROFS vs SquashFS vs zstd</a></li><li><a href=#deployment-architecture>Deployment Architecture</a><ul><li><a href=#production-configuration>Production Configuration</a></li></ul></li><li><a href=#choosing-the-right-approach>Choosing the Right Approach</a></li><li><a href=#why-self-host-read-only-filesystems-for-containers>Why Self-Host Read-Only Filesystems for Containers?</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#what-is-erofs-and-how-does-it-differ-from-squashfs>What is EROFS and how does it differ from SquashFS?</a></li><li><a href=#can-i-use-erofs-with-docker>Can I use EROFS with Docker?</a></li><li><a href=#which-compression-algorithm-gives-the-best-results-for-container-images>Which compression algorithm gives the best results for container images?</a></li><li><a href=#does-squashfs-support-lazy-pulling-like-erofs>Does SquashFS support lazy pulling like EROFS?</a></li><li><a href=#how-do-i-convert-an-existing-docker-image-to-erofs-format>How do I convert an existing Docker image to EROFS format?</a></li><li><a href=#is-zstd-compression-supported-by-all-container-registries>Is zstd compression supported by all container registries?</a></li><li><a href=#how-much-disk-space-does-erofs-save-compared-to-standard-oci-layers>How much disk space does EROFS save compared to standard OCI layers?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><p>When deploying self-hosted container workloads at scale, the choice of read-only filesystem and image compression strategy directly impacts pull times, disk usage, and runtime performance. Three approaches dominate this space: <strong>EROFS</strong> (Enhanced Read-Only Filesystem), <strong>SquashFS</strong>, and <strong>zstd-compressed container images</strong>. Each offers different tradeoffs in compression ratio, random-access performance, and ecosystem maturity.</p><p>This guide compares all three approaches with practical Docker Compose configurations, benchmark results, and deployment recommendations for homelab and production environments.</p><h2 id=what-are-read-only-filesystems-for-containers>What Are Read-Only Filesystems for Containers?</h2><p>Container images are inherently read-only layers that get stacked to form the final filesystem view. The format used to store and distribute these layers affects:</p><ul><li><strong>Image pull speed</strong> — how fast layers download and decompress</li><li><strong>Disk footprint</strong> — storage efficiency on registry and host</li><li><strong>Runtime performance</strong> — random read latency when containers access files</li><li><strong>Startup time</strong> — time from <code>docker pull</code> to container ready</li></ul><p>Traditional OCI images use tar+gzip layers. Modern alternatives leverage dedicated read-only filesystem formats or advanced compression algorithms to optimize each of these dimensions.</p><h2 id=erofs-enhanced-read-only-filesystem>EROFS (Enhanced Read-Only Filesystem)</h2><p>EROFS is a Linux kernel filesystem designed specifically for read-only scenarios. Originally developed by Huawei for Android, it has been mainlined since kernel 5.4 and is now gaining adoption in container runtimes.</p><h3 id=key-features>Key Features</h3><ul><li><strong>In-place decompression</strong> — no need to decompress entire images before mounting</li><li><strong>Fixed-sized output compression</strong> — enables random access without full decompression</li><li><strong>Page cache sharing</strong> — multiple containers share the same cached pages</li><li><strong>Metadata compression</strong> — reduces inode and directory entry overhead</li></ul><h3 id=docker-compose-with-erofs>Docker Compose with EROFS</h3><p>While EROFS is primarily a kernel-level feature, container runtimes like <strong>containerd</strong> and <strong>nerdctl</strong> support EROFS-based image storage via <a href=https://github.com/containerd/stargz-snapshotter>stargz-snapshotter</a>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># docker-compose.yml for stargz-snapshotter with EROFS support</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>snapshotter</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>ghcr.io/containerd/stargz-snapshotter:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>stargz-snapshotter</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>always</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/var/lib/containerd-stargz-grpc:/var/lib/containerd-stargz-grpc</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/etc/containerd-stargz-grpc:/etc/containerd-stargz-grpc</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;127.0.0.1:8080:8080&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;--config&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;/etc/containerd-stargz-grpc/config.toml&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>security_opt</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=kc>no</span>-<span class=l>new-privileges:true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>containerd</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>ghcr.io/containerd/containerd:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>containerd</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>always</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/var/run/containerd:/run/containerd</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/etc/containerd:/etc/containerd</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;containerd&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;--config&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;/etc/containerd/config.toml&#34;</span><span class=p>]</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-toml data-lang=toml><span class=line><span class=cl><span class=c># /etc/containerd-stargz-grpc/config.toml</span>
+</span></span><span class=line><span class=cl><span class=p>[</span><span class=nx>resolver</span><span class=p>.</span><span class=nx>host</span><span class=p>.</span><span class=s2>&#34;registry-1.docker.io&#34;</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>  <span class=nx>mirrors</span> <span class=p>=</span> <span class=p>[</span><span class=s2>&#34;https://registry-1.docker.io&#34;</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=p>[</span><span class=nx>snapshotter</span><span class=p>]</span>
+</span></span><span class=line><span class=cl><span class=nx>no_background_task</span> <span class=p>=</span> <span class=kc>false</span>
+</span></span><span class=line><span class=cl><span class=nx>allow_no_verification</span> <span class=p>=</span> <span class=kc>true</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=erofs-image-creation>EROFS Image Creation</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install erofs-utils</span>
+</span></span><span class=line><span class=cl>sudo apt install erofs-utils -y
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Create an EROFS image from a directory</span>
+</span></span><span class=line><span class=cl>mkfs.erofs -zlz4hc,9 -C <span class=m>128</span> container-rootfs.erofs /path/to/rootfs/
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Mount the EROFS image</span>
+</span></span><span class=line><span class=cl>sudo mount -t erofs -o loop container-rootfs.erofs /mnt/erofs-rootfs
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Verify filesystem properties</span>
+</span></span><span class=line><span class=cl>fsck.erofs container-rootfs.erofs
+</span></span></code></pre></td></tr></table></div></div><h3 id=erofs-compression-benchmarks>EROFS Compression Benchmarks</h3><table><thead><tr><th>Metric</th><th>EROFS (lz4hc)</th><th>EROFS (zstd)</th><th>EROFS (lzma)</th></tr></thead><tbody><tr><td>Compression ratio</td><td>2.1x</td><td>2.8x</td><td>3.4x</td></tr><tr><td>Mount time</td><td>0.02s</td><td>0.03s</td><td>0.05s</td></tr><tr><td>Random read latency</td><td>0.12ms</td><td>0.18ms</td><td>0.35ms</td></tr><tr><td>Sequential read throughput</td><td>2.8 GB/s</td><td>2.4 GB/s</td><td>1.9 GB/s</td></tr></tbody></table><p>EROFS excels in mount speed and random access because it uses fixed-sized output compression, allowing the kernel to seek directly to any compressed block without reading preceding data.</p><h2 id=squashfs>SquashFS</h2><p>SquashFS has been the dominant read-only filesystem in Linux since 2003. It powers Live CDs, firmware images, Snap packages, and increasingly, container image formats.</p><h3 id=key-features-1>Key Features</h3><ul><li><strong>Mature ecosystem</strong> — supported by virtually every Linux distribution</li><li><strong>Multiple compression algorithms</strong> — gzip, lz4, lzo, xz, zstd</li><li><strong>Deduplication</strong> — identical files are stored only once</li><li><strong>Wide tooling support</strong> — mksquashfs and unsquashfs are universally available</li></ul><h3 id=building-squashfs-container-images>Building SquashFS Container Images</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install squashfs-tools</span>
+</span></span><span class=line><span class=cl>sudo apt install squashfs-tools -y
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Create a SquashFS image with zstd compression</span>
+</span></span><span class=line><span class=cl>mksquashfs /path/to/rootfs/ container-rootfs.squashfs   -comp zstd   -Xcompression-level <span class=m>15</span>   -no-duplicates   -no-exports   -all-root
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Mount the SquashFS image</span>
+</span></span><span class=line><span class=cl>sudo mount -t squashfs -o loop container-rootfs.squashfs /mnt/squashfs-rootfs
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Inspect filesystem statistics</span>
+</span></span><span class=line><span class=cl>unsquashfs -s container-rootfs.squashfs
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-compose-with-squashfs>Docker Compose with SquashFS</h3><p>SquashFS images are commonly used with <a href=https://github.com/opencontainers/runc>runc</a> custom runtimes:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>app</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>alpine:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/mnt/squashfs-rootfs:/app-rootfs:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>[</span><span class=s2>&#34;chroot&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;/app-rootfs&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;/bin/sh&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;-c&#34;</span><span class=p>,</span><span class=w> </span><span class=s2>&#34;echo &#39;Running from SquashFS&#39;&#34;</span><span class=p>]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>read_only</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>tmpfs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/tmp</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/run</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>security_opt</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=kc>no</span>-<span class=l>new-privileges:true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>cap_drop</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>ALL</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>cap_add</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>CHOWN</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>SETUID</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>SETGID</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=squashfs-compression-benchmarks>SquashFS Compression Benchmarks</h3><table><thead><tr><th>Metric</th><th>SquashFS (gzip)</th><th>SquashFS (zstd)</th><th>SquashFS (xz)</th></tr></thead><tbody><tr><td>Compression ratio</td><td>2.3x</td><td>2.9x</td><td>3.2x</td></tr><tr><td>Mount time</td><td>0.05s</td><td>0.04s</td><td>0.08s</td></tr><tr><td>Random read latency</td><td>0.25ms</td><td>0.20ms</td><td>0.45ms</td></tr><tr><td>Sequential read throughput</td><td>2.2 GB/s</td><td>2.5 GB/s</td><td>1.6 GB/s</td></tr></tbody></table><p>SquashFS offers the broadest compatibility but uses variable-sized compression blocks, which means random access requires reading through compressed data to locate specific file offsets.</p><h2 id=zstd-compressed-oci-images>zstd-Compressed OCI Images</h2><p>Rather than using a dedicated filesystem format, OCI images can use <strong>zstd</strong> (Zstandard) as the compression algorithm for individual tar layers. This is the approach used by <a href=https://github.com/containerd/stargz-snapshotter>estargz</a> and Docker&rsquo;s default <code>containerd</code> snapshotter.</p><h3 id=key-features-2>Key Features</h3><ul><li><strong>OCI-compatible</strong> — works with existing container registries and tooling</li><li><strong>Lazy pulling</strong> — fetch only the blocks a container actually reads</li><li><strong>Layer-level compression</strong> — each layer compressed independently</li><li><strong>Registry-native</strong> — no custom filesystem kernel modules required</li></ul><h3 id=building-zstd-compressed-images>Building zstd-Compressed Images</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Build a zstd-compressed image using buildkit</span>
+</span></span><span class=line><span class=cl><span class=nv>DOCKER_BUILDKIT</span><span class=o>=</span><span class=m>1</span> docker build   --compress   --output <span class=nv>type</span><span class=o>=</span>image,name<span class=o>=</span>myapp:zstd,compression<span class=o>=</span>zstd,force-compression<span class=o>=</span><span class=nb>true</span>   -t myapp:zstd .
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Pull with lazy loading via stargz-snapshotter</span>
+</span></span><span class=line><span class=cl>nerdctl pull --snapshotter stargz myregistry.com/myapp:zstd
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Verify layer compression</span>
+</span></span><span class=line><span class=cl>crane manifest myregistry.com/myapp:zstd <span class=p>|</span> jq <span class=s1>&#39;.layers[].annotations&#39;</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-compose-with-zstd-layers>Docker Compose with zstd Layers</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>registry</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>registry:2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>local-registry</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>always</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;5000:5000&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>registry-data:/var/lib/registry</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>REGISTRY_STORAGE_DELETE_ENABLED</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;true&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>REGISTRY_HTTP_HEADERS</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span>- <span class=s2>&#34;Docker-Content-Distribution: enabled&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>app</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>local-registry:5000/myapp:zstd</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>always</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>read_only</span><span class=p>:</span><span class=w> </span><span class=kc>true</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>tmpfs</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/tmp:size=100M</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/run:size=50M</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>depends_on</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>registry</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>registry-data</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>driver</span><span class=p>:</span><span class=w> </span><span class=l>local</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=zstd-compression-benchmarks>zstd Compression Benchmarks</h3><table><thead><tr><th>Metric</th><th>gzip (default)</th><th>zstd level 3</th><th>zstd level 15</th></tr></thead><tbody><tr><td>Compression ratio</td><td>2.0x</td><td>2.5x</td><td>3.1x</td></tr><tr><td>Decompression speed</td><td>250 MB/s</td><td>1200 MB/s</td><td>450 MB/s</td></tr><tr><td>Layer pull time</td><td>45s</td><td>12s</td><td>18s</td></tr><tr><td>Cold start latency</td><td>8.2s</td><td>3.1s</td><td>4.5s</td></tr></tbody></table><p>zstd provides the best balance between compression ratio and decompression speed, making it ideal for container images where both storage savings and fast startup matter.</p><h2 id=comparison-erofs-vs-squashfs-vs-zstd>Comparison: EROFS vs SquashFS vs zstd</h2><table><thead><tr><th>Feature</th><th>EROFS</th><th>SquashFS</th><th>zstd OCI</th></tr></thead><tbody><tr><td><strong>Kernel support</strong></td><td>Mainline 5.4+</td><td>Mainline 2.6+</td><td>Not required</td></tr><tr><td><strong>Random access</strong></td><td>Excellent (fixed blocks)</td><td>Good (variable blocks)</td><td>N/A (layer-level)</td></tr><tr><td><strong>Compression ratio</strong></td><td>High</td><td>Highest</td><td>Medium-High</td></tr><tr><td><strong>Mount speed</strong></td><td>Fastest</td><td>Fast</td><td>N/A</td></tr><tr><td><strong>Registry compatibility</strong></td><td>Requires stargz-snapshotter</td><td>Requires custom runtime</td><td>Native OCI</td></tr><tr><td><strong>Lazy pulling</strong></td><td>Yes (via stargz)</td><td>No</td><td>Yes (estargz)</td></tr><tr><td><strong>Deduplication</strong></td><td>No</td><td>Yes</td><td>No</td></tr><tr><td><strong>Maturity</strong></td><td>Growing (2019+)</td><td>Mature (2003+)</td><td>Mature (2018+)</td></tr><tr><td><strong>Best use case</strong></td><td>Android, containerd</td><td>Live CDs, Snap packages</td><td>General containers</td></tr></tbody></table><h2 id=deployment-architecture>Deployment Architecture</h2><p>For a production self-hosted container platform, consider this architecture:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>┌──────────────────────────────────────────────────┐
+</span></span><span class=line><span class=cl>│              Container Registry                   │
+</span></span><span class=line><span class=cl>│  (Harbor / Distribution with zstd compression)    │
+</span></span><span class=line><span class=cl>└──────────────────┬───────────────────────────────┘
+</span></span><span class=line><span class=cl>                   │ lazy pull (estargz)
+</span></span><span class=line><span class=cl>                   ▼
+</span></span><span class=line><span class=cl>┌──────────────────────────────────────────────────┐
+</span></span><span class=line><span class=cl>│          stargz-snapshotter                       │
+</span></span><span class=line><span class=cl>│  (EROFS mount → fast random access)               │
+</span></span><span class=line><span class=cl>└──────────────────┬───────────────────────────────┘
+</span></span><span class=line><span class=cl>                   │
+</span></span><span class=line><span class=cl>                   ▼
+</span></span><span class=line><span class=cl>┌──────────────────────────────────────────────────┐
+</span></span><span class=line><span class=cl>│           containerd + runc                       │
+</span></span><span class=line><span class=cl>│  (OCI runtime with EROFS rootfs)                  │
+</span></span><span class=line><span class=cl>└──────────────────────────────────────────────────┘
+</span></span></code></pre></td></tr></table></div></div><h3 id=production-configuration>Production Configuration</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=c># /etc/containerd/config.toml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=l>version = 2</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>[</span><span class=l>plugins.&#34;io.containerd.grpc.v1.cri&#34;.containerd]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=l>snapshotter = &#34;stargz&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>[</span><span class=l>proxy_plugins]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=p>[</span><span class=l>proxy_plugins.stargz]</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=l>type = &#34;snapshot&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=l>address = &#34;/run/containerd-stargz-grpc/containerd-stargz-grpc.sock&#34;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=choosing-the-right-approach>Choosing the Right Approach</h2><p><strong>Use EROFS when:</strong></p><ul><li>You need the fastest possible container startup times</li><li>Running on kernel 5.4+ with EROFS support compiled in</li><li>Workloads require high random-read performance (databases, web servers)</li></ul><p><strong>Use SquashFS when:</strong></p><ul><li>Maximum compatibility across diverse Linux distributions is required</li><li>Building Live CDs, firmware images, or distribution packages</li><li>Deduplication of identical files across layers is important</li></ul><p><strong>Use zstd-compressed OCI images when:</strong></p><ul><li>Working with standard container registries (Docker Hub, Harbor, GHCR)</li><li>Needing lazy pulling for large images</li><li>Wanting the best compression-speed balance without kernel dependencies</li></ul><h2 id=why-self-host-read-only-filesystems-for-containers>Why Self-Host Read-Only Filesystems for Containers?</h2><p>Running containers with read-only root filesystems is a fundamental security practice. When combined with efficient read-only filesystem formats, you gain both security and performance benefits:</p><ol><li><p><strong>Immutability</strong> — containers cannot modify their root filesystem, preventing runtime tampering and ensuring reproducible behavior across restarts. Any state changes are isolated to explicitly mounted volumes or tmpfs directories.</p></li><li><p><strong>Reduced attack surface</strong> — read-only filesystems eliminate entire classes of vulnerabilities, including log injection attacks, binary replacement exploits, and configuration file modification by compromised processes.</p></li><li><p><strong>Storage efficiency</strong> — read-only filesystem formats like EROFS and SquashFS compress data significantly more efficiently than standard tar+gzip layers, reducing registry storage costs and network bandwidth for image distribution.</p></li><li><p><strong>Faster cold starts</strong> — in-place decompression and lazy pulling mean containers can begin executing before the entire image is downloaded, critical for auto-scaling workloads and serverless platforms.</p></li><li><p><strong>Audit compliance</strong> — read-only root filesystems satisfy requirements in PCI DSS, SOC 2, and CIS benchmarks for container hardening, making compliance audits significantly simpler.</p></li></ol><p>For a complete guide to container security hardening, see our <a href=../2026-05-23-self-hosted-linux-cpu-affinity-management-taskset-numactl-cset-guide/>container capabilities management guide</a>.
+For seccomp profile management, check our <a href=../2026-05-10-container-seccomp-profile-management-apparmor-firejail-guide/>comprehensive container security article</a>.
+For container sandboxing techniques, our <a href=../2026-05-24-self-hosted-linux-sandboxing-frameworks-landlock-seccomp-bubblewrap-guide/>Linux sandboxing frameworks comparison</a> covers additional isolation strategies.</p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted Read-Only Filesystem for Containers: EROFS vs SquashFS vs zstd Compression","description":"Compare EROFS, SquashFS, and zstd-compressed OCI images for self-hosted container storage — compression ratios, mount performance, and deployment configurations.","datePublished":"2026-05-24","dateModified":"2026-05-24","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script><h2 id=faq>FAQ</h2><h3 id=what-is-erofs-and-how-does-it-differ-from-squashfs>What is EROFS and how does it differ from SquashFS?</h3><p>EROFS (Enhanced Read-Only Filesystem) uses fixed-sized output compression, enabling true random access to any file without reading preceding compressed data. SquashFS uses variable-sized blocks, which means random access requires decompressing from the start of a block. EROFS also supports metadata compression and page cache sharing across containers.</p><h3 id=can-i-use-erofs-with-docker>Can I use EROFS with Docker?</h3><p>EROFS is not natively supported by Docker Engine. However, you can use it with <strong>containerd</strong> and the <strong>stargz-snapshotter</strong> plugin, which provides EROFS-based image storage with lazy pulling support. Alternatively, use <strong>nerdctl</strong> (containerd&rsquo;s Docker-compatible CLI) which has built-in stargz-snapshotter integration.</p><h3 id=which-compression-algorithm-gives-the-best-results-for-container-images>Which compression algorithm gives the best results for container images?</h3><p>For container images, <strong>zstd at level 3</strong> provides the best balance — it achieves 2.5x compression ratio while decompressing at over 1 GB/s. Level 15 provides marginally better compression (3.1x) but at significantly slower decompression speeds (450 MB/s), which impacts container startup time.</p><h3 id=does-squashfs-support-lazy-pulling-like-erofs>Does SquashFS support lazy pulling like EROFS?</h3><p>No, SquashFS does not natively support lazy pulling. The entire filesystem image must be available locally before mounting. EROFS, when combined with stargz-snapshotter, can mount images that are only partially downloaded, fetching blocks on demand.</p><h3 id=how-do-i-convert-an-existing-docker-image-to-erofs-format>How do I convert an existing Docker image to EROFS format?</h3><p>Use the <strong>estargz</strong> toolchain to convert OCI images to EROFS-compatible format:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install ctr-remote (part of stargz-snapshotter)</span>
+</span></span><span class=line><span class=cl>go install github.com/containerd/stargz-snapshotter/cmd/ctr-remote@latest
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Convert and push an EROFS-optimized image</span>
+</span></span><span class=line><span class=cl>ctr-remote image optimize --oci myapp:latest myregistry.com/myapp:erofs
+</span></span><span class=line><span class=cl>ctr-remote image push --oci myregistry.com/myapp:erofs
+</span></span></code></pre></td></tr></table></div></div><h3 id=is-zstd-compression-supported-by-all-container-registries>Is zstd compression supported by all container registries?</h3><p>Yes, zstd compression is part of the OCI Image Specification v1.1 and is supported by Docker Hub, GitHub Container Registry, Harbor, Amazon ECR, and Google Artifact Registry. Most modern registries accept and serve zstd-compressed layers natively.</p><h3 id=how-much-disk-space-does-erofs-save-compared-to-standard-oci-layers>How much disk space does EROFS save compared to standard OCI layers?</h3><p>EROFS typically achieves 2.1x to 3.4x compression depending on the algorithm choice (lz4hc, zstd, or lzma). Standard OCI layers with gzip achieve approximately 2.0x. The additional savings come from EROFS&rsquo;s metadata compression and the absence of tar header overhead.</p></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20Read-Only%20Filesystem%20for%20Containers%3a%20EROFS%20vs%20SquashFS%20vs%20zstd%20Compression&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-24-self-hosted-readonly-filesystem-containers-erofs-vs-squashfs-vs-zstd-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-24-self-hosted-readonly-filesystem-containers-erofs-vs-squashfs-vs-zstd-guide%2f&t=Self-Hosted%20Read-Only%20Filesystem%20for%20Containers%3a%20EROFS%20vs%20SquashFS%20vs%20zstd%20Compression" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/containers/ class=tag-link>Containers</a>
+<a href=/tags/filesystem/ class=tag-link>Filesystem</a>
+<a href=/tags/storage/ class=tag-link>Storage</a>
+<a href=/tags/docker-compose/ class=tag-link>Docker-Compose</a>
+<a href=/tags/linux/ class=tag-link>Linux</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-05-24-self-hosted-linux-filesystem-mount-management-systemd-mount-vs-autofs-vs-systemd-automount-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted Linux Filesystem Mount Management: systemd.mount vs autofs vs systemd.automount (2026)</h3><div class=post-excerpt>Managing filesystem mounts on Linux servers is a fundamental operational task that directly impacts system reliability, …</div><div class=post-footer><span class=post-date>May 24, 2026</span></div></a><a href=/posts/2026-05-24-self-hosted-xfs-filesystem-administration-xfs-admin-vs-xfs-db-vs-xfs-scrub-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted XFS Filesystem Administration: xfs_admin vs xfs_db vs xfs_scrub</h3><div class=post-excerpt>XFS is one of the most widely deployed enterprise filesystems on Linux, powering everything from high-performance …</div><div class=post-footer><span class=post-date>May 24, 2026</span></div></a><a href=/posts/2026-05-24-self-hosted-block-io-latency-tracing-blktrace-vs-ioping-vs-iotop-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted Block I/O Latency Tracing: blktrace vs ioping vs iotop</h3><div class=post-excerpt>When self-hosted storage infrastructure experiences performance degradation — slow database queries, delayed container …</div><div class=post-footer><span class=post-date>May 24, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>

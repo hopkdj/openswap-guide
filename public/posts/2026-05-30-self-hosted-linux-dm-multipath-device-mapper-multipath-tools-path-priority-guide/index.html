@@ -1,0 +1,368 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted Linux DM Multipath: device-mapper-multipath vs Multipath-Tools vs Path Priority (2026) | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-05-30-self-hosted-linux-dm-multipath-device-mapper-multipath-tools-path-priority-guide/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted Linux DM Multipath: device-mapper-multipath vs Multipath-Tools vs Path Priority (2026)"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-05-30-self-hosted-linux-dm-multipath-device-mapper-multipath-tools-path-priority-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-05-30T00:00:00Z"><meta property="article:modified_time" content="2026-05-30T00:00:00Z"><meta property="article:tag" content="linux"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted Linux DM Multipath: device-mapper-multipath vs Multipath-Tools vs Path Priority (2026)"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted Linux DM Multipath: device-mapper-multipath vs Multipath-Tools vs Path Priority (2026)","description":"\u003cp\u003eDevice Mapper Multipath (DM Multipath) is the Linux kernel\u0026rsquo;s built-in solution for aggregating multiple I\/O paths between a server and storage arrays into a single logical device. This provides both high availability (automatic failover when a path fails) and load balancing (distributing I\/O across multiple paths). While the kernel module handles the core multipathing, user-space tools manage configuration, monitoring, and path selection. This guide compares the leading DM Multipath management tooling.\u003c\/p\u003e","datePublished":"2026-05-30T00:00:00Z","dateModified":"2026-05-30T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-05-30-self-hosted-linux-dm-multipath-device-mapper-multipath-tools-path-priority-guide\/"},"keywords":["linux","storage","networking","high-availability"],"articleSection":"linux","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted Linux DM Multipath: device-mapper-multipath vs Multipath-Tools vs Path Priority (2026)","item":"https:\/\/www.pistack.xyz\/posts\/2026-05-30-self-hosted-linux-dm-multipath-device-mapper-multipath-tools-path-priority-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Linux</span>
+<span class="tag tag-purple">Storage</span>
+<span class="tag tag-purple">Networking</span></div><h1>Self-Hosted Linux DM Multipath: device-mapper-multipath vs Multipath-Tools vs Path Priority (2026)</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>May 30, 2026</span>
+<span>9 min read</span>
+<span>Updated May 30, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#why-dm-multipath-for-self-hosted-storage>Why DM Multipath for Self-Hosted Storage?</a></li><li><a href=#device-mapper-multipath-the-core-kernel-module>device-mapper-multipath: The Core Kernel Module</a><ul><li><a href=#how-dm-multipath-works>How DM Multipath Works</a></li><li><a href=#key-kernel-features>Key Kernel Features</a></li><li><a href=#multipath-policies>Multipath Policies</a></li></ul></li><li><a href=#multipath-tools-the-standard-user-space-suite>multipath-tools: The Standard User-Space Suite</a><ul><li><a href=#key-features>Key Features</a></li><li><a href=#installation>Installation</a></li><li><a href=#docker-compose-for-iscsi--multipath>Docker Compose for iSCSI + Multipath</a></li><li><a href=#management-commands>Management Commands</a></li><li><a href=#monitoring-with-multipathd-interactive-mode>Monitoring with multipathd Interactive Mode</a></li></ul></li><li><a href=#path-priority-and-hardware-specific-handlers>Path Priority and Hardware-Specific Handlers</a><ul><li><a href=#alua-asymmetric-logical-unit-access>ALUA (Asymmetric Logical Unit Access)</a></li><li><a href=#custom-path-checkers>Custom Path Checkers</a></li></ul></li><li><a href=#comparison-dm-multipath-management>Comparison: DM Multipath Management</a></li><li><a href=#monitoring-and-alerting>Monitoring and Alerting</a><ul><li><a href=#multipath-status-monitoring>Multipath Status Monitoring</a></li><li><a href=#prometheus-exporter>Prometheus Exporter</a></li><li><a href=#log-monitoring>Log Monitoring</a></li></ul></li><li><a href=#choosing-the-right-multipath-setup>Choosing the Right Multipath Setup</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#how-many-paths-does-dm-multipath-support>How many paths does DM Multipath support?</a></li><li><a href=#does-dm-multipath-work-with-nvme>Does DM Multipath work with NVMe?</a></li><li><a href=#what-happens-during-path-failover>What happens during path failover?</a></li><li><a href=#can-i-use-dm-multipath-with-zfs-or-ceph>Can I use DM Multipath with ZFS or Ceph?</a></li><li><a href=#how-do-i-test-path-failover-safely>How do I test path failover safely?</a></li><li><a href=#is-dm-multipath-necessary-for-single-path-storage>Is DM Multipath necessary for single-path storage?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><p>Device Mapper Multipath (DM Multipath) is the Linux kernel&rsquo;s built-in solution for aggregating multiple I/O paths between a server and storage arrays into a single logical device. This provides both high availability (automatic failover when a path fails) and load balancing (distributing I/O across multiple paths). While the kernel module handles the core multipathing, user-space tools manage configuration, monitoring, and path selection. This guide compares the leading DM Multipath management tooling.</p><h2 id=why-dm-multipath-for-self-hosted-storage>Why DM Multipath for Self-Hosted Storage?</h2><p>In self-hosted infrastructure, storage reliability is paramount. Whether you are running iSCSI targets, Fibre Channel SANs, or NFS/iSCSI over multiple network interfaces, path failures are a real risk — cable disconnections, switch failures, HBA issues, or network partitioning.</p><p>DM Multipath addresses this by presenting multiple physical paths as a single <code>/dev/mapper/</code> device. If one path fails, I/O automatically redirects through remaining paths with zero data loss. For storage-intensive workloads (databases, virtualization hosts, backup servers), this failover capability is the difference between a brief I/O pause and a complete service outage.</p><p>Load balancing across paths also improves throughput. A dual-path iSCSI configuration can theoretically double sequential read/write bandwidth, and DM Multipath handles distribution transparently to the filesystem and applications above it.</p><p>For iSCSI target management, see our <a href=../2026-05-10-self-hosted-iscsi-target-servers-lio-tgt-scst-guide/>iSCSI target comparison</a>. If you need LVM storage management, our <a href=../2026-05-29-self-hosted-linux-lvm-management-lvm2-thin-provis/>LVM management guide</a> covers volume management on top of multipathed devices. For comprehensive storage monitoring, our <a href=../self-hosted-disk-health-monitoring-scrutiny-smartd-nvme-cli->disk health monitoring guide</a> shows how to monitor the underlying physical drives. If you need LVM storage management, our <a href=../2026-05-29-self-hosted-linux-lvm-management-lvm2-thin-provis/>LVM management guide</a> covers volume management on top of multipathed devices. For comprehensive storage monitoring, our <a href=../self-hosted-disk-health-monitoring-scrutiny-smartd-nvme-cli->disk health monitoring guide</a> shows how to monitor the underlying physical drives.</p><h2 id=device-mapper-multipath-the-core-kernel-module>device-mapper-multipath: The Core Kernel Module</h2><p>The Linux kernel&rsquo;s <code>dm-multipath</code> module is part of the device-mapper framework. It provides the core multipathing functionality, while user-space tools handle configuration and monitoring.</p><h3 id=how-dm-multipath-works>How DM Multipath Works</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>Application
+</span></span><span class=line><span class=cl>    ↓
+</span></span><span class=line><span class=cl>Filesystem (ext4, xfs, btrfs)
+</span></span><span class=line><span class=cl>    ↓
+</span></span><span class=line><span class=cl>LVM (optional)
+</span></span><span class=line><span class=cl>    ↓
+</span></span><span class=line><span class=cl>/dev/mapper/mpatha  ← DM Multipath device
+</span></span><span class=line><span class=cl>    ↓
+</span></span><span class=line><span class=cl>┌─────────────┬─────────────┐
+</span></span><span class=line><span class=cl>│  /dev/sda   │  /dev/sdb   │  ← Physical paths
+</span></span><span class=line><span class=cl>│  (eth0/iSCSI)│ (eth1/iSCSI)│
+</span></span><span class=line><span class=cl>└─────────────┴─────────────┘
+</span></span><span class=line><span class=cl>    ↓              ↓
+</span></span><span class=line><span class=cl>Storage Array (SAN/NAS/iSCSI Target)
+</span></span></code></pre></td></tr></table></div></div><h3 id=key-kernel-features>Key Kernel Features</h3><ul><li><strong>Path grouping</strong> — multiple paths aggregated into a single block device</li><li><strong>Path failover</strong> — automatic switch to alternate paths on failure</li><li><strong>Load balancing</strong> — distribute I/O across available paths</li><li><strong>Path prioritization</strong> — prefer certain paths based on policy</li><li><strong>Queueing</strong> — hold I/O during path transitions</li><li><strong>ALUA support</strong> — Asymmetric Logical Unit Access for storage arrays</li></ul><h3 id=multipath-policies>Multipath Policies</h3><p>The kernel supports several path selection policies:</p><table><thead><tr><th>Policy</th><th>Description</th><th>Use Case</th></tr></thead><tbody><tr><td><code>failover</code></td><td>Single active path, standby paths</td><td>Simple HA</td></tr><tr><td><code>multibus</code></td><td>All paths active, round-robin</td><td>Load balancing</td></tr><tr><td><code>least-pending</code></td><td>Route to path with fewest pending I/O</td><td>Mixed workloads</td></tr><tr><td><code>queue-length</code></td><td>Route to path with shortest queue</td><td>Variable latency</td></tr><tr><td><code>service-time</code></td><td>Route based on historical service time</td><td>Heterogeneous paths</td></tr><tr><td><code>io-affinity</code></td><td>Route based on NUMA locality</td><td>NUMA systems</td></tr></tbody></table><h2 id=multipath-tools-the-standard-user-space-suite>multipath-tools: The Standard User-Space Suite</h2><p><a href=https://github.com/opensvc/multipath-tools>multipath-tools</a> (also known as <code>multipath-tools</code> or <code>device-mapper-multipath</code>) is the standard user-space management suite for DM Multipath, maintained as part of the Linux kernel project. It provides the <code>multipathd</code> daemon, <code>multipath</code> command, and configuration framework.</p><h3 id=key-features>Key Features</h3><ul><li><strong>multipathd daemon</strong> — monitors path health, triggers failover</li><li><strong>multipath command</strong> — create, configure, and manage multipath devices</li><li><strong>Blacklist/whitelist</strong> support for device filtering</li><li><strong>Hardware handlers</strong> for specific storage array types (HP, EMC, NetApp)</li><li><strong>Path checker</strong> — directio, readsector0, tur (Test Unit Ready), io</li><li><strong>sysfs integration</strong> for real-time path status</li><li><strong>udev integration</strong> for automatic device creation</li></ul><h3 id=installation>Installation</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Debian/Ubuntu</span>
+</span></span><span class=line><span class=cl>sudo apt install multipath-tools
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># RHEL/Fedora/CentOS</span>
+</span></span><span class=line><span class=cl>sudo dnf install device-mapper-multipath
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Arch Linux</span>
+</span></span><span class=line><span class=cl>sudo pacman -S multipath-tools
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-compose-for-iscsi--multipath>Docker Compose for iSCSI + Multipath</h3><p>While multipath-tools runs on the host, here is a complete setup with an iSCSI target:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>iscsi-target</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>erichough/iscsi-target:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>iscsi-target</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;3260:3260&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./iscsi-target.conf:/etc/iet/ietd.conf:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/data/iscsi:/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>cap_add</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>SYS_ADMIN</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>devices</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/dev/loop-control</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><p>Host-side multipath configuration (<code>/etc/multipath.conf</code>):</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=na>defaults {</span>
+</span></span><span class=line><span class=cl>    <span class=na>user_friendly_names yes</span>
+</span></span><span class=line><span class=cl>    <span class=na>find_multipaths yes</span>
+</span></span><span class=line><span class=cl>    <span class=na>path_grouping_policy multibus</span>
+</span></span><span class=line><span class=cl>    <span class=na>path_selector &#34;service-time 0&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=na>failback immediate</span>
+</span></span><span class=line><span class=cl>    <span class=na>no_path_retry 5</span>
+</span></span><span class=line><span class=cl>    <span class=na>rr_min_io 100</span>
+</span></span><span class=line><span class=cl>    <span class=na>max_fds 8192</span>
+</span></span><span class=line><span class=cl><span class=na>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=na>blacklist {</span>
+</span></span><span class=line><span class=cl>    <span class=na>devnode &#34;^(ram|raw|loop|fd|md|dm-|sr|scd|st)[0-9]*&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=na>devnode &#34;^hd[a-z]&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=na>devnode &#34;^sda$&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=na>wwid &#34;.*&#34;</span>
+</span></span><span class=line><span class=cl><span class=na>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=na>blacklist_exceptions {</span>
+</span></span><span class=line><span class=cl>    <span class=na>wwid &#34;36001405.*&#34;</span>
+</span></span><span class=line><span class=cl><span class=na>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=na>devices {</span>
+</span></span><span class=line><span class=cl>    <span class=na>device {</span>
+</span></span><span class=line><span class=cl>        <span class=na>vendor &#34;LIO-ORG&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=na>product &#34;iSCSI Disk&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=na>path_grouping_policy group_by_prio</span>
+</span></span><span class=line><span class=cl>        <span class=na>path_checker tur</span>
+</span></span><span class=line><span class=cl>        <span class=na>prio alua</span>
+</span></span><span class=line><span class=cl>        <span class=na>hardware_handler &#34;1 alua&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=na>failback immediate</span>
+</span></span><span class=line><span class=cl>        <span class=na>no_path_retry 12</span>
+</span></span><span class=line><span class=cl>        <span class=na>rr_min_io 100</span>
+</span></span><span class=line><span class=cl>        <span class=na>detect_prio yes</span>
+</span></span><span class=line><span class=cl>    <span class=na>}</span>
+</span></span><span class=line><span class=cl><span class=na>}</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=management-commands>Management Commands</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Start and enable the daemon</span>
+</span></span><span class=line><span class=cl>sudo systemctl <span class=nb>enable</span> multipathd
+</span></span><span class=line><span class=cl>sudo systemctl start multipathd
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Show multipath topology</span>
+</span></span><span class=line><span class=cl>sudo multipath -ll
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Show verbose output</span>
+</span></span><span class=line><span class=cl>sudo multipath -ll -v <span class=m>3</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Flush a multipath device</span>
+</span></span><span class=line><span class=cl>sudo multipath -f mpatha
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Reload configuration</span>
+</span></span><span class=line><span class=cl>sudo systemctl reload multipathd
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Show paths in sysfs</span>
+</span></span><span class=line><span class=cl>ls -la /sys/block/sd*/device/state
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Monitor in real-time</span>
+</span></span><span class=line><span class=cl>sudo multipathd -k
+</span></span><span class=line><span class=cl>&gt; show paths
+</span></span><span class=line><span class=cl>&gt; show maps
+</span></span><span class=line><span class=cl>&gt; show config
+</span></span><span class=line><span class=cl>&gt; quit
+</span></span></code></pre></td></tr></table></div></div><h3 id=monitoring-with-multipathd-interactive-mode>Monitoring with multipathd Interactive Mode</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>$ sudo multipathd -k
+</span></span><span class=line><span class=cl>multipathd&gt; show maps
+</span></span><span class=line><span class=cl>name sysfs uuid
+</span></span><span class=line><span class=cl>mpatha dm-0 36001405abcdef0123456789
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>multipathd&gt; show paths
+</span></span><span class=line><span class=cl>dev dev_t pri dm_st chk_st dq_st next_check
+</span></span><span class=line><span class=cl>sda 8:0 <span class=m>50</span> <span class=o>[</span>active<span class=o>][</span>ready<span class=o>][</span>running<span class=o>]</span> XXXXXXXX.. 4/40
+</span></span><span class=line><span class=cl>sdb 8:16 <span class=m>50</span> <span class=o>[</span>active<span class=o>][</span>ready<span class=o>][</span>running<span class=o>]</span> XXXXXXXX.. 14/40
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>multipathd&gt; show config
+</span></span><span class=line><span class=cl><span class=c1># Displays the effective configuration</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>multipathd&gt; resize map mpatha
+</span></span><span class=line><span class=cl><span class=c1># Resize a multipath device after underlying storage changes</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=path-priority-and-hardware-specific-handlers>Path Priority and Hardware-Specific Handlers</h2><p>Different storage arrays report path priority differently. DM Multipath uses hardware handlers and priority group modules to interpret these signals correctly.</p><h3 id=alua-asymmetric-logical-unit-access>ALUA (Asymmetric Logical Unit Access)</h3><p>ALUA-aware storage arrays (most enterprise SANs) report path states:</p><ul><li><strong>Active/Optimized (AO)</strong> — preferred path</li><li><strong>Active/Non-Optimized (ANO)</strong> — usable but slower</li><li><strong>Standby</strong> — available but not recommended</li><li><strong>Unavailable</strong> — path is down</li></ul><p>Configuration for ALUA-capable arrays:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=na>devices {</span>
+</span></span><span class=line><span class=cl>    <span class=na>device {</span>
+</span></span><span class=line><span class=cl>        <span class=na>vendor &#34;NETAPP&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=na>product &#34;LUN&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=na>path_grouping_policy group_by_prio</span>
+</span></span><span class=line><span class=cl>        <span class=na>path_checker tur</span>
+</span></span><span class=line><span class=cl>        <span class=na>prio alua</span>
+</span></span><span class=line><span class=cl>        <span class=na>hardware_handler &#34;1 alua&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=na>failback immediate</span>
+</span></span><span class=line><span class=cl>    <span class=na>}</span>
+</span></span><span class=line><span class=cl><span class=na>}</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=custom-path-checkers>Custom Path Checkers</h3><p>For non-standard storage, you can implement custom path checkers:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=na>devices {</span>
+</span></span><span class=line><span class=cl>    <span class=na>device {</span>
+</span></span><span class=line><span class=cl>        <span class=na>vendor &#34;CustomVendor&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=na>product &#34;StorageArray&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=na>path_checker directio</span>
+</span></span><span class=line><span class=cl>        <span class=c1># directio: performs direct I/O to verify path</span>
+</span></span><span class=line><span class=cl>        <span class=c1># tur: sends Test Unit Ready (fastest)</span>
+</span></span><span class=line><span class=cl>        <span class=c1># readsector0: reads first sector (most thorough)</span>
+</span></span><span class=line><span class=cl>        <span class=c1># emc_clariion: EMC-specific checker</span>
+</span></span><span class=line><span class=cl>    <span class=na>}</span>
+</span></span><span class=line><span class=cl><span class=na>}</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=comparison-dm-multipath-management>Comparison: DM Multipath Management</h2><table><thead><tr><th>Feature</th><th>multipath-tools (default)</th><th>multipath-tools (custom)</th><th>Manual dmsetup</th></tr></thead><tbody><tr><td>Path Monitoring</td><td>✅ multipathd daemon</td><td>✅ multipathd daemon</td><td>❌ Manual</td></tr><tr><td>Auto Failover</td><td>✅ Sub-second</td><td>✅ Sub-second</td><td>❌ Manual</td></tr><tr><td>Load Balancing</td><td>✅ Multiple policies</td><td>✅ Multiple policies</td><td>❌ Manual</td></tr><tr><td>Hardware Handlers</td><td>✅ 20+ built-in</td><td>✅ Custom handlers</td><td>❌</td></tr><tr><td>Path Checkers</td><td>✅ 5+ types</td><td>✅ Custom checkers</td><td>❌</td></tr><tr><td>udev Integration</td><td>✅ Automatic</td><td>✅ Automatic</td><td>❌</td></tr><tr><td>sysfs Monitoring</td><td>✅</td><td>✅</td><td>✅</td></tr><tr><td>Configuration</td><td>/etc/multipath.conf</td><td>/etc/multipath.conf</td><td>dmsetup commands</td></tr><tr><td>Interactive Mode</td><td>✅ multipathd -k</td><td>✅ multipathd -k</td><td>❌</td></tr><tr><td>Prometheus Metrics</td><td>❌ (need exporter)</td><td>❌ (need exporter)</td><td>❌</td></tr><tr><td>Docker Compatible</td><td>❌ (host-level)</td><td>❌ (host-level)</td><td>❌</td></tr></tbody></table><h2 id=monitoring-and-alerting>Monitoring and Alerting</h2><h3 id=multipath-status-monitoring>Multipath Status Monitoring</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Quick health check</span>
+</span></span><span class=line><span class=cl>multipath -ll <span class=p>|</span> grep -c <span class=s2>&#34;active ready running&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Detect failed paths</span>
+</span></span><span class=line><span class=cl>multipath -ll <span class=p>|</span> grep <span class=s2>&#34;faulty&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Count active paths per device</span>
+</span></span><span class=line><span class=cl><span class=k>for</span> dev in /dev/mapper/mpath*<span class=p>;</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>    <span class=nv>name</span><span class=o>=</span><span class=k>$(</span>basename <span class=nv>$dev</span><span class=k>)</span>
+</span></span><span class=line><span class=cl>    <span class=nv>paths</span><span class=o>=</span><span class=k>$(</span>multipath -ll <span class=nv>$name</span> 2&gt;/dev/null <span class=p>|</span> grep -c <span class=s2>&#34;active&#34;</span><span class=k>)</span>
+</span></span><span class=line><span class=cl>    <span class=nb>echo</span> <span class=s2>&#34;</span><span class=nv>$name</span><span class=s2>: </span><span class=nv>$paths</span><span class=s2> active paths&#34;</span>
+</span></span><span class=line><span class=cl><span class=k>done</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=prometheus-exporter>Prometheus Exporter</h3><p>For centralized monitoring, use a custom exporter:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-python data-lang=python><span class=line><span class=cl><span class=ch>#!/usr/bin/env python3</span>
+</span></span><span class=line><span class=cl><span class=s2>&#34;&#34;&#34;Simple multipath Prometheus exporter.&#34;&#34;&#34;</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>subprocess</span>
+</span></span><span class=line><span class=cl><span class=kn>import</span> <span class=nn>re</span>
+</span></span><span class=line><span class=cl><span class=kn>from</span> <span class=nn>prometheus_client</span> <span class=kn>import</span> <span class=n>start_http_server</span><span class=p>,</span> <span class=n>Gauge</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>def</span> <span class=nf>get_multipath_metrics</span><span class=p>():</span>
+</span></span><span class=line><span class=cl>    <span class=n>result</span> <span class=o>=</span> <span class=n>subprocess</span><span class=o>.</span><span class=n>run</span><span class=p>([</span><span class=s1>&#39;multipath&#39;</span><span class=p>,</span> <span class=s1>&#39;-ll&#39;</span><span class=p>],</span> <span class=n>capture_output</span><span class=o>=</span><span class=kc>True</span><span class=p>,</span> <span class=n>text</span><span class=o>=</span><span class=kc>True</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>    <span class=n>metrics</span> <span class=o>=</span> <span class=p>{}</span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> <span class=n>line</span> <span class=ow>in</span> <span class=n>result</span><span class=o>.</span><span class=n>stdout</span><span class=o>.</span><span class=n>split</span><span class=p>(</span><span class=s1>&#39;</span>
+</span></span><span class=line><span class=cl><span class=s1>&#39;):</span>
+</span></span><span class=line><span class=cl>        <span class=k>if</span> <span class=s1>&#39;mpath&#39;</span> <span class=ow>in</span> <span class=n>line</span><span class=p>:</span>
+</span></span><span class=line><span class=cl>            <span class=n>name</span> <span class=o>=</span> <span class=n>line</span><span class=o>.</span><span class=n>split</span><span class=p>()[</span><span class=mi>0</span><span class=p>]</span>
+</span></span><span class=line><span class=cl>            <span class=n>active</span> <span class=o>=</span> <span class=n>line</span><span class=o>.</span><span class=n>count</span><span class=p>(</span><span class=s1>&#39;active&#39;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>            <span class=n>faulty</span> <span class=o>=</span> <span class=n>line</span><span class=o>.</span><span class=n>count</span><span class=p>(</span><span class=s1>&#39;faulty&#39;</span><span class=p>)</span>
+</span></span><span class=line><span class=cl>            <span class=n>metrics</span><span class=p>[</span><span class=sa>f</span><span class=s1>&#39;multipath_active_paths</span><span class=se>{{</span><span class=s1>device=&#34;</span><span class=si>{</span><span class=n>name</span><span class=si>}</span><span class=s1>&#34;</span><span class=se>}}</span><span class=s1>&#39;</span><span class=p>]</span> <span class=o>=</span> <span class=n>active</span>
+</span></span><span class=line><span class=cl>            <span class=n>metrics</span><span class=p>[</span><span class=sa>f</span><span class=s1>&#39;multipath_faulty_paths</span><span class=se>{{</span><span class=s1>device=&#34;</span><span class=si>{</span><span class=n>name</span><span class=si>}</span><span class=s1>&#34;</span><span class=se>}}</span><span class=s1>&#39;</span><span class=p>]</span> <span class=o>=</span> <span class=n>faulty</span>
+</span></span><span class=line><span class=cl>    <span class=k>return</span> <span class=n>metrics</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=n>start_http_server</span><span class=p>(</span><span class=mi>9119</span><span class=p>)</span>
+</span></span><span class=line><span class=cl><span class=nb>print</span><span class=p>(</span><span class=s2>&#34;Serving multipath metrics on :9119&#34;</span><span class=p>)</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=log-monitoring>Log Monitoring</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Watch multipathd logs</span>
+</span></span><span class=line><span class=cl>journalctl -fu multipathd
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Filter for path failures</span>
+</span></span><span class=line><span class=cl>journalctl -u multipathd <span class=p>|</span> grep -i <span class=s2>&#34;path.*fail\|checker.*fail&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Alert on single-path devices</span>
+</span></span><span class=line><span class=cl>multipath -ll <span class=p>|</span> grep -B1 <span class=s2>&#34;1 active&#34;</span> <span class=p>|</span> grep mpath
+</span></span></code></pre></td></tr></table></div></div><h2 id=choosing-the-right-multipath-setup>Choosing the Right Multipath Setup</h2><p><strong>Use multipath-tools with default configuration</strong> for most self-hosted setups. The <code>find_multipaths yes</code> default auto-detects multipath-capable devices without manual WWID configuration. The <code>multibus</code> path grouping policy provides both failover and load balancing out of the box.</p><p><strong>Customize multipath.conf</strong> when connecting to enterprise storage arrays (NetApp, EMC, HP) that require specific hardware handlers, priority groups, or path checkers. The hardware-specific device stanzas in the default config cover most common arrays.</p><p><strong>Use manual dmsetup commands</strong> only for debugging or when multipathd is not available. In production, always rely on the daemon for automatic path monitoring and failover.</p><h2 id=faq>FAQ</h2><h3 id=how-many-paths-does-dm-multipath-support>How many paths does DM Multipath support?</h3><p>The kernel imposes no practical limit on path count. Typical configurations use 2-4 paths (dual-controller SAN with dual-port HBAs). Some enterprise setups use 8+ paths for maximum redundancy and bandwidth. Each path requires a separate initiator-target connection.</p><h3 id=does-dm-multipath-work-with-nvme>Does DM Multipath work with NVMe?</h3><p>NVMe multipathing uses a different mechanism called NVMe native multipathing (CONFIG_NVME_MULTIPATH), not DM Multipath. NVMe fabrics (NVMe-over-Fabrics) handle path management at the NVMe protocol level. For traditional block storage (iSCSI, FC, SAS), DM Multipath remains the standard.</p><h3 id=what-happens-during-path-failover>What happens during path failover?</h3><p>When a path fails, multipathd detects it within the checker interval (typically 5 seconds). I/O is queued briefly (controlled by <code>no_path_retry</code>) and then redirected through remaining active paths. Applications may experience a brief I/O pause (100ms-2s) but no data loss. Filesystem and applications above the block layer see a continuous device.</p><h3 id=can-i-use-dm-multipath-with-zfs-or-ceph>Can I use DM Multipath with ZFS or Ceph?</h3><p>ZFS has its own multipathing awareness — it sees individual paths and can use them independently. Running DM Multipath below ZFS is generally NOT recommended as it can interfere with ZFS&rsquo;s own I/O scheduling. For Ceph, multipathing applies to the OSD storage devices, not to Ceph&rsquo;s network-level replication. Use DM Multipath for the physical storage layer only.</p><h3 id=how-do-i-test-path-failover-safely>How do I test path failover safely?</h3><ol><li>Identify the paths: <code>multipath -ll</code></li><li>Disable one path: <code>echo offline > /sys/block/sdX/device/state</code></li><li>Verify failover: <code>multipath -ll</code> should show the path as &ldquo;failed&rdquo;</li><li>Re-enable: <code>echo running > /sys/block/sdX/device/state</code></li><li>Verify recovery: <code>multipath -ll</code> should show the path as &ldquo;active&rdquo;</li></ol><p>Always test failover during maintenance windows and monitor application behavior during the transition.</p><h3 id=is-dm-multipath-necessary-for-single-path-storage>Is DM Multipath necessary for single-path storage?</h3><p>No. If your storage has only one physical path (single cable, single switch), DM Multipath provides no benefit and adds unnecessary overhead. Use <code>find_multipaths yes</code> in your configuration — this ensures multipath only activates when multiple paths to the same device are actually detected.</p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted Linux DM Multipath: device-mapper-multipath vs Multipath-Tools vs Path Priority (2026)","description":"Complete guide to Linux DM Multipath configuration, device-mapper-multipath management, and path failover. Includes Docker iSCSI setup and monitoring.","datePublished":"2026-05-30","dateModified":"2026-05-30","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20Linux%20DM%20Multipath%3a%20device-mapper-multipath%20vs%20Multipath-Tools%20vs%20Path%20Priority%20%282026%29&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-30-self-hosted-linux-dm-multipath-device-mapper-multipath-tools-path-priority-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-05-30-self-hosted-linux-dm-multipath-device-mapper-multipath-tools-path-priority-guide%2f&t=Self-Hosted%20Linux%20DM%20Multipath%3a%20device-mapper-multipath%20vs%20Multipath-Tools%20vs%20Path%20Priority%20%282026%29" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/linux/ class=tag-link>Linux</a>
+<a href=/tags/storage/ class=tag-link>Storage</a>
+<a href=/tags/networking/ class=tag-link>Networking</a>
+<a href=/tags/high-availability/ class=tag-link>High-Availability</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-05-11-self-hosted-lvs-load-balancing-ipvs-keepalived-linux-virtual-server-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Load-Balancing</span></div><h3 class=post-title>Self-Hosted LVS Load Balancing: IPVS, Keepalived, and Linux Virtual Server (2026)</h3><div class=post-excerpt>When your application outgrows a single server, load balancing becomes the critical infrastructure layer that …</div><div class=post-footer><span class=post-date>May 11, 2026</span></div></a><a href=/posts/2026-05-11-self-hosted-nfs-high-availability-drbd-glusterfs-pacemaker-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Nfs</span></div><h3 class=post-title>Self-Hosted NFS High Availability: DRBD vs GlusterFS Geo-Replication vs Pacemaker</h3><div class=post-excerpt>Network File System (NFS) remains one of the most widely used protocols for shared storage in enterprise and self-hosted …</div><div class=post-footer><span class=post-date>May 11, 2026</span></div></a><a href=/posts/2026-05-08-linux-network-bonding-active-backup-vs-lacp-vs-round-robin-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Linux Network Bonding: Active-Backup vs LACP vs Round-Robin (2026)</h3><div class=post-excerpt>Network bonding (also called link aggregation or NIC teaming) combines multiple physical network interfaces into a …</div><div class=post-footer><span class=post-date>May 8, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>
