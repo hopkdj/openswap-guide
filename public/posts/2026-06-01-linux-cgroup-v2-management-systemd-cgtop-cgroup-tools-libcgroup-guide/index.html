@@ -1,0 +1,237 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted Linux Cgroup v2 Resource Management: systemd-cgtop vs cgroup-tools vs libcgroup | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-06-01-linux-cgroup-v2-management-systemd-cgtop-cgroup-tools-libcgroup-guide/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted Linux Cgroup v2 Resource Management: systemd-cgtop vs cgroup-tools vs libcgroup"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-06-01-linux-cgroup-v2-management-systemd-cgtop-cgroup-tools-libcgroup-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-06-01T00:00:00Z"><meta property="article:modified_time" content="2026-06-01T00:00:00Z"><meta property="article:tag" content="linux"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted Linux Cgroup v2 Resource Management: systemd-cgtop vs cgroup-tools vs libcgroup"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted Linux Cgroup v2 Resource Management: systemd-cgtop vs cgroup-tools vs libcgroup","description":"\u003ch2 id=\u0022introduction\u0022\u003eIntroduction\u003c\/h2\u003e\n\u003cp\u003eControl Groups (cgroups) are the Linux kernel mechanism that underpins container resource limits, systemd service isolation, and performance-critical workload management. With cgroup v2 now the default on all major distributions (since RHEL 8, Ubuntu 22.04, Debian 11), understanding the tools for monitoring, configuring, and troubleshooting cgroups is essential for any self-hosted server operator.\u003c\/p\u003e","datePublished":"2026-06-01T00:00:00Z","dateModified":"2026-06-01T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-06-01-linux-cgroup-v2-management-systemd-cgtop-cgroup-tools-libcgroup-guide\/"},"keywords":["linux","containers","self-hosted","resource-management","system-administration","performance","systemd"],"articleSection":"linux","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted Linux Cgroup v2 Resource Management: systemd-cgtop vs cgroup-tools vs libcgroup","item":"https:\/\/www.pistack.xyz\/posts\/2026-06-01-linux-cgroup-v2-management-systemd-cgtop-cgroup-tools-libcgroup-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Linux</span>
+<span class="tag tag-purple">Containers</span>
+<span class="tag tag-blue">Self-Hosted</span></div><h1>Self-Hosted Linux Cgroup v2 Resource Management: systemd-cgtop vs cgroup-tools vs libcgroup</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>June 1, 2026</span>
+<span>8 min read</span>
+<span>Updated June 1, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#introduction>Introduction</a></li><li><a href=#why-self-host-your-resource-management>Why Self-Host Your Resource Management</a></li><li><a href=#comparison-table-cgroup-v2-management-tools>Comparison Table: Cgroup v2 Management Tools</a></li><li><a href=#tool-deep-dives>Tool Deep Dives</a><ul><li><a href=#systemd-cgtop--systemd-cgls-built-in-resource-monitoring>systemd-cgtop & systemd-cgls: Built-in Resource Monitoring</a></li><li><a href=#cgroup-tools-the-classic-cli-utilities>cgroup-tools: The Classic CLI Utilities</a></li><li><a href=#libcgroup-the-c-api-foundation>libcgroup: The C API Foundation</a></li><li><a href=#reading-cgroup-v2-directly-via-cgroupfs>Reading Cgroup v2 Directly via cgroupfs</a></li></ul></li><li><a href=#troubleshooting-common-issues>Troubleshooting Common Issues</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#how-do-i-check-if-my-server-is-using-cgroup-v1-or-v2>How do I check if my server is using cgroup v1 or v2?</a></li><li><a href=#what-are-the-main-benefits-of-cgroup-v2-over-v1>What are the main benefits of cgroup v2 over v1?</a></li><li><a href=#can-i-mix-cgroup-v1-and-v2-on-the-same-system>Can I mix cgroup v1 and v2 on the same system?</a></li><li><a href=#how-do-container-runtimes-use-cgroups>How do container runtimes use cgroups?</a></li><li><a href=#what-should-i-monitor-to-prevent-oom-kills>What should I monitor to prevent OOM kills?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><h2 id=introduction>Introduction</h2><p>Control Groups (cgroups) are the Linux kernel mechanism that underpins container resource limits, systemd service isolation, and performance-critical workload management. With cgroup v2 now the default on all major distributions (since RHEL 8, Ubuntu 22.04, Debian 11), understanding the tools for monitoring, configuring, and troubleshooting cgroups is essential for any self-hosted server operator.</p><p>In this guide, we compare four tools for managing cgroup v2 on Linux: <strong>systemd-cgtop</strong> and <strong>systemd-cgls</strong> (built into systemd), the <strong>cgroup-tools</strong> package (cgevent, cgget, cgset), the classic <strong>libcgroup</strong> utilities, and the modern <strong>cgmanager</strong> daemon. Whether you&rsquo;re debugging why a container is being OOM-killed, setting CPU limits on a database process, or understanding memory pressure on a busy virtualization host, the right tool makes the difference.</p><h2 id=why-self-host-your-resource-management>Why Self-Host Your Resource Management</h2><p>Effective cgroup management directly translates to better service reliability. When you run multiple self-hosted services on a single machine — a web server, database, media server, and CI runner all competing for the same CPU cores and memory pages — cgroups are the enforcement mechanism that prevents one misbehaving service from starving all the others. Unlike cloud provider abstractions that hide resource contention behind opaque &ldquo;vCPU&rdquo; and &ldquo;burstable&rdquo; tiers, self-hosted cgroup management gives you byte-level control over every allocation.</p><p>For container operators, cgroup v2 is the unified hierarchy that Docker, Podman, and containerd all use under the hood. When you set <code>--memory=512m</code> on a Docker container, you&rsquo;re configuring a cgroup v2 memory limit. Understanding the cgroup tools lets you verify that limits are actually being enforced, diagnose why a container is being throttled, and tune the kernel&rsquo;s OOM (Out of Memory) killer behavior. If you&rsquo;re running <a href=../containerd-vs-cri-o-vs-podman-self-hosted-container-runtimes-guide-2026/>container runtimes like containerd, CRI-O, or Podman</a>, cgroup awareness is essential troubleshooting knowledge.</p><p>For homelab virtualization hosts running Proxmox, KVM, or Incus, cgroup tools reveal how memory ballooning behaves under pressure, which VMs are hitting their CPU caps, and whether your I/O limits are working as expected. The same tools that <a href=../2026-05-09-oci-container-runtimes-crun-runc-youki-guide/>OCI runtimes like crun and runc use</a> for container isolation are available to you for monitoring and manual tuning.</p><h2 id=comparison-table-cgroup-v2-management-tools>Comparison Table: Cgroup v2 Management Tools</h2><table><thead><tr><th>Feature</th><th>systemd-cgtop</th><th>cgroup-tools</th><th>libcgroup</th><th>cgmanager</th></tr></thead><tbody><tr><td><strong>Package</strong></td><td>systemd (built-in)</td><td>cgroup-tools</td><td>libcgroup-tools</td><td>cgmanager</td></tr><tr><td><strong>Real-Time Monitoring</strong></td><td>Yes (top-like)</td><td>cgevent (events)</td><td>No</td><td>Via D-Bus API</td></tr><tr><td><strong>Parameter Reading</strong></td><td>Via systemctl show</td><td>cgget</td><td>cgget</td><td>dbus-send</td></tr><tr><td><strong>Parameter Setting</strong></td><td>Via systemctl set-property</td><td>cgset</td><td>cgset</td><td>dbus-send</td></tr><tr><td><strong>Process Classification</strong></td><td>Automatic (systemd)</td><td>cgclassify</td><td>cgclassify</td><td>Manual assignment</td></tr><tr><td><strong>Event Notification</strong></td><td>No</td><td>cgevent (inotify)</td><td>No</td><td>D-Bus signals</td></tr><tr><td><strong>API/Programmatic</strong></td><td>D-Bus</td><td>Command line only</td><td>C library + CLI</td><td>D-Bus</td></tr><tr><td><strong>Persistent Rules</strong></td><td>Drop-in files</td><td>cgconfig.conf</td><td>cgconfig.conf</td><td>Config files</td></tr><tr><td><strong>Cgroup v2 Support</strong></td><td>Full</td><td>Partial (v1-focused)</td><td>Partial</td><td>Full</td></tr><tr><td><strong>Active Development</strong></td><td>Very Active</td><td>Maintenance</td><td>None (deprecated)</td><td>Unmaintained</td></tr><tr><td><strong>Best For</strong></td><td>Systemd-managed services</td><td>Quick CLI operations</td><td>Legacy systems</td><td>Programmatic access</td></tr></tbody></table><h2 id=tool-deep-dives>Tool Deep Dives</h2><h3 id=systemd-cgtop--systemd-cgls-built-in-resource-monitoring>systemd-cgtop & systemd-cgls: Built-in Resource Monitoring</h3><p>Every systemd system ships with <code>systemd-cgtop</code> (a <code>top</code>-like interface for cgroups) and <code>systemd-cgls</code> (a tree view of control group hierarchy). These are your first stop for resource diagnostics.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Real-time cgroup resource usage (like top)</span>
+</span></span><span class=line><span class=cl>systemd-cgtop
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># One-shot snapshot with specific depth</span>
+</span></span><span class=line><span class=cl>systemd-cgtop -n <span class=m>1</span> -d <span class=m>2</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Display control group tree</span>
+</span></span><span class=line><span class=cl>systemd-cgls
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Show only specific controller paths</span>
+</span></span><span class=line><span class=cl>systemd-cgls /system.slice/docker.service
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># View resource limits for a systemd service</span>
+</span></span><span class=line><span class=cl>systemctl show nginx.service <span class=p>|</span> grep -E <span class=s1>&#39;Memory|CPU|Tasks|IO&#39;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Set a memory limit on a running service</span>
+</span></span><span class=line><span class=cl>sudo systemctl set-property nginx.service <span class=nv>MemoryMax</span><span class=o>=</span>512M
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Set CPU quota (50% of one core)</span>
+</span></span><span class=line><span class=cl>sudo systemctl set-property nginx.service <span class=nv>CPUQuota</span><span class=o>=</span>50%
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Create persistent drop-in overrides</span>
+</span></span><span class=line><span class=cl>sudo systemctl edit nginx.service
+</span></span><span class=line><span class=cl><span class=c1># Add:</span>
+</span></span><span class=line><span class=cl><span class=c1># [Service]</span>
+</span></span><span class=line><span class=cl><span class=c1># MemoryMax=512M</span>
+</span></span><span class=line><span class=cl><span class=c1># CPUQuota=50%</span>
+</span></span><span class=line><span class=cl><span class=c1># IOWeight=500</span>
+</span></span></code></pre></td></tr></table></div></div><p>For ad-hoc process isolation, you can create transient cgroups:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Run a command under a transient cgroup with limits</span>
+</span></span><span class=line><span class=cl>sudo systemd-run --user --scope <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  -p <span class=nv>MemoryMax</span><span class=o>=</span>256M -p <span class=nv>CPUQuota</span><span class=o>=</span>25% <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  --unit<span class=o>=</span>my-limited-task <span class=se>\
+</span></span></span><span class=line><span class=cl><span class=se></span>  /path/to/resource-heavy-command
+</span></span></code></pre></td></tr></table></div></div><h3 id=cgroup-tools-the-classic-cli-utilities>cgroup-tools: The Classic CLI Utilities</h3><p>The <code>cgroup-tools</code> package provides granular CLI access to cgroup parameters. While originally designed for cgroup v1, many commands work with v2 on modern kernels.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install</span>
+</span></span><span class=line><span class=cl>sudo apt install cgroup-tools
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># View current cgroup for a process</span>
+</span></span><span class=line><span class=cl>cgget -r memory.current /sys/fs/cgroup/system.slice/nginx.service
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Set a memory limit</span>
+</span></span><span class=line><span class=cl>sudo cgset -r memory.max<span class=o>=</span><span class=m>536870912</span> /system.slice/nginx.service
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Move a process to a cgroup</span>
+</span></span><span class=line><span class=cl>sudo cgclassify -g memory,cpu:/limited.slice &lt;PID&gt;
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Monitor cgroup events (e.g., OOM, limit hits)</span>
+</span></span><span class=line><span class=cl>cgevent -g memory:/system.slice/nginx.service
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># List subsystem usage</span>
+</span></span><span class=line><span class=cl>lscgroup
+</span></span><span class=line><span class=cl>lssubsys -am
+</span></span></code></pre></td></tr></table></div></div><p>For persistent classification rules:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># /etc/cgconfig.conf</span>
+</span></span><span class=line><span class=cl>group limited <span class=o>{</span>
+</span></span><span class=line><span class=cl>    memory <span class=o>{</span>
+</span></span><span class=line><span class=cl>        memory.max <span class=o>=</span> <span class=s2>&#34;256M&#34;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>        memory.swap.max <span class=o>=</span> <span class=s2>&#34;0&#34;</span><span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl>    cpu <span class=o>{</span>
+</span></span><span class=line><span class=cl>        cpu.max <span class=o>=</span> <span class=s2>&#34;50000 100000&#34;</span><span class=p>;</span>  <span class=c1># 50% of one CPU</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=libcgroup-the-c-api-foundation>libcgroup: The C API Foundation</h3><p><code>libcgroup</code> provides the underlying C library that <code>cgroup-tools</code> builds upon. While the CLI tools from <code>libcgroup-tools</code> package are similar to <code>cgroup-tools</code>, the library itself is important for developers writing resource-aware applications.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install libcgroup utilities</span>
+</span></span><span class=line><span class=cl>sudo apt install libcgroup-tools libcgroup-dev
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Configure persistent groups: /etc/cgconfig.conf</span>
+</span></span><span class=line><span class=cl>mount <span class=o>{</span>
+</span></span><span class=line><span class=cl>    <span class=nv>cpu</span> <span class=o>=</span> /sys/fs/cgroup<span class=p>;</span>
+</span></span><span class=line><span class=cl>    <span class=nv>memory</span> <span class=o>=</span> /sys/fs/cgroup<span class=p>;</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>group db-limited <span class=o>{</span>
+</span></span><span class=line><span class=cl>    perm <span class=o>{</span>
+</span></span><span class=line><span class=cl>        admin <span class=o>{</span> <span class=nv>uid</span> <span class=o>=</span> root<span class=p>;</span> <span class=o>}</span>
+</span></span><span class=line><span class=cl>        task <span class=o>{</span> <span class=nv>uid</span> <span class=o>=</span> postgres<span class=p>;</span> <span class=o>}</span>
+</span></span><span class=line><span class=cl>    <span class=o>}</span>
+</span></span><span class=line><span class=cl>    memory <span class=o>{</span> memory.max <span class=o>=</span> <span class=s2>&#34;2G&#34;</span><span class=p>;</span> <span class=o>}</span>
+</span></span><span class=line><span class=cl>    cpu <span class=o>{</span> cpu.max <span class=o>=</span> <span class=s2>&#34;200000 100000&#34;</span><span class=p>;</span> <span class=o>}</span>
+</span></span><span class=line><span class=cl><span class=o>}</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Apply configuration</span>
+</span></span><span class=line><span class=cl>sudo cgconfigparser -l /etc/cgconfig.conf
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Start the rules engine daemon</span>
+</span></span><span class=line><span class=cl>sudo cgrulesengd
+</span></span></code></pre></td></tr></table></div></div><p>Note: libcgroup is considered legacy. For new deployments on cgroup v2, prefer systemd&rsquo;s native resource controls or the cgroupfs interface directly.</p><h3 id=reading-cgroup-v2-directly-via-cgroupfs>Reading Cgroup v2 Directly via cgroupfs</h3><p>For scripting and programmatic access, you can read cgroup v2 parameters directly from the filesystem:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># cgroup v2 unified hierarchy location</span>
+</span></span><span class=line><span class=cl><span class=nv>CGROUP_ROOT</span><span class=o>=</span>/sys/fs/cgroup
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Check if using cgroup v2</span>
+</span></span><span class=line><span class=cl><span class=o>[</span> -f <span class=nv>$CGROUP_ROOT</span>/cgroup.controllers <span class=o>]</span> <span class=o>&amp;&amp;</span> <span class=nb>echo</span> <span class=s2>&#34;cgroup v2&#34;</span> <span class=o>||</span> <span class=nb>echo</span> <span class=s2>&#34;cgroup v1&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># View available controllers</span>
+</span></span><span class=line><span class=cl>cat <span class=nv>$CGROUP_ROOT</span>/cgroup.controllers
+</span></span><span class=line><span class=cl><span class=c1># Output example: cpuset cpu io memory hugetlb pids rdma misc</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Memory usage for a service</span>
+</span></span><span class=line><span class=cl>cat <span class=nv>$CGROUP_ROOT</span>/system.slice/nginx.service/memory.current
+</span></span><span class=line><span class=cl>cat <span class=nv>$CGROUP_ROOT</span>/system.slice/nginx.service/memory.max
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># CPU usage statistics</span>
+</span></span><span class=line><span class=cl>cat <span class=nv>$CGROUP_ROOT</span>/system.slice/nginx.service/cpu.stat
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># I/O pressure (cgroup v2 Pressure Stall Information)</span>
+</span></span><span class=line><span class=cl>cat <span class=nv>$CGROUP_ROOT</span>/system.slice/nginx.service/memory.pressure
+</span></span><span class=line><span class=cl><span class=c1># Output: some avg10=0.00 avg60=0.00 avg300=0.00 total=0</span>
+</span></span><span class=line><span class=cl><span class=c1>#          full avg10=0.00 avg60=0.00 avg300=0.00 total=0</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Check if a service is under memory pressure</span>
+</span></span><span class=line><span class=cl>cat <span class=nv>$CGROUP_ROOT</span>/system.slice/nginx.service/memory.events
+</span></span><span class=line><span class=cl><span class=c1># low 0, high 0, max 15, oom 2, oom_kill 1</span>
+</span></span></code></pre></td></tr></table></div></div><p>This direct cgroupfs access is what Docker, containerd, and systemd all use internally. For monitoring dashboards, parse these files with a script to feed data into Prometheus node_exporter or your metrics pipeline.</p><h2 id=troubleshooting-common-issues>Troubleshooting Common Issues</h2><p><strong>OOM killer invoked on your container:</strong> Check <code>memory.events</code> for the cgroup — if <code>oom_kill</code> is non-zero, your container exceeded its memory limit. Increase the limit with <code>systemctl set-property</code> or your container runtime&rsquo;s flag.</p><p><strong>CPU throttling despite low overall usage:</strong> Check <code>cpu.stat</code> for <code>nr_throttled</code> and <code>throttled_usec</code>. If the throttled time is high, your process is hitting its CPU quota even though the host has idle cores. Increase <code>CPUQuota</code> or switch to <code>CPUWeight</code>-based scheduling.</p><p><strong>Cannot set memory limit:</strong> You may be running on cgroup v1 (check <code>/sys/fs/cgroup/cgroup.controllers</code> exists). Migrate to cgroup v2 by adding <code>systemd.unified_cgroup_hierarchy=1</code> to your kernel command line.</p><h2 id=faq>FAQ</h2><h3 id=how-do-i-check-if-my-server-is-using-cgroup-v1-or-v2>How do I check if my server is using cgroup v1 or v2?</h3><p>Run <code>mount | grep cgroup</code>. If you see a single mount at <code>/sys/fs/cgroup</code> with type <code>cgroup2</code>, you&rsquo;re on v2. If you see multiple mounts (<code>cgroup on /sys/fs/cgroup/cpu</code>, <code>cgroup on /sys/fs/cgroup/memory</code>, etc.) you&rsquo;re on v1. Most modern distributions (Ubuntu 22.04+, Debian 11+, RHEL 9+) default to v2.</p><h3 id=what-are-the-main-benefits-of-cgroup-v2-over-v1>What are the main benefits of cgroup v2 over v1?</h3><p>Unified hierarchy — all controllers share a single tree, eliminating the complex multi-hierarchy management of v1. Pressure Stall Information (PSI) provides granular resource pressure metrics. Better memory accounting with <code>memory.current</code> vs. the confusing <code>memory.usage_in_bytes</code> of v1. Enhanced I/O controller with the <code>io.max</code> interface replacing <code>blkio.throttle</code>.</p><h3 id=can-i-mix-cgroup-v1-and-v2-on-the-same-system>Can I mix cgroup v1 and v2 on the same system?</h3><p>In hybrid mode, yes — but it&rsquo;s not recommended for production. Some controllers can run in v1 mode while others use v2. However, once a controller is bound to v1, it can&rsquo;t be used in v2. For cleanest behavior, go all-in on v2 with <code>systemd.unified_cgroup_hierarchy=1</code>.</p><h3 id=how-do-container-runtimes-use-cgroups>How do container runtimes use cgroups?</h3><p>Docker, Podman, and containerd create a child cgroup under their service slice for each container. When you specify <code>--cpus=2 --memory=1g</code> on <code>docker run</code>, Docker writes those values to <code>cpu.max</code> and <code>memory.max</code> in the container&rsquo;s cgroup directory. You can inspect this with <code>systemd-cgls</code> or by navigating <code>/sys/fs/cgroup/system.slice/docker-&lt;container-id>.scope/</code>.</p><h3 id=what-should-i-monitor-to-prevent-oom-kills>What should I monitor to prevent OOM kills?</h3><p>Monitor <code>memory.pressure</code> (PSI) and <code>memory.events</code> for each critical service cgroup. If <code>memory.pressure some</code> is elevated, the kernel is struggling to reclaim memory. If <code>oom_kill</code> is incrementing, your limits are too tight. Set up alerting on <code>memory.current / memory.max > 0.85</code> to warn before hitting the limit.</p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted Linux Cgroup v2 Resource Management: systemd-cgtop vs cgroup-tools vs libcgroup","description":"Complete guide to Linux cgroup v2 management tools — systemd-cgtop, cgroup-tools, libcgroup, and cgmanager — for monitoring and controlling resources on self-hosted servers.","datePublished":"2026-06-01","dateModified":"2026-06-01","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script><hr><p><strong>💰 想测试你的市场判断力？我用 <a href="https://polymarket.com/?r=fc8a0">Polymarket</a> 做预测市场交易——这是全球最大的预测市场平台，从大选结果到科技监管时间线，什么都可以押注。和赌博不同，这是真正的信息市场：你懂的信息越多，胜率越高。我靠预测科技趋势走向已经赚了不少。用我的邀请链接注册：</strong><a href="https://polymarket.com/?r=fc8a0">Polymarket.com</a></p></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20Linux%20Cgroup%20v2%20Resource%20Management%3a%20systemd-cgtop%20vs%20cgroup-tools%20vs%20libcgroup&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-06-01-linux-cgroup-v2-management-systemd-cgtop-cgroup-tools-libcgroup-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-06-01-linux-cgroup-v2-management-systemd-cgtop-cgroup-tools-libcgroup-guide%2f&t=Self-Hosted%20Linux%20Cgroup%20v2%20Resource%20Management%3a%20systemd-cgtop%20vs%20cgroup-tools%20vs%20libcgroup" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/linux/ class=tag-link>Linux</a>
+<a href=/tags/containers/ class=tag-link>Containers</a>
+<a href=/tags/self-hosted/ class=tag-link>Self-Hosted</a>
+<a href=/tags/resource-management/ class=tag-link>Resource-Management</a>
+<a href=/tags/system-administration/ class=tag-link>System-Administration</a>
+<a href=/tags/performance/ class=tag-link>Performance</a>
+<a href=/tags/systemd/ class=tag-link>Systemd</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-05-24-self-hosted-linux-cgroup-v2-administration-systemd-cgtop-cgroup-tools-libcgroup-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Cgroup</span></div><h3 class=post-title>Self-Hosted Linux cgroup v2 Administration: systemd-cgtop vs cgroup-tools vs libcgroup (2026)</h3><div class=post-excerpt>Linux control groups (cgroups) are the kernel feature that makes modern containerization possible. They partition system …</div><div class=post-footer><span class=post-date>May 24, 2026</span></div></a><a href=/posts/2026-06-01-linux-boot-performance-analysis-systemd-analyze-bootchart-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted Linux Boot Performance Analysis: systemd-analyze vs Bootchart2 vs systemd-boot-check</h3><div class=post-excerpt>Introduction Server boot time matters more than most administrators realize. In cloud environments with auto-scaling …</div><div class=post-footer><span class=post-date>Jun 1, 2026</span></div></a><a href=/posts/2026-05-24-self-hosted-linux-process-resource-limits-systemd-pam-limits-cgroup-v2-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted Linux Process Resource Limits: systemd vs pam_limits vs cgroup v2 (2026)</h3><div class=post-excerpt>Resource limits are a critical aspect of self-hosted server administration. Without proper limits, a single runaway …</div><div class=post-footer><span class=post-date>May 24, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>

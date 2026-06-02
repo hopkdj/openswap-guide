@@ -1,0 +1,440 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted PostgreSQL Data Federation: postgres_fdw vs mysql_fdw vs tds_fdw — Cross-Database Query Guide | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-06-02-postgresql-fdw-data-federation-postgres-fdw-mysql-fdw-tds-fdw-guide/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted PostgreSQL Data Federation: postgres_fdw vs mysql_fdw vs tds_fdw — Cross-Database Query Guide"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-06-02-postgresql-fdw-data-federation-postgres-fdw-mysql-fdw-tds-fdw-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-06-02T00:00:00Z"><meta property="article:modified_time" content="2026-06-02T00:00:00Z"><meta property="article:tag" content="postgresql"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted PostgreSQL Data Federation: postgres_fdw vs mysql_fdw vs tds_fdw — Cross-Database Query Guide"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted PostgreSQL Data Federation: postgres_fdw vs mysql_fdw vs tds_fdw — Cross-Database Query Guide","description":"\u003ch2 id=\u0022introduction\u0022\u003eIntroduction\u003c\/h2\u003e\n\u003cp\u003eModern self-hosted architectures rarely rely on a single database engine. A typical deployment might use PostgreSQL for transactional data, MySQL for a legacy application, and Microsoft SQL Server for a vendor system. PostgreSQL\u0026rsquo;s Foreign Data Wrapper (FDW) framework enables transparent cross-database queries — you can \u003ccode\u003eJOIN\u003c\/code\u003e a local PostgreSQL table with a remote MySQL table in a single SQL statement without ETL pipelines.\u003c\/p\u003e","datePublished":"2026-06-02T00:00:00Z","dateModified":"2026-06-02T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-06-02-postgresql-fdw-data-federation-postgres-fdw-mysql-fdw-tds-fdw-guide\/"},"keywords":["postgresql","database","fdw","data-federation","mysql","mssql","self-hosted","sql"],"articleSection":"postgresql","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted PostgreSQL Data Federation: postgres_fdw vs mysql_fdw vs tds_fdw — Cross-Database Query Guide","item":"https:\/\/www.pistack.xyz\/posts\/2026-06-02-postgresql-fdw-data-federation-postgres-fdw-mysql-fdw-tds-fdw-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Postgresql</span>
+<span class="tag tag-purple">Database</span>
+<span class="tag tag-purple">Fdw</span></div><h1>Self-Hosted PostgreSQL Data Federation: postgres_fdw vs mysql_fdw vs tds_fdw — Cross-Database Query Guide</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>June 2, 2026</span>
+<span>8 min read</span>
+<span>Updated June 2, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#introduction>Introduction</a></li><li><a href=#comparison-table>Comparison Table</a></li><li><a href=#postgres_fdw-postgresql-to-postgresql-federation>postgres_fdw: PostgreSQL-to-PostgreSQL Federation</a><ul><li><a href=#docker-compose-setup>Docker Compose Setup</a></li><li><a href=#creating-and-using-postgres_fdw>Creating and Using postgres_fdw</a></li><li><a href=#performance-tuning>Performance Tuning</a></li></ul></li><li><a href=#mysql_fdw-bridging-mysql-and-postgresql>mysql_fdw: Bridging MySQL and PostgreSQL</a><ul><li><a href=#installation>Installation</a></li><li><a href=#configuration--usage>Configuration & Usage</a></li><li><a href=#ssltls-configuration>SSL/TLS Configuration</a></li></ul></li><li><a href=#tds_fdw-sql-server-integration>tds_fdw: SQL Server Integration</a><ul><li><a href=#installation-1>Installation</a></li><li><a href=#freetds-configuration>FreeTDS Configuration</a></li><li><a href=#usage>Usage</a></li></ul></li><li><a href=#deployment-architecture>Deployment Architecture</a></li><li><a href=#security-best-practices>Security Best Practices</a></li><li><a href=#why-self-host-your-data-federation-layer>Why Self-Host Your Data Federation Layer?</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#whats-the-performance-overhead-of-fdw-queries>What&rsquo;s the performance overhead of FDW queries?</a></li><li><a href=#can-i-use-fdws-in-high-availability-setups>Can I use FDWs in high-availability setups?</a></li><li><a href=#how-do-fdws-handle-data-type-differences>How do FDWs handle data type differences?</a></li><li><a href=#can-i-combine-multiple-fdws-in-a-single-query>Can I combine multiple FDWs in a single query?</a></li><li><a href=#what-about-json-and-nosql-fdws>What about JSON and NoSQL FDWs?</a></li><li><a href=#are-fdws-suitable-for-real-time-applications>Are FDWs suitable for real-time applications?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><h2 id=introduction>Introduction</h2><p>Modern self-hosted architectures rarely rely on a single database engine. A typical deployment might use PostgreSQL for transactional data, MySQL for a legacy application, and Microsoft SQL Server for a vendor system. PostgreSQL&rsquo;s Foreign Data Wrapper (FDW) framework enables transparent cross-database queries — you can <code>JOIN</code> a local PostgreSQL table with a remote MySQL table in a single SQL statement without ETL pipelines.</p><p>This guide compares three production-grade FDWs: the built-in <strong>postgres_fdw</strong> for PostgreSQL-to-PostgreSQL federation, <strong>mysql_fdw</strong> for MySQL/MariaDB access, and <strong>tds_fdw</strong> for Microsoft SQL Server and Sybase connectivity. We cover installation, performance tuning, security, and self-hosted deployment patterns.</p><h2 id=comparison-table>Comparison Table</h2><table><thead><tr><th>Feature</th><th>postgres_fdw</th><th>mysql_fdw</th><th>tds_fdw</th></tr></thead><tbody><tr><td>Source Database</td><td>PostgreSQL 9.6+</td><td>MySQL 5.5+ / MariaDB</td><td>MSSQL 2008+ / Sybase</td></tr><tr><td>Stars</td><td>Bundled with PG (21K+)</td><td>596</td><td>427</td></tr><tr><td>Last Update</td><td>Continuous</td><td>May 2026</td><td>May 2026</td></tr><tr><td>Pushdown (WHERE)</td><td>Full</td><td>Partial</td><td>Partial</td></tr><tr><td>Pushdown (JOIN)</td><td>Yes (PG 11+)</td><td>No</td><td>No</td></tr><tr><td>Pushdown (Aggregates)</td><td>Yes (PG 14+)</td><td>No</td><td>No</td></tr><tr><td>Write Support</td><td>INSERT/UPDATE/DELETE</td><td>INSERT/UPDATE/DELETE</td><td>INSERT/UPDATE/DELETE</td></tr><tr><td>Column Mapping</td><td>Automatic</td><td>Manual via options</td><td>Manual via options</td></tr><tr><td>SSL/TLS</td><td>Native</td><td>Via MySQL SSL</td><td>Via FreeTDS</td></tr><tr><td>Import Schema</td><td>IMPORT FOREIGN SCHEMA</td><td>IMPORT FOREIGN SCHEMA</td><td>IMPORT FOREIGN SCHEMA</td></tr><tr><td>Transaction Support</td><td>Yes (2PC optional)</td><td>Limited</td><td>Limited</td></tr></tbody></table><h2 id=postgres_fdw-postgresql-to-postgresql-federation>postgres_fdw: PostgreSQL-to-PostgreSQL Federation</h2><p><code>postgres_fdw</code> is included in the PostgreSQL core distribution since 9.3 and provides the deepest query pushdown capabilities among all FDWs. It can push down <code>WHERE</code> clauses, <code>JOIN</code>s, <code>ORDER BY</code>, <code>LIMIT</code>, and aggregate functions to the remote server, minimizing data transfer.</p><h3 id=docker-compose-setup>Docker Compose Setup</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>postgres-primary</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>postgres:17</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>pg-primary</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_USER</span><span class=p>:</span><span class=w> </span><span class=l>admin</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_PASSWORD</span><span class=p>:</span><span class=w> </span><span class=l>securepass</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_DB</span><span class=p>:</span><span class=w> </span><span class=l>analytics</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;5432:5432&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>pg-primary-data:/var/lib/postgresql/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>postgres-remote</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>postgres:17</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>pg-remote</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>environment</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_USER</span><span class=p>:</span><span class=w> </span><span class=l>admin</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_PASSWORD</span><span class=p>:</span><span class=w> </span><span class=l>securepass</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span><span class=nt>POSTGRES_DB</span><span class=p>:</span><span class=w> </span><span class=l>inventory</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;5433:5432&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>pg-remote-data:/var/lib/postgresql/data</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>pg-primary-data</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>pg-remote-data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=creating-and-using-postgres_fdw>Creating and Using postgres_fdw</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-sql data-lang=sql><span class=line><span class=cl><span class=c1>-- Enable extension
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>CREATE</span><span class=w> </span><span class=n>EXTENSION</span><span class=w> </span><span class=n>postgres_fdw</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c1>-- Define remote server
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>CREATE</span><span class=w> </span><span class=n>SERVER</span><span class=w> </span><span class=n>inventory_server</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=k>FOREIGN</span><span class=w> </span><span class=k>DATA</span><span class=w> </span><span class=n>WRAPPER</span><span class=w> </span><span class=n>postgres_fdw</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=k>OPTIONS</span><span class=w> </span><span class=p>(</span><span class=k>host</span><span class=w> </span><span class=s1>&#39;pg-remote&#39;</span><span class=p>,</span><span class=w> </span><span class=n>port</span><span class=w> </span><span class=s1>&#39;5432&#39;</span><span class=p>,</span><span class=w> </span><span class=n>dbname</span><span class=w> </span><span class=s1>&#39;inventory&#39;</span><span class=p>);</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c1>-- Create user mapping
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>CREATE</span><span class=w> </span><span class=k>USER</span><span class=w> </span><span class=n>MAPPING</span><span class=w> </span><span class=k>FOR</span><span class=w> </span><span class=k>CURRENT_USER</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=n>SERVER</span><span class=w> </span><span class=n>inventory_server</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=k>OPTIONS</span><span class=w> </span><span class=p>(</span><span class=k>user</span><span class=w> </span><span class=s1>&#39;admin&#39;</span><span class=p>,</span><span class=w> </span><span class=n>password</span><span class=w> </span><span class=s1>&#39;securepass&#39;</span><span class=p>);</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c1>-- Import remote schema
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=n>IMPORT</span><span class=w> </span><span class=k>FOREIGN</span><span class=w> </span><span class=k>SCHEMA</span><span class=w> </span><span class=k>public</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=k>FROM</span><span class=w> </span><span class=n>SERVER</span><span class=w> </span><span class=n>inventory_server</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=k>INTO</span><span class=w> </span><span class=k>public</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c1>-- Cross-database query with JOIN pushdown (PG 11+)
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>SELECT</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>a</span><span class=p>.</span><span class=n>order_id</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>a</span><span class=p>.</span><span class=n>customer_name</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>i</span><span class=p>.</span><span class=n>product_name</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>i</span><span class=p>.</span><span class=n>warehouse_location</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>FROM</span><span class=w> </span><span class=n>orders</span><span class=w> </span><span class=n>a</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>JOIN</span><span class=w> </span><span class=n>inventory</span><span class=p>.</span><span class=n>products</span><span class=w> </span><span class=n>i</span><span class=w> </span><span class=k>ON</span><span class=w> </span><span class=n>a</span><span class=p>.</span><span class=n>product_id</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>i</span><span class=p>.</span><span class=n>product_id</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>WHERE</span><span class=w> </span><span class=n>a</span><span class=p>.</span><span class=n>order_date</span><span class=w> </span><span class=o>&gt;</span><span class=w> </span><span class=k>CURRENT_DATE</span><span class=w> </span><span class=o>-</span><span class=w> </span><span class=nb>INTERVAL</span><span class=w> </span><span class=s1>&#39;30 days&#39;</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c1>-- EXPLAIN to verify pushdown
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>EXPLAIN</span><span class=w> </span><span class=p>(</span><span class=k>VERBOSE</span><span class=p>,</span><span class=w> </span><span class=k>ANALYZE</span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>SELECT</span><span class=w> </span><span class=o>*</span><span class=w> </span><span class=k>FROM</span><span class=w> </span><span class=n>inventory</span><span class=p>.</span><span class=n>products</span><span class=w> </span><span class=k>WHERE</span><span class=w> </span><span class=n>price</span><span class=w> </span><span class=o>&gt;</span><span class=w> </span><span class=mi>100</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c1>-- Look for &#34;Foreign Scan&#34; with &#34;Remote SQL&#34; showing pushed-down WHERE clause
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=performance-tuning>Performance Tuning</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-sql data-lang=sql><span class=line><span class=cl><span class=c1>-- Increase fetch size for large result sets
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>ALTER</span><span class=w> </span><span class=n>SERVER</span><span class=w> </span><span class=n>inventory_server</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=k>OPTIONS</span><span class=w> </span><span class=p>(</span><span class=k>ADD</span><span class=w> </span><span class=n>fetch_size</span><span class=w> </span><span class=s1>&#39;50000&#39;</span><span class=p>);</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c1>-- Enable batch inserts
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>ALTER</span><span class=w> </span><span class=k>FOREIGN</span><span class=w> </span><span class=k>TABLE</span><span class=w> </span><span class=n>inventory</span><span class=p>.</span><span class=n>products</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=k>OPTIONS</span><span class=w> </span><span class=p>(</span><span class=n>batch_size</span><span class=w> </span><span class=s1>&#39;1000&#39;</span><span class=p>);</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c1>-- Use async execution (PG 14+)
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>SET</span><span class=w> </span><span class=n>enable_async_append</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=k>on</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>SET</span><span class=w> </span><span class=n>enable_async_foreign_scan</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=k>on</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c1>-- Analyze remote table statistics
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>ALTER</span><span class=w> </span><span class=k>FOREIGN</span><span class=w> </span><span class=k>TABLE</span><span class=w> </span><span class=n>inventory</span><span class=p>.</span><span class=n>products</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=k>OPTIONS</span><span class=w> </span><span class=p>(</span><span class=k>analyze</span><span class=w> </span><span class=s1>&#39;true&#39;</span><span class=p>);</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>ANALYZE</span><span class=w> </span><span class=n>inventory</span><span class=p>.</span><span class=n>products</span><span class=p>;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=mysql_fdw-bridging-mysql-and-postgresql>mysql_fdw: Bridging MySQL and PostgreSQL</h2><p><code>mysql_fdw</code> enables PostgreSQL to query MySQL and MariaDB databases. It supports read/write operations and partial query pushdown for <code>WHERE</code> clauses.</p><h3 id=installation>Installation</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install MySQL client library</span>
+</span></span><span class=line><span class=cl>sudo apt install libmysqlclient-dev
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Clone and build</span>
+</span></span><span class=line><span class=cl>git clone https://github.com/EnterpriseDB/mysql_fdw.git
+</span></span><span class=line><span class=cl><span class=nb>cd</span> mysql_fdw
+</span></span><span class=line><span class=cl>make <span class=nv>USE_PGXS</span><span class=o>=</span><span class=m>1</span>
+</span></span><span class=line><span class=cl>sudo make <span class=nv>USE_PGXS</span><span class=o>=</span><span class=m>1</span> install
+</span></span></code></pre></td></tr></table></div></div><h3 id=configuration--usage>Configuration & Usage</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-sql data-lang=sql><span class=line><span class=cl><span class=k>CREATE</span><span class=w> </span><span class=n>EXTENSION</span><span class=w> </span><span class=n>mysql_fdw</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>CREATE</span><span class=w> </span><span class=n>SERVER</span><span class=w> </span><span class=n>mysql_legacy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=k>FOREIGN</span><span class=w> </span><span class=k>DATA</span><span class=w> </span><span class=n>WRAPPER</span><span class=w> </span><span class=n>mysql_fdw</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=k>OPTIONS</span><span class=w> </span><span class=p>(</span><span class=k>host</span><span class=w> </span><span class=s1>&#39;10.0.1.50&#39;</span><span class=p>,</span><span class=w> </span><span class=n>port</span><span class=w> </span><span class=s1>&#39;3306&#39;</span><span class=p>);</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>CREATE</span><span class=w> </span><span class=k>USER</span><span class=w> </span><span class=n>MAPPING</span><span class=w> </span><span class=k>FOR</span><span class=w> </span><span class=k>CURRENT_USER</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=n>SERVER</span><span class=w> </span><span class=n>mysql_legacy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=k>OPTIONS</span><span class=w> </span><span class=p>(</span><span class=n>username</span><span class=w> </span><span class=s1>&#39;reader&#39;</span><span class=p>,</span><span class=w> </span><span class=n>password</span><span class=w> </span><span class=s1>&#39;readonly_pass&#39;</span><span class=p>);</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c1>-- Create foreign table with column mapping
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>CREATE</span><span class=w> </span><span class=k>FOREIGN</span><span class=w> </span><span class=k>TABLE</span><span class=w> </span><span class=n>legacy_users</span><span class=w> </span><span class=p>(</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>user_id</span><span class=w>     </span><span class=nb>INTEGER</span><span class=w> </span><span class=k>OPTIONS</span><span class=w> </span><span class=p>(</span><span class=k>key</span><span class=w> </span><span class=s1>&#39;true&#39;</span><span class=p>),</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>full_name</span><span class=w>   </span><span class=nb>VARCHAR</span><span class=p>(</span><span class=mi>255</span><span class=p>),</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>email</span><span class=w>       </span><span class=nb>VARCHAR</span><span class=p>(</span><span class=mi>255</span><span class=p>),</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>created_at</span><span class=w>  </span><span class=k>TIMESTAMP</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=n>SERVER</span><span class=w> </span><span class=n>mysql_legacy</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>OPTIONS</span><span class=w> </span><span class=p>(</span><span class=n>dbname</span><span class=w> </span><span class=s1>&#39;app_db&#39;</span><span class=p>,</span><span class=w> </span><span class=k>table_name</span><span class=w> </span><span class=s1>&#39;users&#39;</span><span class=p>);</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c1>-- Cross-engine JOIN
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>SELECT</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>u</span><span class=p>.</span><span class=n>full_name</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>p</span><span class=p>.</span><span class=n>plan_name</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>FROM</span><span class=w> </span><span class=n>legacy_users</span><span class=w> </span><span class=n>u</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>JOIN</span><span class=w> </span><span class=k>public</span><span class=p>.</span><span class=n>subscriptions</span><span class=w> </span><span class=n>p</span><span class=w> </span><span class=k>ON</span><span class=w> </span><span class=n>u</span><span class=p>.</span><span class=n>user_id</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>p</span><span class=p>.</span><span class=n>user_id</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>WHERE</span><span class=w> </span><span class=n>u</span><span class=p>.</span><span class=n>created_at</span><span class=w> </span><span class=o>&gt;</span><span class=w> </span><span class=s1>&#39;2024-01-01&#39;</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c1>-- Write operations
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>INSERT</span><span class=w> </span><span class=k>INTO</span><span class=w> </span><span class=n>legacy_users</span><span class=w> </span><span class=p>(</span><span class=n>user_id</span><span class=p>,</span><span class=w> </span><span class=n>full_name</span><span class=p>,</span><span class=w> </span><span class=n>email</span><span class=p>,</span><span class=w> </span><span class=n>created_at</span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>VALUES</span><span class=w> </span><span class=p>(</span><span class=mi>1001</span><span class=p>,</span><span class=w> </span><span class=s1>&#39;Jane Smith&#39;</span><span class=p>,</span><span class=w> </span><span class=s1>&#39;jane@example.com&#39;</span><span class=p>,</span><span class=w> </span><span class=n>NOW</span><span class=p>());</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=ssltls-configuration>SSL/TLS Configuration</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-sql data-lang=sql><span class=line><span class=cl><span class=k>CREATE</span><span class=w> </span><span class=n>SERVER</span><span class=w> </span><span class=n>mysql_secure</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=k>FOREIGN</span><span class=w> </span><span class=k>DATA</span><span class=w> </span><span class=n>WRAPPER</span><span class=w> </span><span class=n>mysql_fdw</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=k>OPTIONS</span><span class=w> </span><span class=p>(</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=k>host</span><span class=w> </span><span class=s1>&#39;db.internal&#39;</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>port</span><span class=w> </span><span class=s1>&#39;3306&#39;</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>ssl_key</span><span class=w> </span><span class=s1>&#39;/etc/ssl/private/client-key.pem&#39;</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>ssl_cert</span><span class=w> </span><span class=s1>&#39;/etc/ssl/certs/client-cert.pem&#39;</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>ssl_ca</span><span class=w> </span><span class=s1>&#39;/etc/ssl/certs/ca-cert.pem&#39;</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>ssl_cipher</span><span class=w> </span><span class=s1>&#39;ECDHE-RSA-AES256-GCM-SHA384&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=p>);</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=tds_fdw-sql-server-integration>tds_fdw: SQL Server Integration</h2><p><code>tds_fdw</code> connects PostgreSQL to Microsoft SQL Server and Sybase databases via the FreeTDS library. It&rsquo;s essential for organizations migrating from MSSQL to PostgreSQL or maintaining hybrid architectures.</p><h3 id=installation-1>Installation</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install FreeTDS</span>
+</span></span><span class=line><span class=cl>sudo apt install freetds-dev freetds-bin
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Clone and build</span>
+</span></span><span class=line><span class=cl>git clone https://github.com/tds-fdw/tds_fdw.git
+</span></span><span class=line><span class=cl><span class=nb>cd</span> tds_fdw
+</span></span><span class=line><span class=cl>make <span class=nv>USE_PGXS</span><span class=o>=</span><span class=m>1</span>
+</span></span><span class=line><span class=cl>sudo make <span class=nv>USE_PGXS</span><span class=o>=</span><span class=m>1</span> install
+</span></span></code></pre></td></tr></table></div></div><h3 id=freetds-configuration>FreeTDS Configuration</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=c1># /etc/freetds/freetds.conf</span>
+</span></span><span class=line><span class=cl><span class=k>[mssql-prod]</span>
+</span></span><span class=line><span class=cl>    <span class=na>host</span> <span class=o>=</span> <span class=s>mssql.corp.internal
+</span></span></span><span class=line><span class=cl><span class=s>    port = 1433
+</span></span></span><span class=line><span class=cl><span class=s>    tds version = 7.4
+</span></span></span><span class=line><span class=cl><span class=s>    encryption = require
+</span></span></span><span class=line><span class=cl><span class=s>    client charset = UTF-8</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=usage>Usage</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-sql data-lang=sql><span class=line><span class=cl><span class=k>CREATE</span><span class=w> </span><span class=n>EXTENSION</span><span class=w> </span><span class=n>tds_fdw</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>CREATE</span><span class=w> </span><span class=n>SERVER</span><span class=w> </span><span class=n>mssql_server</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=k>FOREIGN</span><span class=w> </span><span class=k>DATA</span><span class=w> </span><span class=n>WRAPPER</span><span class=w> </span><span class=n>tds_fdw</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=k>OPTIONS</span><span class=w> </span><span class=p>(</span><span class=n>servername</span><span class=w> </span><span class=s1>&#39;mssql-prod&#39;</span><span class=p>,</span><span class=w> </span><span class=k>database</span><span class=w> </span><span class=s1>&#39;erp_db&#39;</span><span class=p>);</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>CREATE</span><span class=w> </span><span class=k>USER</span><span class=w> </span><span class=n>MAPPING</span><span class=w> </span><span class=k>FOR</span><span class=w> </span><span class=k>CURRENT_USER</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=n>SERVER</span><span class=w> </span><span class=n>mssql_server</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=k>OPTIONS</span><span class=w> </span><span class=p>(</span><span class=n>username</span><span class=w> </span><span class=s1>&#39;report_user&#39;</span><span class=p>,</span><span class=w> </span><span class=n>password</span><span class=w> </span><span class=s1>&#39;report_pass&#39;</span><span class=p>);</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c1>-- Foreign table for SQL Server data
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>CREATE</span><span class=w> </span><span class=k>FOREIGN</span><span class=w> </span><span class=k>TABLE</span><span class=w> </span><span class=n>erp_orders</span><span class=w> </span><span class=p>(</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>id</span><span class=w>          </span><span class=nb>INTEGER</span><span class=w> </span><span class=k>OPTIONS</span><span class=w> </span><span class=p>(</span><span class=k>key</span><span class=w> </span><span class=s1>&#39;true&#39;</span><span class=p>),</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>order_date</span><span class=w>  </span><span class=k>TIMESTAMP</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>total</span><span class=w>       </span><span class=nb>NUMERIC</span><span class=p>(</span><span class=mi>12</span><span class=p>,</span><span class=mi>2</span><span class=p>),</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>status</span><span class=w>      </span><span class=nb>VARCHAR</span><span class=p>(</span><span class=mi>50</span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=n>SERVER</span><span class=w> </span><span class=n>mssql_server</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>OPTIONS</span><span class=w> </span><span class=p>(</span><span class=k>schema_name</span><span class=w> </span><span class=s1>&#39;dbo&#39;</span><span class=p>,</span><span class=w> </span><span class=k>table_name</span><span class=w> </span><span class=s1>&#39;Orders&#39;</span><span class=p>);</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c1>-- Hybrid query with data masking
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>SELECT</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>eo</span><span class=p>.</span><span class=n>id</span><span class=w> </span><span class=k>AS</span><span class=w> </span><span class=n>erp_order_id</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>p</span><span class=p>.</span><span class=n>sku</span><span class=w> </span><span class=k>AS</span><span class=w> </span><span class=n>product_code</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=n>eo</span><span class=p>.</span><span class=n>total</span><span class=w> </span><span class=k>AS</span><span class=w> </span><span class=n>order_amount</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=k>CASE</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=k>WHEN</span><span class=w> </span><span class=n>eo</span><span class=p>.</span><span class=n>status</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=s1>&#39;SHIPPED&#39;</span><span class=w> </span><span class=k>THEN</span><span class=w> </span><span class=s1>&#39;Fulfilled&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>        </span><span class=k>ELSE</span><span class=w> </span><span class=s1>&#39;Pending&#39;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=k>END</span><span class=w> </span><span class=k>AS</span><span class=w> </span><span class=n>order_status</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>FROM</span><span class=w> </span><span class=n>erp_orders</span><span class=w> </span><span class=n>eo</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>JOIN</span><span class=w> </span><span class=k>public</span><span class=p>.</span><span class=n>products</span><span class=w> </span><span class=n>p</span><span class=w> </span><span class=k>ON</span><span class=w> </span><span class=n>p</span><span class=p>.</span><span class=n>mssql_product_ref</span><span class=w> </span><span class=o>=</span><span class=w> </span><span class=n>eo</span><span class=p>.</span><span class=n>id</span><span class=p>::</span><span class=nb>text</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>WHERE</span><span class=w> </span><span class=n>eo</span><span class=p>.</span><span class=n>order_date</span><span class=w> </span><span class=o>&gt;</span><span class=w> </span><span class=k>CURRENT_DATE</span><span class=w> </span><span class=o>-</span><span class=w> </span><span class=nb>INTERVAL</span><span class=w> </span><span class=s1>&#39;90 days&#39;</span><span class=p>;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=deployment-architecture>Deployment Architecture</h2><p>For production deployments, consider this architecture pattern:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>┌─────────────────────────────────────────────┐
+</span></span><span class=line><span class=cl>│             Application Layer               │
+</span></span><span class=line><span class=cl>│      (Connects to PostgreSQL primary)       │
+</span></span><span class=line><span class=cl>└──────────────────┬──────────────────────────┘
+</span></span><span class=line><span class=cl>                   │
+</span></span><span class=line><span class=cl>┌──────────────────▼──────────────────────────┐
+</span></span><span class=line><span class=cl>│         PostgreSQL 17 (Primary)             │
+</span></span><span class=line><span class=cl>│  ┌──────────────────────────────────────┐   │
+</span></span><span class=line><span class=cl>│  │  postgres_fdw → Remote PG servers   │   │
+</span></span><span class=line><span class=cl>│  │  mysql_fdw    → MySQL/MariaDB       │   │
+</span></span><span class=line><span class=cl>│  │  tds_fdw      → MSSQL/Sybase        │   │
+</span></span><span class=line><span class=cl>│  └──────────────────────────────────────┘   │
+</span></span><span class=line><span class=cl>└──────┬──────────────┬──────────────┬────────┘
+</span></span><span class=line><span class=cl>       │              │              │
+</span></span><span class=line><span class=cl>       ▼              ▼              ▼
+</span></span><span class=line><span class=cl>┌──────────┐  ┌──────────┐  ┌──────────┐
+</span></span><span class=line><span class=cl>│  Remote  │  │  MySQL   │  │  MSSQL   │
+</span></span><span class=line><span class=cl>│    PG    │  │  Server  │  │  Server  │
+</span></span><span class=line><span class=cl>└──────────┘  └──────────┘  └──────────┘
+</span></span></code></pre></td></tr></table></div></div><h2 id=security-best-practices>Security Best Practices</h2><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-sql data-lang=sql><span class=line><span class=cl><span class=c1>-- Use dedicated read-only users on remote servers
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>CREATE</span><span class=w> </span><span class=k>USER</span><span class=w> </span><span class=n>fdw_reader</span><span class=w> </span><span class=k>WITH</span><span class=w> </span><span class=n>PASSWORD</span><span class=w> </span><span class=s1>&#39;complex-password&#39;</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>GRANT</span><span class=w> </span><span class=k>SELECT</span><span class=w> </span><span class=k>ON</span><span class=w> </span><span class=k>ALL</span><span class=w> </span><span class=n>TABLES</span><span class=w> </span><span class=k>IN</span><span class=w> </span><span class=k>SCHEMA</span><span class=w> </span><span class=k>public</span><span class=w> </span><span class=k>TO</span><span class=w> </span><span class=n>fdw_reader</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c1>-- Limit FDW connections per server
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>ALTER</span><span class=w> </span><span class=n>SERVER</span><span class=w> </span><span class=n>mssql_server</span><span class=w> </span><span class=k>OPTIONS</span><span class=w> </span><span class=p>(</span><span class=k>ADD</span><span class=w> </span><span class=n>fdw_connections</span><span class=w> </span><span class=s1>&#39;5&#39;</span><span class=p>);</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c1>-- Enable query timeout
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>ALTER</span><span class=w> </span><span class=n>SERVER</span><span class=w> </span><span class=n>mysql_legacy</span><span class=w> </span><span class=k>OPTIONS</span><span class=w> </span><span class=p>(</span><span class=k>ADD</span><span class=w> </span><span class=n>fdw_timeout</span><span class=w> </span><span class=s1>&#39;30&#39;</span><span class=p>);</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=c1>-- Use materialized views for frequently accessed remote data
+</span></span></span><span class=line><span class=cl><span class=c1></span><span class=k>CREATE</span><span class=w> </span><span class=n>MATERIALIZED</span><span class=w> </span><span class=k>VIEW</span><span class=w> </span><span class=n>mv_remote_summary</span><span class=w> </span><span class=k>AS</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>SELECT</span><span class=w> </span><span class=n>date_trunc</span><span class=p>(</span><span class=s1>&#39;day&#39;</span><span class=p>,</span><span class=w> </span><span class=n>order_date</span><span class=p>)</span><span class=w> </span><span class=k>AS</span><span class=w> </span><span class=k>day</span><span class=p>,</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>       </span><span class=k>COUNT</span><span class=p>(</span><span class=o>*</span><span class=p>),</span><span class=w> </span><span class=k>SUM</span><span class=p>(</span><span class=n>total</span><span class=p>)</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>FROM</span><span class=w> </span><span class=n>erp_orders</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=k>GROUP</span><span class=w> </span><span class=k>BY</span><span class=w> </span><span class=mi>1</span><span class=p>;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=n>REFRESH</span><span class=w> </span><span class=n>MATERIALIZED</span><span class=w> </span><span class=k>VIEW</span><span class=w> </span><span class=n>CONCURRENTLY</span><span class=w> </span><span class=n>mv_remote_summary</span><span class=p>;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=why-self-host-your-data-federation-layer>Why Self-Host Your Data Federation Layer?</h2><p>Running your own data federation layer eliminates vendor lock-in for cross-database queries. Cloud providers charge premiums for cross-region or cross-engine query capabilities — AWS Athena Federated Queries costs $5 per TB scanned, and Azure Synapse Link charges per vCore-hour. Self-hosted FDWs run on your existing PostgreSQL instance at zero additional licensing cost.</p><p>Data sovereignty is equally important. When your PostgreSQL server queries a remote database, the data flows directly between the two without intermediate cloud services that can log, inspect, or throttle your queries. This is critical for GDPR compliance when personal data spans multiple database systems.</p><p>The FDW approach also simplifies migrations. Organizations moving from MSSQL to PostgreSQL can use tds_fdw to keep the old system accessible during a phased migration — applications gradually switch to native PostgreSQL tables while still querying legacy data through foreign tables. For more on database migration strategies, see our <a href=../pgbackrest-vs-barman-vs-wal-g-self-hosted-postgresql-backup-guide-2026/>PostgreSQL Backup comparison guide</a>. Our <a href=../postgresql-vs-mysql-mariadb-database-comparison-guide/>PostgreSQL vs MySQL comparison</a> covers when each engine is the right choice, and our <a href=../2026-06-02-postgresql-log-analysis-pgbadger-pgstatstatements-csv-guide/>PostgreSQL Log Analysis guide</a> covers query performance diagnostics.</p><h2 id=faq>FAQ</h2><h3 id=whats-the-performance-overhead-of-fdw-queries>What&rsquo;s the performance overhead of FDW queries?</h3><p>FDWs add network latency overhead. For a remote row count query, expect 2-5ms added latency on local networks. Query pushdown dramatically reduces this — with postgres_fdw pushing down a <code>WHERE</code> clause, only matching rows transfer over the network. Without pushdown, the entire table scans locally. Always run <code>EXPLAIN (ANALYZE, VERBOSE)</code> to verify which operations are pushed to the remote server.</p><h3 id=can-i-use-fdws-in-high-availability-setups>Can I use FDWs in high-availability setups?</h3><p>Yes. Use connection pooling (PgBouncer or Odyssey) in front of the PostgreSQL instance running FDWs. For the remote servers, specify multiple hosts using DNS load balancing or a TCP proxy like HAProxy. postgres_fdw supports <code>application_name</code> for connection identification in monitoring tools.</p><h3 id=how-do-fdws-handle-data-type-differences>How do FDWs handle data type differences?</h3><p>Each FDW maps remote types to PostgreSQL types. postgres_fdw preserves types exactly since both ends are PostgreSQL. mysql_fdw maps MySQL&rsquo;s <code>DATETIME</code> to <code>TIMESTAMP</code>, <code>TINYINT</code> to <code>SMALLINT</code>, and <code>TEXT</code> to <code>TEXT</code>. tds_fdw maps MSSQL&rsquo;s <code>NVARCHAR</code> to <code>VARCHAR</code> and <code>MONEY</code> to <code>NUMERIC(19,4)</code>. Check the specific mapping in each FDW&rsquo;s documentation for edge cases.</p><h3 id=can-i-combine-multiple-fdws-in-a-single-query>Can I combine multiple FDWs in a single query?</h3><p>Yes. You can JOIN a local table, a postgres_fdw foreign table, and a mysql_fdw foreign table in one query. However, cross-FDW JOINs execute on the local PostgreSQL instance — neither foreign server can push down a JOIN involving a different FDW. For read-heavy cross-FDW queries, consider creating materialized views.</p><h3 id=what-about-json-and-nosql-fdws>What about JSON and NoSQL FDWs?</h3><p>Beyond relational databases, PostgreSQL offers FDWs for MongoDB (<code>mongo_fdw</code>), Redis (<code>redis_fdw</code>), S3 files (<code>s3_fdw</code>), and even CSV files (<code>file_fdw</code>). The same access patterns apply — you define a foreign server, user mapping, and foreign tables, then query non-relational data with SQL.</p><h3 id=are-fdws-suitable-for-real-time-applications>Are FDWs suitable for real-time applications?</h3><p>For OLTP workloads requiring sub-millisecond latency, FDWs are not ideal. Each query to a foreign table involves network round trips. Use FDWs for reporting, analytics, ETL, and phased migrations. For real-time cross-database transactions, consider CDC (Change Data Capture) with tools like Debezium instead.</p><hr><p><strong>💰 想测试你的市场判断力？我用 <a href="https://polymarket.com/?r=fc8a0">Polymarket</a> 做预测市场交易——这是全球最大的预测市场平台，从大选结果到技术监管时间线，什么都可以押注。和赌博不同，这是真正的信息市场：你懂的信息越多，胜率越高。我靠预测技术相关事件的走向已经赚了不少。用我的邀请链接注册：</strong><a href="https://polymarket.com/?r=fc8a0">Polymarket.com</a></p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted PostgreSQL Data Federation: postgres_fdw vs mysql_fdw vs tds_fdw — Cross-Database Query Guide","description":"Comprehensive guide to PostgreSQL Foreign Data Wrappers for cross-database queries: postgres_fdw, mysql_fdw, and tds_fdw. Includes Docker Compose configs, performance tuning, and security best practices.","datePublished":"2026-06-02","dateModified":"2026-06-02","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20PostgreSQL%20Data%20Federation%3a%20postgres_fdw%20vs%20mysql_fdw%20vs%20tds_fdw%20%e2%80%94%20Cross-Database%20Query%20Guide&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-06-02-postgresql-fdw-data-federation-postgres-fdw-mysql-fdw-tds-fdw-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-06-02-postgresql-fdw-data-federation-postgres-fdw-mysql-fdw-tds-fdw-guide%2f&t=Self-Hosted%20PostgreSQL%20Data%20Federation%3a%20postgres_fdw%20vs%20mysql_fdw%20vs%20tds_fdw%20%e2%80%94%20Cross-Database%20Query%20Guide" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/postgresql/ class=tag-link>Postgresql</a>
+<a href=/tags/database/ class=tag-link>Database</a>
+<a href=/tags/fdw/ class=tag-link>Fdw</a>
+<a href=/tags/data-federation/ class=tag-link>Data-Federation</a>
+<a href=/tags/mysql/ class=tag-link>Mysql</a>
+<a href=/tags/mssql/ class=tag-link>Mssql</a>
+<a href=/tags/self-hosted/ class=tag-link>Self-Hosted</a>
+<a href=/tags/sql/ class=tag-link>Sql</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-05-21-self-hosted-database-schema-management-atlas-sqldef-skeema-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Database</span></div><h3 class=post-title>Self-Hosted Database Schema Management: Atlas vs sqldef vs Skeema (2026)</h3><div class=post-excerpt>Managing database schemas across development, staging, and production environments is one of the most persistent …</div><div class=post-footer><span class=post-date>May 21, 2026</span></div></a><a href=/posts/2026-05-03-self-hosted-database-tuning-mysqltuner-pgtune-pgtune-ng-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Database</span></div><h3 class=post-title>Self-Hosted Database Configuration Tuning: MySQLTuner vs pgTune vs pgtune-ng (2026)</h3><div class=post-excerpt>Database performance tuning is one of the most impactful yet often overlooked aspects of self-hosted infrastructure. A …</div><div class=post-footer><span class=post-date>May 3, 2026</span></div></a><a href=/posts/2026-06-02-database-major-version-upgrades-pgupgrade-logical-replication-dump-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Postgresql</span></div><h3 class=post-title>Self-Hosted Database Major Version Upgrades: pg_upgrade vs Logical Replication vs Dump/Restore</h3><div class=post-excerpt>Introduction Every database administrator eventually faces the same challenge: upgrading to a new major version without …</div><div class=post-footer><span class=post-date>Jun 2, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>

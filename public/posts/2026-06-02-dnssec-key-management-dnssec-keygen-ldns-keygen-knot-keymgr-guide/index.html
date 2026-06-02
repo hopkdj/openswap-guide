@@ -1,0 +1,253 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted DNSSEC Key Management: dnssec-keygen vs ldns-keygen vs Knot DNS keymgr | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-06-02-dnssec-key-management-dnssec-keygen-ldns-keygen-knot-keymgr-guide/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted DNSSEC Key Management: dnssec-keygen vs ldns-keygen vs Knot DNS keymgr"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-06-02-dnssec-key-management-dnssec-keygen-ldns-keygen-knot-keymgr-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-06-02T00:00:00Z"><meta property="article:modified_time" content="2026-06-02T00:00:00Z"><meta property="article:tag" content="dns"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted DNSSEC Key Management: dnssec-keygen vs ldns-keygen vs Knot DNS keymgr"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted DNSSEC Key Management: dnssec-keygen vs ldns-keygen vs Knot DNS keymgr","description":"\u003ch2 id=\u0022introduction\u0022\u003eIntroduction\u003c\/h2\u003e\n\u003cp\u003eDNSSEC protects DNS responses from forgery by cryptographically signing zone data. But the operational challenge isn\u0026rsquo;t the signing itself — it\u0026rsquo;s \u003cstrong\u003ekey management\u003c\/strong\u003e. Generating, rotating, and revoking DNSSEC keys securely is critical: a compromised ZSK can poison an entire domain\u0026rsquo;s cache, and misconfigured KSK rollovers can make your zone unreachable. This article compares three battle-tested DNSSEC key management toolchains: \u003cstrong\u003ednssec-keygen\u003c\/strong\u003e (BIND), \u003cstrong\u003eldns-keygen\u003c\/strong\u003e (NLnet Labs), and \u003cstrong\u003ekeymgr\u003c\/strong\u003e (Knot DNS).\u003c\/p\u003e","datePublished":"2026-06-02T00:00:00Z","dateModified":"2026-06-02T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-06-02-dnssec-key-management-dnssec-keygen-ldns-keygen-knot-keymgr-guide\/"},"keywords":["dns","dnssec","security","bind","knot-dns","ldns","key-management"],"articleSection":"dns","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted DNSSEC Key Management: dnssec-keygen vs ldns-keygen vs Knot DNS keymgr","item":"https:\/\/www.pistack.xyz\/posts\/2026-06-02-dnssec-key-management-dnssec-keygen-ldns-keygen-knot-keymgr-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Dns</span>
+<span class="tag tag-purple">Dnssec</span>
+<span class="tag tag-purple">Security</span></div><h1>Self-Hosted DNSSEC Key Management: dnssec-keygen vs ldns-keygen vs Knot DNS keymgr</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>June 2, 2026</span>
+<span>7 min read</span>
+<span>Updated June 2, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#introduction>Introduction</a></li><li><a href=#dnssec-keygen-the-bind-standard>dnssec-keygen: The BIND Standard</a><ul><li><a href=#key-generation-examples>Key Generation Examples</a></li><li><a href=#key-rotation-with-dnssec-settime>Key Rotation with dnssec-settime</a></li><li><a href=#hsm-integration>HSM Integration</a></li></ul></li><li><a href=#ldns-keygen-the-nlnet-labs-tool>ldns-keygen: The NLnet Labs Tool</a><ul><li><a href=#key-generation>Key Generation</a></li><li><a href=#scripting-key-rotation>Scripting Key Rotation</a></li><li><a href=#docker-compose-for-testing>Docker Compose for Testing</a></li></ul></li><li><a href=#knot-dns-keymgr-automated-key-management>Knot DNS keymgr: Automated Key Management</a><ul><li><a href=#policy-based-key-management>Policy-Based Key Management</a></li><li><a href=#automated-rollover>Automated Rollover</a></li><li><a href=#hsm-integration-1>HSM Integration</a></li></ul></li><li><a href=#security-comparison>Security Comparison</a></li><li><a href=#why-self-host-your-dnssec-infrastructure>Why Self-Host Your DNSSEC Infrastructure?</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#how-often-should-i-rotate-dnssec-keys>How often should I rotate DNSSEC keys?</a></li><li><a href=#what-happens-if-my-dnssec-keys-expire>What happens if my DNSSEC keys expire?</a></li><li><a href=#can-i-use-ed25519-for-dnssec-signing>Can I use Ed25519 for DNSSEC signing?</a></li><li><a href=#how-do-i-validate-that-my-dnssec-configuration-is-correct>How do I validate that my DNSSEC configuration is correct?</a></li><li><a href=#whats-the-difference-between-algorithm-rollover-and-key-rollover>What&rsquo;s the difference between algorithm rollover and key rollover?</a></li><li><a href=#do-i-need-a-hardware-security-module-hsm-for-dnssec>Do I need a Hardware Security Module (HSM) for DNSSEC?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><h2 id=introduction>Introduction</h2><p>DNSSEC protects DNS responses from forgery by cryptographically signing zone data. But the operational challenge isn&rsquo;t the signing itself — it&rsquo;s <strong>key management</strong>. Generating, rotating, and revoking DNSSEC keys securely is critical: a compromised ZSK can poison an entire domain&rsquo;s cache, and misconfigured KSK rollovers can make your zone unreachable. This article compares three battle-tested DNSSEC key management toolchains: <strong>dnssec-keygen</strong> (BIND), <strong>ldns-keygen</strong> (NLnet Labs), and <strong>keymgr</strong> (Knot DNS).</p><table><thead><tr><th>Feature</th><th>dnssec-keygen (BIND)</th><th>ldns-keygen (ldns)</th><th>keymgr (Knot DNS)</th></tr></thead><tbody><tr><td><strong>Parent Project</strong></td><td>ISC BIND 9</td><td>NLnet Labs ldns</td><td>CZ.NIC Knot DNS</td></tr><tr><td><strong>Stars</strong></td><td>743</td><td>352</td><td>306</td></tr><tr><td><strong>Algorithm Support</strong></td><td>All (5-16)</td><td>All (5-16)</td><td>ECDSA, EdDSA, RSA</td></tr><tr><td><strong>Key Format</strong></td><td>.key/.private files</td><td>.key/.private files</td><td>PEM, PKCS#8</td></tr><tr><td><strong>HSM Support</strong></td><td>PKCS#11 native</td><td>PKCS#11 via OpenSSL</td><td>PKCS#11 native</td></tr><tr><td><strong>Automated Rollover</strong></td><td>Manual (dnssec-settime)</td><td>Manual (scripts)</td><td>Built-in (keymgr)</td></tr><tr><td><strong>Algorithm Rollover</strong></td><td>Supported</td><td>Manual</td><td>Automatic</td></tr><tr><td><strong>Last Updated</strong></td><td>June 2026</td><td>May 2026</td><td>June 2026</td></tr></tbody></table><h2 id=dnssec-keygen-the-bind-standard>dnssec-keygen: The BIND Standard</h2><p><code>dnssec-keygen</code> is part of ISC BIND 9, the most widely deployed DNS server. It generates DNSSEC key pairs and outputs them in BIND&rsquo;s <code>.key</code>/<code>.private</code> file format. It supports every DNSSEC algorithm from RSA/SHA-1 (algorithm 5) to Ed25519 (algorithm 15).</p><h3 id=key-generation-examples>Key Generation Examples</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Generate a Zone Signing Key (ZSK) with ECDSA P-256</span>
+</span></span><span class=line><span class=cl>dnssec-keygen -a ECDSAP256SHA256 -n ZONE example.com
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Generate a Key Signing Key (KSK)</span>
+</span></span><span class=line><span class=cl>dnssec-keygen -a ECDSAP256SHA256 -n ZONE -f KSK example.com
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Generate with Ed25519 (algorithm 15)</span>
+</span></span><span class=line><span class=cl>dnssec-keygen -a ED25519 -n ZONE example.com
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Output files:</span>
+</span></span><span class=line><span class=cl><span class=c1># Kexample.com.+013+12345.key    (public key)</span>
+</span></span><span class=line><span class=cl><span class=c1># Kexample.com.+013+12345.private (private key)</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=key-rotation-with-dnssec-settime>Key Rotation with dnssec-settime</h3><p>BIND handles key rotation manually using <code>dnssec-settime</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Publish the new ZSK immediately but don&#39;t activate for signing yet</span>
+</span></span><span class=line><span class=cl>dnssec-settime -P now -A +2d Kexample.com.+013+12345
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># After 2 days (propagation), start signing with the new key</span>
+</span></span><span class=line><span class=cl>dnssec-settime -I +30d -D +60d Kexample.com.+013+12345
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Revoke the old key after the new key&#39;s signatures have propagated</span>
+</span></span><span class=line><span class=cl>dnssec-settime -D now Kexample.com.+013+11111
+</span></span></code></pre></td></tr></table></div></div><p>The BIND toolchain requires careful manual orchestration of timing parameters (<code>-P</code> publish, <code>-A</code> activate, <code>-I</code> inactive, <code>-D</code> delete). A single misconfigured time window can create a DNSSEC validation gap.</p><h3 id=hsm-integration>HSM Integration</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Generate key in a PKCS#11 HSM (SoftHSM2 for testing)</span>
+</span></span><span class=line><span class=cl>softhsm2-util --init-token --slot <span class=m>0</span> --label <span class=s2>&#34;DNSSEC&#34;</span>
+</span></span><span class=line><span class=cl>dnssec-keygen -a ECDSAP256SHA256 -n ZONE -E pkcs11 example.com
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># The private key stays in the HSM; only the public key file is created</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=ldns-keygen-the-nlnet-labs-tool>ldns-keygen: The NLnet Labs Tool</h2><p><code>ldns-keygen</code> from NLnet Labs offers a more scriptable, Unix-philosophy approach. It&rsquo;s part of the <code>ldns</code> library, which provides C and Python bindings for DNS operations.</p><h3 id=key-generation>Key Generation</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Generate ECDSA P-256 ZSK</span>
+</span></span><span class=line><span class=cl>ldns-keygen -a ECDSAP256SHA256 example.com
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Generate Ed25519 KSK</span>
+</span></span><span class=line><span class=cl>ldns-keygen -a ED25519 -k example.com
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Output RSA key with specific size</span>
+</span></span><span class=line><span class=cl>ldns-keygen -a RSASHA256 -b <span class=m>2048</span> example.com
+</span></span></code></pre></td></tr></table></div></div><h3 id=scripting-key-rotation>Scripting Key Rotation</h3><p>ldns-keygen doesn&rsquo;t have built-in rollover scheduling, but its clean output format makes scripting easy:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=cp>#!/bin/bash
+</span></span></span><span class=line><span class=cl><span class=cp></span><span class=c1># Automated ZSK rotation script for ldns</span>
+</span></span><span class=line><span class=cl><span class=nv>DOMAIN</span><span class=o>=</span><span class=s2>&#34;example.com&#34;</span>
+</span></span><span class=line><span class=cl><span class=nv>KEYDIR</span><span class=o>=</span><span class=s2>&#34;/etc/dns/keys&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Create new ZSK</span>
+</span></span><span class=line><span class=cl><span class=nv>NEWKEY</span><span class=o>=</span><span class=k>$(</span>ldns-keygen -a ECDSAP256SHA256 <span class=s2>&#34;</span><span class=nv>$DOMAIN</span><span class=s2>&#34;</span><span class=k>)</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;New ZSK: </span><span class=nv>$NEWKEY</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Wait for DNS propagation (TTL × 2)</span>
+</span></span><span class=line><span class=cl>sleep <span class=m>7200</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Sign zone with both keys</span>
+</span></span><span class=line><span class=cl>ldns-signzone -n -o <span class=s2>&#34;</span><span class=nv>$DOMAIN</span><span class=s2>&#34;</span> <span class=s2>&#34;</span><span class=nv>$DOMAIN</span><span class=s2>.zone&#34;</span> <span class=s2>&#34;</span><span class=nv>$NEWKEY</span><span class=s2>&#34;</span> <span class=s2>&#34;</span><span class=nv>$CURRENT_KSK</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Mark old key for deletion after signature expiry</span>
+</span></span><span class=line><span class=cl><span class=nv>CURRENT_EPOCH</span><span class=o>=</span><span class=k>$(</span>date +%s<span class=k>)</span>
+</span></span><span class=line><span class=cl><span class=nv>EXPIRY</span><span class=o>=</span><span class=k>$((</span>CURRENT_EPOCH <span class=o>+</span> <span class=m>2592000</span><span class=k>))</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;Old key expires at: </span><span class=k>$(</span>date -d @<span class=nv>$EXPIRY</span><span class=k>)</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Schedule removal via cron</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;0 0 </span><span class=k>$(</span>date -d @<span class=nv>$EXPIRY</span> +%d<span class=k>)</span><span class=s2> </span><span class=k>$(</span>date -d @<span class=nv>$EXPIRY</span> +%m<span class=k>)</span><span class=s2> * rm </span><span class=nv>$KEYDIR</span><span class=s2>/</span><span class=nv>$OLDKEY</span><span class=s2>.*&#34;</span> &gt;&gt; /etc/crontab
+</span></span></code></pre></td></tr></table></div></div><h3 id=docker-compose-for-testing>Docker Compose for Testing</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>dnssec-lab</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>ubuntu:24.04</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      sh -c &#34;apt-get update &amp;&amp; apt-get install -y ldnsutils bind9-dnsutils knot-dnsutils &amp;&amp;
+</span></span></span><span class=line><span class=cl><span class=sd>             ldns-keygen -a ECDSAP256SHA256 test.example &amp;&amp;
+</span></span></span><span class=line><span class=cl><span class=sd>             cat Ktest.example.*&#34;</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=knot-dns-keymgr-automated-key-management>Knot DNS keymgr: Automated Key Management</h2><p>Knot DNS&rsquo;s <code>keymgr</code> takes a declarative approach: you define a policy, and it handles generation, rotation, and cleanup automatically. This is the most operationally mature solution for teams that want minimal DNSSEC key management overhead.</p><h3 id=policy-based-key-management>Policy-Based Key Management</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Define a DNSSEC policy</span>
+</span></span><span class=line><span class=cl>keymgr example.com init
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Configure policy in Knot&#39;s configuration</span>
+</span></span><span class=line><span class=cl>cat &gt;&gt; /etc/knot/knot.conf <span class=s>&lt;&lt; &#39;EOF&#39;
+</span></span></span><span class=line><span class=cl><span class=s>policy:
+</span></span></span><span class=line><span class=cl><span class=s>  - id: default
+</span></span></span><span class=line><span class=cl><span class=s>    algorithm: ecdsap256sha256
+</span></span></span><span class=line><span class=cl><span class=s>    ksk-lifetime: 365d
+</span></span></span><span class=line><span class=cl><span class=s>    zsk-lifetime: 30d
+</span></span></span><span class=line><span class=cl><span class=s>    zsk-rollover: 14d
+</span></span></span><span class=line><span class=cl><span class=s>
+</span></span></span><span class=line><span class=cl><span class=s>zone:
+</span></span></span><span class=line><span class=cl><span class=s>  - domain: example.com
+</span></span></span><span class=line><span class=cl><span class=s>    dnssec-signing: on
+</span></span></span><span class=line><span class=cl><span class=s>    dnssec-policy: default
+</span></span></span><span class=line><span class=cl><span class=s>EOF</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># keymgr automatically generates and rotates keys</span>
+</span></span><span class=line><span class=cl>keymgr example.com status
+</span></span><span class=line><span class=cl><span class=c1># Output:</span>
+</span></span><span class=line><span class=cl><span class=c1># KSK: active (ID: abc123, expires in 340d)</span>
+</span></span><span class=line><span class=cl><span class=c1># ZSK: active (ID: def456, expires in 28d, rollover in 12d)</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=automated-rollover>Automated Rollover</h3><p>Knot handles the entire ZSK rollover process without manual intervention:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>Day 0:  ZSK1 active (signing)
+</span></span><span class=line><span class=cl>Day 16: ZSK2 published (not yet signing)
+</span></span><span class=line><span class=cl>Day 20: ZSK2 active (signing) + ZSK1 published
+</span></span><span class=line><span class=cl>Day 30: ZSK1 removed, ZSK2 active
+</span></span></code></pre></td></tr></table></div></div><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Force immediate rollover for emergency key compromise</span>
+</span></span><span class=line><span class=cl>keymgr example.com ds-generate
+</span></span><span class=line><span class=cl>keymgr example.com rollover
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Check rollover status</span>
+</span></span><span class=line><span class=cl>keymgr example.com status --verbose
+</span></span></code></pre></td></tr></table></div></div><h3 id=hsm-integration-1>HSM Integration</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># PKCS#11 HSM configuration</span>
+</span></span><span class=line><span class=cl>cat &gt;&gt; /etc/knot/knot.conf <span class=s>&lt;&lt; &#39;EOF&#39;
+</span></span></span><span class=line><span class=cl><span class=s>keystore:
+</span></span></span><span class=line><span class=cl><span class=s>  - id: hsm
+</span></span></span><span class=line><span class=cl><span class=s>    backend: pkcs11
+</span></span></span><span class=line><span class=cl><span class=s>    config: &#34;pkcs11:token=DNSSEC;pin-value=secret /usr/lib/softhsm/libsofthsm2.so&#34;
+</span></span></span><span class=line><span class=cl><span class=s>
+</span></span></span><span class=line><span class=cl><span class=s>policy:
+</span></span></span><span class=line><span class=cl><span class=s>  - id: hsm-policy
+</span></span></span><span class=line><span class=cl><span class=s>    keystore: hsm
+</span></span></span><span class=line><span class=cl><span class=s>    algorithm: ecdsap256sha256
+</span></span></span><span class=line><span class=cl><span class=s>EOF</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=security-comparison>Security Comparison</h2><table><thead><tr><th>Aspect</th><th>dnssec-keygen</th><th>ldns-keygen</th><th>keymgr</th></tr></thead><tbody><tr><td><strong>Private key storage</strong></td><td>Filesystem (0600)</td><td>Filesystem (0600)</td><td>Filesystem or HSM</td></tr><tr><td><strong>HSM support</strong></td><td>PKCS#11</td><td>Via OpenSSL engine</td><td>Native PKCS#11</td></tr><tr><td><strong>Algorithm deprecation</strong></td><td>Manual</td><td>Manual</td><td>Automatic (policy)</td></tr><tr><td><strong>Key compromise recovery</strong></td><td>Emergency manual rollover</td><td>Emergency script</td><td><code>keymgr rollover</code> command</td></tr><tr><td><strong>Audit logging</strong></td><td>System logs</td><td>Shell history</td><td>Structured JSON logs</td></tr></tbody></table><h2 id=why-self-host-your-dnssec-infrastructure>Why Self-Host Your DNSSEC Infrastructure?</h2><p>Running your own DNSSEC signing infrastructure gives you complete control over your cryptographic material. When you delegate DNSSEC to a managed DNS provider, they hold your private keys — a compromise at the provider level can poison your entire zone. Self-hosting with HSM-backed key storage ensures that only you control the signing keys, and automated monitoring can alert you to any unexpected zone changes.</p><p>The operational burden of manual DNSSEC key rotation is one of the primary reasons many organizations still avoid deploying DNSSEC. Tools like Knot DNS&rsquo;s keymgr eliminate this pain point by automating the entire lifecycle — from initial key generation to emergency rollover — reducing the risk of misconfiguration that can make your domain unreachable. For teams managing dozens of zones, the difference between manual BIND scripts and Knot&rsquo;s declarative policy approach is measured in hours of maintenance per month.</p><p>For a comprehensive comparison of authoritative DNS servers, see our <a href=../2026-04-18-powerdns-vs-bind9-vs-nsd-vs-knot-self-hosted-authoritative-dns-2026/>guide to PowerDNS vs BIND9 vs NSD vs Knot DNS</a>. If you&rsquo;re interested in DNS-layer security beyond DNSSEC, check our <a href=../2026-04-21-self-hosted-dns-firewall-rpz-unbound-powerdns-bind9-knot-guide-2026/>guide to DNS firewall and RPZ implementation</a>.</p><p>Understanding DNS protocol internals is essential for secure zone management. Our <a href=../2026-04-21-knot-resolver-vs-blocky-vs-dnscrypt-proxy-self-hosted-dns-over-quic-guide-2026/>DNS-over-QUIC encryption guide</a> covers the latest transport-layer security improvements for DNS queries.</p><h2 id=faq>FAQ</h2><h3 id=how-often-should-i-rotate-dnssec-keys>How often should I rotate DNSSEC keys?</h3><p><strong>ZSK</strong>: Every 30-90 days. Frequent rotation limits the impact of key compromise. <strong>KSK</strong>: Every 12-24 months. KSK rotation requires updating the DS record at your registrar, so it&rsquo;s a more involved process.</p><h3 id=what-happens-if-my-dnssec-keys-expire>What happens if my DNSSEC keys expire?</h3><p>DNSSEC keys don&rsquo;t technically &ldquo;expire&rdquo; — validators check signature validity periods, not key expiry. If signatures expire before new ones are published, validators will reject your zone&rsquo;s responses (SERVFAIL). Always ensure your signer refreshes signatures before the previous set expires.</p><h3 id=can-i-use-ed25519-for-dnssec-signing>Can I use Ed25519 for DNSSEC signing?</h3><p>Yes. Ed25519 (algorithm 15) is supported by all three tools and is the recommended algorithm for new deployments. It offers 128-bit security with smaller keys and faster signing than RSA. Major resolvers (Google Public DNS, Cloudflare, Quad9) all validate Ed25519-signed zones.</p><h3 id=how-do-i-validate-that-my-dnssec-configuration-is-correct>How do I validate that my DNSSEC configuration is correct?</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Check DNSSEC chain with delv (BIND tool)</span>
+</span></span><span class=line><span class=cl>delv @8.8.8.8 +dnssec example.com
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Online validators</span>
+</span></span><span class=line><span class=cl><span class=c1># https://dnsviz.net/ — visual DNSSEC chain analysis</span>
+</span></span><span class=line><span class=cl><span class=c1># https://dnssec-analyzer.verisignlabs.com/ — Verisign&#39;s validator</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Local validation with ldns</span>
+</span></span><span class=line><span class=cl>ldns-verify-zone example.com.zone
+</span></span></code></pre></td></tr></table></div></div><h3 id=whats-the-difference-between-algorithm-rollover-and-key-rollover>What&rsquo;s the difference between algorithm rollover and key rollover?</h3><p><strong>Key rollover</strong>: Replace the key but keep the same algorithm (e.g., new ECDSA P-256 key). This is routine. <strong>Algorithm rollover</strong>: Switch from one algorithm to another (e.g., RSA to Ed25519). This requires updating DS records, waiting for propagation, and ensuring all resolvers support the new algorithm. Knot DNS&rsquo;s keymgr is the only tool that handles algorithm rollovers automatically.</p><h3 id=do-i-need-a-hardware-security-module-hsm-for-dnssec>Do I need a Hardware Security Module (HSM) for DNSSEC?</h3><p>For most self-hosted deployments, filesystem-based key storage with strict permissions (0400) is sufficient. HSMs (including software HSMs like SoftHSM2) become important when: (a) you manage high-value domains, (b) you need compliance (PCI-DSS, FIPS), or (c) you want physical separation between your DNS server and signing keys.</p><hr><p><strong>💰 想测试你的市场判断力？我用 <a href="https://polymarket.com/?r=fc8a0">Polymarket</a> 做预测市场交易——这是全球最大的预测市场平台，从大选结果到技术监管时间线，什么都可以押注。和赌博不同，这是真正的信息市场：你懂的信息越多，胜率越高。我靠预测技术相关事件的走向已经赚了不少。用我的邀请链接注册：</strong><a href="https://polymarket.com/?r=fc8a0">Polymarket.com</a></p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted DNSSEC Key Management: dnssec-keygen vs ldns-keygen vs Knot DNS keymgr","description":"Compare DNSSEC key management tools: BIND dnssec-keygen, NLnet Labs ldns-keygen, and Knot DNS keymgr. Covers key generation, rotation, HSM integration, and security best practices.","datePublished":"2026-06-02","dateModified":"2026-06-02","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20DNSSEC%20Key%20Management%3a%20dnssec-keygen%20vs%20ldns-keygen%20vs%20Knot%20DNS%20keymgr&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-06-02-dnssec-key-management-dnssec-keygen-ldns-keygen-knot-keymgr-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-06-02-dnssec-key-management-dnssec-keygen-ldns-keygen-knot-keymgr-guide%2f&t=Self-Hosted%20DNSSEC%20Key%20Management%3a%20dnssec-keygen%20vs%20ldns-keygen%20vs%20Knot%20DNS%20keymgr" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/dns/ class=tag-link>Dns</a>
+<a href=/tags/dnssec/ class=tag-link>Dnssec</a>
+<a href=/tags/security/ class=tag-link>Security</a>
+<a href=/tags/bind/ class=tag-link>Bind</a>
+<a href=/tags/knot-dns/ class=tag-link>Knot-Dns</a>
+<a href=/tags/ldns/ class=tag-link>Ldns</a>
+<a href=/tags/key-management/ class=tag-link>Key-Management</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-05-21-self-hosted-dns-catalog-zones-rfc8645-bind-powerdns-knot-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Dns</span></div><h3 class=post-title>Self-Hosted DNS Catalog Zones: RFC 8645 with BIND vs PowerDNS vs Knot DNS (2026)</h3><div class=post-excerpt>DNS Catalog Zones, defined in RFC 8645, provide a standardized mechanism for automating DNS zone provisioning across …</div><div class=post-footer><span class=post-date>May 21, 2026</span></div></a><a href=/posts/2026-05-21-self-hosted-dnssec-rollover-automation-bind-knot-powerdns-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Dns</span></div><h3 class=post-title>Self-Hosted DNSSEC Rollover Automation: BIND vs Knot DNS vs PowerDNS</h3><div class=post-excerpt>DNSSEC (DNS Security Extensions) protects DNS data integrity by cryptographically signing zone records. But managing the …</div><div class=post-footer><span class=post-date>May 21, 2026</span></div></a><a href=/posts/2026-05-14-self-hosted-dnssec-validation-unbound-knot-resolver-powerdns-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Dns</span></div><h3 class=post-title>Self-Hosted DNSSEC Validation: Unbound vs Knot Resolver vs PowerDNS Recursor</h3><div class=post-excerpt>DNS Security Extensions (DNSSEC) add cryptographic authentication to the DNS hierarchy, ensuring that responses from DNS …</div><div class=post-footer><span class=post-date>May 14, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>

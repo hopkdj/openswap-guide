@@ -1,0 +1,182 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted Filesystem Integrity Check Tools: fsck.ext4 vs xfs_repair vs btrfs check | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-06-01-linux-filesystem-integrity-check-fsck-xfs-repair-btrfs-guide/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted Filesystem Integrity Check Tools: fsck.ext4 vs xfs_repair vs btrfs check"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-06-01-linux-filesystem-integrity-check-fsck-xfs-repair-btrfs-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-06-01T00:00:00Z"><meta property="article:modified_time" content="2026-06-01T00:00:00Z"><meta property="article:tag" content="linux"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted Filesystem Integrity Check Tools: fsck.ext4 vs xfs_repair vs btrfs check"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted Filesystem Integrity Check Tools: fsck.ext4 vs xfs_repair vs btrfs check","description":"\u003ch2 id=\u0022introduction\u0022\u003eIntroduction\u003c\/h2\u003e\n\u003cp\u003eFilesystem corruption is one of the scariest moments for any self-hoster. A power outage during a write, a failing SSD with silent bit flips, or a kernel panic mid-transaction can leave your filesystem in an inconsistent state. When that happens, the only thing standing between you and data loss is the filesystem check and repair tool specific to your filesystem.\u003c\/p\u003e","datePublished":"2026-06-01T00:00:00Z","dateModified":"2026-06-01T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-06-01-linux-filesystem-integrity-check-fsck-xfs-repair-btrfs-guide\/"},"keywords":["linux","filesystem","storage","data-integrity","ext4","xfs","btrfs","maintenance"],"articleSection":"linux","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted Filesystem Integrity Check Tools: fsck.ext4 vs xfs_repair vs btrfs check","item":"https:\/\/www.pistack.xyz\/posts\/2026-06-01-linux-filesystem-integrity-check-fsck-xfs-repair-btrfs-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Linux</span>
+<span class="tag tag-purple">Filesystem</span>
+<span class="tag tag-purple">Storage</span></div><h1>Self-Hosted Filesystem Integrity Check Tools: fsck.ext4 vs xfs_repair vs btrfs check</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>June 1, 2026</span>
+<span>9 min read</span>
+<span>Updated June 1, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#introduction>Introduction</a></li><li><a href=#fsckext4-the-time-tested-standard>fsck.ext4: The Time-Tested Standard</a></li><li><a href=#xfs_repair-enterprise-recovery-speed>xfs_repair: Enterprise Recovery Speed</a></li><li><a href=#btrfs-check-cow-filesystem-recovery>btrfs check: CoW Filesystem Recovery</a></li><li><a href=#why-self-host-filesystem-maintenance>Why Self-Host Filesystem Maintenance</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#how-often-should-i-run-filesystem-checks>How often should I run filesystem checks?</a></li><li><a href=#can-i-run-fsck-on-a-mounted-filesystem>Can I run fsck on a mounted filesystem?</a></li><li><a href=#will-fsck-recover-deleted-files>Will fsck recover deleted files?</a></li><li><a href=#what-should-i-do-if-fsck-repeatedly-finds-errors>What should I do if fsck repeatedly finds errors?</a></li><li><a href=#how-do-i-automate-filesystem-integrity-monitoring>How do I automate filesystem integrity monitoring?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><h2 id=introduction>Introduction</h2><p>Filesystem corruption is one of the scariest moments for any self-hoster. A power outage during a write, a failing SSD with silent bit flips, or a kernel panic mid-transaction can leave your filesystem in an inconsistent state. When that happens, the only thing standing between you and data loss is the filesystem check and repair tool specific to your filesystem.</p><p>Linux supports three major local filesystems — ext4 (default on most distributions), XFS (default on RHEL/Fedora), and Btrfs (gaining adoption with Fedora and openSUSE). Each has its own dedicated repair tool with different capabilities, safety guarantees, and recovery strategies. This article compares fsck.ext4 (e2fsck), xfs_repair, and btrfs check with practical recovery scenarios.</p><table><thead><tr><th>Feature</th><th>fsck.ext4 (e2fsck)</th><th>xfs_repair</th><th>btrfs check</th></tr></thead><tbody><tr><td><strong>File System</strong></td><td>ext2/3/4</td><td>XFS</td><td>Btrfs</td></tr><tr><td><strong>Checksum Verification</strong></td><td>Metadata only (ext4)</td><td>Metadata only</td><td>Metadata + Data (with csum)</td></tr><tr><td><strong>Online Check</strong></td><td>No (unmount required)</td><td>Yes (xfs_scrub)</td><td>Yes (btrfs scrub)</td></tr><tr><td><strong>Journal Replay</strong></td><td>Automatic</td><td>Automatic (mount)</td><td>N/A (CoW)</td></tr><tr><td><strong>Repair Mode</strong></td><td>Interactive + Auto (-p)</td><td>Auto (-L for log)</td><td>Manual (&ndash;repair)</td></tr><tr><td><strong>Inode Repair</strong></td><td>Yes</td><td>No (must wipe)</td><td>Yes (reflink based)</td></tr><tr><td><strong>Snapshot Support</strong></td><td>N/A</td><td>N/A</td><td>Yes (repair from snapshot)</td></tr><tr><td><strong>Dry Run</strong></td><td>Yes (-n)</td><td>Yes (-n)</td><td>Yes (default, &ndash;readonly)</td></tr><tr><td><strong>Recovery Time</strong></td><td>~1 min/TB</td><td>~30 sec/TB</td><td>~3 min/TB (metadata only)</td></tr><tr><td><strong>Risk of Data Loss</strong></td><td>Low (journaled)</td><td>Medium (log zeroing)</td><td>Medium (experimental repair)</td></tr></tbody></table><h2 id=fsckext4-the-time-tested-standard>fsck.ext4: The Time-Tested Standard</h2><p><code>fsck.ext4</code> (linked from <code>e2fsck</code>) is the most mature filesystem checker in the Linux ecosystem, with over 25 years of development. It understands ext2/3/4 on-disk structures intimately and can recover from a wide range of corruption scenarios.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Check an ext4 filesystem (read-only, no repair)</span>
+</span></span><span class=line><span class=cl>fsck.ext4 -n /dev/sdb1
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Automatic repair (non-interactive, safe for minor issues)</span>
+</span></span><span class=line><span class=cl>fsck.ext4 -p /dev/sdb1
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Force a full check even if the filesystem appears clean</span>
+</span></span><span class=line><span class=cl>fsck.ext4 -f /dev/sdb1
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Interactive repair with manual decisions</span>
+</span></span><span class=line><span class=cl>fsck.ext4 -y /dev/sdb1  <span class=c1># answer &#34;yes&#34; to all prompts</span>
+</span></span></code></pre></td></tr></table></div></div><p>Key options explained:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Verbose output showing each pass</span>
+</span></span><span class=line><span class=cl>$ fsck.ext4 -fv /dev/sdb1
+</span></span><span class=line><span class=cl>Pass 1: Checking inodes, blocks, and sizes
+</span></span><span class=line><span class=cl>Pass 2: Checking directory structure
+</span></span><span class=line><span class=cl>Pass 3: Checking directory connectivity
+</span></span><span class=line><span class=cl>Pass 4: Checking reference counts
+</span></span><span class=line><span class=cl>Pass 5: Checking group summary information
+</span></span><span class=line><span class=cl>/dev/sdb1: 234591/6553600 files <span class=o>(</span>0.3% non-contiguous<span class=o>)</span>, 4523891/26214400 blocks
+</span></span></code></pre></td></tr></table></div></div><p>The five-pass structure covers inode integrity, directory structure, path connectivity, reference counts, and block group accounting. A clean run means the filesystem is internally consistent — but it does NOT detect silent data corruption (bit rot) unless you use ext4 with the <code>metadata_csum</code> feature enabled:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Enable metadata checksums on ext4 (requires kernel 3.6+)</span>
+</span></span><span class=line><span class=cl>tune2fs -O metadata_csum /dev/sdb1
+</span></span></code></pre></td></tr></table></div></div><p>For automated maintenance, add periodic fsck checks to your boot process:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Force a filesystem check every 30 mounts or 180 days</span>
+</span></span><span class=line><span class=cl>tune2fs -c <span class=m>30</span> -i 180d /dev/sdb1
+</span></span></code></pre></td></tr></table></div></div><p>When fsck finds an inode with corrupted block pointers, it can attempt recovery by moving the orphaned blocks to the <code>lost+found</code> directory:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl>$ ls -la /mnt/data/lost+found/
+</span></span><span class=line><span class=cl>-rw-r--r-- <span class=m>1</span> root root <span class=m>40960</span> Jun  <span class=m>1</span> 10:00 <span class=c1>#12345</span>
+</span></span><span class=line><span class=cl>-rw-r--r-- <span class=m>1</span> root root  <span class=m>8192</span> Jun  <span class=m>1</span> 10:00 <span class=c1>#12346</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=xfs_repair-enterprise-recovery-speed>xfs_repair: Enterprise Recovery Speed</h2><p>XFS was designed for massive parallel I/O and metadata-intensive workloads. Its journaling is more aggressive than ext4&rsquo;s — XFS journals metadata changes only, relying on write-ahead logging for consistency. <code>xfs_repair</code> reflects this design: it is fast (often completing in seconds on multi-TB filesystems) but less forgiving than e2fsck. If the journal is corrupt, xfs_repair will zero it, potentially losing recent writes.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Read-only check (dry run)</span>
+</span></span><span class=line><span class=cl>xfs_repair -n /dev/sdb2
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Full repair without modifying the journal</span>
+</span></span><span class=line><span class=cl>xfs_repair /dev/sdb2
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Repair with journal zeroing (use when mount fails with &#34;log corrupt&#34;)</span>
+</span></span><span class=line><span class=cl>xfs_repair -L /dev/sdb2
+</span></span></code></pre></td></tr></table></div></div><p>The <code>xfs_scrub</code> tool complements xfs_repair by providing online checks:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Check the entire mounted filesystem (read-only, online)</span>
+</span></span><span class=line><span class=cl>xfs_scrub -n /mnt/data
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Report corruption details</span>
+</span></span><span class=line><span class=cl>xfs_scrub -v /mnt/data
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Check specific metadata types</span>
+</span></span><span class=line><span class=cl>xfs_scrub -n -t agheader /mnt/data  <span class=c1># allocation group headers only</span>
+</span></span><span class=line><span class=cl>xfs_scrub -n -t inode /mnt/data     <span class=c1># inode records only</span>
+</span></span><span class=line><span class=cl>xfs_scrub -n -t rmap /mnt/data      <span class=c1># reverse mapping btree</span>
+</span></span></code></pre></td></tr></table></div></div><p>WARNING: The <code>-L</code> flag on xfs_repair is destructive. It zeroes the journal log, meaning any writes that were in-flight when the system crashed are permanently lost. Only use <code>-L</code> when xfs_repair refuses to proceed without it and you have confirmed backups.</p><h2 id=btrfs-check-cow-filesystem-recovery>btrfs check: CoW Filesystem Recovery</h2><p>Btrfs uses copy-on-write (CoW) and checksumming at the block level, which changes how corruption detection and repair work. Instead of a single linear process like ext4&rsquo;s five passes, btrfs check verifies the metadata trees (extent tree, chunk tree, root tree) and their cross-references.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Read-only check (default mode)</span>
+</span></span><span class=line><span class=cl>btrfs check /dev/sdb3
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Check with verbose progress</span>
+</span></span><span class=line><span class=cl>btrfs check --progress /dev/sdb3
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Force check on a mounted filesystem (read-only only)</span>
+</span></span><span class=line><span class=cl>btrfs check --force /dev/sdb3
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Attempt repair (use with extreme caution)</span>
+</span></span><span class=line><span class=cl>btrfs check --repair /dev/sdb3
+</span></span></code></pre></td></tr></table></div></div><p>The <code>--repair</code> flag is explicitly labeled experimental in the man page. Unlike e2fsck and xfs_repair, which have decades of battle testing, btrfs repair is still maturing. The recommended recovery path for btrfs is:</p><ol><li>Run <code>btrfs check --readonly</code> to diagnose the issue</li><li>If possible, recover data by mounting read-only and copying it elsewhere</li><li>Use <code>btrfs check --repair</code> only as a last resort</li><li>If you have btrfs snapshots, recover individual files from them</li></ol><p>For ongoing integrity monitoring, btrfs includes a built-in scrub feature that runs on a mounted filesystem:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Start a scrub on the entire filesystem</span>
+</span></span><span class=line><span class=cl>btrfs scrub start /mnt/data
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Check scrub status</span>
+</span></span><span class=line><span class=cl>btrfs scrub status /mnt/data
+</span></span><span class=line><span class=cl><span class=c1># Scrub status for /mnt/data</span>
+</span></span><span class=line><span class=cl><span class=c1>#     scrub started at Tue Jun  1 10:30:00 2026</span>
+</span></span><span class=line><span class=cl><span class=c1>#     Status: finished</span>
+</span></span><span class=line><span class=cl><span class=c1>#     Duration: 0:02:15</span>
+</span></span><span class=line><span class=cl><span class=c1>#     Total to scrub: 125.00GiB</span>
+</span></span><span class=line><span class=cl><span class=c1>#     Rate: 947.00MiB/s</span>
+</span></span><span class=line><span class=cl><span class=c1>#     Error summary: no errors found</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Cancel an ongoing scrub</span>
+</span></span><span class=line><span class=cl>btrfs scrub cancel /mnt/data
+</span></span></code></pre></td></tr></table></div></div><p>Scrub reads every data and metadata block, verifies checksums, and automatically repairs correctable errors if you have a redundant profile (RAID1, RAID10, DUP metadata):</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Create a btrfs filesystem with redundant metadata for self-healing</span>
+</span></span><span class=line><span class=cl>mkfs.btrfs -m dup /dev/sdb3
+</span></span></code></pre></td></tr></table></div></div><h2 id=why-self-host-filesystem-maintenance>Why Self-Host Filesystem Maintenance</h2><p>Cloud block storage handles filesystem repair transparently — until it does not. When AWS EBS or Google Persistent Disk has an internal error, you have no visibility into what the repair tool did, what data was lost, or whether orphaned inodes ended up in lost+found. Self-hosting gives you full control: you decide whether to run a dry-run check, interactively repair specific inodes, or zero the journal and accept data loss for in-flight writes.</p><p>Regular filesystem checks also catch hardware degradation before it becomes data loss. A failing SATA cable manifests as checksum errors in btrfs scrub or unexpected read errors in e2fsck. Catching these during a scheduled maintenance window lets you replace the hardware while your data is intact. Without proactive checking, the first sign of failure is often a mount that fails with &ldquo;structure needs cleaning&rdquo; — at which point your service is already down.</p><p>For more on Linux storage management, see our guide on <a href=../self-hosted-disk-health-monitoring-scrutiny-smartd-nvme-cli-guide-2026/>disk health monitoring with smartd and NVMe tools</a>. For filesystem snapshot strategies, check our <a href=../2026-05-26-self-hosted-btrfs-snapshot-management-snapper-timeshift-btrfs-assistant-guide/>Btrfs snapshot management guide</a>. If you are dealing with data that may already be lost, our <a href=../2026-05-25-linux-data-recovery-tools-ddrescue-testdisk-photorec-guide/>data recovery tools guide</a> covers forensic-level recovery.</p><h2 id=faq>FAQ</h2><h3 id=how-often-should-i-run-filesystem-checks>How often should I run filesystem checks?</h3><p>For ext4, the default <code>tune2fs</code> settings run a check every 30 mounts or 180 days. For XFS, schedule <code>xfs_scrub -n</code> weekly via cron. For btrfs, run <code>btrfs scrub</code> monthly. Production servers should automate checks during low-I/O windows — a 2 AM cron job is standard. Filesystems with critical data (databases, financial records) benefit from weekly scrubs. Archive storage with infrequent writes can run quarterly.</p><h3 id=can-i-run-fsck-on-a-mounted-filesystem>Can I run fsck on a mounted filesystem?</h3><p>Generally no, and attempting to do so is dangerous. ext4 and XFS require unmounted filesystems for <code>fsck</code> and <code>xfs_repair</code> respectively. btrfs check can run on a mounted filesystem in read-only mode with <code>--force</code>. The online alternatives are <code>xfs_scrub</code> (XFS) and <code>btrfs scrub</code> (btrfs). For ext4, there is no online equivalent — you must unmount to check. Plan for downtime during ext4 fsck, which can take 10+ minutes on large filesystems.</p><h3 id=will-fsck-recover-deleted-files>Will fsck recover deleted files?</h3><p>Only in limited cases. If an inode was unlinked but the blocks were not yet overwritten, e2fsck places the recovered data in the <code>lost+found</code> directory. The file will have its inode number as the filename (e.g., <code>#12345</code>). xfs_repair does not recover deleted files — once unlinked in XFS, the space is freed immediately. btrfs does not have a lost+found concept — use <code>btrfs restore</code> to recover files from a mountable snapshot instead. For intentional file recovery, use forensic tools like <code>testdisk</code> and <code>photorec</code>.</p><h3 id=what-should-i-do-if-fsck-repeatedly-finds-errors>What should I do if fsck repeatedly finds errors?</h3><p>If e2fsck finds new errors on every run, you likely have failing hardware. Check SMART data with <code>smartctl -a /dev/sdb</code> and look for <code>Reallocated_Sector_Ct</code>, <code>Pending_Sector</code>, or <code>UDMA_CRC_Error_Count</code> values. A non-zero pending sector count strongly suggests drive failure. Replace the drive, clone the data with <code>ddrescue</code>, and retire the old device. Running fsck repeatedly on a failing drive accelerates data loss — the repair writes stress already-failing sectors.</p><h3 id=how-do-i-automate-filesystem-integrity-monitoring>How do I automate filesystem integrity monitoring?</h3><p>Set up a cron job or systemd timer for each filesystem type:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># /etc/cron.d/filesystem-checks</span>
+</span></span><span class=line><span class=cl><span class=c1># ext4 check (requires unmount, so run during maintenance window)</span>
+</span></span><span class=line><span class=cl><span class=m>0</span> <span class=m>3</span> * * <span class=m>0</span> root umount /mnt/data <span class=o>&amp;&amp;</span> fsck.ext4 -p /dev/sdb1 <span class=o>&amp;&amp;</span> mount /mnt/data
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># XFS online scrub (can run on mounted filesystem)</span>
+</span></span><span class=line><span class=cl><span class=m>0</span> <span class=m>2</span> * * * root xfs_scrub -n /mnt/data 2&gt;<span class=p>&amp;</span><span class=m>1</span> <span class=p>|</span> logger -t xfs_scrub
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># btrfs scrub</span>
+</span></span><span class=line><span class=cl><span class=m>0</span> <span class=m>4</span> <span class=m>1</span> * * root btrfs scrub start /mnt/data <span class=o>&amp;&amp;</span> btrfs scrub status /mnt/data <span class=p>|</span> logger -t btrfs_scrub
+</span></span></code></pre></td></tr></table></div></div><p>Combine with monitoring: if <code>xfs_scrub</code> or <code>btrfs scrub</code> exits with a non-zero status, the cron job should trigger an alert via your monitoring stack (Prometheus Alertmanager, Gotify, Ntfy). The check tools return exit codes: 0 for clean, 1 for corrected errors, 4 for uncorrected errors.</p><hr><p><strong>💡 Want to test your market judgment? I use <a href="https://polymarket.com/?r=fc8a0">Polymarket</a> for prediction market trading — it is the world&rsquo;s largest prediction market platform, where you can wager on everything from election outcomes to AI regulation timelines. Unlike gambling, this is a genuine information market: the more you know, the higher your win rate. I have made solid returns predicting AI-related events. Sign up with my invite link:</strong> <a href="https://polymarket.com/?r=fc8a0">Polymarket.com</a></p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted Filesystem Integrity Check Tools: fsck.ext4 vs xfs_repair vs btrfs check","description":"Compare fsck.ext4 (e2fsck), xfs_repair, and btrfs check for self-hosted Linux filesystem integrity verification. Includes recovery procedures, automation scripts, and hardware failure detection tips.","datePublished":"2026-06-01","dateModified":"2026-06-01","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20Filesystem%20Integrity%20Check%20Tools%3a%20fsck.ext4%20vs%20xfs_repair%20vs%20btrfs%20check&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-06-01-linux-filesystem-integrity-check-fsck-xfs-repair-btrfs-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-06-01-linux-filesystem-integrity-check-fsck-xfs-repair-btrfs-guide%2f&t=Self-Hosted%20Filesystem%20Integrity%20Check%20Tools%3a%20fsck.ext4%20vs%20xfs_repair%20vs%20btrfs%20check" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/linux/ class=tag-link>Linux</a>
+<a href=/tags/filesystem/ class=tag-link>Filesystem</a>
+<a href=/tags/storage/ class=tag-link>Storage</a>
+<a href=/tags/data-integrity/ class=tag-link>Data-Integrity</a>
+<a href=/tags/ext4/ class=tag-link>Ext4</a>
+<a href=/tags/xfs/ class=tag-link>Xfs</a>
+<a href=/tags/btrfs/ class=tag-link>Btrfs</a>
+<a href=/tags/maintenance/ class=tag-link>Maintenance</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-06-01-linux-filesystem-performance-tuning-xfs-btrfs-zfs-mount-options/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Linux Filesystem Performance Tuning: XFS vs Btrfs vs ZFS Mount Options Guide</h3><div class=post-excerpt>Introduction Filesystem performance tuning is one of the most impactful yet overlooked aspects of Linux server …</div><div class=post-footer><span class=post-date>Jun 1, 2026</span></div></a><a href=/posts/2026-05-24-self-hosted-xfs-filesystem-administration-xfs-admin-vs-xfs-db-vs-xfs-scrub-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted XFS Filesystem Administration: xfs_admin vs xfs_db vs xfs_scrub</h3><div class=post-excerpt>XFS is one of the most widely deployed enterprise filesystems on Linux, powering everything from high-performance …</div><div class=post-footer><span class=post-date>May 24, 2026</span></div></a><a href=/posts/2026-05-24-self-hosted-linux-filesystem-mount-management-systemd-mount-vs-autofs-vs-systemd-automount-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted Linux Filesystem Mount Management: systemd.mount vs autofs vs systemd.automount (2026)</h3><div class=post-excerpt>Managing filesystem mounts on Linux servers is a fundamental operational task that directly impacts system reliability, …</div><div class=post-footer><span class=post-date>May 24, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>

@@ -1,0 +1,195 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted Linux CPU Scheduler Analysis: schedstat vs sched_debug vs perf sched | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-06-01-linux-cpu-scheduler-analysis-schedstat-sched-debug-perf-sched/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted Linux CPU Scheduler Analysis: schedstat vs sched_debug vs perf sched"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-06-01-linux-cpu-scheduler-analysis-schedstat-sched-debug-perf-sched/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-06-01T00:00:00Z"><meta property="article:modified_time" content="2026-06-01T00:00:00Z"><meta property="article:tag" content="linux"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted Linux CPU Scheduler Analysis: schedstat vs sched_debug vs perf sched"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted Linux CPU Scheduler Analysis: schedstat vs sched_debug vs perf sched","description":"\u003ch2 id=\u0022introduction\u0022\u003eIntroduction\u003c\/h2\u003e\n\u003cp\u003eThe Linux CPU scheduler is responsible for deciding which task runs on which CPU at any given moment. With the Completely Fair Scheduler (CFS) and the newer EEVDF scheduler in kernel 6.6\u002b, understanding scheduler behavior is essential for diagnosing latency spikes, CPU contention, and uneven load distribution across cores. Linux provides several built-in tools for scheduler analysis, each offering a different level of detail and operational overhead.\u003c\/p\u003e","datePublished":"2026-06-01T00:00:00Z","dateModified":"2026-06-01T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-06-01-linux-cpu-scheduler-analysis-schedstat-sched-debug-perf-sched\/"},"keywords":["linux","kernel","cpu","scheduler","performance-tuning","system-administration","debugging"],"articleSection":"linux","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted Linux CPU Scheduler Analysis: schedstat vs sched_debug vs perf sched","item":"https:\/\/www.pistack.xyz\/posts\/2026-06-01-linux-cpu-scheduler-analysis-schedstat-sched-debug-perf-sched\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Linux</span>
+<span class="tag tag-purple">Kernel</span>
+<span class="tag tag-purple">Cpu</span></div><h1>Self-Hosted Linux CPU Scheduler Analysis: schedstat vs sched_debug vs perf sched</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>June 1, 2026</span>
+<span>7 min read</span>
+<span>Updated June 1, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#introduction>Introduction</a></li><li><a href=#comparison-table>Comparison Table</a></li><li><a href=#schedstat-runtime-scheduling-counters>schedstat: Runtime Scheduling Counters</a></li><li><a href=#sched_debug-detailed-scheduler-state>sched_debug: Detailed Scheduler State</a><ul><li><a href=#automated-sched_debug-collection>Automated sched_debug Collection</a></li></ul></li><li><a href=#perf-sched-event-based-scheduler-tracing>perf sched: Event-Based Scheduler Tracing</a></li><li><a href=#tool-selection-guide>Tool Selection Guide</a></li><li><a href=#why-self-host-your-scheduler-monitoring>Why Self-Host Your Scheduler Monitoring?</a></li><li><a href=#choosing-the-right-tool-for-your-investigation>Choosing the Right Tool for Your Investigation</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#do-i-need-to-enable-config_schedstats-in-my-kernel>Do I need to enable CONFIG_SCHEDSTATS in my kernel?</a></li><li><a href=#why-does-sched_debug-show-negative-nr_uninterruptible>Why does sched_debug show negative nr_uninterruptible?</a></li><li><a href=#how-much-overhead-does-perf-sched-recording-add>How much overhead does perf sched recording add?</a></li><li><a href=#can-i-use-these-tools-inside-containers>Can I use these tools inside containers?</a></li><li><a href=#what-does-a-high-sched_goidle-count-indicate>What does a high sched_goidle count indicate?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><h2 id=introduction>Introduction</h2><p>The Linux CPU scheduler is responsible for deciding which task runs on which CPU at any given moment. With the Completely Fair Scheduler (CFS) and the newer EEVDF scheduler in kernel 6.6+, understanding scheduler behavior is essential for diagnosing latency spikes, CPU contention, and uneven load distribution across cores. Linux provides several built-in tools for scheduler analysis, each offering a different level of detail and operational overhead.</p><p>This guide compares three primary Linux scheduler analysis interfaces: <strong>schedstat</strong> (runtime scheduling statistics), <strong>sched_debug</strong> (detailed per-CPU scheduler state), and <strong>perf sched</strong> (performance-event-based scheduler tracing). Each tool addresses different analysis needs — from quick health checks to deep latency investigations.</p><h2 id=comparison-table>Comparison Table</h2><table><thead><tr><th>Feature</th><th>schedstat</th><th>sched_debug</th><th>perf sched</th></tr></thead><tbody><tr><td><strong>Data Source</strong></td><td>/proc/schedstat</td><td>/sys/kernel/debug/sched/debug</td><td>perf event subsystem</td></tr><tr><td><strong>Granularity</strong></td><td>Per-CPU aggregate counters</td><td>Per-CPU, per-runqueue, per-task</td><td>Per-task, per-event</td></tr><tr><td><strong>Overhead</strong></td><td>Negligible (&lt;0.1% CPU)</td><td>Low (read-only snapshot)</td><td>Medium-High (event tracing)</td></tr><tr><td><strong>Enabled By Default</strong></td><td>Yes (CONFIG_SCHEDSTATS)</td><td>Yes (requires debugfs mount)</td><td>Yes (perf subsystem)</td></tr><tr><td><strong>Historical Analysis</strong></td><td>Manual collection</td><td>Snapshot only</td><td>Yes (trace recording)</td></tr><tr><td><strong>Latency Analysis</strong></td><td>Aggregate wait/run times</td><td>Per-task scheduling details</td><td>Microsecond-level event timeline</td></tr><tr><td><strong>Best For</strong></td><td>Health monitoring, dashboards</td><td>Detailed state inspection</td><td>Latency debugging, regression testing</td></tr><tr><td><strong>Output Format</strong></td><td>Key-value counters</td><td>Human-readable dump</td><td>Binary trace (perf.data)</td></tr></tbody></table><h2 id=schedstat-runtime-scheduling-counters>schedstat: Runtime Scheduling Counters</h2><p>The <code>/proc/schedstat</code> file provides aggregate per-CPU scheduling statistics. It is the lightest-weight option, suitable for continuous monitoring in production environments.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># View schedstat output — one line per CPU</span>
+</span></span><span class=line><span class=cl>cat /proc/schedstat
+</span></span><span class=line><span class=cl><span class=c1># Format per CPU line:</span>
+</span></span><span class=line><span class=cl><span class=c1># version cpu_id</span>
+</span></span><span class=line><span class=cl><span class=c1># yld_count sched_count sched_goidle</span>
+</span></span><span class=line><span class=cl><span class=c1># ttwu_count ttwu_local</span>
+</span></span><span class=line><span class=cl><span class=c1># wake_idx ...</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Parse schedstat into readable format</span>
+</span></span><span class=line><span class=cl>awk <span class=s1>&#39;NR&gt;1 &amp;&amp; /cpu/ {
+</span></span></span><span class=line><span class=cl><span class=s1>    cpu=$2; getline;
+</span></span></span><span class=line><span class=cl><span class=s1>    printf &#34;CPU %s: sched=%s wait=%s idle=%s\n&#34;, cpu, $1, $2, $3
+</span></span></span><span class=line><span class=cl><span class=s1>}&#39;</span> /proc/schedstat
+</span></span></code></pre></td></tr></table></div></div><p>Key metrics from schedstat:</p><ul><li><strong>sched_count</strong>: Total schedule() calls (context switches initiated by this CPU)</li><li><strong>sched_goidle</strong>: Times the scheduler found no runnable task (CPU went idle)</li><li><strong>ttwu_count</strong>: Try-to-wake-up events (tasks woken on this CPU)</li><li><strong>ttwu_local</strong>: Wake-ups where the waking and target CPU are the same</li></ul><p><strong>schedstat Monitoring with Docker Compose:</strong></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>schedstat_exporter</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>alpine:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>schedstat_exporter</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w> </span><span class=p>&gt;</span><span class=sd>
+</span></span></span><span class=line><span class=cl><span class=sd>      sh -c &#34;while true; do
+</span></span></span><span class=line><span class=cl><span class=sd>        awk &#39;/cpu0/{getline; print &#34;schedstat_count &#34;\$1; print &#34;schedstat_ttwu &#34;\$2}&#39; /host/proc/schedstat;
+</span></span></span><span class=line><span class=cl><span class=sd>        sleep 10;
+</span></span></span><span class=line><span class=cl><span class=sd>      done&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/proc:/host/proc:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=sched_debug-detailed-scheduler-state>sched_debug: Detailed Scheduler State</h2><p>The <code>sched_debug</code> interface provides an exhaustive snapshot of the scheduler&rsquo;s internal state — per-CPU runqueues, per-task scheduling statistics, and load balancing details. This is the tool to reach for when investigating why a specific task is not getting enough CPU time.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Mount debugfs if not already mounted</span>
+</span></span><span class=line><span class=cl>sudo mount -t debugfs none /sys/kernel/debug
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># View full scheduler debug output</span>
+</span></span><span class=line><span class=cl>cat /sys/kernel/debug/sched/debug
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Extract per-CPU runqueue summary</span>
+</span></span><span class=line><span class=cl>grep -A <span class=m>5</span> <span class=s2>&#34;^runnable tasks&#34;</span> /sys/kernel/debug/sched/debug
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Check load balancing statistics</span>
+</span></span><span class=line><span class=cl>grep -A <span class=m>2</span> <span class=s2>&#34;domain&#34;</span> /sys/kernel/debug/sched/debug <span class=p>|</span> grep -E <span class=s2>&#34;name|load_balance|nr_balance_failed&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><p>Key sections in sched_debug output:</p><p><strong>Per-CPU runqueue information:</strong></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-gdscript3 data-lang=gdscript3><span class=line><span class=cl><span class=n>cpu</span><span class=c1>#0, 2496.000 MHz</span>
+</span></span><span class=line><span class=cl>  <span class=o>.</span><span class=n>nr_running</span>            <span class=p>:</span> <span class=mi>3</span>
+</span></span><span class=line><span class=cl>  <span class=o>.</span><span class=n>nr_switches</span>           <span class=p>:</span> <span class=mi>18472934</span>
+</span></span><span class=line><span class=cl>  <span class=o>.</span><span class=n>nr_load_updates</span>       <span class=p>:</span> <span class=mi>528462</span>
+</span></span><span class=line><span class=cl>  <span class=o>.</span><span class=n>nr_uninterruptible</span>    <span class=p>:</span> <span class=o>-</span><span class=mi>15</span>
+</span></span></code></pre></td></tr></table></div></div><p><strong>Per-task scheduling statistics:</strong></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>runnable tasks:
+</span></span><span class=line><span class=cl> S           task   PID         tree-key  switches  prio     wait-time             sum-exec        sum-sleep
+</span></span><span class=line><span class=cl>-----------------------------------------------------------------------------------------------------------
+</span></span><span class=line><span class=cl> S          bash  1923      2084.479178      9846   120         0.000000        56.123456       1234.567890
+</span></span></code></pre></td></tr></table></div></div><p><strong>Load balancing domain statistics:</strong></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-gdscript3 data-lang=gdscript3><span class=line><span class=cl><span class=n>domain</span><span class=c1>#0: MC</span>
+</span></span><span class=line><span class=cl>  <span class=o>.</span><span class=n>load_balance</span>         <span class=p>:</span> <span class=mi>49281</span>
+</span></span><span class=line><span class=cl>  <span class=o>.</span><span class=n>nr_balance_failed</span>    <span class=p>:</span> <span class=mi>127</span>
+</span></span><span class=line><span class=cl>  <span class=o>.</span><span class=n>imbalance_pct</span>        <span class=p>:</span> <span class=mi>117</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=automated-sched_debug-collection>Automated sched_debug Collection</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=cp>#!/bin/bash
+</span></span></span><span class=line><span class=cl><span class=cp></span><span class=c1># /usr/local/bin/sched-snapshot.sh</span>
+</span></span><span class=line><span class=cl><span class=c1># Take a scheduler state snapshot for later analysis</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nv>SNAPSHOT_DIR</span><span class=o>=</span><span class=s2>&#34;/var/log/sched_debug&#34;</span>
+</span></span><span class=line><span class=cl>mkdir -p <span class=s2>&#34;</span><span class=nv>$SNAPSHOT_DIR</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl><span class=nv>TIMESTAMP</span><span class=o>=</span><span class=k>$(</span>date +%Y%m%d_%H%M%S<span class=k>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>cat /sys/kernel/debug/sched/debug &gt; <span class=s2>&#34;</span><span class=nv>$SNAPSHOT_DIR</span><span class=s2>/sched_</span><span class=si>${</span><span class=nv>TIMESTAMP</span><span class=si>}</span><span class=s2>.txt&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Rotate: keep last 100 snapshots</span>
+</span></span><span class=line><span class=cl>ls -t <span class=s2>&#34;</span><span class=nv>$SNAPSHOT_DIR</span><span class=s2>&#34;</span>/sched_*.txt <span class=p>|</span> tail -n +101 <span class=p>|</span> xargs rm -f 2&gt;/dev/null
+</span></span></code></pre></td></tr></table></div></div><h2 id=perf-sched-event-based-scheduler-tracing>perf sched: Event-Based Scheduler Tracing</h2><p><code>perf sched</code> provides the deepest scheduler analysis by recording tracepoint events and reconstructing the scheduling timeline. It can identify sub-millisecond latency issues that aggregate counters cannot capture.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Record scheduler events for 30 seconds</span>
+</span></span><span class=line><span class=cl>sudo perf sched record -a -- sleep <span class=m>30</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Generate latency analysis report</span>
+</span></span><span class=line><span class=cl>sudo perf sched latency
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Show the scheduling timeline</span>
+</span></span><span class=line><span class=cl>sudo perf sched timehist
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Map wakeup-to-schedule latencies</span>
+</span></span><span class=line><span class=cl>sudo perf sched map
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Trace specific task scheduling</span>
+</span></span><span class=line><span class=cl>sudo perf sched record -p <span class=k>$(</span>pidof mysqld<span class=k>)</span> -- sleep <span class=m>60</span>
+</span></span></code></pre></td></tr></table></div></div><p><strong>Sample perf sched latency output:</strong></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-fallback data-lang=fallback><span class=line><span class=cl>---------------------------------------------------------------------------------
+</span></span><span class=line><span class=cl>  Task                  |   Runtime ms  | Switches | Avg delay ms | Max delay ms |
+</span></span><span class=line><span class=cl>---------------------------------------------------------------------------------
+</span></span><span class=line><span class=cl>  mysqld:1234           |    2456.789   |    18923  |       0.123  |      12.456   |
+</span></span><span class=line><span class=cl>  nginx:5678            |     123.456   |     4521  |       0.089  |       3.211   |
+</span></span><span class=line><span class=cl>  kworker/u8:0          |      45.678   |     2341  |       0.045  |       1.044   |
+</span></span><span class=line><span class=cl>---------------------------------------------------------------------------------
+</span></span></code></pre></td></tr></table></div></div><p><strong>perf sched timehist for visualizing wakeup chains:</strong></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Visualize task scheduling over a 5-second window</span>
+</span></span><span class=line><span class=cl>sudo perf sched timehist -w <span class=m>5</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Filter by task name</span>
+</span></span><span class=line><span class=cl>sudo perf sched timehist --tid <span class=k>$(</span>pidof postgres<span class=k>)</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=tool-selection-guide>Tool Selection Guide</h2><table><thead><tr><th>Use Case</th><th>Recommended Tool</th><th>Why</th></tr></thead><tbody><tr><td>Production monitoring</td><td>schedstat</td><td>Zero overhead, easy to scrape</td></tr><tr><td>Troubleshooting CPU contention</td><td>sched_debug</td><td>Per-task state and runqueue depth</td></tr><tr><td>Latency investigation</td><td>perf sched</td><td>Microsecond event timeline</td></tr><tr><td>Load balancing issues</td><td>sched_debug</td><td>Domain statistics and failure counts</td></tr><tr><td>Wakeup latency regression</td><td>perf sched latency</td><td>Wakeup-to-schedule gap analysis</td></tr><tr><td>Historical trend analysis</td><td>schedstat + Prometheus</td><td>Persistent counter storage</td></tr></tbody></table><h2 id=why-self-host-your-scheduler-monitoring>Why Self-Host Your Scheduler Monitoring?</h2><p>Scheduler analysis is deeply system-specific — cloud monitoring services cannot access kernel debugging interfaces on your bare metal or virtual machines. Running schedstat collection locally and shipping metrics to a self-hosted Prometheus instance gives you continuous visibility into scheduler health. Combined with our <a href=../2026-05-22-self-hosted-linux-performance-profiling-perf-bcc-tools-sysstat-guide/>performance profiling guide</a>, scheduler metrics complete the picture of CPU resource utilization. For alternative scheduler deployments, our <a href=../2026-05-23-self-hosted-linux-bpf-schedulers-sched-ext-scx-rusty-lavd-bpfland-guide/>BPF scheduler guide</a> covers sched-ext and custom scheduling policies. If you are managing containerized workloads, our <a href=../2026-05-24-self-hosted-linux-cgroup-v2-administration-systemd-cgtop-cgroup-tools-libcgroup-guide/>cgroup v2 guide</a> covers CPU bandwidth control through cgroups.</p><h2 id=choosing-the-right-tool-for-your-investigation>Choosing the Right Tool for Your Investigation</h2><p>Selecting between schedstat, sched_debug, and perf sched depends on the type of problem you are trying to solve. For continuous monitoring, schedstat counters scraped into Prometheus provide always-on visibility without any measurable overhead. If you notice CPU latency spikes in application metrics, sched_debug gives you an immediate snapshot of runqueue depth and per-task scheduling statistics that can reveal CPU hogs. For deep-dive regression investigations — such as a kernel upgrade causing 5ms latency increases in a real-time application — perf sched recording with timehist analysis provides the microsecond-level event timeline needed to identify the root cause.</p><p>These tools also complement each other. A typical troubleshooting workflow starts with schedstat to confirm that context switch rates have increased, then moves to sched_debug to identify which tasks and CPUs are affected, and finally uses perf sched recording to capture the exact sequence of scheduling events that caused the issue. Keeping all three tools in your system administration toolkit ensures you can respond to scheduler issues at any level of detail.</p><h2 id=faq>FAQ</h2><h3 id=do-i-need-to-enable-config_schedstats-in-my-kernel>Do I need to enable CONFIG_SCHEDSTATS in my kernel?</h3><p>On most modern distributions (kernel 5.x+), CONFIG_SCHEDSTATS is enabled by default. Check with <code>zgrep CONFIG_SCHEDSTATS /proc/config.gz</code>. If missing, <code>/proc/schedstat</code> will be empty or only show version info without per-CPU counters. Recompiling the kernel with this option enabled is straightforward on Debian/Ubuntu via <code>make menuconfig</code>.</p><h3 id=why-does-sched_debug-show-negative-nr_uninterruptible>Why does sched_debug show negative nr_uninterruptible?</h3><p>The <code>nr_uninterruptible</code> counter in sched_debug tracks tasks in uninterruptible sleep (D state). A negative value indicates a kernel accounting bug — the counter decrements more often than it increments, typically due to a race condition in the task state tracking. This is a cosmetic issue in most cases and does not affect scheduler correctness. Upgrading to a newer kernel may resolve it.</p><h3 id=how-much-overhead-does-perf-sched-recording-add>How much overhead does perf sched recording add?</h3><p><code>perf sched record</code> adds approximately 1-5% CPU overhead on modern systems, depending on the event rate. On systems with very high context switch rates (>100K/s), overhead can reach 10-15%. Use short recording windows (30-60 seconds) and avoid running in production during peak hours. <code>perf sched latency</code> (analysis phase) has zero overhead since it post-processes an existing trace file.</p><h3 id=can-i-use-these-tools-inside-containers>Can I use these tools inside containers?</h3><p><code>schedstat</code> (/proc/schedstat) and <code>sched_debug</code> (/sys/kernel/debug/sched/debug) require access to the host&rsquo;s procfs and debugfs. Run containers with <code>--pid=host</code> and mount <code>/proc:/host/proc:ro</code> plus <code>/sys/kernel/debug:/sys/kernel/debug:ro</code> to access these interfaces. <code>perf sched</code> requires <code>CAP_SYS_ADMIN</code> and access to the host&rsquo;s perf_event subsystem.</p><h3 id=what-does-a-high-sched_goidle-count-indicate>What does a high sched_goidle count indicate?</h3><p><code>sched_goidle</code> counts the number of times the scheduler found no runnable task and the CPU went idle. A high count relative to <code>sched_count</code> (context switches) indicates the system has spare CPU capacity. A low ratio — where <code>sched_goidle</code> is near zero — means the CPU is saturated and continuously has work to schedule. For latency-sensitive workloads, this saturation point is where queuing delays begin to accumulate.</p><hr><p><strong>💡 想测试你的市场判断力？我用 <a href="https://polymarket.com/?r=fc8a0">Polymarket</a> 做预测市场交易——这是全球最大的预测市场平台，从大选结果到 科技监管时间线，什么都可以押注。和赌博不同，这是真正的信息市场：你懂的信息越多，胜率越高。我靠预测 科技相关事件的走向已经赚了不少。用我的邀请链接注册：</strong><a href="https://polymarket.com/?r=fc8a0">Polymarket.com</a></p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted Linux CPU Scheduler Analysis: schedstat vs sched_debug vs perf sched","description":"In-depth comparison of Linux kernel scheduler analysis tools: schedstat, sched_debug, and perf sched for diagnosing CPU contention, latency spikes, and load balancing issues on production servers.","datePublished":"2026-06-01","dateModified":"2026-06-01","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20Linux%20CPU%20Scheduler%20Analysis%3a%20schedstat%20vs%20sched_debug%20vs%20perf%20sched&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-06-01-linux-cpu-scheduler-analysis-schedstat-sched-debug-perf-sched%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-06-01-linux-cpu-scheduler-analysis-schedstat-sched-debug-perf-sched%2f&t=Self-Hosted%20Linux%20CPU%20Scheduler%20Analysis%3a%20schedstat%20vs%20sched_debug%20vs%20perf%20sched" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/linux/ class=tag-link>Linux</a>
+<a href=/tags/kernel/ class=tag-link>Kernel</a>
+<a href=/tags/cpu/ class=tag-link>Cpu</a>
+<a href=/tags/scheduler/ class=tag-link>Scheduler</a>
+<a href=/tags/performance-tuning/ class=tag-link>Performance-Tuning</a>
+<a href=/tags/system-administration/ class=tag-link>System-Administration</a>
+<a href=/tags/debugging/ class=tag-link>Debugging</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-06-01-linux-memory-reclaim-kswapd-drop-caches-vfs-cache-tuning/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted Linux Memory Reclaim Management: kswapd vs drop_caches vs VFS Cache Tuning</h3><div class=post-excerpt>Introduction Linux memory management is a delicate balancing act between keeping frequently accessed data cached and …</div><div class=post-footer><span class=post-date>Jun 1, 2026</span></div></a><a href=/posts/2026-06-01-linux-kernel-remote-logging-netconsole-rsyslog-pstore-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Linux Kernel Remote Logging: netconsole vs Remote Syslog vs pstore/Ramoops</h3><div class=post-excerpt>Introduction When a Linux server crashes, panics, or hangs, the kernel log messages (dmesg) are often the only clue to …</div><div class=post-footer><span class=post-date>Jun 1, 2026</span></div></a><a href=/posts/2026-05-24-self-hosted-linux-kernel-module-management-dkms-akmods-module-assistant-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted Linux Kernel Module Management: DKMS vs akmods vs module-assistant (2026)</h3><div class=post-excerpt>When you install third-party kernel modules on a self-hosted Linux server — NVIDIA GPU drivers, VirtualBox guest …</div><div class=post-footer><span class=post-date>May 24, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>

@@ -1,0 +1,232 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted Linux Memory Reclaim Management: kswapd vs drop_caches vs VFS Cache Tuning | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-06-01-linux-memory-reclaim-kswapd-drop-caches-vfs-cache-tuning/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted Linux Memory Reclaim Management: kswapd vs drop_caches vs VFS Cache Tuning"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-06-01-linux-memory-reclaim-kswapd-drop-caches-vfs-cache-tuning/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-06-01T00:00:00Z"><meta property="article:modified_time" content="2026-06-01T00:00:00Z"><meta property="article:tag" content="linux"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted Linux Memory Reclaim Management: kswapd vs drop_caches vs VFS Cache Tuning"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted Linux Memory Reclaim Management: kswapd vs drop_caches vs VFS Cache Tuning","description":"\u003ch2 id=\u0022introduction\u0022\u003eIntroduction\u003c\/h2\u003e\n\u003cp\u003eLinux memory management is a delicate balancing act between keeping frequently accessed data cached and ensuring enough free memory for new allocations. When memory pressure builds, the kernel\u0026rsquo;s reclaim subsystem kicks in — but the default behavior is not always optimal for every workload. Understanding how to monitor and tune memory reclaim can mean the difference between a responsive server and one that thrashes under load.\u003c\/p\u003e","datePublished":"2026-06-01T00:00:00Z","dateModified":"2026-06-01T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-06-01-linux-memory-reclaim-kswapd-drop-caches-vfs-cache-tuning\/"},"keywords":["linux","kernel","memory-management","system-administration","performance-tuning","monitoring"],"articleSection":"linux","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted Linux Memory Reclaim Management: kswapd vs drop_caches vs VFS Cache Tuning","item":"https:\/\/www.pistack.xyz\/posts\/2026-06-01-linux-memory-reclaim-kswapd-drop-caches-vfs-cache-tuning\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Linux</span>
+<span class="tag tag-purple">Kernel</span>
+<span class="tag tag-purple">Memory-Management</span></div><h1>Self-Hosted Linux Memory Reclaim Management: kswapd vs drop_caches vs VFS Cache Tuning</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>June 1, 2026</span>
+<span>8 min read</span>
+<span>Updated June 1, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#introduction>Introduction</a></li><li><a href=#comparison-table>Comparison Table</a></li><li><a href=#kswapd-the-background-reclaim-daemon>kswapd: The Background Reclaim Daemon</a><ul><li><a href=#monitoring-kswapd-activity>Monitoring kswapd Activity</a></li><li><a href=#tuning-kswapd-via-watermarks>Tuning kswapd via Watermarks</a></li></ul></li><li><a href=#drop_caches-manual-cache-eviction>drop_caches: Manual Cache Eviction</a></li><li><a href=#vfs-cache-pressure-tuning>VFS Cache Pressure Tuning</a><ul><li><a href=#swappiness-as-a-complementary-control>Swappiness as a Complementary Control</a></li></ul></li><li><a href=#monitoring-tools-comparison>Monitoring Tools Comparison</a></li><li><a href=#why-self-host-your-memory-monitoring>Why Self-Host Your Memory Monitoring?</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#when-should-i-use-drop_caches-vs-tuning-kswapd>When should I use drop_caches vs tuning kswapd?</a></li><li><a href=#what-is-a-healthy-pgscan_kswapd-to-pgsteal_kswapd-ratio>What is a healthy pgscan_kswapd to pgsteal_kswapd ratio?</a></li><li><a href=#how-do-i-detect-memory-pressure-before-oom-kills-happen>How do I detect memory pressure before OOM kills happen?</a></li><li><a href=#does-tuning-vfs_cache_pressure-affect-ssds-differently-than-hdds>Does tuning vfs_cache_pressure affect SSDs differently than HDDs?</a></li><li><a href=#can-i-disable-kswapd-entirely>Can I disable kswapd entirely?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><h2 id=introduction>Introduction</h2><p>Linux memory management is a delicate balancing act between keeping frequently accessed data cached and ensuring enough free memory for new allocations. When memory pressure builds, the kernel&rsquo;s reclaim subsystem kicks in — but the default behavior is not always optimal for every workload. Understanding how to monitor and tune memory reclaim can mean the difference between a responsive server and one that thrashes under load.</p><p>This guide compares the three primary mechanisms for Linux memory reclaim management: <strong>kswapd tuning</strong> (the background page reclaim daemon), <strong>drop_caches operations</strong> (manual cache eviction), and <strong>VFS cache pressure tuning</strong> (dentry/inode cache governance). Each approach serves a different purpose — from automated background reclaim to surgical cache management — and knowing when to apply each is critical for production system administration.</p><h2 id=comparison-table>Comparison Table</h2><table><thead><tr><th>Feature</th><th>kswapd Tuning</th><th>drop_caches</th><th>VFS Cache Pressure</th></tr></thead><tbody><tr><td><strong>Mechanism</strong></td><td>Kernel thread (background reclaim)</td><td>Manual sysctl write</td><td>vm.vfs_cache_pressure kernel parameter</td></tr><tr><td><strong>Trigger</strong></td><td>Automatic (watermark-based)</td><td>Administrator-invoked</td><td>Continuous (policy-driven)</td></tr><tr><td><strong>Granularity</strong></td><td>Per-NUMA-node, per-zone</td><td>System-wide drop</td><td>dentry/inode ratio control</td></tr><tr><td><strong>Monitoring</strong></td><td>/proc/vmstat, /proc/zoneinfo</td><td>One-shot operation</td><td>/proc/slabinfo, slabtop</td></tr><tr><td><strong>Risk Profile</strong></td><td>Low (balancing algorithm)</td><td>High (can evict hot pages)</td><td>Medium (tuning required)</td></tr><tr><td><strong>Best For</strong></td><td>General memory pressure management</td><td>Pre-benchmark cleanup, emergency</td><td>Database servers, file servers</td></tr><tr><td><strong>Persistence</strong></td><td>Via sysctl.conf / sysctl.d</td><td>Ephemeral (one-time)</td><td>Via sysctl.conf / sysctl.d</td></tr><tr><td><strong>Overhead</strong></td><td>Negligible (background thread)</td><td>I/O spike during eviction</td><td>Policy overhead (minimal)</td></tr></tbody></table><h2 id=kswapd-the-background-reclaim-daemon>kswapd: The Background Reclaim Daemon</h2><p><strong>kswapd</strong> is the kernel&rsquo;s background memory reclaim thread. It wakes up when free memory drops below the &ldquo;low&rdquo; watermark and starts scanning anonymous and file-backed pages to find candidates for eviction. On multi-NUMA systems, there is one kswapd thread per NUMA node.</p><h3 id=monitoring-kswapd-activity>Monitoring kswapd Activity</h3><p>The primary interface for monitoring reclaim activity is <code>/proc/vmstat</code>. Key counters include:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Monitor reclaim activity in real-time (1-second intervals)</span>
+</span></span><span class=line><span class=cl>watch -n <span class=m>1</span> <span class=s2>&#34;grep -E &#39;pgsteal_|pgscan_|kswapd&#39; /proc/vmstat&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Check per-zone watermarks and reclaim stats</span>
+</span></span><span class=line><span class=cl>cat /proc/zoneinfo <span class=p>|</span> grep -A <span class=m>20</span> <span class=s2>&#34;Node 0, zone&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><p>Key metrics to watch:</p><ul><li><strong>pgsteal_kswapd</strong>: Pages reclaimed by kswapd (successful reclaim)</li><li><strong>pgscan_kswapd</strong>: Pages scanned by kswapd (effort expended)</li><li><strong>pgsteal_direct</strong>: Pages reclaimed via direct reclaim (synchronous, blocking)</li><li><strong>pgscan_direct</strong>: Pages scanned via direct reclaim</li></ul><p>A high ratio of <code>pgscan_kswapd</code> to <code>pgsteal_kswapd</code> indicates inefficient reclaim (kswapd scanning many pages but finding few to evict). Direct reclaim (non-kswapd) is particularly concerning — it means kswapd cannot keep up, and processes are blocking on memory allocation.</p><h3 id=tuning-kswapd-via-watermarks>Tuning kswapd via Watermarks</h3><p>The watermarks that control when kswapd activates are set in <code>/proc/sys/vm/</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span><span class=lnt>9
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># View current watermark ratios (in 1/10000ths of zone size)</span>
+</span></span><span class=line><span class=cl>cat /proc/sys/vm/watermark_scale_factor
+</span></span><span class=line><span class=cl><span class=c1># Default: 10 (0.1% of zone) — increase for earlier kswapd activation</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Increase watermark scale factor for more aggressive background reclaim</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=m>100</span> <span class=p>|</span> sudo tee /proc/sys/vm/watermark_scale_factor
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Check min/low/high watermarks per zone</span>
+</span></span><span class=line><span class=cl>cat /proc/zoneinfo <span class=p>|</span> grep -E <span class=s2>&#34;Node|watermark&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><p><strong>Docker Compose for Monitoring Stack (Prometheus + Node Exporter):</strong></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-yaml data-lang=yaml><span class=line><span class=cl><span class=nt>version</span><span class=p>:</span><span class=w> </span><span class=s2>&#34;3.8&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>services</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>node_exporter</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>quay.io/prometheus/node-exporter:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>node_exporter</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>pid</span><span class=p>:</span><span class=w> </span><span class=l>host</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>command</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;--collector.vmstat.fields=^(pgsteal_kswapd|pgscan_kswapd|pgsteal_direct|pgscan_direct|pgsteal_anon|pgsteal_file|pgmajfault).*&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/proc:/host/proc:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>/sys:/host/sys:ro</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;9100:9100&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>prometheus</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>image</span><span class=p>:</span><span class=w> </span><span class=l>prom/prometheus:latest</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>container_name</span><span class=p>:</span><span class=w> </span><span class=l>prometheus</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>./prometheus.yml:/etc/prometheus/prometheus.yml</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=l>prometheus_data:/prometheus</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>ports</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>      </span>- <span class=s2>&#34;9090:9090&#34;</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>    </span><span class=nt>restart</span><span class=p>:</span><span class=w> </span><span class=l>unless-stopped</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w></span><span class=nt>volumes</span><span class=p>:</span><span class=w>
+</span></span></span><span class=line><span class=cl><span class=w>  </span><span class=nt>prometheus_data</span><span class=p>:</span><span class=w>
+</span></span></span></code></pre></td></tr></table></div></div><h2 id=drop_caches-manual-cache-eviction>drop_caches: Manual Cache Eviction</h2><p>The <code>/proc/sys/vm/drop_caches</code> interface provides administrator-controlled cache flushing. Unlike kswapd (which uses an aging algorithm), <code>drop_caches</code> is a blunt instrument that immediately frees specific cache types:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># View current cache usage before dropping</span>
+</span></span><span class=line><span class=cl>free -h
+</span></span><span class=line><span class=cl>cat /proc/meminfo <span class=p>|</span> grep -E <span class=s2>&#34;^(Cached|Buffers|SReclaimable):&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Drop page cache only (safest option)</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=m>1</span> <span class=p>|</span> sudo tee /proc/sys/vm/drop_caches
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Drop dentries and inodes (VFS metadata cache)</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=m>2</span> <span class=p>|</span> sudo tee /proc/sys/vm/drop_caches
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Drop page cache, dentries, and inodes</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=m>3</span> <span class=p>|</span> sudo tee /proc/sys/vm/drop_caches
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Verify reclaim</span>
+</span></span><span class=line><span class=cl>free -h
+</span></span></code></pre></td></tr></table></div></div><p><strong>When to use drop_caches</strong>: Pre-benchmark cache normalization, troubleshooting memory pressure where anonymous pages are being swapped despite large cache, and emergency memory reclamation when applications are OOM-killed. <strong>When NOT to use it</strong>: Routine operations (let kswapd handle it), high-performance database servers (flushing cache destroys query performance), and production systems under normal load.</p><p><strong>Automated Cache Pressure Monitoring Script:</strong></p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=cp>#!/bin/bash
+</span></span></span><span class=line><span class=cl><span class=cp></span><span class=c1># /usr/local/bin/memory-reclaim-monitor.sh</span>
+</span></span><span class=line><span class=cl><span class=c1># Check if memory pressure requires intervention</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nv>THRESHOLD_PCT</span><span class=o>=</span><span class=m>95</span>
+</span></span><span class=line><span class=cl><span class=nv>USED_PCT</span><span class=o>=</span><span class=k>$(</span>free <span class=p>|</span> awk <span class=s1>&#39;/^Mem:/ {printf &#34;%.0f&#34;, $3/$2 * 100}&#39;</span><span class=k>)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>if</span> <span class=o>[</span> <span class=s2>&#34;</span><span class=nv>$USED_PCT</span><span class=s2>&#34;</span> -gt <span class=s2>&#34;</span><span class=nv>$THRESHOLD_PCT</span><span class=s2>&#34;</span> <span class=o>]</span><span class=p>;</span> <span class=k>then</span>
+</span></span><span class=line><span class=cl>    <span class=nb>echo</span> <span class=s2>&#34;[</span><span class=k>$(</span>date<span class=k>)</span><span class=s2>] Memory at </span><span class=si>${</span><span class=nv>USED_PCT</span><span class=si>}</span><span class=s2>% — checking reclaim metrics&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=nv>DIRECT_RECLAIM</span><span class=o>=</span><span class=k>$(</span>grep pgsteal_direct /proc/vmstat <span class=p>|</span> awk <span class=s1>&#39;{print $2}&#39;</span><span class=k>)</span>
+</span></span><span class=line><span class=cl>    <span class=k>if</span> <span class=o>[</span> <span class=s2>&#34;</span><span class=nv>$DIRECT_RECLAIM</span><span class=s2>&#34;</span> -gt <span class=m>1000</span> <span class=o>]</span><span class=p>;</span> <span class=k>then</span>
+</span></span><span class=line><span class=cl>        <span class=nb>echo</span> <span class=s2>&#34;[</span><span class=k>$(</span>date<span class=k>)</span><span class=s2>] WARNING: High direct reclaim detected (</span><span class=nv>$DIRECT_RECLAIM</span><span class=s2> pages)&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=c1># Trigger controlled cache drop</span>
+</span></span><span class=line><span class=cl>        sync <span class=o>&amp;&amp;</span> <span class=nb>echo</span> <span class=m>1</span> &gt; /proc/sys/vm/drop_caches
+</span></span><span class=line><span class=cl>    <span class=k>fi</span>
+</span></span><span class=line><span class=cl><span class=k>fi</span>
+</span></span></code></pre></td></tr></table></div></div><h2 id=vfs-cache-pressure-tuning>VFS Cache Pressure Tuning</h2><p>The Virtual Filesystem (VFS) cache stores dentries (directory entry objects) and inodes (file metadata) to accelerate filesystem operations. The <code>vm.vfs_cache_pressure</code> parameter controls how aggressively the kernel reclaims VFS cache relative to page cache:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># View current value (default: 100)</span>
+</span></span><span class=line><span class=cl>cat /proc/sys/vm/vfs_cache_pressure
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Decrease pressure — preserve VFS cache longer (good for file servers)</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=m>50</span> <span class=p>|</span> sudo tee /proc/sys/vm/vfs_cache_pressure
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Increase pressure — reclaim VFS cache more aggressively (good for database servers)</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=m>200</span> <span class=p>|</span> sudo tee /proc/sys/vm/vfs_cache_pressure
+</span></span></code></pre></td></tr></table></div></div><ul><li><strong>Value &lt; 100</strong>: Kernel prefers keeping dentry/inode cache over page cache</li><li><strong>Value = 100</strong>: Default balanced behavior</li><li><strong>Value > 100</strong>: Kernel prefers evicting dentry/inode cache first</li></ul><p>Monitor the VFS cache size with:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># View slab cache statistics</span>
+</span></span><span class=line><span class=cl>slabtop -s c -o <span class=p>|</span> head -20
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Check dentry and inode cache sizes</span>
+</span></span><span class=line><span class=cl>cat /proc/slabinfo <span class=p>|</span> grep -E <span class=s2>&#34;^dentry|^ext4_inode|^xfs_inode&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Monitor over time</span>
+</span></span><span class=line><span class=cl>watch -n <span class=m>5</span> <span class=s2>&#34;grep -E &#39;^(dentry|inode_cache|ext4_inode)&#39; /proc/slabinfo&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=swappiness-as-a-complementary-control>Swappiness as a Complementary Control</h3><p>While not strictly part of the reclaim subsystem, <code>vm.swappiness</code> strongly influences reclaim behavior. Lower values favor keeping anonymous pages in memory and reclaiming file-backed pages instead:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># View current swappiness (default: 60)</span>
+</span></span><span class=line><span class=cl>cat /proc/sys/vm/swappiness
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Reduce swapping — keep anonymous pages in RAM longer (database servers)</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=m>10</span> <span class=p>|</span> sudo tee /proc/sys/vm/swappiness
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Increase swapping — prefer swapping over dropping file cache (desktop)</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=m>100</span> <span class=p>|</span> sudo tee /proc/sys/vm/swappiness
+</span></span></code></pre></td></tr></table></div></div><p><strong>Persisting sysctl settings</strong> across reboots:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Create a dedicated tuning file</span>
+</span></span><span class=line><span class=cl>cat <span class=s>&lt;&lt; &#39;EOF&#39; | sudo tee /etc/sysctl.d/99-memory-reclaim.conf
+</span></span></span><span class=line><span class=cl><span class=s># Memory reclaim tuning for database server workload
+</span></span></span><span class=line><span class=cl><span class=s>vm.swappiness = 10
+</span></span></span><span class=line><span class=cl><span class=s>vm.vfs_cache_pressure = 50
+</span></span></span><span class=line><span class=cl><span class=s>vm.watermark_scale_factor = 100
+</span></span></span><span class=line><span class=cl><span class=s>vm.min_free_kbytes = 131072
+</span></span></span><span class=line><span class=cl><span class=s>EOF</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Apply</span>
+</span></span><span class=line><span class=cl>sudo sysctl --system
+</span></span></code></pre></td></tr></table></div></div><h2 id=monitoring-tools-comparison>Monitoring Tools Comparison</h2><table><thead><tr><th>Tool</th><th>Scope</th><th>Real-time</th><th>Historical</th><th>Best For</th></tr></thead><tbody><tr><td>/proc/vmstat</td><td>Kernel counters</td><td>Snapshot</td><td>Manual collection</td><td>Script-level monitoring</td></tr><tr><td>/proc/zoneinfo</td><td>Per-zone details</td><td>Snapshot</td><td>Manual collection</td><td>Watermark analysis</td></tr><tr><td>slabtop</td><td>Slab cache</td><td>Interactive (ncurses)</td><td>No</td><td>Cache composition</td></tr><tr><td>vmstat 1</td><td>System-wide</td><td>Yes (1s intervals)</td><td>No</td><td>Quick overview</td></tr><tr><td>node_exporter</td><td>Kernel metrics</td><td>Via Prometheus</td><td>Yes (Prometheus TSDB)</td><td>Dashboard & alerting</td></tr><tr><td>BPF/bpftrace</td><td>Custom probes</td><td>Yes (programmatic)</td><td>Depends</td><td>Deep-dive analysis</td></tr></tbody></table><h2 id=why-self-host-your-memory-monitoring>Why Self-Host Your Memory Monitoring?</h2><p>Running your own memory monitoring stack gives you complete control over what is collected and how long it is retained. Cloud monitoring services typically only retain metrics for 15-30 days, which is insufficient for detecting gradual memory pressure trends that develop over months. With a self-hosted Prometheus and Grafana stack, you can retain years of reclaim data, correlate memory pressure with application deployments, and build custom dashboards tailored to your workload patterns.</p><p>For broader Linux performance monitoring, see our <a href=../2026-05-22-self-hosted-linux-performance-profiling-perf-bcc-tools-sysstat-guide/>comprehensive profiling guide</a>. If you are managing cgroup-based memory limits, our <a href=../2026-05-24-self-hosted-linux-cgroup-v2-administration-systemd-cgtop-cgroup-tools-libcgroup-guide/>cgroup v2 administration guide</a> covers resource constraint management in detail. For BPF-based scheduler analysis, our <a href=../2026-05-23-self-hosted-linux-bpf-schedulers-sched-ext-scx-rusty-lavd-bpfland-guide/>sched-ext guide</a> covers how schedulers interact with memory pressure.</p><p>Memory reclaim tuning is not a one-time configuration — it requires ongoing monitoring and adjustment as workloads evolve. The tools in this guide provide the visibility and control needed to maintain optimal memory health across your Linux infrastructure.</p><h2 id=faq>FAQ</h2><h3 id=when-should-i-use-drop_caches-vs-tuning-kswapd>When should I use drop_caches vs tuning kswapd?</h3><p>Use <strong>drop_caches</strong> for one-time interventions: before running benchmarks, after stopping a memory-intensive application, or when emergency memory is needed. Use <strong>kswapd tuning</strong> (watermark_scale_factor) for ongoing, automated reclaim management. kswapd tuning is always preferred for production — drop_caches is a diagnostic and emergency tool, not a regular maintenance operation.</p><h3 id=what-is-a-healthy-pgscan_kswapd-to-pgsteal_kswapd-ratio>What is a healthy pgscan_kswapd to pgsteal_kswapd ratio?</h3><p>A ratio below 10:1 is generally healthy — kswapd should reclaim at least 10% of scanned pages. Ratios above 50:1 indicate thrashing: kswapd is working hard but finding few evictable pages. This typically means the working set exceeds available memory and you should either add RAM or reduce the workload.</p><h3 id=how-do-i-detect-memory-pressure-before-oom-kills-happen>How do I detect memory pressure before OOM kills happen?</h3><p>Monitor <code>pgsteal_direct</code> in <code>/proc/vmstat</code> — non-zero and increasing values mean processes are blocking on direct reclaim. Set up alerting on <code>node_vmstat_pgsteal_direct</code> from node_exporter. Also watch <code>/proc/pressure/memory</code> (PSI — Pressure Stall Information) which provides a more nuanced view of memory pressure as percentages over 10s, 60s, and 300s windows.</p><h3 id=does-tuning-vfs_cache_pressure-affect-ssds-differently-than-hdds>Does tuning vfs_cache_pressure affect SSDs differently than HDDs?</h3><p>The parameter affects memory behavior, not I/O patterns directly. However, on SSD-based systems, reclaiming and later re-reading VFS cache has a lower performance penalty than on HDDs. For SSD servers, you can safely increase vfs_cache_pressure (200+) to free memory for application use. For HDD-based systems, keep it at default or lower (50-100) to avoid costly metadata re-reads from slow spinning disks.</p><h3 id=can-i-disable-kswapd-entirely>Can I disable kswapd entirely?</h3><p>No. kswapd is a fundamental kernel thread required for the memory management subsystem. However, you can influence its behavior: set <code>vm.watermark_scale_factor</code> to a very high value (1000+) to make kswapd activate earlier and more aggressively, or set <code>vm.swappiness = 0</code> to make it strongly prefer reclaiming file-backed pages over anonymous pages. The kernel requires some reclaim mechanism — if kswapd cannot keep up, direct reclaim takes over, which is far worse for performance.</p><hr><p><strong>💡 想测试你的市场判断力？我用 <a href="https://polymarket.com/?r=fc8a0">Polymarket</a> 做预测市场交易——这是全球最大的预测市场平台，从大选结果到 科技监管时间线，什么都可以押注。和赌博不同，这是真正的信息市场：你懂的信息越多，胜率越高。我靠预测 科技相关事件的走向已经赚了不少。用我的邀请链接注册：</strong><a href="https://polymarket.com/?r=fc8a0">Polymarket.com</a></p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted Linux Memory Reclaim Management: kswapd vs drop_caches vs VFS Cache Tuning","description":"Comprehensive guide comparing Linux kernel memory reclaim mechanisms: kswapd background reclaim tuning, drop_caches manual eviction, and VFS cache pressure configuration for optimal server performance.","datePublished":"2026-06-01","dateModified":"2026-06-01","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20Linux%20Memory%20Reclaim%20Management%3a%20kswapd%20vs%20drop_caches%20vs%20VFS%20Cache%20Tuning&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-06-01-linux-memory-reclaim-kswapd-drop-caches-vfs-cache-tuning%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-06-01-linux-memory-reclaim-kswapd-drop-caches-vfs-cache-tuning%2f&t=Self-Hosted%20Linux%20Memory%20Reclaim%20Management%3a%20kswapd%20vs%20drop_caches%20vs%20VFS%20Cache%20Tuning" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/linux/ class=tag-link>Linux</a>
+<a href=/tags/kernel/ class=tag-link>Kernel</a>
+<a href=/tags/memory-management/ class=tag-link>Memory-Management</a>
+<a href=/tags/system-administration/ class=tag-link>System-Administration</a>
+<a href=/tags/performance-tuning/ class=tag-link>Performance-Tuning</a>
+<a href=/tags/monitoring/ class=tag-link>Monitoring</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-06-01-linux-cpu-scheduler-analysis-schedstat-sched-debug-perf-sched/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted Linux CPU Scheduler Analysis: schedstat vs sched_debug vs perf sched</h3><div class=post-excerpt>Introduction The Linux CPU scheduler is responsible for deciding which task runs on which CPU at any given moment. With …</div><div class=post-footer><span class=post-date>Jun 1, 2026</span></div></a><a href=/posts/2026-06-01-linux-kernel-remote-logging-netconsole-rsyslog-pstore-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Linux Kernel Remote Logging: netconsole vs Remote Syslog vs pstore/Ramoops</h3><div class=post-excerpt>Introduction When a Linux server crashes, panics, or hangs, the kernel log messages (dmesg) are often the only clue to …</div><div class=post-footer><span class=post-date>Jun 1, 2026</span></div></a><a href=/posts/2026-06-01-linux-process-accounting-psacct-atop-auditd-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted Linux Process Accounting & Auditing: psacct vs atop vs auditd Process Tracking</h3><div class=post-excerpt>Introduction Knowing exactly what ran on your server, who executed it, and how many resources it consumed is fundamental …</div><div class=post-footer><span class=post-date>Jun 1, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>

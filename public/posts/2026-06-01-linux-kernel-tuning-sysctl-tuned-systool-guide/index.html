@@ -1,0 +1,236 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted Linux Kernel Tuning: sysctl vs tuned vs systool | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-06-01-linux-kernel-tuning-sysctl-tuned-systool-guide/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted Linux Kernel Tuning: sysctl vs tuned vs systool"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-06-01-linux-kernel-tuning-sysctl-tuned-systool-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-06-01T00:00:00Z"><meta property="article:modified_time" content="2026-06-01T00:00:00Z"><meta property="article:tag" content="linux"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted Linux Kernel Tuning: sysctl vs tuned vs systool"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted Linux Kernel Tuning: sysctl vs tuned vs systool","description":"\u003ch2 id=\u0022introduction\u0022\u003eIntroduction\u003c\/h2\u003e\n\u003cp\u003eEvery Linux system ships with thousands of tunable kernel parameters governing everything from network buffer sizes to virtual memory behavior. Three tools give you access to these knobs: \u003cstrong\u003esysctl\u003c\/strong\u003e for direct \u003ccode\u003e\/proc\/sys\u003c\/code\u003e manipulation, \u003cstrong\u003etuned\u003c\/strong\u003e for profile-driven adaptive optimization, and \u003cstrong\u003esystool\u003c\/strong\u003e for exploring the sysfs device tree. Understanding when and how to use each one is essential for any systems administrator responsible for production workloads.\u003c\/p\u003e","datePublished":"2026-06-01T00:00:00Z","dateModified":"2026-06-01T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-06-01-linux-kernel-tuning-sysctl-tuned-systool-guide\/"},"keywords":["linux","kernel","performance","sysadmin","tuning","optimization"],"articleSection":"linux","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted Linux Kernel Tuning: sysctl vs tuned vs systool","item":"https:\/\/www.pistack.xyz\/posts\/2026-06-01-linux-kernel-tuning-sysctl-tuned-systool-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Linux</span>
+<span class="tag tag-purple">Kernel</span>
+<span class="tag tag-purple">Performance</span></div><h1>Self-Hosted Linux Kernel Tuning: sysctl vs tuned vs systool</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>June 1, 2026</span>
+<span>7 min read</span>
+<span>Updated June 1, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#introduction>Introduction</a></li><li><a href=#feature-comparison>Feature Comparison</a></li><li><a href=#sysctl--direct-kernel-parameter-control>sysctl — Direct Kernel Parameter Control</a><ul><li><a href=#installation>Installation</a></li><li><a href=#essential-tuning-commands>Essential Tuning Commands</a></li><li><a href=#persisting-changes>Persisting Changes</a></li></ul></li><li><a href=#tuned--adaptive-profile-driven-optimization>tuned — Adaptive Profile-Driven Optimization</a><ul><li><a href=#installation-1>Installation</a></li><li><a href=#essential-tuning-commands-1>Essential Tuning Commands</a></li><li><a href=#key-profiles>Key Profiles</a></li><li><a href=#custom-profiles>Custom Profiles</a></li></ul></li><li><a href=#systool--sysfs-device-tree-explorer>systool — Sysfs Device Tree Explorer</a><ul><li><a href=#installation-2>Installation</a></li><li><a href=#essential-commands>Essential Commands</a></li><li><a href=#when-to-use-systool>When to Use systool</a></li></ul></li><li><a href=#why-self-host-your-kernel-tuning-approach>Why Self-Host Your Kernel Tuning Approach</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#how-do-i-make-sysctl-changes-permanent-across-reboots>How do I make sysctl changes permanent across reboots?</a></li><li><a href=#can-tuned-and-manual-sysctl-settings-conflict-with-each-other>Can tuned and manual sysctl settings conflict with each other?</a></li><li><a href=#why-does-systool-show-the-same-device-under-multiple-buses>Why does systool show the same device under multiple buses?</a></li><li><a href=#what-are-the-risks-of-kernel-tuning-without-understanding-the-parameters>What are the risks of kernel tuning without understanding the parameters?</a></li><li><a href=#when-should-i-use-tuned-vs-just-writing-a-sysctlconf-file>When should I use tuned vs just writing a sysctl.conf file?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><h2 id=introduction>Introduction</h2><p>Every Linux system ships with thousands of tunable kernel parameters governing everything from network buffer sizes to virtual memory behavior. Three tools give you access to these knobs: <strong>sysctl</strong> for direct <code>/proc/sys</code> manipulation, <strong>tuned</strong> for profile-driven adaptive optimization, and <strong>systool</strong> for exploring the sysfs device tree. Understanding when and how to use each one is essential for any systems administrator responsible for production workloads.</p><p>This guide compares these three kernel tuning interfaces, with practical examples for database servers, web applications, and container hosts.</p><h2 id=feature-comparison>Feature Comparison</h2><table><thead><tr><th>Feature</th><th>sysctl</th><th>tuned</th><th>systool</th></tr></thead><tbody><tr><td><strong>Interface</strong></td><td><code>/proc/sys/</code> filesystem</td><td>D-Bus daemon with profiles</td><td>Sysfs filesystem</td></tr><tr><td><strong>Persistence</strong></td><td><code>/etc/sysctl.conf</code> / <code>.d/*.conf</code></td><td>Profile files in <code>/etc/tuned/</code></td><td>Not persistent (read-only)</td></tr><tr><td><strong>Adaptive Tuning</strong></td><td>No (static values)</td><td>Yes (monitors load, adjusts live)</td><td>No (interrogation only)</td></tr><tr><td><strong>Scope</strong></td><td>Kernel parameters (net, vm, fs, kernel)</td><td>System-wide optimization profiles</td><td>Device, bus, driver, module info</td></tr><tr><td><strong>Profiles</strong></td><td>Manual per-parameter</td><td>Pre-built: throughput-performance, latency-performance, virtual-guest, etc.</td><td>N/A (read-only discovery)</td></tr><tr><td><strong>Real-time Adjust</strong></td><td><code>sysctl -w</code> (immediate)</td><td><code>tuned-adm profile &lt;name></code> (profile switch)</td><td>Read-only</td></tr><tr><td><strong>Boot Persistence</strong></td><td>Yes (via sysctl.conf)</td><td>Yes (active profile survives reboot)</td><td>N/A</td></tr><tr><td><strong>Discovery</strong></td><td><code>sysctl -a</code> (list all)</td><td><code>tuned-adm list</code> (profiles)</td><td><code>systool -b &lt;bus></code> (browse)</td></tr><tr><td><strong>Package</strong></td><td>procps-ng (pre-installed)</td><td>tuned</td><td>sysfsutils</td></tr></tbody></table><h2 id=sysctl--direct-kernel-parameter-control>sysctl — Direct Kernel Parameter Control</h2><p><code>sysctl</code> is the canonical interface for reading and writing kernel parameters at runtime. Every parameter exposed under <code>/proc/sys/</code> — from TCP congestion control algorithms to the maximum number of open file descriptors — can be inspected and modified with sysctl.</p><h3 id=installation>Installation</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># sysctl is part of procps-ng, pre-installed on virtually all Linux distributions</span>
+</span></span><span class=line><span class=cl><span class=c1># Verify availability:</span>
+</span></span><span class=line><span class=cl>which sysctl
+</span></span><span class=line><span class=cl>sysctl --version
+</span></span></code></pre></td></tr></table></div></div><h3 id=essential-tuning-commands>Essential Tuning Commands</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># List all available kernel parameters</span>
+</span></span><span class=line><span class=cl>sysctl -a
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Read a specific parameter</span>
+</span></span><span class=line><span class=cl>sysctl net.core.somaxconn
+</span></span><span class=line><span class=cl>sysctl vm.swappiness
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Apply a change immediately (non-persistent)</span>
+</span></span><span class=line><span class=cl>sysctl -w net.core.somaxconn<span class=o>=</span><span class=m>4096</span>
+</span></span><span class=line><span class=cl>sysctl -w vm.swappiness<span class=o>=</span><span class=m>10</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Load settings from a configuration file</span>
+</span></span><span class=line><span class=cl>sysctl -p /etc/sysctl.conf
+</span></span><span class=line><span class=cl>sysctl -p /etc/sysctl.d/99-custom.conf
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Common performance tuning examples</span>
+</span></span><span class=line><span class=cl>sysctl -w net.ipv4.tcp_fastopen<span class=o>=</span><span class=m>3</span>           <span class=c1># TCP Fast Open</span>
+</span></span><span class=line><span class=cl>sysctl -w net.core.rmem_max<span class=o>=</span><span class=m>134217728</span>       <span class=c1># Max receive buffer</span>
+</span></span><span class=line><span class=cl>sysctl -w vm.dirty_ratio<span class=o>=</span><span class=m>15</span>                 <span class=c1># Dirty page cache limit</span>
+</span></span><span class=line><span class=cl>sysctl -w kernel.pid_max<span class=o>=</span><span class=m>4194304</span>            <span class=c1># Max process IDs</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=persisting-changes>Persisting Changes</h3><p>Create or edit a file in <code>/etc/sysctl.d/</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># /etc/sysctl.d/99-postgresql.conf</span>
+</span></span><span class=line><span class=cl><span class=c1># PostgreSQL-optimized kernel parameters</span>
+</span></span><span class=line><span class=cl>kernel.shmmax <span class=o>=</span> <span class=m>8589934592</span>
+</span></span><span class=line><span class=cl>kernel.shmall <span class=o>=</span> <span class=m>2097152</span>
+</span></span><span class=line><span class=cl>vm.swappiness <span class=o>=</span> <span class=m>5</span>
+</span></span><span class=line><span class=cl>vm.overcommit_memory <span class=o>=</span> <span class=m>2</span>
+</span></span><span class=line><span class=cl>vm.overcommit_ratio <span class=o>=</span> <span class=m>90</span>
+</span></span><span class=line><span class=cl>net.core.somaxconn <span class=o>=</span> <span class=m>4096</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Apply</span>
+</span></span><span class=line><span class=cl>sudo sysctl --system
+</span></span></code></pre></td></tr></table></div></div><h2 id=tuned--adaptive-profile-driven-optimization>tuned — Adaptive Profile-Driven Optimization</h2><p><code>tuned</code> is a system daemon developed by Red Hat that monitors system resource usage and dynamically adjusts kernel parameters based on the active profile. Unlike sysctl&rsquo;s static approach, tuned can adapt to changing workloads in real time — increasing network buffers during peak traffic and reducing them during idle periods.</p><h3 id=installation-1>Installation</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># RHEL/CentOS/Fedora</span>
+</span></span><span class=line><span class=cl>sudo dnf install tuned
+</span></span><span class=line><span class=cl>sudo systemctl <span class=nb>enable</span> --now tuned
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Debian/Ubuntu</span>
+</span></span><span class=line><span class=cl>sudo apt install tuned
+</span></span><span class=line><span class=cl>sudo systemctl <span class=nb>enable</span> --now tuned
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Arch Linux</span>
+</span></span><span class=line><span class=cl>sudo pacman -S tuned
+</span></span><span class=line><span class=cl>sudo systemctl <span class=nb>enable</span> --now tuned
+</span></span></code></pre></td></tr></table></div></div><h3 id=essential-tuning-commands-1>Essential Tuning Commands</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># List available tuning profiles</span>
+</span></span><span class=line><span class=cl>tuned-adm list
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Show the currently active profile</span>
+</span></span><span class=line><span class=cl>tuned-adm active
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Switch to a performance profile</span>
+</span></span><span class=line><span class=cl>tuned-adm profile throughput-performance
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Switch to a power-saving profile</span>
+</span></span><span class=line><span class=cl>tuned-adm profile powersave
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Apply a virtual-guest profile (on VMs)</span>
+</span></span><span class=line><span class=cl>tuned-adm profile virtual-guest
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Get a profile recommendation based on hardware</span>
+</span></span><span class=line><span class=cl>tuned-adm recommend
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># View all settings in the current profile</span>
+</span></span><span class=line><span class=cl>tuned-adm profile_info
+</span></span></code></pre></td></tr></table></div></div><h3 id=key-profiles>Key Profiles</h3><table><thead><tr><th>Profile</th><th>Best For</th><th>What It Does</th></tr></thead><tbody><tr><td><code>throughput-performance</code></td><td>Database servers, file servers</td><td>Maximizes I/O and network throughput</td></tr><tr><td><code>latency-performance</code></td><td>Web servers, API gateways</td><td>Minimizes latency at cost of power</td></tr><tr><td><code>virtual-guest</code></td><td>Virtual machines</td><td>Reduces disk flush frequency, optimizes for virtio</td></tr><tr><td><code>virtual-host</code></td><td>Hypervisors</td><td>Tunes for hosting multiple VMs efficiently</td></tr><tr><td><code>network-throughput</code></td><td>Load balancers, proxies</td><td>Maximizes network buffer sizes</td></tr><tr><td><code>oracle</code></td><td>Oracle Database</td><td>Applies Oracle-recommended kernel settings</td></tr></tbody></table><h3 id=custom-profiles>Custom Profiles</h3><p>Create your own profile at <code>/etc/tuned/my-profile/</code>:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-ini data-lang=ini><span class=line><span class=cl><span class=c1># /etc/tuned/my-database/tuned.conf</span>
+</span></span><span class=line><span class=cl><span class=k>[main]</span>
+</span></span><span class=line><span class=cl><span class=na>summary</span><span class=o>=</span><span class=s>Custom database server optimization</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>[sysctl]</span>
+</span></span><span class=line><span class=cl><span class=na>vm.swappiness</span><span class=o>=</span><span class=s>5</span>
+</span></span><span class=line><span class=cl><span class=na>vm.dirty_ratio</span><span class=o>=</span><span class=s>10</span>
+</span></span><span class=line><span class=cl><span class=na>vm.dirty_background_ratio</span><span class=o>=</span><span class=s>3</span>
+</span></span><span class=line><span class=cl><span class=na>net.core.somaxconn</span><span class=o>=</span><span class=s>65535</span>
+</span></span><span class=line><span class=cl><span class=na>net.ipv4.tcp_tw_reuse</span><span class=o>=</span><span class=s>1</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=k>[bootloader]</span>
+</span></span><span class=line><span class=cl><span class=na>cmdline</span><span class=o>=</span><span class=s>transparent_hugepage=never</span>
+</span></span></code></pre></td></tr></table></div></div><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Enable the custom profile</span>
+</span></span><span class=line><span class=cl>sudo tuned-adm profile my-database
+</span></span></code></pre></td></tr></table></div></div><h2 id=systool--sysfs-device-tree-explorer>systool — Sysfs Device Tree Explorer</h2><p><code>systool</code> is a diagnostic and discovery tool that traverses the sysfs filesystem (<code>/sys/</code>), presenting a structured view of system buses, devices, drivers, and kernel modules. While sysctl modifies runtime parameters, systool helps you understand what hardware is present, which drivers are bound, and what attributes are available for each device.</p><h3 id=installation-2>Installation</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Debian/Ubuntu</span>
+</span></span><span class=line><span class=cl>sudo apt install sysfsutils
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># RHEL/CentOS/Fedora</span>
+</span></span><span class=line><span class=cl>sudo dnf install sysfsutils
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Arch Linux</span>
+</span></span><span class=line><span class=cl>sudo pacman -S sysfsutils
+</span></span></code></pre></td></tr></table></div></div><h3 id=essential-commands>Essential Commands</h3><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># List all system buses</span>
+</span></span><span class=line><span class=cl>systool
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Show all PCI devices</span>
+</span></span><span class=line><span class=cl>systool -b pci
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Show all USB devices</span>
+</span></span><span class=line><span class=cl>systool -b usb
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Show devices using a specific driver</span>
+</span></span><span class=line><span class=cl>systool -v -m e1000e
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Show all loaded kernel modules</span>
+</span></span><span class=line><span class=cl>systool -m
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Display driver parameters (modifiable at load time)</span>
+</span></span><span class=line><span class=cl>systool -v -m ixgbe <span class=p>|</span> grep -A2 <span class=s2>&#34;Parameters&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Find which driver a device uses</span>
+</span></span><span class=line><span class=cl>systool -b pci <span class=p>|</span> grep -B5 -A10 <span class=s2>&#34;eth0&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=when-to-use-systool>When to Use systool</h3><p>Use systool when troubleshooting hardware recognition: a new NIC isn&rsquo;t showing up, a storage controller isn&rsquo;t binding to the right driver, or you need to check which kernel module parameters are available. It is read-only — you cannot modify parameters with systool — but it is invaluable for discovering what the kernel sees and which knobs are available for tuning with other tools.</p><h2 id=why-self-host-your-kernel-tuning-approach>Why Self-Host Your Kernel Tuning Approach</h2><p>Cloud VMs often ship with generic kernel settings that are suboptimal for specific workloads. A one-size-fits-all approach results in underutilized hardware — your database server might be throttled by conservative I/O limits intended for desktop use, or your container host might exhaust ephemeral ports because <code>net.ipv4.ip_local_port_range</code> defaults to 32768-60999.</p><p>For CPU frequency management and power optimization, see our <a href=../2026-05-22-self-hosted-linux-cpu-governor-management-auto-cpufreq-vs-cpupower-vs-tuned-guide/>auto-cpufreq vs cpupower vs tuned guide</a>. If you are managing large-memory workloads, our <a href=../2026-05-22-self-hosted-linux-hugepages-management-libhugetlbfs-numactl-tuned-guide/>hugepages management comparison</a> covers transparent hugepages and explicit hugepage allocation. For profiling where your system is spending cycles, our <a href=../2026-05-22-self-hosted-linux-performance-profiling-perf-bcc-tools-sysstat-guide/>Linux performance profiling tools guide</a> provides complementary analysis.</p><p>The right combination — sysctl for precise static tuning, tuned for adaptive workload response, and systool for hardware discovery — ensures your servers run at their full potential without guesswork.</p><h2 id=faq>FAQ</h2><h3 id=how-do-i-make-sysctl-changes-permanent-across-reboots>How do I make sysctl changes permanent across reboots?</h3><p>Write your settings to a file in <code>/etc/sysctl.d/</code> with a <code>.conf</code> extension (e.g., <code>/etc/sysctl.d/99-custom.conf</code>). These files are applied at boot by <code>systemd-sysctl.service</code>. To apply immediately, run <code>sysctl --system</code> which reloads all configuration files. Do NOT edit <code>/etc/sysctl.conf</code> directly on modern systems — use the <code>.d/</code> drop-in directory instead for better organization.</p><h3 id=can-tuned-and-manual-sysctl-settings-conflict-with-each-other>Can tuned and manual sysctl settings conflict with each other?</h3><p>Yes. When tuned applies a profile, it overwrites sysctl parameters with its own values. If you have manually set a parameter via sysctl that clashes with the tuned profile, tuned will override it on profile switch or daemon restart. The safe approach is to either use tuned exclusively (creating custom profiles for your needs) or disable tuned entirely and manage everything through sysctl. You can check the current effective values with <code>sysctl &lt;parameter></code> to see which tool applied the most recent change.</p><h3 id=why-does-systool-show-the-same-device-under-multiple-buses>Why does systool show the same device under multiple buses?</h3><p>Modern hardware often exposes itself through multiple kernel subsystems. An NVMe drive, for example, appears under the PCI bus (as a PCIe device) and the block subsystem (as a storage device). systool faithfully reflects this multiplicity, showing each logical view of the same physical hardware. Use this to trace dependencies — for example, finding which PCI device corresponds to which network interface name.</p><h3 id=what-are-the-risks-of-kernel-tuning-without-understanding-the-parameters>What are the risks of kernel tuning without understanding the parameters?</h3><p>The risks range from subtle performance degradation to complete system instability. Setting <code>vm.overcommit_memory=2</code> without proper <code>vm.overcommit_ratio</code> can cause applications to be killed by the OOM killer. Reducing <code>net.core.rmem_max</code> too aggressively can throttle high-bandwidth applications. Always test tuning changes on a staging system first, document the baseline performance, and apply changes incrementally with monitoring in place. Tools like <code>sar</code>, <code>vmstat</code>, and application-level metrics should track the impact of each change.</p><h3 id=when-should-i-use-tuned-vs-just-writing-a-sysctlconf-file>When should I use tuned vs just writing a sysctl.conf file?</h3><p>Use tuned when you need adaptive behavior that responds to changing workloads — for example, a server that handles batch processing at night and real-time API requests during the day. tuned can switch parameters based on load patterns automatically. Use sysctl for static, well-understood parameters where the optimal value never changes regardless of workload — like database-specific shared memory settings or container host port ranges. For most single-purpose servers, a well-crafted sysctl configuration is simpler and more predictable.</p><hr><p><strong>💰 想测试你的市场判断力？我用 <a href="https://polymarket.com/?r=fc8a0">Polymarket</a> 做预测市场交易——这是全球最大的预测市场平台，从大选结果到 科技政策监管时间线，什么都可以押注。和赌博不同，这是真正的信息市场：你懂的信息越多，胜率越高。我靠预测 科技行业的发展趋势已经赚了不少。用我的邀请链接注册：</strong><a href="https://polymarket.com/?r=fc8a0">Polymarket.com</a></p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted Linux Kernel Tuning: sysctl vs tuned vs systool","description":"Compare sysctl, tuned, and systool for Linux kernel tuning. Learn when to use static sysctl parameters, adaptive tuned profiles for dynamic workloads, and systool for hardware discovery and driver inspection.","datePublished":"2026-06-01","dateModified":"2026-06-01","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20Linux%20Kernel%20Tuning%3a%20sysctl%20vs%20tuned%20vs%20systool&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-06-01-linux-kernel-tuning-sysctl-tuned-systool-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-06-01-linux-kernel-tuning-sysctl-tuned-systool-guide%2f&t=Self-Hosted%20Linux%20Kernel%20Tuning%3a%20sysctl%20vs%20tuned%20vs%20systool" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/linux/ class=tag-link>Linux</a>
+<a href=/tags/kernel/ class=tag-link>Kernel</a>
+<a href=/tags/performance/ class=tag-link>Performance</a>
+<a href=/tags/sysadmin/ class=tag-link>Sysadmin</a>
+<a href=/tags/tuning/ class=tag-link>Tuning</a>
+<a href=/tags/optimization/ class=tag-link>Optimization</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-06-01-linux-filesystem-performance-tuning-xfs-btrfs-zfs-mount-options/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Linux Filesystem Performance Tuning: XFS vs Btrfs vs ZFS Mount Options Guide</h3><div class=post-excerpt>Introduction Filesystem performance tuning is one of the most impactful yet overlooked aspects of Linux server …</div><div class=post-footer><span class=post-date>Jun 1, 2026</span></div></a><a href=/posts/2026-05-24-self-hosted-linux-storage-caching-dm-writecache-bcache-flashcache-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted Linux Storage Caching: dm-writecache vs bcache vs FlashCache</h3><div class=post-excerpt>Linux offers multiple block-level caching solutions that sit between fast storage (NVMe SSDs) and slow storage (HDDs) to …</div><div class=post-footer><span class=post-date>May 24, 2026</span></div></a><a href=/posts/2026-05-23-self-hosted-linux-bpf-schedulers-sched-ext-scx-rusty-lavd-bpfland-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted Linux BPF Schedulers — sched_ext, scx_rusty, and scx_bpfland Guide</h3><div class=post-excerpt>Linux CPU scheduling has historically been a kernel-only concern — you picked a scheduler (CFS, MuQSS, BFS) at compile …</div><div class=post-footer><span class=post-date>May 23, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>
