@@ -1,0 +1,390 @@
+<!doctype html><html lang=en><head><meta charset=UTF-8><meta name=viewport content="width=device-width,initial-scale=1"><title>Self-Hosted Linux RAID Health Monitoring: mdadm Monitor vs smartctl vs raid-check Guide | Pi Stack</title>
+<meta name=google-site-verification content="YpV2p1bmBgGHhdAY1oTenDfaa5T1m447IwuOENrX0hA"><meta name=description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=robots content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1"><link rel=canonical href=https://www.pistack.xyz/posts/2026-06-03-linux-raid-health-monitoring-mdadm-smartctl-raid-check-guide/><meta property="og:type" content="article"><meta property="og:title" content="Self-Hosted Linux RAID Health Monitoring: mdadm Monitor vs smartctl vs raid-check Guide"><meta property="og:description" content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta property="og:url" content="https://www.pistack.xyz/posts/2026-06-03-linux-raid-health-monitoring-mdadm-smartctl-raid-check-guide/"><meta property="og:site_name" content="Pi Stack"><meta property="og:locale" content="en_US"><meta property="article:published_time" content="2026-06-03T00:00:00Z"><meta property="article:modified_time" content="2026-06-03T00:00:00Z"><meta property="article:tag" content="linux"><meta property="og:image" content="https://www.pistack.xyz/img/og-default.png"><meta name=twitter:card content="summary_large_image"><meta name=twitter:title content="Self-Hosted Linux RAID Health Monitoring: mdadm Monitor vs smartctl vs raid-check Guide"><meta name=twitter:description content="Comprehensive guides for open source alternatives, self-hosted software, privacy tools, and local AI deployment. Expert comparisons, setup guides, and benchmarks."><meta name=twitter:image content="https://www.pistack.xyz/img/og-default.png"><link rel=preconnect href=https://fonts.googleapis.com><link rel=preconnect href=https://fonts.gstatic.com crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel=stylesheet><link rel=stylesheet href=/css/main.min.391b311d5ce1f6fd271eaded0f33fc5fe0e1c0df512fd3ead7d6f86bb24bda4a.css><link rel=stylesheet href=/css/extended/custom.min.5347157f807f709a7e4646a0d484c7fe69e2d5b4abafbe0e193b578557af9ec5.css><script type=application/ld+json>{"@context":"https://schema.org","@type":"Article","headline":"Self-Hosted Linux RAID Health Monitoring: mdadm Monitor vs smartctl vs raid-check Guide","description":"\u003ch2 id=\u0022introduction\u0022\u003eIntroduction\u003c\/h2\u003e\n\u003cp\u003eSoftware RAID (md) is the backbone of self-hosted storage infrastructure, providing redundancy and performance for everything from home NAS devices to enterprise database servers. But RAID arrays don\u0026rsquo;t protect themselves — they need proactive health monitoring to detect failing drives, degraded arrays, and silent data corruption before they cause data loss. This guide compares three essential Linux tools for RAID health monitoring: \u003cstrong\u003emdadm monitor\u003c\/strong\u003e, \u003cstrong\u003esmartctl\u003c\/strong\u003e, and \u003cstrong\u003eraid-check\u003c\/strong\u003e.\u003c\/p\u003e","datePublished":"2026-06-03T00:00:00Z","dateModified":"2026-06-03T00:00:00Z","author":{"@type":"Organization","name":"Pi Stack Team","url":"https:\/\/www.pistack.xyz\/"},"publisher":{"@type":"Organization","name":"Pi Stack","url":"https:\/\/www.pistack.xyz\/"},"mainEntityOfPage":{"@type":"WebPage","@id":"https:\/\/www.pistack.xyz\/posts\/2026-06-03-linux-raid-health-monitoring-mdadm-smartctl-raid-check-guide\/"},"keywords":["linux","storage","raid","monitoring","system-administration","hardware"],"articleSection":"linux","inLanguage":"en-US"}</script><script type=application/ld+json>{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https:\/\/www.pistack.xyz\/"},{"@type":"ListItem","position":2,"name":"Articles","item":"https:\/\/www.pistack.xyz\/posts/"},{"@type":"ListItem","position":3,"name":"Self-Hosted Linux RAID Health Monitoring: mdadm Monitor vs smartctl vs raid-check Guide","item":"https:\/\/www.pistack.xyz\/posts\/2026-06-03-linux-raid-health-monitoring-mdadm-smartctl-raid-check-guide\/"}]}</script><script data-goatcounter=https://stevejj.goatcounter.com/count async src=//gc.zgo.at/count.js></script></head><body><header class=site-header><div class=header-inner><a href=https://www.pistack.xyz/ class=logo>Pi Stack</a><nav><ul class=nav-menu><li><a href=/>Home</a></li><li><a href=/tags/comparison/>Comparisons</a></li><li><a href=/tags/guide/>Guides</a></li><li><a href=/tags/ai/>Local AI</a></li></ul></nav><div class=header-actions><a href=/index.xml class=rss-link title="RSS Feed"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M6.18 15.64a2.18 2.18.0 110 4.36 2.18 2.18.0 010-4.36M4 4.44A15.56 15.56.0 0119.56 20h-2.83A12.73 12.73.0 004 7.27V4.44m0 5.66a9.9 9.9.0 019.9 9.9h-2.83A7.07 7.07.0 004 12.93V10.1z"/></svg>
+RSS</a></div></div></header><main><article class=container-narrow><header class=post-header><div class=post-tags><span class="tag tag-purple">Linux</span>
+<span class="tag tag-purple">Storage</span>
+<span class="tag tag-purple">Raid</span></div><h1>Self-Hosted Linux RAID Health Monitoring: mdadm Monitor vs smartctl vs raid-check Guide</h1><div class=post-meta><div class=author-info><div class=author-avatar>P</div><span>Pi Stack Team</span></div><span>June 3, 2026</span>
+<span>10 min read</span>
+<span>Updated June 3, 2026</span></div></header><aside class=toc-sidebar><details><summary>Table of Contents</summary><div class=toc-content><nav id=TableOfContents><ul><li><a href=#introduction>Introduction</a></li><li><a href=#tool-comparison>Tool Comparison</a><ul><li><a href=#mdadm-monitor--real-time-array-event-detection>mdadm Monitor — Real-Time Array Event Detection</a></li><li><a href=#smartctl--predictive-drive-health-monitoring>smartctl — Predictive Drive Health Monitoring</a></li><li><a href=#raid-check--data-integrity-verification>raid-check — Data Integrity Verification</a></li></ul></li><li><a href=#building-a-comprehensive-raid-monitoring-pipeline>Building a Comprehensive RAID Monitoring Pipeline</a><ul><li><a href=#unified-alerting-with-a-monitoring-script>Unified Alerting with a Monitoring Script</a></li><li><a href=#integrating-with-prometheus-and-grafana>Integrating with Prometheus and Grafana</a></li><li><a href=#automated-drive-replacement-workflow>Automated Drive Replacement Workflow</a></li></ul></li><li><a href=#why-self-host-your-storage-monitoring>Why Self-Host Your Storage Monitoring</a></li><li><a href=#faq>FAQ</a><ul><li><a href=#how-often-should-i-run-raid-data-checks>How often should I run RAID data checks?</a></li><li><a href=#what-smart-values-indicate-an-imminent-drive-failure>What SMART values indicate an imminent drive failure?</a></li><li><a href=#can-mdadm-monitor-catch-all-failure-modes>Can mdadm monitor catch all failure modes?</a></li><li><a href=#how-do-i-test-that-my-monitoring-alerts-work>How do I test that my monitoring alerts work?</a></li><li><a href=#can-i-use-these-tools-with-hardware-raid-controllers>Can I use these tools with hardware RAID controllers?</a></li></ul></li></ul></nav></div></details></aside><div class=post-content><h2 id=introduction>Introduction</h2><p>Software RAID (md) is the backbone of self-hosted storage infrastructure, providing redundancy and performance for everything from home NAS devices to enterprise database servers. But RAID arrays don&rsquo;t protect themselves — they need proactive health monitoring to detect failing drives, degraded arrays, and silent data corruption before they cause data loss. This guide compares three essential Linux tools for RAID health monitoring: <strong>mdadm monitor</strong>, <strong>smartctl</strong>, and <strong>raid-check</strong>.</p><h2 id=tool-comparison>Tool Comparison</h2><table><thead><tr><th>Feature</th><th>mdadm Monitor</th><th>smartctl (smartmontools)</th><th>raid-check</th></tr></thead><tbody><tr><td><strong>Purpose</strong></td><td>Array event detection</td><td>Disk health prediction</td><td>Data integrity verification</td></tr><tr><td><strong>Stars</strong></td><td>Part of mdadm (kernel)</td><td>1,160+</td><td>Part of mdadm package</td></tr><tr><td><strong>Monitoring Scope</strong></td><td>RAID array state</td><td>Individual disk SMART attributes</td><td>Array data consistency</td></tr><tr><td><strong>Alert Mechanism</strong></td><td>Email / syslog</td><td>smartd daemon / email</td><td>Cron / email</td></tr><tr><td><strong>Detection Speed</strong></td><td>Seconds (events)</td><td>Hours/days (trending)</td><td>Hours (scrub duration)</td></tr><tr><td><strong>Predictive</strong></td><td>No (reactive)</td><td>Yes (SMART predicts failure)</td><td>No (detects corruption)</td></tr><tr><td><strong>Installation</strong></td><td><code>apt install mdadm</code></td><td><code>apt install smartmontools</code></td><td><code>apt install mdadm</code></td></tr></tbody></table><h3 id=mdadm-monitor--real-time-array-event-detection>mdadm Monitor — Real-Time Array Event Detection</h3><p>The <code>mdadm --monitor</code> daemon watches RAID arrays for state changes: disk failures, rebuilds, spare activations, and degraded states. It can send email alerts or execute custom scripts when problems occur.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install mdadm</span>
+</span></span><span class=line><span class=cl>sudo apt install mdadm
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Start monitoring all arrays in daemon mode</span>
+</span></span><span class=line><span class=cl>sudo mdadm --monitor --scan --daemonise
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Test monitoring with a test event</span>
+</span></span><span class=line><span class=cl>sudo mdadm --monitor --scan --test --oneshot
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Configure monitoring in /etc/mdadm/mdadm.conf</span>
+</span></span><span class=line><span class=cl><span class=c1># MAILADDR admin@example.com</span>
+</span></span><span class=line><span class=cl><span class=c1># MAILFROM mdadm@server.example.com</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Check current array status</span>
+</span></span><span class=line><span class=cl>cat /proc/mdstat
+</span></span><span class=line><span class=cl><span class=c1># Example output:</span>
+</span></span><span class=line><span class=cl><span class=c1># md0 : active raid1 sdb1[1] sda1[0]</span>
+</span></span><span class=line><span class=cl><span class=c1>#       976629440 blocks super 1.2 [2/2] [UU]</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Detailed array information</span>
+</span></span><span class=line><span class=cl>sudo mdadm --detail /dev/md0
+</span></span><span class=line><span class=cl>sudo mdadm --detail /dev/md0 <span class=p>|</span> grep -E <span class=s2>&#34;State|Active|Working|Failed|Spare&#34;</span>
+</span></span></code></pre></td></tr></table></div></div><p>The monitor daemon captures critical events like <code>Fail</code>, <code>FailSpare</code>, <code>DeviceDisappeared</code>, and <code>RebuildFinished</code>. Configure it to send alerts through your notification pipeline.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Custom alert script</span>
+</span></span><span class=line><span class=cl><span class=c1># /etc/mdadm/mdadm.conf:</span>
+</span></span><span class=line><span class=cl><span class=c1># PROGRAM /usr/local/bin/mdadm-alert.sh</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>cat <span class=s>&lt;&lt; &#39;ALERT&#39; | sudo tee /usr/local/bin/mdadm-alert.sh
+</span></span></span><span class=line><span class=cl><span class=s>#!/bin/bash
+</span></span></span><span class=line><span class=cl><span class=s>EVENT=&#34;$1&#34; DEVICE=&#34;$2&#34;
+</span></span></span><span class=line><span class=cl><span class=s>logger -t mdadm &#34;EVENT=$EVENT on $DEVICE&#34;
+</span></span></span><span class=line><span class=cl><span class=s>echo &#34;RAID alert: $EVENT on $DEVICE at $(date)&#34; | \
+</span></span></span><span class=line><span class=cl><span class=s>  mail -s &#34;RAID ALERT</span>: <span class=nv>$EVENT</span><span class=s2>&#34; admin@example.com
+</span></span></span><span class=line><span class=cl><span class=s2>ALERT
+</span></span></span><span class=line><span class=cl><span class=s2>sudo chmod +x /usr/local/bin/mdadm-alert.sh
+</span></span></span></code></pre></td></tr></table></div></div><h3 id=smartctl--predictive-drive-health-monitoring>smartctl — Predictive Drive Health Monitoring</h3><p>SMART (Self-Monitoring, Analysis, and Reporting Technology) provides early warning of drive failures through dozens of attributes. <code>smartctl</code> reads these attributes, and <code>smartd</code> continuously monitors them.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install smartmontools</span>
+</span></span><span class=line><span class=cl>sudo apt install smartmontools
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Quick health check</span>
+</span></span><span class=line><span class=cl>sudo smartctl -H /dev/sda
+</span></span><span class=line><span class=cl><span class=c1># Expected: &#34;SMART overall-health self-assessment test result: PASSED&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Full SMART attribute listing</span>
+</span></span><span class=line><span class=cl>sudo smartctl -A /dev/sda
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Critical attributes to monitor:</span>
+</span></span><span class=line><span class=cl>sudo smartctl -A /dev/sda <span class=p>|</span> grep -E <span class=s2>&#34;Reallocated_Sector|Pending_Sector|Uncorrectable|UDMA_CRC&#34;</span>
+</span></span><span class=line><span class=cl><span class=c1># ID#  ATTRIBUTE_NAME          FLAG     VALUE WORST THRESH TYPE</span>
+</span></span><span class=line><span class=cl><span class=c1># 5    Reallocated_Sector_Ct   0x0033   100   100   010    Pre-fail</span>
+</span></span><span class=line><span class=cl><span class=c1># 197  Current_Pending_Sector  0x0012   100   100   000    Old_age</span>
+</span></span><span class=line><span class=cl><span class=c1># 198  Offline_Uncorrectable   0x0010   100   100   000    Old_age</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Run a short self-test</span>
+</span></span><span class=line><span class=cl>sudo smartctl -t short /dev/sda
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Run a long/extended self-test</span>
+</span></span><span class=line><span class=cl>sudo smartctl -t long /dev/sda
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Check test results</span>
+</span></span><span class=line><span class=cl>sudo smartctl -l selftest /dev/sda
+</span></span></code></pre></td></tr></table></div></div><p>Configure <code>smartd</code> for continuous monitoring:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span><span class=lnt>6
+</span><span class=lnt>7
+</span><span class=lnt>8
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># /etc/smartd.conf configuration</span>
+</span></span><span class=line><span class=cl><span class=c1># Monitor all devices, send mail on errors</span>
+</span></span><span class=line><span class=cl>sudo tee -a /etc/smartd.conf <span class=s>&lt;&lt; &#39;EOF&#39;
+</span></span></span><span class=line><span class=cl><span class=s>DEVICESCAN -a -o on -S on -s (S/../.././02|L/../../7/03) \
+</span></span></span><span class=line><span class=cl><span class=s>  -m admin@example.com -M exec /usr/local/bin/smartd-alert.sh
+</span></span></span><span class=line><span class=cl><span class=s>EOF</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>sudo systemctl <span class=nb>enable</span> --now smartd
+</span></span></code></pre></td></tr></table></div></div><p>Key SMART attributes that predict drive failure: <strong>Reallocated_Sector_Ct</strong> (ID 5), <strong>Current_Pending_Sector</strong> (ID 197), <strong>Offline_Uncorrectable</strong> (ID 198), and <strong>UDMA_CRC_Error_Count</strong> (ID 199). Any non-zero value in the first three warrants immediate attention.</p><h3 id=raid-check--data-integrity-verification>raid-check — Data Integrity Verification</h3><p><code>raid-check</code> performs periodic scrubs of RAID arrays, reading every block and verifying parity/mirror consistency. This catches silent data corruption that SMART cannot detect.</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Check if raid-check is installed (Debian/Ubuntu)</span>
+</span></span><span class=line><span class=cl>dpkg -l <span class=p>|</span> grep mdadm <span class=p>|</span> grep -q raid-check <span class=o>&amp;&amp;</span> <span class=nb>echo</span> <span class=s2>&#34;Installed&#34;</span> <span class=o>||</span> <span class=nb>echo</span> <span class=s2>&#34;Not installed&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Manual check of an array</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> check &gt; /sys/block/md0/md/sync_action
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Monitor check progress</span>
+</span></span><span class=line><span class=cl>cat /proc/mdstat
+</span></span><span class=line><span class=cl><span class=c1># Example: [=====&gt;...............]  check = 25.3% (247372288/976629440)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Check speed (adjustable)</span>
+</span></span><span class=line><span class=cl>cat /sys/block/md0/md/sync_speed_max
+</span></span><span class=line><span class=cl><span class=c1># Default: 200000 (system default)</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Set faster check speed (KB/s)</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=m>500000</span> <span class=p>|</span> sudo tee /sys/block/md0/md/sync_speed_max
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Automated weekly check via cron</span>
+</span></span><span class=line><span class=cl>sudo tee /etc/cron.d/raid-check <span class=s>&lt;&lt; &#39;CRON&#39;
+</span></span></span><span class=line><span class=cl><span class=s># Run RAID data check every Sunday at 1:00 AM
+</span></span></span><span class=line><span class=cl><span class=s>0 1 * * 0 root /usr/share/mdadm/checkarray --cron --all --quiet
+</span></span></span><span class=line><span class=cl><span class=s>CRON</span>
+</span></span></code></pre></td></tr></table></div></div><p>For Debian/Ubuntu, the <code>mdadm</code> package includes the <code>checkarray</code> script:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt>1
+</span><span class=lnt>2
+</span><span class=lnt>3
+</span><span class=lnt>4
+</span><span class=lnt>5
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Run check with email notification</span>
+</span></span><span class=line><span class=cl>sudo /usr/share/mdadm/checkarray --all --quiet
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Check last check date</span>
+</span></span><span class=line><span class=cl>grep <span class=s2>&#34;check&#34;</span> /var/log/syslog <span class=p>|</span> tail -5
+</span></span></code></pre></td></tr></table></div></div><h2 id=building-a-comprehensive-raid-monitoring-pipeline>Building a Comprehensive RAID Monitoring Pipeline</h2><p>Using mdadm, smartctl, and raid-check individually provides good coverage, but integrating them into a single monitoring pipeline gives you complete visibility and automated response to storage issues.</p><h3 id=unified-alerting-with-a-monitoring-script>Unified Alerting with a Monitoring Script</h3><p>Combine all three monitoring sources into a single health check script that runs periodically and reports the overall status:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span><span class=lnt>44
+</span><span class=lnt>45
+</span><span class=lnt>46
+</span><span class=lnt>47
+</span><span class=lnt>48
+</span><span class=lnt>49
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=cp>#!/bin/bash
+</span></span></span><span class=line><span class=cl><span class=cp></span><span class=c1># /usr/local/bin/raid-health-check.sh</span>
+</span></span><span class=line><span class=cl><span class=c1># Comprehensive RAID health assessment</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nv>EXIT_CODE</span><span class=o>=</span><span class=m>0</span>
+</span></span><span class=line><span class=cl><span class=nv>REPORT</span><span class=o>=</span><span class=s2>&#34;&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># 1. Check mdadm array status</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;=== RAID Array Status ===&#34;</span>
+</span></span><span class=line><span class=cl><span class=k>for</span> array in /dev/md*<span class=p>;</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>    <span class=o>[</span> -e <span class=s2>&#34;</span><span class=nv>$array</span><span class=s2>&#34;</span> <span class=o>]</span> <span class=o>||</span> <span class=k>continue</span>
+</span></span><span class=line><span class=cl>    <span class=nv>STATE</span><span class=o>=</span><span class=k>$(</span>mdadm --detail <span class=s2>&#34;</span><span class=nv>$array</span><span class=s2>&#34;</span> 2&gt;/dev/null <span class=p>|</span> grep <span class=s2>&#34;State :&#34;</span> <span class=p>|</span> awk <span class=s1>&#39;{print $3}&#39;</span><span class=k>)</span>
+</span></span><span class=line><span class=cl>    <span class=nb>echo</span> <span class=s2>&#34;</span><span class=nv>$array</span><span class=s2>: </span><span class=nv>$STATE</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=k>if</span> <span class=o>[</span> <span class=s2>&#34;</span><span class=nv>$STATE</span><span class=s2>&#34;</span> !<span class=o>=</span> <span class=s2>&#34;clean&#34;</span> <span class=o>]</span> <span class=o>&amp;&amp;</span> <span class=o>[</span> <span class=s2>&#34;</span><span class=nv>$STATE</span><span class=s2>&#34;</span> !<span class=o>=</span> <span class=s2>&#34;active&#34;</span> <span class=o>]</span><span class=p>;</span> <span class=k>then</span>
+</span></span><span class=line><span class=cl>        <span class=nv>REPORT</span><span class=o>+=</span><span class=s2>&#34;WARNING: </span><span class=nv>$array</span><span class=s2> state is </span><span class=nv>$STATE</span><span class=s2>\n&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=nv>EXIT_CODE</span><span class=o>=</span><span class=m>1</span>
+</span></span><span class=line><span class=cl>    <span class=k>fi</span>
+</span></span><span class=line><span class=cl><span class=k>done</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># 2. Check SMART status for all member disks</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> -e <span class=s2>&#34;\n=== SMART Health ===&#34;</span>
+</span></span><span class=line><span class=cl><span class=k>for</span> array in /dev/md*<span class=p>;</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>    <span class=o>[</span> -e <span class=s2>&#34;</span><span class=nv>$array</span><span class=s2>&#34;</span> <span class=o>]</span> <span class=o>||</span> <span class=k>continue</span>
+</span></span><span class=line><span class=cl>    <span class=k>for</span> disk in <span class=k>$(</span>mdadm --detail <span class=s2>&#34;</span><span class=nv>$array</span><span class=s2>&#34;</span> 2&gt;/dev/null <span class=p>|</span> grep <span class=s2>&#34;/dev/&#34;</span> <span class=p>|</span> awk <span class=s1>&#39;{print $NF}&#39;</span><span class=k>)</span><span class=p>;</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>        <span class=nv>HEALTH</span><span class=o>=</span><span class=k>$(</span>smartctl -H <span class=s2>&#34;</span><span class=nv>$disk</span><span class=s2>&#34;</span> 2&gt;/dev/null <span class=p>|</span> grep <span class=s2>&#34;SMART overall-health&#34;</span><span class=k>)</span>
+</span></span><span class=line><span class=cl>        <span class=nb>echo</span> <span class=s2>&#34;</span><span class=nv>$disk</span><span class=s2>: </span><span class=nv>$HEALTH</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl>        <span class=k>if</span> <span class=nb>echo</span> <span class=s2>&#34;</span><span class=nv>$HEALTH</span><span class=s2>&#34;</span> <span class=p>|</span> grep -q <span class=s2>&#34;FAILED&#34;</span><span class=p>;</span> <span class=k>then</span>
+</span></span><span class=line><span class=cl>            <span class=nv>REPORT</span><span class=o>+=</span><span class=s2>&#34;CRITICAL: </span><span class=nv>$disk</span><span class=s2> SMART health FAILED\n&#34;</span>
+</span></span><span class=line><span class=cl>            <span class=nv>EXIT_CODE</span><span class=o>=</span><span class=m>2</span>
+</span></span><span class=line><span class=cl>        <span class=k>fi</span>
+</span></span><span class=line><span class=cl>    <span class=k>done</span>
+</span></span><span class=line><span class=cl><span class=k>done</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># 3. Check last scrub date</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> -e <span class=s2>&#34;\n=== Last Data Check ===&#34;</span>
+</span></span><span class=line><span class=cl><span class=nv>LAST_CHECK</span><span class=o>=</span><span class=k>$(</span>grep <span class=s2>&#34;check&#34;</span> /var/log/syslog 2&gt;/dev/null <span class=p>|</span> grep -oP <span class=s2>&#34;md\d+&#34;</span> <span class=p>|</span> tail -1<span class=k>)</span>
+</span></span><span class=line><span class=cl><span class=k>if</span> <span class=o>[</span> -z <span class=s2>&#34;</span><span class=nv>$LAST_CHECK</span><span class=s2>&#34;</span> <span class=o>]</span><span class=p>;</span> <span class=k>then</span>
+</span></span><span class=line><span class=cl>    <span class=nv>REPORT</span><span class=o>+=</span><span class=s2>&#34;WARNING: No recent array check found\n&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=nv>EXIT_CODE</span><span class=o>=</span><span class=m>1</span>
+</span></span><span class=line><span class=cl><span class=k>else</span>
+</span></span><span class=line><span class=cl>    <span class=nb>echo</span> <span class=s2>&#34;Last check on </span><span class=nv>$LAST_CHECK</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl><span class=k>fi</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Send alert if issues found</span>
+</span></span><span class=line><span class=cl><span class=k>if</span> <span class=o>[</span> <span class=nv>$EXIT_CODE</span> -ne <span class=m>0</span> <span class=o>]</span><span class=p>;</span> <span class=k>then</span>
+</span></span><span class=line><span class=cl>    <span class=nb>echo</span> -e <span class=s2>&#34;</span><span class=nv>$REPORT</span><span class=s2>&#34;</span> <span class=p>|</span> mail -s <span class=s2>&#34;RAID Health Alert&#34;</span> admin@example.com
+</span></span><span class=line><span class=cl><span class=k>fi</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=nb>exit</span> <span class=nv>$EXIT_CODE</span>
+</span></span></code></pre></td></tr></table></div></div><h3 id=integrating-with-prometheus-and-grafana>Integrating with Prometheus and Grafana</h3><p>For production environments, export RAID and SMART metrics to Prometheus for dashboard visualization and alerting:</p><div class=highlight><div class=chroma><table class=lntable><tr><td class=lntd><pre tabindex=0 class=chroma><code><span class=lnt> 1
+</span><span class=lnt> 2
+</span><span class=lnt> 3
+</span><span class=lnt> 4
+</span><span class=lnt> 5
+</span><span class=lnt> 6
+</span><span class=lnt> 7
+</span><span class=lnt> 8
+</span><span class=lnt> 9
+</span><span class=lnt>10
+</span><span class=lnt>11
+</span><span class=lnt>12
+</span><span class=lnt>13
+</span><span class=lnt>14
+</span><span class=lnt>15
+</span><span class=lnt>16
+</span><span class=lnt>17
+</span><span class=lnt>18
+</span><span class=lnt>19
+</span><span class=lnt>20
+</span><span class=lnt>21
+</span><span class=lnt>22
+</span><span class=lnt>23
+</span><span class=lnt>24
+</span><span class=lnt>25
+</span><span class=lnt>26
+</span><span class=lnt>27
+</span><span class=lnt>28
+</span><span class=lnt>29
+</span><span class=lnt>30
+</span><span class=lnt>31
+</span><span class=lnt>32
+</span><span class=lnt>33
+</span><span class=lnt>34
+</span><span class=lnt>35
+</span><span class=lnt>36
+</span><span class=lnt>37
+</span><span class=lnt>38
+</span><span class=lnt>39
+</span><span class=lnt>40
+</span><span class=lnt>41
+</span><span class=lnt>42
+</span><span class=lnt>43
+</span></code></pre></td><td class=lntd><pre tabindex=0 class=chroma><code class=language-bash data-lang=bash><span class=line><span class=cl><span class=c1># Install node_exporter with textfile collector</span>
+</span></span><span class=line><span class=cl>sudo apt install prometheus-node-exporter
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Create a metrics collection script</span>
+</span></span><span class=line><span class=cl>cat <span class=s>&lt;&lt; &#39;METRICS&#39; | sudo tee /usr/local/bin/raid-metrics.sh
+</span></span></span><span class=line><span class=cl><span class=s>#!/bin/bash
+</span></span></span><span class=line><span class=cl><span class=s>METRICS</span>_FILE<span class=o>=</span><span class=s2>&#34;/var/lib/prometheus/node-exporter/raid.prom&#34;</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Collect mdadm array states</span>
+</span></span><span class=line><span class=cl><span class=k>for</span> array in /dev/md*<span class=p>;</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>    <span class=o>[</span> -e <span class=s2>&#34;</span><span class=nv>$array</span><span class=s2>&#34;</span> <span class=o>]</span> <span class=o>||</span> <span class=k>continue</span>
+</span></span><span class=line><span class=cl>    <span class=nv>NAME</span><span class=o>=</span><span class=k>$(</span>basename <span class=nv>$array</span><span class=k>)</span>
+</span></span><span class=line><span class=cl>    <span class=nv>STATE</span><span class=o>=</span><span class=k>$(</span>mdadm --detail <span class=nv>$array</span> 2&gt;/dev/null <span class=p>|</span> grep <span class=s2>&#34;State :&#34;</span> <span class=p>|</span> awk <span class=s1>&#39;{print $3}&#39;</span><span class=k>)</span>
+</span></span><span class=line><span class=cl>    <span class=nv>ACTIVE</span><span class=o>=</span><span class=k>$(</span>mdadm --detail <span class=nv>$array</span> 2&gt;/dev/null <span class=p>|</span> grep <span class=s2>&#34;Active Devices&#34;</span> <span class=p>|</span> awk <span class=s1>&#39;{print $4}&#39;</span><span class=k>)</span>
+</span></span><span class=line><span class=cl>    <span class=nv>WORKING</span><span class=o>=</span><span class=k>$(</span>mdadm --detail <span class=nv>$array</span> 2&gt;/dev/null <span class=p>|</span> grep <span class=s2>&#34;Working Devices&#34;</span> <span class=p>|</span> awk <span class=s1>&#39;{print $4}&#39;</span><span class=k>)</span>
+</span></span><span class=line><span class=cl>    <span class=nv>FAILED</span><span class=o>=</span><span class=k>$(</span>mdadm --detail <span class=nv>$array</span> 2&gt;/dev/null <span class=p>|</span> grep <span class=s2>&#34;Failed Devices&#34;</span> <span class=p>|</span> awk <span class=s1>&#39;{print $4}&#39;</span><span class=k>)</span>
+</span></span><span class=line><span class=cl>    
+</span></span><span class=line><span class=cl>    cat &gt;&gt; <span class=s2>&#34;</span><span class=nv>$METRICS_FILE</span><span class=s2>&#34;</span> <span class=s>&lt;&lt; EOF
+</span></span></span><span class=line><span class=cl><span class=s>raid_array_state{name=&#34;${NAME}&#34;,state=&#34;${STATE}&#34;} 1
+</span></span></span><span class=line><span class=cl><span class=s>raid_array_active_devices{name=&#34;${NAME}&#34;} ${ACTIVE}
+</span></span></span><span class=line><span class=cl><span class=s>raid_array_working_devices{name=&#34;${NAME}&#34;} ${WORKING}
+</span></span></span><span class=line><span class=cl><span class=s>raid_array_failed_devices{name=&#34;${NAME}&#34;} ${FAILED:-0}
+</span></span></span><span class=line><span class=cl><span class=s>EOF</span>
+</span></span><span class=line><span class=cl><span class=k>done</span>
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Collect SMART attributes for all drives</span>
+</span></span><span class=line><span class=cl><span class=k>for</span> disk in /dev/sd<span class=o>[</span>a-z<span class=o>]</span> /dev/nvme<span class=o>[</span>0-9<span class=o>]</span>n<span class=o>[</span>0-9<span class=o>]</span><span class=p>;</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>    <span class=o>[</span> -e <span class=s2>&#34;</span><span class=nv>$disk</span><span class=s2>&#34;</span> <span class=o>]</span> <span class=o>||</span> <span class=k>continue</span>
+</span></span><span class=line><span class=cl>    <span class=nv>DEV</span><span class=o>=</span><span class=k>$(</span>basename <span class=nv>$disk</span><span class=k>)</span>
+</span></span><span class=line><span class=cl>    smartctl -A <span class=nv>$disk</span> 2&gt;/dev/null <span class=p>|</span> <span class=k>while</span> <span class=nb>read</span> line<span class=p>;</span> <span class=k>do</span>
+</span></span><span class=line><span class=cl>        <span class=nv>ID</span><span class=o>=</span><span class=k>$(</span><span class=nb>echo</span> <span class=s2>&#34;</span><span class=nv>$line</span><span class=s2>&#34;</span> <span class=p>|</span> awk <span class=s1>&#39;{print $1}&#39;</span><span class=k>)</span>
+</span></span><span class=line><span class=cl>        <span class=nv>NAME</span><span class=o>=</span><span class=k>$(</span><span class=nb>echo</span> <span class=s2>&#34;</span><span class=nv>$line</span><span class=s2>&#34;</span> <span class=p>|</span> awk <span class=s1>&#39;{print $2}&#39;</span><span class=k>)</span>
+</span></span><span class=line><span class=cl>        <span class=nv>VALUE</span><span class=o>=</span><span class=k>$(</span><span class=nb>echo</span> <span class=s2>&#34;</span><span class=nv>$line</span><span class=s2>&#34;</span> <span class=p>|</span> awk <span class=s1>&#39;{print $4}&#39;</span><span class=k>)</span>
+</span></span><span class=line><span class=cl>        <span class=o>[</span> <span class=s2>&#34;</span><span class=nv>$ID</span><span class=s2>&#34;</span> -eq <span class=s2>&#34;</span><span class=nv>$ID</span><span class=s2>&#34;</span> <span class=o>]</span> 2&gt;/dev/null <span class=o>||</span> <span class=k>continue</span>
+</span></span><span class=line><span class=cl>        <span class=nb>echo</span> <span class=s2>&#34;smart_attribute{device=\&#34;</span><span class=si>${</span><span class=nv>DEV</span><span class=si>}</span><span class=s2>\&#34;,id=\&#34;</span><span class=si>${</span><span class=nv>ID</span><span class=si>}</span><span class=s2>\&#34;,name=\&#34;</span><span class=si>${</span><span class=nv>NAME</span><span class=si>}</span><span class=s2>\&#34;} </span><span class=si>${</span><span class=nv>VALUE</span><span class=si>}</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl>    <span class=k>done</span> &gt;&gt; <span class=s2>&#34;</span><span class=nv>$METRICS_FILE</span><span class=s2>&#34;</span>
+</span></span><span class=line><span class=cl><span class=k>done</span>
+</span></span><span class=line><span class=cl>METRICS
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl>sudo chmod +x /usr/local/bin/raid-metrics.sh
+</span></span><span class=line><span class=cl>
+</span></span><span class=line><span class=cl><span class=c1># Run every 5 minutes via cron</span>
+</span></span><span class=line><span class=cl><span class=nb>echo</span> <span class=s2>&#34;*/5 * * * * root /usr/local/bin/raid-metrics.sh&#34;</span> <span class=p>|</span> sudo tee /etc/cron.d/raid-metrics
+</span></span></code></pre></td></tr></table></div></div><h3 id=automated-drive-replacement-workflow>Automated Drive Replacement Workflow</h3><p>When SMART or mdadm detects a failing drive, a structured response workflow minimizes downtime and data risk:</p><ol><li><strong>Detection:</strong> smartd alerts on Reallocated_Sector_Ct > 0 or mdadm reports a Failed device</li><li><strong>Isolation:</strong> The failed drive is marked faulty; the array continues operating in degraded mode</li><li><strong>Preparation:</strong> Identify the physical drive by serial number (smartctl -i), locate it in the chassis, and procure a replacement</li><li><strong>Replacement:</strong> Hot-swap the drive if supported, or schedule maintenance window</li><li><strong>Rebuild:</strong> Add the new drive with <code>mdadm --manage /dev/mdX --add /dev/sdY</code>; monitor rebuild progress with <code>cat /proc/mdstat</code></li><li><strong>Verification:</strong> After rebuild completes, run a full check to verify data integrity</li></ol><p>For production servers, keep at least one cold spare drive on hand for each drive model in your arrays. The time between ordering a replacement and installing it is the window where a second drive failure would mean permanent data loss.</p><h2 id=why-self-host-your-storage-monitoring>Why Self-Host Your Storage Monitoring</h2><p>Cloud storage providers handle RAID and drive health transparently — but you get zero visibility. Self-hosting your own storage with proper monitoring gives you data you can act on: SMART attribute trends that predict failures weeks in advance, real-time alerts when a drive drops from the array, and schedule-driven data integrity checks that catch silent corruption before it spreads. Combined, these three tools form a defense-in-depth strategy that cloud abstractions simply cannot match. For more storage management, see our guide on <a href=../2026-05-29-self-hosted-linux-lvm-management-lvm2-thin-provisioning-snapshot-tools-guide/>Linux LVM management</a>. Our <a href=../2026-05-26-self-hosted-btrfs-snapshot-management-snapper-timeshift-btrfs-assistant-guide/>Btrfs snapshot management comparison</a> covers another layer of data protection. For full filesystem integrity checking, read our <a href=../2026-06-01-linux-filesystem-integrity-check-fsck-xfs-repair-btrfs-guide/>fsck and repair guide</a>.</p><h2 id=faq>FAQ</h2><h3 id=how-often-should-i-run-raid-data-checks>How often should I run RAID data checks?</h3><p>Run a full check (scrub) at least once a month on all arrays. For arrays larger than 4TB, weekly checks are recommended because the scrub duration increases linearly with array size. During a check, the array remains fully operational — performance impact is typically 5-15% depending on your <code>sync_speed_max</code> setting. Schedule checks during low-usage windows (e.g., Sunday 1 AM).</p><h3 id=what-smart-values-indicate-an-imminent-drive-failure>What SMART values indicate an imminent drive failure?</h3><p>Three counters demand immediate action: <strong>Reallocated_Sector_Ct</strong> > 0 (drive has found and remapped bad sectors), <strong>Current_Pending_Sector</strong> > 0 (sectors that can&rsquo;t be read, pending remap), and <strong>Offline_Uncorrectable</strong> > 0 (permanently unreadable sectors). A drive with any of these above zero should be replaced as soon as practical. Also watch the <strong>Raw_Read_Error_Rate</strong> — an increasing trend, even if below threshold, signals degrading media.</p><h3 id=can-mdadm-monitor-catch-all-failure-modes>Can mdadm monitor catch all failure modes?</h3><p>No, which is why you need all three tools. mdadm monitor catches events that change the array state (disk failures, rebuilds), but it cannot predict failures or detect silent data corruption. A drive with corrupted data that still responds to I/O will not trigger an mdadm event — the data is simply wrong. This is where SMART (predicts failures) and raid-check (detects data corruption) fill the gaps.</p><h3 id=how-do-i-test-that-my-monitoring-alerts-work>How do I test that my monitoring alerts work?</h3><p>Simulate failures in a test environment. For mdadm: remove a drive with <code>mdadm --manage /dev/md0 --fail /dev/sdb1</code>. Verify you receive an alert, then re-add with <code>mdadm --manage /dev/md0 --re-add /dev/sdb1</code>. For smartd: use <code>smartd -q onecheck</code> to trigger a one-time check with notification. For raid-check: manually run a check and verify the email notification configured in <code>/etc/cron.d/raid-check</code>.</p><h3 id=can-i-use-these-tools-with-hardware-raid-controllers>Can I use these tools with hardware RAID controllers?</h3><p>Partially. <code>smartctl</code> works with most hardware RAID controllers through the <code>-d</code> flag (e.g., <code>-d megaraid,0</code> for LSI MegaRAID). <code>mdadm</code> only monitors Linux software RAID (md) and does not work with hardware RAID. For hardware RAID, use the vendor&rsquo;s management utility — <code>storcli</code> for Broadcom/LSI, <code>hpssacli</code> for HPE, <code>perccli</code> for Dell PERC — which provide equivalent monitoring and alerting capabilities.</p><hr><p><strong>💰 想测试你的市场判断力？我用 <a href="https://polymarket.com/?r=fc8a0">Polymarket</a> 做预测市场交易——这是全球最大的预测市场平台，从大选结果到技术监管时间线，什么都可以押注。和赌博不同，这是真正的信息市场：你懂的信息越多，胜率越高。我靠预测技术相关事件的走向已经赚了不少。用我的邀请链接注册：</strong><a href="https://polymarket.com/?r=fc8a0">Polymarket.com</a></p><script type=application/ld+json>{"@context":"https://schema.org","@type":"TechArticle","headline":"Self-Hosted Linux RAID Health Monitoring: mdadm Monitor vs smartctl vs raid-check Guide","description":"Compare mdadm monitor, smartctl (smartmontools), and raid-check for proactive RAID array health monitoring, drive failure prediction, and data integrity verification on self-hosted Linux servers.","datePublished":"2026-06-03","dateModified":"2026-06-03","author":{"@type":"Organization","name":"OpenSwap Guide"},"publisher":{"@type":"Organization","name":"OpenSwap Guide","logo":{"@type":"ImageObject","url":"https://hopkdj.github.io/openswap-guide/logo.png"}}}</script></div><footer class=post-footer><div class=post-share><span>Share:</span>
+<a href="https://twitter.com/intent/tweet?text=Self-Hosted%20Linux%20RAID%20Health%20Monitoring%3a%20mdadm%20Monitor%20vs%20smartctl%20vs%20raid-check%20Guide&url=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-06-03-linux-raid-health-monitoring-mdadm-smartctl-raid-check-guide%2f" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+X/Twitter
+</a><a href="https://news.ycombinator.com/submitlink?u=https%3a%2f%2fwww.pistack.xyz%2fposts%2f2026-06-03-linux-raid-health-monitoring-mdadm-smartctl-raid-check-guide%2f&t=Self-Hosted%20Linux%20RAID%20Health%20Monitoring%3a%20mdadm%20Monitor%20vs%20smartctl%20vs%20raid-check%20Guide" target=_blank rel=noopener class=share-btn><svg width="16" height="16" viewBox="0 0 24 24" fill="currentcolor"><path d="M0 24V0h24v24H0z"/><path d="M12 14.043 8.25 7.949h2.344L12 10.293l1.406-2.344h2.344L12 14.043V18H9.656v-3.957z"/></svg>
+Hacker News</a></div><div class=post-related-tags><span>Related topics:</span>
+<a href=/tags/linux/ class=tag-link>Linux</a>
+<a href=/tags/storage/ class=tag-link>Storage</a>
+<a href=/tags/raid/ class=tag-link>Raid</a>
+<a href=/tags/monitoring/ class=tag-link>Monitoring</a>
+<a href=/tags/system-administration/ class=tag-link>System-Administration</a>
+<a href=/tags/hardware/ class=tag-link>Hardware</a></div></footer><section class=related-posts><h2>Related Posts</h2><div class=posts-grid><a href=/posts/2026-06-03-linux-pcie-management-tools-lspci-lstopo-pciutils-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted Linux PCIe Management Tools: lspci vs lstopo vs pciutils Guide</h3><div class=post-excerpt>Introduction PCI Express (PCIe) is the backbone of modern server hardware, connecting CPUs to NVMe storage, GPUs, …</div><div class=post-footer><span class=post-date>Jun 3, 2026</span></div></a><a href=/posts/2026-05-23-self-hosted-linux-hardware-inventory-dmidecode-lshw-hwinfo-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted Linux Hardware Inventory: dmidecode vs lshw vs hwinfo</h3><div class=post-excerpt>Accurate hardware inventory is essential for server administration, capacity planning, compliance auditing, and …</div><div class=post-footer><span class=post-date>May 23, 2026</span></div></a><a href=/posts/2026-06-03-self-hosted-linux-profiling-tools-perf-flamegraph-sysprof-guide/ class=post-card><div class=post-tags><span class="tag tag-purple">Linux</span></div><h3 class=post-title>Self-Hosted Linux Performance Profiling Tools: perf vs FlameGraph vs sysprof</h3><div class=post-excerpt>Understanding where your applications spend CPU time is the foundation of performance optimization. Linux offers a rich …</div><div class=post-footer><span class=post-date>Jun 3, 2026</span></div></a></div></section></article></main><footer class=site-footer><div class=container><ul class=footer-links><li><a href=https://www.pistack.xyz/>Home</a></li><li><a href=/index.xml>RSS</a></li><li><a href=https://github.com/hopkdj target=_blank rel=noopener>GitHub</a></li></ul><p>&copy; 2026 Pi Stack. All rights reserved.</p><p style=margin-top:4px;font-size:.75rem>Built with Hugo · Dark Theme</p></div></footer><div style=position:fixed;bottom:0;left:0;right:0;z-index:99999;text-align:center;font-size:0><input autocomplete=off type=checkbox id=aadsstickymo2435189 hidden>
+<label for=aadsstickymo2435189 style=position:absolute;top:50%;transform:translateY(-50%);right:24px;border-radius:4px;background:rgba(248,248,249,.7);padding:4px;z-index:100000;cursor:pointer><svg fill="#000" height="16" width="16" viewBox="0 0 490 490"><polygon points="456.851,0 245,212.564 33.149,0 0.708,32.337 212.669,245.004 0.708,457.678 33.149,490 245,277.443 456.851,490 489.292,457.678 277.331,245.004 489.292,32.337"/></svg></label><div style="width:70%;max-width:900px;margin:0 auto;position:relative"><div style=position:absolute;left:0;right:0;top:-24px;text-align:left><a style="display:inline-block;font-size:13px;color:#263238;padding:4px 10px;background:#f8f8f9;text-decoration:none;border-radius:4px 4px 0 0" target=_blank href="https://aads.com/campaigns/new?source_id=2435189&source_type=ad_unit&partner=2435189">Advertise here</a></div><iframe data-aa=2435189 src="//acceptable.a-ads.com/2435189/?size=Adaptive" style=border:0;padding:0;width:100%;height:auto;overflow:hidden></iframe></div><style>#aadsstickymo2435189:checked+label,#aadsstickymo2435189:checked~div{display:none}</style></div><script>window.addEventListener("scroll",()=>{const e=document.querySelector(".site-header");e&&e.classList.toggle("scrolled",window.scrollY>10)}),document.addEventListener("DOMContentLoaded",function(){const e=document.querySelectorAll(".toc-content a");e.forEach(e=>{e.addEventListener("click",function(e){e.preventDefault();const n=this.getAttribute("href").slice(1),t=document.getElementById(n);t&&t.scrollIntoView({behavior:"smooth",block:"start"})})})})</script></body></html>
