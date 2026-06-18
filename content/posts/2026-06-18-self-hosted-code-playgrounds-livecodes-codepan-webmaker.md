@@ -91,7 +91,7 @@ Livecodes supports embedding playgrounds in Markdown documentation. For Hugo-bas
 Then use in your articles:
 
 ```markdown
-{{< playground >}
+{{</* playground */>}}
 ```
 
 ## CodePan: The Lightweight Runner
