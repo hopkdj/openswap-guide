@@ -93,6 +93,8 @@ The flip side: Vuetify's opinionated defaults are sticky. Your app visually *is*
 
 Element Plus is the Vue 3 successor to Element UI, and if you have ever touched a Vue admin dashboard, you have seen it — it powers the majority of Chinese-market admin templates (vue-element-admin's ecosystem, vben, and countless SaaS backends). Its component set is optimized for **data-dense business UIs**: `el-table`, `el-form`, `el-dialog`, `el-pagination` are widely considered the strongest table/form implementation in the Vue ecosystem.
 
+![Element Plus component set](/img/screenshots/elementplus-inline.jpg "Element Plus Vue 3 component library preview")
+
 Install is two lines:
 
 ```bash
