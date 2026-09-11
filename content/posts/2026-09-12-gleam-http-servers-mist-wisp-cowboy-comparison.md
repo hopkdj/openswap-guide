@@ -1,0 +1,250 @@
+---
+title: "Mist vs Wisp vs Cowboy in 2026: Which Gleam HTTP Stack Should You Actually Ship?"
+date: "2026-09-12"
+tags: ["gleam", "beam", "web-frameworks", "erlang", "self-hosted", "open-source", "backend"]
+draft: false
+cover: "/img/screenshots/gleam-web-stack.jpg"
+---
+
+## Gleam Grew Up. Now Pick Your HTTP Layer.
+
+Gleam crossed **21,899 GitHub stars** and is pushing commits every single day — but a language does not run a web service. A server does. And on the BEAM, Gleam developers face a decision that Erlang veterans settled fifteen years ago and newcomers get wrong constantly: do you run a pure-Gleam HTTP server, a framework that wraps one, or the Erlang workhorse that has survived a decade of production traffic?
+
+Pick wrong and you inherit either a mountain of boilerplate you did not want, or an abstraction that hides the backpressure behavior you actually need at 2 a.m. when traffic spikes.
+
+This guide compares the three stacks that matter in September 2026: **Mist** (a pure-Gleam HTTP server), **Wisp** (a pragmatic web framework), and **Cowboy** (the Erlang HTTP server, accessed from Gleam through an official adapter). Star counts and last-push dates below were pulled live from GitHub while writing this.
+
+## TL;DR: The 30-Second Verdict
+
+- **You want full control, WebSockets, chunked responses, and zero framework opinions** → use **Mist**. It is tiny, pure Gleam, and its API is a builder you compose.
+- **You are building a normal CRUD app with sessions, CSRF protection, static files, and forms** → use **Wisp**. It layers handlers and middleware on top of Mist and removes the boring decisions.
+- **You are adding Gleam services to an existing Erlang/BEAM deployment and need the most battle-tested HTTP stack alive** → use the **Cowboy adapter**. You keep Cowboy's maturity and Gleam's type safety.
+
+Do not start with Wisp "because it is a framework." Start with Mist and move up only when you find yourself rewriting session handling by hand.
+
+## The Full Comparison
+
+| Dimension | Mist | Wisp | Cowboy (Gleam adapter) |
+|---|---|---|---|
+| GitHub stars | 525 | 1,478 | 76 (adapter) / Cowboy itself is a mature Erlang server |
+| Last push | Apr 2026 | Sep 2026 | actively maintained |
+| Written in | Pure Gleam | Gleam (on Mist) | Gleam bindings over Erlang Cowboy |
+| Runtime | BEAM (Erlang/OTP) | BEAM (Erlang/OTP) | BEAM (Erlang/OTP) |
+| Routing | Manual path predicates | Manual + middleware pipeline | Cowboy router |
+| WebSocket support | Native (`mist.websocket`) | Via Mist primitives | Native (protocol via adapter) |
+| Chunked/streaming responses | Native (`mist.chunked`) | Via Mist | Native |
+| Sessions / CSRF / forms | Not included | Built in | Not included |
+| Static file serving | Manual | `wisp.serve_static` | Cowboy static handler |
+| Opinion level | Minimal | Moderate | Low (Erlang-shaped) |
+| Best fit | APIs, WebSocket services, custom protocols | Full web apps | Mixed Erlang/Gleam estates |
+| License | Apache-2.0 | Apache-2.0 | Apache-2.0 |
+
+Two things stand out. First, **Wisp is built on Mist** — choosing Wisp is not choosing against Mist, it is choosing Mist plus conventions. Second, Cowboy's adapter is intentionally thin: you get Cowboy's request model with Gleam types, and you are expected to know how Cowboy works.
+
+## Decision Matrix: Pick in 10 Seconds
+
+| Your situation | Recommended | Why |
+|---|---|---|
+| JSON API for a mobile app | **Mist** | No session/CSRF machinery you will never call |
+| Real-time chat or live dashboard | **Mist** | `mist.websocket` is first-class, not bolted on |
+| Internal admin CRUD with login | **Wisp** | Sessions, CSRF, flash messages already solved |
+| Streaming large file downloads | **Mist** | `mist.chunked` gives explicit backpressure control |
+| Already running Erlang/Elixir services | **Cowboy** | One HTTP server to operate, not two |
+| Small team, junior BEAM developers | **Wisp** | Conventions beat blank slates for onboarding |
+| Learning how the BEAM handles HTTP | **Mist** | The builder API shows you exactly what happens |
+
+## Keep Reading
+
+For the Erlang side of the same decision, see our comparison of [Erlang HTTP servers: Cowboy vs Mochiweb vs Yaws](../2026-09-04-erlang-http-servers-cowboy-mochiweb-yaws-comparison/). If your Gleam service calls other services, our [Elixir HTTP client comparison](../2026-08-21-elixir-http-clients-tesla-req-httpoison-comparison/) covers the client side, and the [Elixir JSON library shootout](../2026-07-25-elixir-json-libraries-jason-poison-jsex-jsonrs/) explains why serializer choice shows up in your p99.
+
+## Mist — The Minimalist Pure-Gleam Server
+
+Mist's pitch is that a web server should be a library, not a lifestyle. You build a handler function, construct a server with `mist.new`, and start it. The setup is three commands from the official README:
+
+```sh
+gleam new my_service
+cd my_service
+gleam add mist logging gleam_erlang gleam_http
+```
+
+The entrypoint is `mist.start`, and its argument is generated by the `Builder` type you construct with `mist.new`. A realistic handler looks like this — note that routing is a `case` expression on `request.path_segments`, and WebSocket upgrade is just another branch:
+
+```gleam
+import gleam/bytes_tree
+import gleam/http/request.{type Request}
+import gleam/http/response.{type Response}
+import mist.{type Connection, type ResponseData}
+
+const index = "<html lang='en'><body>Hello, world!</body></html>"
+
+pub fn main() {
+  let assert Ok(_) =
+    fn(req: Request(Connection)) -> Response(ResponseData) {
+      case request.path_segments(req) {
+        [] ->
+          response.new(200)
+          |> response.set_body(mist.Bytes(bytes_tree.from_string(index)))
+        ["ws"] ->
+          mist.websocket(
+            request: req,
+            on_init: fn(_conn) { #(Nil, None) },
+            on_close: fn(_state) { Nil },
+            handler: handle_ws_message,
+          )
+        ["echo"] -> echo_body(req)
+        _ ->
+          response.new(404)
+          |> response.set_body(mist.Bytes(bytes_tree.new()))
+      }
+    }
+  |> mist.new
+  |> mist.port(8080)
+  |> mist.start
+}
+```
+
+**Why this matters:** there is no hidden router, no middleware registry, and no configuration file. When a request arrives you can read the entire code path in one screen. For a high-traffic API where you profile tail latency, that transparency is worth more than any framework convenience.
+
+**The cost:** you will write session handling, cookie signing, and CSRF tokens yourself. Every one of those is a security-sensitive feature that Wisp has already gotten right.
+
+## Wisp — The Framework That Removes Boring Decisions
+
+Wisp describes itself as a *practical* web framework, and it is organized around exactly two ideas: **handlers** and **middleware**. A handler takes a request and returns a response; middleware takes a response-returning function and wraps it. Here is the official handler shape, including a typed application context for your database connection or session:
+
+```gleam
+import wisp.{type Request, type Response}
+
+pub type Context {
+  Context(secret: String)
+}
+
+pub fn handle_request(request: Request, context: Context) -> Response {
+  wisp.ok()
+}
+```
+
+Middleware composes with Gleam's `use` syntax, which keeps the nesting flat instead of turning into a pyramid:
+
+```gleam
+import wisp.{type Request, type Response}
+
+pub fn handle_request(request: Request) -> Response {
+  use <- wisp.log_request(request)
+  use <- wisp.serve_static(request, under: "/static", from: "/public")
+  wisp.ok()
+}
+```
+
+![Wisp framework documentation cover](/img/screenshots/gleam-web-stack.jpg "Wisp, a practical Gleam web framework for rapid development and easy maintenance")
+
+That `use` pattern is the reason Wisp feels lighter than most frameworks: adding logging, static files, authentication, or request-size limits is one line each, and if you delete the line, the behavior disappears with no leftover hooks.
+
+**Choose Wisp when** your application has humans in it: logins, forms, uploads, flash messages, dashboards. **Skip Wisp when** you are writing a machine-facing JSON endpoint — you would be pulling in session and CSRF machinery that no client will ever exercise.
+
+## Cowboy — The Erlang Veteran, From Gleam
+
+Cowboy is the Erlang HTTP server that has been in production for over a decade, and Gleam has an official adapter for it. You add the adapter alongside Gleam's HTTP types:
+
+```sh
+gleam add gleam_http gleam_erlang
+# add the Cowboy adapter listed on Hex as gleam_cowboy
+```
+
+The adapter mirrors Cowboy's model rather than hiding it: you register a router, then translate Cowboy requests into Gleam `Request` values and back. The trade is explicit — you get Cowboy's HTTP/2 support, its mature static handler, and its operational track record, and in exchange you maintain a mental model that is Erlang-shaped, not Gleam-shaped. The Gleam-facing API is a thin bridge, so protocol-level behavior is documented by Cowboy, not by Gleam.
+
+The strongest argument for this path is operational uniformity. If your estate already runs Erlang or Elixir services behind Cowboy, adding a Gleam service on the same server means one set of tuning parameters, one set of dashboards, and one place to look when connections pile up.
+
+## Deploying Any of the Three to Production
+
+The runtime shape is identical across all three stacks because everything compiles to BEAM bytecode. Build a self-contained release rather than shipping source:
+
+```dockerfile
+FROM ghcr.io/gleam-lang/gleam:v1.11.1-erlang-alpine AS builder
+WORKDIR /build
+COPY . .
+RUN gleam export erlang-shipment
+
+FROM erlang:27-alpine
+WORKDIR /app
+COPY --from=builder /build/build/erlang-shipment /app
+ENTRYPOINT ["/app/entrypoint.sh"]
+CMD ["run"]
+```
+
+Pin the image tag to the same Gleam version as your `gleam.toml` — a mismatch is the most common cause of "works locally, crashes in CI."
+
+On a plain VM, the same shipment runs under systemd without Docker:
+
+```ini
+[Unit]
+Description=Gleam service
+After=network.target
+
+[Service]
+User=gleam
+WorkingDirectory=/srv/my_service
+ExecStart=/srv/my_service/entrypoint.sh run
+Restart=always
+Environment=PORT=8080
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Because the shipment bundles the Erlang runtime and your compiled modules, `Restart=always` is safe: startup is fast and there is no build step on the host. Terminate TLS at a reverse proxy (Caddy, nginx, or Traefik) and keep the service on a private port.
+
+## Pitfalls and Traps
+
+1. **Version-pinning the runtime.** BEAM applications are sensitive to OTP releases. Declare the Erlang/OTP version your team supports in `gleam.toml` and use the same base image in development and production.
+2. **Assuming Mist gives you sessions.** It does not. If you hand-roll session cookies, sign them — an unsigned cookie is an authentication bypass waiting to be discovered.
+3. **Reaching for Cowboy when the adapter's surface is enough.** The adapter is deliberately small. If you find yourself wanting more from it, that is usually a signal that Wisp or Mist fits the job better.
+4. **Blocking the scheduler.** All three run on the BEAM, so a long synchronous CPU-bound call inside a handler blocks a scheduler thread. Move heavy work to a task process and reply to the caller.
+5. **Ignoring backpressure in streaming.** `mist.chunked` lets you emit chunks explicitly, which also means you own the flow control. Test with a slow client before you ship a large export feature.
+6. **Skipping a reverse proxy because "the server is production-grade."** The BEAM handles concurrency well but is not a TLS-terminating edge. Use a proxy for TLS, HTTP/2 to clients, and static asset caching.
+
+## FAQ
+
+**Is Wisp built on top of Mist?**
+Yes. Wisp wraps Mist and adds conventions: handlers with typed contexts, `use`-based middleware, sessions, CSRF protection, and static file serving. Choosing Wisp means choosing Mist plus a framework layer, so you can drop down to Mist primitives whenever you need finer control.
+
+**Can I use WebSockets with Mist?**
+Yes, natively. Mist exposes a `websocket` function that performs the upgrade inside your normal request handler, so your routing logic and your socket handling live in the same file. Wisp applications typically reach for the same Mist primitive.
+
+**What is Cowboy's advantage if it is an older design?**
+Age is the advantage. Cowboy has handled HTTP/1.1, HTTP/2, and long-lived connection workloads in production for years, and its failure modes are documented in public postmortems. When you need a server whose behavior at 50,000 connections is already well understood, that track record is worth the more Erlang-shaped API.
+
+**Do I need Docker to deploy a Gleam web service?**
+No. `gleam export erlang-shipment` produces a self-contained directory with the Erlang runtime and your compiled code, which runs directly under systemd. Docker is convenient because it makes the OTP version explicit and reproducible.
+
+**Which stack should a beginner learn first?**
+Start with Mist to see how requests, responses, and sockets actually work, then move to Wisp when you need sessions and forms. Learning Wisp first means you never see the layer underneath, which makes debugging connection-level problems much harder.
+
+**Are all three usable in the same application?**
+Yes — and that is often the right answer. A Wisp application can serve static pages and sessions while handling a WebSocket route with a raw Mist primitive, all in one runtime process.
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "headline": "Mist vs Wisp vs Cowboy in 2026: Which Gleam HTTP Stack Should You Actually Ship?",
+  "description": "A hands-on comparison of Mist, Wisp, and the Cowboy adapter for Gleam web services in 2026, with real code examples, a decision matrix, and production deployment guidance.",
+  "datePublished": "2026-09-12",
+  "dateModified": "2026-09-12",
+  "author": {
+    "@type": "Organization",
+    "name": "OpenSwap Guide"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "OpenSwap Guide",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://hopkdj.github.io/openswap-guide/logo.png"
+    }
+  }
+}
+</script>
+
+---
+
+**💰 想测试你的市场判断力？我用 [Polymarket](https://polymarket.com/?r=fc8a0) 做预测市场交易——这是全球最大的预测市场平台，从大选结果到技术监管时间线，什么都可以押注。和赌博不同，这是真正的信息市场：你懂的信息越多，胜率越高。我靠预测技术相关事件的走向已经赚了不少。用我的邀请链接注册：**[Polymarket.com](https://polymarket.com/?r=fc8a0)
