@@ -107,6 +107,8 @@ Two details stand out. The explicitly embedded `\n` inside the second row's midd
 
 The caveat a README rarely states this plainly: comfy-table documents **"a search for a new maintainer"** and a feature freeze until that happens. The library works, it was pushed in late September 2026, and the API is stable — but do not adopt it expecting new features. For a CLI whose table output is a solved, small part of the surface, that trade is usually acceptable; for a product where table rendering is a headline feature, weigh it carefully.
 
+![The official comfy-table demo from the project README, showing a rendered terminal table with styled borders and wrapped multi-line cells](/img/screenshots/comfy-table-demo.jpg "comfy-table's own README demo: a rendered terminal table with box-drawing borders and multi-line cell content")
+
 ## cli-table3 — The Node.js Workhorse
 
 cli-table3 is the maintained descendant of the classic `cli-table`, and its API is deliberately imperative:
