@@ -84,8 +84,6 @@ krig = gs.krige.Ordinary(model, cond_pos=(x, y, z), cond_val=values)
 field, variance = krig((grid_x, grid_y, grid_z))
 ```
 
-![Ordinary kriging output produced by the GSTools documentation examples](/img/screenshots/gstools-kriging.jpg)
-
 Two capabilities matter in practice and are absent elsewhere in this comparison. First, **conditioned simulation**: `srf` can take observed points and produce realisations that honour them, which is what turns a single interpolated map into a defensible uncertainty study. Second, **export**: 3D fields go out through `vtk_export()` or `to_pyvista()`, so geologists and hydrologists can open them in the same viewer they already use.
 
 ## PyKrige: The Fast Path From Points to Grid
@@ -151,6 +149,8 @@ grid = ok.transform(gridx.ravel(), gridy.ravel())
 ```
 
 The `estimator` argument is the reason this library exists. Robust estimators such as Cressie-Hawkins or Dowd down-weight outlier pairs, which changes the fitted range and sill — and therefore changes every downstream prediction. With `n_lags`, `maxlag`, `bin_func`, and directional support you can also see whether the variogram is isotropic; a directional variogram that diverges from the omnidirectional one is the single most common reason a kriged map looks "wrong" to a domain expert.
+
+![Experimental variogram fit produced by the SciKit-GStat repository example](/img/screenshots/scikit-gstat-variogram.jpg)
 
 SciKit-GStat also offers maximum-likelihood variogram fitting, which avoids the subjective lag-binning step entirely. Lag binning is a modelling choice disguised as a preprocessing detail: change `n_lags` from 15 to 30 and the fitted range can move by 20 per cent.
 
