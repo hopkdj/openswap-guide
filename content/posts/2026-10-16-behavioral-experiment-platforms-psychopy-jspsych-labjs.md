@@ -86,6 +86,8 @@ jsPsych.run(timeline);
 
 Two operational details make it the default for online work. **Deployment is static files**: build the study, upload it, and participants only need a URL. **The plugin catalogue is broad** — keyboard responses, sliders, audio and video stimuli, surveys, and timing extensions for synchronization with external measurement.
 
+![Audio stimulus configuration in the PsychoPy Builder, from the official documentation](/img/screenshots/psychopy-audio.jpg)
+
 The honest caveats: **browser timing is not lab timing.** You are at the mercy of variable refresh rates, input latency and background tabs, so designs that depend on sub-10 ms precision should either measure and model the variance or stay in the lab. jsPsych's approach is to let you record timing diagnostics and analyse them, not to promise precision it cannot deliver. Also note that plugin APIs evolve between major versions, so pin a version in your build and archive the exact study bundle you ran.
 
 ## lab.js: The Teaching-Friendly Browser Builder

@@ -72,6 +72,8 @@ SMILExtract -C config/gemaps/v01b/GeMAPSv01b.conf \
 
 The config tree is the real product. Alongside `gemaps/v01b` you will find `egemaps`, `compare16` (ComParE 2016), `emobase`, `is09-13`, `mfcc`, `chroma`, `prosody`, `spectrum` and `audspec` — a decade of shared feature-set conventions maintained as files rather than blog snippets. When a reviewer asks which feature set you used, you answer with a path, and the result is reproducible on any machine.
 
+![openSMILE feature extraction pipeline from the official project page](/img/screenshots/opensmile-features.jpg)
+
 Two cautions. First, **the licence is audEERING's own source-available terms, not a standard OSI licence** — read the `LICENSE` file before shipping anything commercial; academic use is the well-trodden path. Second, the naming is not intuitive for newcomers: `egemaps`, `gemaps` and `compare16` are different generations of the same idea, and choosing between them is a scientific decision about comparability with prior work, not a technical one.
 
 ## audioFlux: Transforms and Pitch as Library Code
