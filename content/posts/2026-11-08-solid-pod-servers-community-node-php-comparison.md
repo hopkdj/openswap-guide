@@ -130,7 +130,7 @@ The trade-offs are real: WAC only (no ACP), a file-system backend only, and a sm
 No. ActivityPub-based platforms (Mastodon, Lemmy) federate *messages* between servers. Solid federates *data ownership*: applications read and write resources in a pod under the owner's access rules. A pod can hold your data while the app you use lives somewhere else entirely.
 
 **Can I use Solid pods as ordinary cloud storage?**
-You can, but it is a poor fit unless you care about linked data. Content negotiation, RDF-first semantics and WebID-based authorization add overhead that a plain WebDAV store does not have. If you want a Dropbox replacement, our [Cloudreve vs Pydio Cells vs Seafile comparison](../cloudreve-vs-pydio-cells-vs-seafile-self-hosted-cloud-storage/) is the right article.
+You can, but it is a poor fit unless you care about linked data. Content negotiation, RDF-first semantics and WebID-based authorization add overhead that a plain WebDAV store does not have. If you want a Dropbox replacement, our [Cloudreve vs Pydio Cells vs Seafile comparison](../2026-05-05-cloudreve-vs-pydio-cells-vs-seafile-self-hosted-cloud-storage/) is the right article.
 
 **Which server should I pick if I only need one user?**
 Community Solid Server with the file backend. One command, no compose file, and you get the implementation that receives specification updates first. Add NSS only if a tool you depend on assumes its account API.
