@@ -30,6 +30,19 @@ Your Julia service works fine in development and then, in production, you discov
 
 The maintenance row is the one that matters most in 2026. Memento's README opens with a warning that Invenia no longer exists and the maintainer no longer uses Julia. That is not a reason to panic-migrate a working system, but it is a decisive reason not to start a new one there.
 
+### Use case → recommended logger
+
+| Use case | Pick | Why |
+|---|---|---|
+| Notebook, script, one-off analysis | stdlib `ConsoleLogger` | Zero dependencies, `@info` with key-value pairs is already enough |
+| Long-running service writing to disk | LoggingExtras.jl | `FileLogger` plus `DatetimeRotatingFileLogger`, no custom logger code |
+| Warnings to one file, everything to another | LoggingExtras.jl | `TeeLogger` + `MinLevelLogger` is two constructors deep |
+| Per-module verbosity in code (not env vars) | LoggingExtras.jl | `EarlyFilteredLogger` filters on `log._module` |
+| JSON log lines for a collector | LoggingExtras.jl | `FormatLogger` gives you the IO stream and the record |
+| Silence all output during tests | stdlib `NullLogger` | One line, no package, no leaked global state |
+| Named logger hierarchy per subsystem | Memento.jl (legacy only) | The only one of the three with named trees — but unmaintained |
+| Structured records with custom handlers | stdlib + LoggingExtras.jl | A 15-line `AbstractLogger` subtype beats adopting a dead dependency |
+
 ## How Julia's logging actually works
 
 Julia's logging is built around three functions that every logger must implement: `shouldlog`, `min_enabled_level`, and `handle_message`. Everything else — macros, filters, routing — is composition on top of that contract. This is why third-party packages integrate so cleanly: they are not competing with the stdlib, they are wrapping it.
