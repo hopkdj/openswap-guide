@@ -3,6 +3,7 @@ title: "Metrics Cardinality Is Eating Your Budget: 7 Fixes That Cut Prometheus S
 date: "2026-11-20"
 tags: ["prometheus", "observability", "monitoring", "cost-optimization", "metrics"]
 draft: false
+cover: "/img/screenshots/prometheus-go-metrics.jpg"
 description: "How to find and kill high-cardinality series in Prometheus, Mimir, Thanos and VictoriaMetrics — with the exact PromQL, relabel configs and limits that cut storage 80%."
 ---
 
@@ -51,6 +52,8 @@ Those per-row numbers look harmless. The last row is the bill: **1.4 TB per mont
 | Bill grows but load is flat | Histogram buckets × label sets | Native histograms or fewer buckets |
 
 ## 1. Find the Top Offenders in 30 Seconds
+
+![Prometheus expression browser showing Go runtime metric series and their cardinality](/img/screenshots/prometheus-go-metrics.jpg "Prometheus query UI: ranking metrics by series count is the first step of any cardinality cleanup")
 
 Two commands do most of the work. The first ranks metric names by active series; the second inspects an on-disk block and prints the labels responsible.
 
