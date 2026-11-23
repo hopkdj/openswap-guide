@@ -44,7 +44,7 @@ This guide compares three modern, actively maintained self-hosted identity provi
 
 Casdoor is built in Go with a React frontend. Its design philosophy centers on simplicity — a single binary serves the admin UI, API, and authentication endpoints. The project was created by the Casbin team and shares the same pragmatic approach: get the core functionality right, support many protocols and providers, and keep deployment friction minimal.
 
-The architecture is straightforward: Casdoor connects to a relational database (MySQL, PostgreSQL, SQLite, or others) and exposes REST APIs for identity management. There is no message queue, no worker process, no distributed event store. This means Casdoor scales vertically rather than horizontally — you run one instance behind a load balancer with a replicated database for high availability. For most homelab and small-to-medium team deployments, this is more than sufficient.
+The architecture is straightforward: Casdoor connects to a relational database (MySQL, PostgreSQL, SQLite, or others) and exposes REST APIs for identity management. There is no message queue, no worker process, no distributed event store. Casdoor still scales horizontally: once sessions are stored in Redis (`redisEndpoint` in `app.conf`), the instances share no local state, so you can run several replicas behind a load balancer on a shared, replicated database. The official Helm chart includes a Horizontal Pod Autoscaler for this. For most homelab and small-to-medium team deployments, a single instance is more than sufficient.
 
 ### Zitadel: Event-Sourced Multi-Tenancy
 
@@ -248,7 +248,7 @@ For legacy application integration or enterprise SSO federation, SAML 2.0 suppor
 
 For organizations with existing Active Directory or OpenLDAP directories:
 
-- **Casdoor** can import users from LDAP and use it as an external authentication source. The LDAP connector supports standard attribute mapping.
+- **Casdoor** can import users from LDAP and use it as an external authentication source. The LDAP connector supports standard attribute mapping. Casdoor also runs a built-in LDAP server (port 389, with LDAPS on 636), so applications that only speak LDAP can authenticate directly against Casdoor users, plus a built-in RADIUS server (port 1812) for VPNs and network devices.
 - **Zitadel** does not natively act as an LDAP server. It can integrate with external identity providers via OIDC or SAML, but does not provide LDAP read or write capabilities.
 - **Authentik** excels here — it provides a full LDAP proxy that translates LDAP bind requests into Authentik authentication flows, plus an LDAP outbound sync that pushes users to external LDAP directories. For Active Directory integration, Authentik also supports Kerberos authentication.
 
@@ -330,7 +330,7 @@ Yes, all three support user import from external sources. Casdoor and Authentik 
 
 ### Which solution has the best mobile app integration?
 
-All three support mobile authentication through OIDC's Authorization Code flow with PKCE, which is the recommended approach for native mobile apps. Zitadel provides official SDKs for Flutter, React Native, and Swift/Kotlin, making integration slightly easier for mobile development teams. Casdoor and Authentik work with any OIDC-compatible mobile SDK (such as AppAuth for iOS/Android) but do not provide platform-specific libraries.
+All three support mobile authentication through OIDC's Authorization Code flow with PKCE, which is the recommended approach for native mobile apps. Zitadel provides official SDKs for Flutter, React Native, and Swift/Kotlin, and Casdoor provides official SDKs for Android, iOS, Flutter, and React Native, making integration slightly easier for mobile development teams. Authentik works with any OIDC-compatible mobile SDK (such as AppAuth for iOS/Android) but does not provide platform-specific libraries.
 
 ### Is SSO federation (connecting multiple identity providers) supported?
 
